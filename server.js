@@ -1,15 +1,17 @@
 const express = require('express');
 const path    = require('path');
+const fs      = require('fs');
 const app     = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Config ───────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sportif2024';
+const DATA_FILE      = path.join(__dirname, 'data.json');
 
-// ── State ────────────────────────────────────────────────────────────────
-let currentAthlete = {
+// ── Persistence : lecture/écriture fichier ────────────────────────────────
+const DEFAULT_ATHLETE = {
   id:        1,
   answer:    'Corentin Moutet',
   aliases:   ['moutet', 'corentin moutet', 'corentin'],
@@ -18,9 +20,33 @@ let currentAthlete = {
   createdAt: new Date().toISOString(),
 };
 
-let scores = [];
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('Erreur lecture data.json:', e.message);
+  }
+  return { athlete: DEFAULT_ATHLETE, scores: [] };
+}
 
-// ── GAME API ─────────────────────────────────────────────────────────────
+function saveData() {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ athlete: currentAthlete, scores }, null, 2));
+  } catch (e) {
+    console.error('Erreur écriture data.json:', e.message);
+  }
+}
+
+// ── Chargement initial ────────────────────────────────────────────────────
+const saved        = loadData();
+let currentAthlete = saved.athlete || DEFAULT_ATHLETE;
+let scores         = saved.scores  || [];
+console.log(`📂 Sportif chargé : ${currentAthlete.answer}`);
+
+// ── GAME API ──────────────────────────────────────────────────────────────
 
 app.get('/api/athlete', (req, res) => {
   res.json({
@@ -50,6 +76,7 @@ app.post('/api/score', (req, res) => {
   scores.push(entry);
   scores.sort((a, b) => b.score - a.score);
   scores = scores.slice(0, 100);
+  saveData();
   res.json({ success: true, rank: scores.indexOf(entry) + 1, total: scores.length });
 });
 
@@ -69,10 +96,10 @@ app.post('/api/admin/athlete', (req, res) => {
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer || !clue) return res.status(400).json({ error: 'Nom et description obligatoires' });
 
-  const parts = answer.trim().split(/\s+/);
-  const autoAliases = [answer.trim().toLowerCase(), ...parts.map(p => p.toLowerCase())];
+  const parts        = answer.trim().split(/\s+/);
+  const autoAliases  = [answer.trim().toLowerCase(), ...parts.map(p => p.toLowerCase())];
   const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  const allAliases = [...new Set([...autoAliases, ...manualAliases])];
+  const allAliases   = [...new Set([...autoAliases, ...manualAliases])];
 
   currentAthlete = {
     id:        currentAthlete.id + 1,
@@ -83,8 +110,9 @@ app.post('/api/admin/athlete', (req, res) => {
     createdAt: new Date().toISOString(),
   };
   scores = [];
+  saveData(); // ← sauvegarde immédiate sur disque
 
-  console.log(`✅ Nouveau sportif : ${currentAthlete.answer} (${currentAthlete.clue.split(/\s+/).length} mots)`);
+  console.log(`✅ Nouveau sportif : ${currentAthlete.answer}`);
   res.json({ success: true, answer: currentAthlete.answer, wordCount: currentAthlete.clue.split(/\s+/).filter(Boolean).length, aliases: allAliases });
 });
 
@@ -94,6 +122,7 @@ app.get('/api/admin/current', (req, res) => {
   res.json(currentAthlete);
 });
 
+// ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🏆 Sportif Game → http://localhost:${PORT}`);
