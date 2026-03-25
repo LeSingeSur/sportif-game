@@ -28,11 +28,30 @@ let globalScores = saved.globalScores || [];
 console.log(`📂 ${athletes.length} sportif(s) chargé(s)`);
 
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 function hasPlayed(pseudo, athleteId) {
   return (scores[athleteId] || []).some(e => norm(e.pseudo) === norm(pseudo));
 }
 function nextAthleteFor(pseudo) {
   return athletes.find(a => !hasPlayed(pseudo, a.id)) || null;
+}
+
+// Recalcule le classement global : somme de tous les scores par pseudo
+function rebuildGlobalScores() {
+  const map = {}; // pseudo -> { totalScore, count, lastDate }
+  for (const [athleteId, list] of Object.entries(scores)) {
+    for (const entry of list) {
+      const key = norm(entry.pseudo);
+      if (!map[key]) map[key] = { pseudo: entry.pseudo, totalScore: 0, count: 0, lastDate: entry.date };
+      map[key].totalScore += entry.score;
+      map[key].count++;
+      if (entry.date > map[key].lastDate) map[key].lastDate = entry.date;
+    }
+  }
+  globalScores = Object.values(map)
+    .map(e => ({ pseudo: e.pseudo, score: e.totalScore, count: e.count, date: e.lastDate }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 200);
 }
 
 // ── GAME ──────────────────────────────────────────────────────────────────
@@ -45,14 +64,13 @@ app.get('/api/athlete', (req, res) => {
   res.json({ id: athlete.id, clue: athlete.clue, emoji: athlete.emoji, wordCount: athlete.clue.split(/\s+/).filter(Boolean).length });
 });
 
-// IMPORTANT: /api/athletes/list AVANT tout paramètre dynamique
 app.get('/api/athletes/list', (req, res) => {
   const pseudo = (req.query.pseudo || '').trim();
   res.json(athletes.map((a, i) => ({
-    id:      a.id,
-    emoji:   a.emoji,
-    index:   i + 1,
-    played:  pseudo ? hasPlayed(pseudo, a.id) : false,
+    id:     a.id,
+    emoji:  a.emoji,
+    index:  i + 1,
+    played: pseudo ? hasPlayed(pseudo, a.id) : false,
   })));
 });
 
@@ -77,23 +95,26 @@ app.post('/api/score', (req, res) => {
   if (!athlete) return res.status(404).json({ error: 'Sportif introuvable' });
   if (hasPlayed(pseudo, athleteId)) return res.status(409).json({ error: 'already_played', message: `${pseudo} a déjà joué ce sportif !` });
 
-  const entry = { pseudo: pseudo.trim().slice(0, 20), score: Math.max(0, score), athleteId, athleteName: athlete.answer, date: new Date().toISOString() };
+  const entry = {
+    pseudo:      pseudo.trim().slice(0, 20),
+    score:       Math.max(0, score),
+    athleteId,
+    athleteName: athlete.answer,
+    date:        new Date().toISOString(),
+  };
+
   if (!scores[athleteId]) scores[athleteId] = [];
   scores[athleteId].push(entry);
   scores[athleteId].sort((a, b) => b.score - a.score);
 
-  const gi = globalScores.findIndex(e => norm(e.pseudo) === norm(pseudo));
-  if (gi < 0 || entry.score > globalScores[gi].score) {
-    if (gi >= 0) globalScores.splice(gi, 1);
-    globalScores.push({ pseudo: entry.pseudo, score: entry.score, athleteName: athlete.answer, date: entry.date });
-    globalScores.sort((a, b) => b.score - a.score);
-    globalScores = globalScores.slice(0, 200);
-  }
+  // Recalcul global par somme
+  rebuildGlobalScores();
   saveData();
+
   res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length });
 });
 
-// IMPORTANT: /api/scores/global AVANT /api/scores/:athleteId
+// IMPORTANT : /api/scores/global AVANT /api/scores/:athleteId
 app.get('/api/scores/global', (req, res) => {
   res.json(globalScores.slice(0, 10));
 });
@@ -115,7 +136,11 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/athletes', (req, res) => {
   const { password } = req.query;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  res.json(athletes.map(a => ({ ...a, playerCount: (scores[a.id] || []).length, topScore: (scores[a.id] || [])[0]?.score ?? null })));
+  res.json(athletes.map(a => ({
+    ...a,
+    playerCount: (scores[a.id] || []).length,
+    topScore:    (scores[a.id] || [])[0]?.score ?? null,
+  })));
 });
 
 app.post('/api/admin/athlete', (req, res) => {
@@ -129,7 +154,6 @@ app.post('/api/admin/athlete', (req, res) => {
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
   if (editId) {
-    // MODE ÉDITION — modifier un sportif existant
     const idx = athletes.findIndex(a => a.id === editId);
     if (idx < 0) return res.status(404).json({ error: 'Sportif introuvable' });
     athletes[idx] = { ...athletes[idx], answer: answer.trim(), aliases: allAliases, emoji: emoji || '🏆', clue: clue.trim() };
@@ -137,7 +161,6 @@ app.post('/api/admin/athlete', (req, res) => {
     return res.json({ success: true, edited: true, answer: athletes[idx].answer, wordCount: clue.split(/\s+/).filter(Boolean).length });
   }
 
-  // MODE AJOUT
   const newId = Date.now();
   athletes.push({ id: newId, answer: answer.trim(), aliases: allAliases, emoji: emoji || '🏆', clue: clue.trim(), createdAt: new Date().toISOString() });
   scores[newId] = [];
@@ -152,6 +175,7 @@ app.delete('/api/admin/athlete/:id', (req, res) => {
   const id = parseInt(req.params.id);
   athletes = athletes.filter(a => a.id !== id);
   delete scores[id];
+  rebuildGlobalScores(); // recalcul après suppression
   saveData();
   res.json({ success: true });
 });
@@ -160,6 +184,8 @@ app.post('/api/admin/reset-global', (req, res) => {
   const { password } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   globalScores = [];
+  // Vide aussi tous les scores par sportif
+  for (const id of Object.keys(scores)) scores[id] = [];
   saveData();
   res.json({ success: true });
 });
@@ -169,6 +195,7 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   const id = parseInt(req.params.id);
   scores[id] = [];
+  rebuildGlobalScores(); // recalcul global après reset
   saveData();
   res.json({ success: true });
 });
