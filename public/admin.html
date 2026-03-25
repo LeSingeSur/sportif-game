@@ -7,341 +7,261 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#07070f;--c1:#111120;--c2:#191928;
-  --neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--green:#00c87a;
-  --txt:#ededf8;--mute:#52526e;--r:12px;
-  --ff:'Nunito',sans-serif;
-}
+:root{--bg:#07070f;--c1:#111120;--c2:#191928;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--green:#00c87a;--txt:#ededf8;--mute:#52526e;--r:12px;--ff:'Nunito',sans-serif}
 body{font-family:var(--ff);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;justify-content:center;padding:24px 16px 60px;-webkit-font-smoothing:antialiased}
-.wrap{width:100%;max-width:560px}
-
+.wrap{width:100%;max-width:580px}
 h1{font-size:28px;font-weight:800;color:var(--neon);margin-bottom:4px}
-.sub{font-size:13px;color:var(--mute);margin-bottom:28px}
-
-/* login */
-#login-screen, #admin-screen{display:none}
-#login-screen.on, #admin-screen.on{display:block}
-
-.card{background:var(--c1);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:24px 20px;margin-bottom:16px}
-.card-title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:16px}
-
-.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
-input[type=text], input[type=password], textarea, select{
-  background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);
-  padding:13px 14px;font-size:15px;font-family:var(--ff);font-weight:600;
-  color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s;
-}
-input:focus, textarea:focus, select:focus{border-color:var(--neon)}
-input::placeholder, textarea::placeholder{color:var(--mute);font-weight:400}
-textarea{resize:vertical;min-height:140px;line-height:1.6}
-
-.char-count{font-size:12px;color:var(--mute);text-align:right;margin-top:4px}
-.char-count.warn{color:var(--neon)}
-
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;font-size:15px;font-weight:800;font-family:var(--ff);border:none;border-radius:var(--r);cursor:pointer;transition:transform .1s,opacity .15s}
-.btn:active{transform:scale(.97)}
-.btn-p{background:var(--neon);color:#07070f}
-.btn-s{background:var(--c2);color:var(--txt);border:1px solid rgba(255,255,255,.09);margin-top:8px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* current athlete card */
-.current-card{background:var(--c2);border-radius:var(--r);padding:16px;margin-bottom:20px}
-.current-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
-.current-name{font-size:22px;font-weight:800;color:var(--neon);margin-bottom:4px}
-.current-meta{font-size:13px;color:var(--mute)}
-.current-clue{font-size:13px;color:var(--txt);margin-top:10px;line-height:1.6;opacity:.8;
-  max-height:80px;overflow:hidden;position:relative}
-.current-clue::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;
-  background:linear-gradient(transparent,var(--c2))}
-
-/* aliases preview */
-.aliases-box{background:var(--c2);border-radius:var(--r);padding:12px 14px;margin-top:8px}
-.aliases-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
-.aliases-list{display:flex;flex-wrap:wrap;gap:6px}
-.alias-tag{background:rgba(212,255,0,.12);border:1px solid rgba(212,255,0,.2);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--neon)}
-
-/* word count bar */
-.wc-bar{margin-top:10px}
-.wc-label{font-size:12px;color:var(--mute);margin-bottom:6px;display:flex;justify-content:space-between}
-.wc-track{height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.sub{font-size:13px;color:var(--mute);margin-bottom:24px}
+#login-screen,#admin-screen{display:none}
+#login-screen.on,#admin-screen.on{display:block}
+.card{background:var(--c1);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:22px 20px;margin-bottom:14px}
+.card-title{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+input[type=text],input[type=password],textarea,select{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--neon)}
+input::placeholder,textarea::placeholder{color:var(--mute);font-weight:400}
+textarea{resize:vertical;min-height:130px;line-height:1.6}
+.hint{font-size:12px;color:var(--mute);margin-top:3px}
+.wc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:6px}
+.wc-row span:last-child{font-weight:700}
+.wc-track{height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:5px}
 .wc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .3s}
-
-/* feedback */
-.msg{text-align:center;font-size:14px;font-weight:700;padding:12px;border-radius:var(--r);margin-top:12px;display:none}
-.msg.ok {background:rgba(0,200,122,.15);color:var(--green);display:block}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;font-size:15px;font-weight:800;font-family:var(--ff);border:none;border-radius:var(--r);cursor:pointer;transition:transform .1s;margin-bottom:8px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--neon);color:#07070f}
+.btn-s{background:var(--c2);color:var(--txt);border:1px solid rgba(255,255,255,.09)}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;margin-bottom:0}
+.btn-del{background:rgba(255,63,92,.15);color:var(--red);border:1px solid rgba(255,63,92,.3)}
+.btn-reset{background:rgba(212,255,0,.1);color:var(--neon);border:1px solid rgba(212,255,0,.2)}
+.msg{text-align:center;font-size:13px;font-weight:700;padding:10px;border-radius:var(--r);margin-top:8px;display:none}
+.msg.ok{background:rgba(0,200,122,.15);color:var(--green);display:block}
 .msg.err{background:rgba(255,63,92,.15);color:var(--red);display:block}
-
-/* emoji picker */
-.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
-.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:6px;font-size:20px;cursor:pointer;text-align:center;transition:border-color .15s}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:6px 0}
+.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:5px;font-size:20px;cursor:pointer;text-align:center;transition:border-color .15s}
 .emoji-btn:hover,.emoji-btn.sel{border-color:var(--neon)}
-
-/* responsive */
-@media(max-width:400px){.emoji-grid{grid-template-columns:repeat(6,1fr)}}
+.aliases-box{background:var(--c2);border-radius:10px;padding:10px 12px;margin-top:6px;display:none}
+.aliases-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.aliases-list{display:flex;flex-wrap:wrap;gap:5px}
+.alias-tag{background:rgba(212,255,0,.12);border:1px solid rgba(212,255,0,.2);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--neon)}
+/* Athletes list */
+.ath-list{display:flex;flex-direction:column;gap:8px}
+.ath-item{background:var(--c2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.ath-ico{font-size:28px;flex-shrink:0}
+.ath-info{flex:1;min-width:0}
+.ath-name{font-weight:800;font-size:15px}
+.ath-meta{font-size:12px;color:var(--mute);margin-top:2px}
+.ath-actions{display:flex;gap:6px;flex-shrink:0}
+.preview-box{background:var(--c2);border-radius:12px;padding:14px;margin-top:8px;display:none;line-height:2.4;font-size:14px}
+.wb-prev{display:inline-block;background:#181830;border-radius:5px;padding:3px 7px;margin:2px;cursor:pointer;font-size:13px;color:transparent;user-select:none}
+.wb-prev:hover{background:#222240}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- ═══ LOGIN ═══ -->
-  <div id="login-screen" class="on">
-    <h1>🔐 Admin</h1>
-    <p class="sub">Gestion du sportif actif</p>
-    <div class="card">
-      <div class="card-title">Connexion</div>
-      <div class="field">
-        <label>Mot de passe</label>
-        <input type="password" id="pw-in" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn btn-p" id="btn-login">Connexion →</button>
-      <div class="msg" id="login-msg"></div>
-    </div>
+<!-- LOGIN -->
+<div id="login-screen" class="on">
+  <h1>🔐 Admin</h1>
+  <p class="sub">Gestion des sportifs</p>
+  <div class="card">
+    <div class="card-title">Connexion</div>
+    <div class="field"><label>Mot de passe</label><input type="password" id="pw-in" placeholder="••••••••"></div>
+    <button class="btn btn-p" id="btn-login">Connexion →</button>
+    <div class="msg" id="login-msg"></div>
   </div>
-
-  <!-- ═══ ADMIN ═══ -->
-  <div id="admin-screen">
-    <h1>🏆 Admin</h1>
-    <p class="sub">Sportif actif pour tous les joueurs</p>
-
-    <!-- Current athlete -->
-    <div class="current-card" id="current-card">
-      <div class="current-label">Sportif actuel</div>
-      <div class="current-name" id="cur-name">—</div>
-      <div class="current-meta" id="cur-meta"></div>
-      <div class="current-clue" id="cur-clue"></div>
-    </div>
-
-    <!-- Form -->
-    <div class="card">
-      <div class="card-title">✏️ Changer le sportif</div>
-
-      <!-- Emoji -->
-      <div class="field">
-        <label>Emoji sport</label>
-        <div class="emoji-grid" id="emoji-grid"></div>
-        <input type="text" id="emoji-in" placeholder="Ou tape un emoji…" maxlength="4" style="margin-top:8px">
-      </div>
-
-      <!-- Name -->
-      <div class="field">
-        <label>Nom complet du sportif</label>
-        <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
-      </div>
-
-      <!-- Aliases -->
-      <div class="field">
-        <label>Alias acceptés (optionnel)</label>
-        <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin (séparés par virgules)">
-        <span style="font-size:12px;color:var(--mute);margin-top:4px">Le nom complet, prénom et nom de famille sont ajoutés automatiquement</span>
-      </div>
-
-      <!-- Clue -->
-      <div class="field">
-        <label>Description (les mots seront tous masqués)</label>
-        <textarea id="clue-in" placeholder="Écris ici la description du sportif. Plus tu mets de mots, plus c'est facile (plus d'indices). Moins tu en mets, plus c'est difficile…"></textarea>
-        <div class="char-count" id="word-count">0 mots</div>
-        <div class="wc-bar">
-          <div class="wc-label">
-            <span>Difficulté</span>
-            <span id="diff-label">—</span>
-          </div>
-          <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
-        </div>
-      </div>
-
-      <!-- Aliases preview -->
-      <div class="aliases-box" id="aliases-box" style="display:none">
-        <div class="aliases-title">Réponses acceptées</div>
-        <div class="aliases-list" id="aliases-preview"></div>
-      </div>
-
-      <button class="btn btn-p" id="btn-save" style="margin-top:16px" disabled>
-        🚀 Publier ce sportif
-      </button>
-      <button class="btn btn-s" id="btn-preview">👁 Prévisualiser la description</button>
-      <div class="msg" id="save-msg"></div>
-    </div>
-
-    <!-- Preview -->
-    <div class="card" id="preview-card" style="display:none">
-      <div class="card-title">Prévisualisation</div>
-      <div id="preview-text" style="line-height:2.4;font-size:15px"></div>
-    </div>
-
-    <button class="btn btn-s" id="btn-game" style="margin-top:4px">← Voir le jeu</button>
-  </div>
-
 </div>
 
+<!-- ADMIN -->
+<div id="admin-screen">
+  <h1>🏆 Admin</h1>
+  <p class="sub">Tous les joueurs voient les sportifs dans l'ordre d'ajout</p>
+
+  <!-- Sportifs actifs -->
+  <div class="card">
+    <div class="card-title">
+      <span>📋 Sportifs actifs</span>
+      <button class="btn btn-sm btn-reset" id="btn-reset-global">🔄 Reset classement global</button>
+    </div>
+    <div class="ath-list" id="ath-list"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+  </div>
+
+  <!-- Ajouter un sportif -->
+  <div class="card">
+    <div class="card-title">➕ Ajouter un sportif</div>
+
+    <div class="field">
+      <label>Emoji sport</label>
+      <div class="emoji-grid" id="emoji-grid"></div>
+      <input type="text" id="emoji-in" placeholder="Ou tape un emoji personnalisé" maxlength="4" style="margin-top:6px">
+    </div>
+
+    <div class="field">
+      <label>Nom complet</label>
+      <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Alias supplémentaires (optionnel)</label>
+      <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin (séparés par virgules)">
+      <span class="hint">Prénom, nom de famille et nom complet sont ajoutés automatiquement</span>
+    </div>
+    <div class="aliases-box" id="aliases-box">
+      <div class="aliases-title">Réponses qui seront acceptées</div>
+      <div class="aliases-list" id="aliases-preview"></div>
+    </div>
+
+    <div class="field">
+      <label>Description (~100 mots recommandés)</label>
+      <textarea id="clue-in" placeholder="Écris ici la description. Tous les mots seront masqués. Plus tu en mets, plus c'est facile."></textarea>
+      <div class="wc-row"><span>Difficulté auto :</span><span id="diff-label">—</span></div>
+      <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
+      <div class="wc-row"><span id="word-count">0 mots</span><span style="color:var(--cyan)">100 mots = score max 100 pts</span></div>
+    </div>
+
+    <button class="btn btn-s" id="btn-preview" style="margin-bottom:0">👁 Prévisualiser</button>
+    <div class="preview-box" id="preview-box"></div>
+
+    <button class="btn btn-p" id="btn-save" disabled style="margin-top:12px">🚀 Publier ce sportif</button>
+    <div class="msg" id="save-msg"></div>
+  </div>
+
+  <button class="btn btn-s" id="btn-game">← Voir le jeu</button>
+</div>
+
+</div>
 <script>
-const EMOJIS = ['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
+const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
+let adminPw='',selEmoji='🏆';
 
-let adminPw   = '';
-let selEmoji  = '🏆';
-
-// ── Emoji grid ────────────────────────────────────────────────────────────
-const grid = document.getElementById('emoji-grid');
-EMOJIS.forEach(e => {
-  const btn = document.createElement('button');
-  btn.className = 'emoji-btn';
-  btn.textContent = e;
-  btn.onclick = () => {
-    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('sel'));
-    btn.classList.add('sel');
-    selEmoji = e;
-    document.getElementById('emoji-in').value = e;
-  };
+const grid=document.getElementById('emoji-grid');
+EMOJIS.forEach(e=>{
+  const btn=document.createElement('button');btn.className='emoji-btn';btn.textContent=e;
+  btn.onclick=()=>{document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selEmoji=e;document.getElementById('emoji-in').value=e};
   grid.appendChild(btn);
 });
+document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.target.value||'🏆'});
 
-document.getElementById('emoji-in').addEventListener('input', e => {
-  selEmoji = e.target.value || '🏆';
-});
-
-// ── Login ─────────────────────────────────────────────────────────────────
-document.getElementById('pw-in').addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
-});
-document.getElementById('btn-login').onclick = login;
-
-async function login() {
-  const pw = document.getElementById('pw-in').value.trim();
-  if (!pw) return;
-  const res  = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw }) });
-  const data = await res.json();
-  if (data.success) {
-    adminPw = pw;
-    document.getElementById('login-screen').classList.remove('on');
-    document.getElementById('admin-screen').classList.add('on');
-    loadCurrent();
-  } else {
-    showMsg('login-msg', 'err', '❌ ' + data.message);
-  }
+document.getElementById('pw-in').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+document.getElementById('btn-login').onclick=login;
+async function login(){
+  const pw=document.getElementById('pw-in').value.trim();if(!pw)return;
+  const res=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const data=await res.json();
+  if(data.success){adminPw=pw;document.getElementById('login-screen').classList.remove('on');document.getElementById('admin-screen').classList.add('on');loadAthletes()}
+  else showMsg('login-msg','err','❌ '+data.message);
 }
 
-// ── Load current athlete ──────────────────────────────────────────────────
-async function loadCurrent() {
-  const res  = await fetch('/api/admin/current?password=' + encodeURIComponent(adminPw));
-  const data = await res.json();
-  const wc   = data.clue.split(/\s+/).filter(Boolean).length;
-  document.getElementById('cur-name').textContent = data.emoji + '  ' + data.answer;
-  document.getElementById('cur-meta').textContent = `${wc} mots · Mis à jour : ${new Date(data.createdAt).toLocaleString('fr-FR')}`;
-  document.getElementById('cur-clue').textContent = data.clue;
-}
-
-// ── Word count & difficulty ───────────────────────────────────────────────
-document.getElementById('clue-in').addEventListener('input', updateWordCount);
-document.getElementById('answer-in').addEventListener('input', updateAliasPreview);
-document.getElementById('aliases-in').addEventListener('input', updateAliasPreview);
-
-function updateWordCount() {
-  const txt  = document.getElementById('clue-in').value.trim();
-  const words = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
-  const el   = document.getElementById('word-count');
-  el.textContent = words + ' mot' + (words > 1 ? 's' : '');
-  el.className = 'char-count' + (words > 80 ? ' warn' : '');
-
-  // difficulty bar (more words = easier)
-  const pct = Math.min(100, (words / 80) * 100);
-  document.getElementById('wc-fill').style.width = pct + '%';
-  const diff = words < 20 ? '🔴 Très difficile' : words < 40 ? '🟠 Difficile' : words < 60 ? '🟡 Moyen' : words < 80 ? '🟢 Facile' : '🟢 Très facile';
-  document.getElementById('diff-label').textContent = diff;
-
-  checkReady();
-}
-
-function updateAliasPreview() {
-  const answer = document.getElementById('answer-in').value.trim();
-  const aliases = document.getElementById('aliases-in').value;
-  if (!answer) { document.getElementById('aliases-box').style.display = 'none'; return; }
-
-  const parts = answer.split(/\s+/);
-  const auto  = [answer.toLowerCase(), ...parts.map(p => p.toLowerCase())];
-  const manual = aliases.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  const all   = [...new Set([...auto, ...manual])];
-
-  const box     = document.getElementById('aliases-box');
-  const preview = document.getElementById('aliases-preview');
-  box.style.display = 'block';
-  preview.innerHTML = all.map(a => `<span class="alias-tag">${a}</span>`).join('');
-  checkReady();
-}
-
-function checkReady() {
-  const answer = document.getElementById('answer-in').value.trim();
-  const clue   = document.getElementById('clue-in').value.trim();
-  document.getElementById('btn-save').disabled = !(answer && clue);
-}
-
-// ── Preview ───────────────────────────────────────────────────────────────
-document.getElementById('btn-preview').onclick = () => {
-  const clue = document.getElementById('clue-in').value.trim();
-  const card = document.getElementById('preview-card');
-  const out  = document.getElementById('preview-text');
-  if (!clue) return;
-  card.style.display = 'block';
-  const tokens = clue.match(/\S+|\s+/g) || [];
-  out.innerHTML = '';
-  tokens.forEach(tok => {
-    if (/^\s+$/.test(tok)) { out.appendChild(document.createTextNode(' ')); return; }
-    const span = document.createElement('span');
-    span.style.cssText = 'display:inline-block;background:#1a1a30;border-radius:6px;padding:3px 8px;margin:3px 2px;cursor:pointer;font-size:14px;color:transparent;user-select:none';
-    span.textContent = tok;
-    span.onclick = () => { span.style.color = 'var(--txt)'; span.style.background = 'transparent'; };
-    out.appendChild(span);
-    out.appendChild(document.createTextNode(' '));
+async function loadAthletes(){
+  const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  const athletes=await res.json();
+  const list=document.getElementById('ath-list');
+  if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun sportif ajouté pour l\'instant.</div>';return}
+  list.innerHTML='';
+  athletes.forEach((a,i)=>{
+    const d=document.createElement('div');d.className='ath-item';
+    d.innerHTML=`
+      <div class="ath-ico">${a.emoji}</div>
+      <div class="ath-info">
+        <div class="ath-name">${esc(a.answer)}</div>
+        <div class="ath-meta">${a.clue.split(/\s+/).length} mots · ${a.playerCount} joueur${a.playerCount>1?'s':''} · top: ${a.topScore??'—'}</div>
+      </div>
+      <div class="ath-actions">
+        <button class="btn btn-sm btn-reset" onclick="resetAthlete(${a.id})">🔄</button>
+        <button class="btn btn-sm btn-del" onclick="deleteAthlete(${a.id},'${esc(a.answer)}')">🗑</button>
+      </div>`;
+    list.appendChild(d);
   });
-  card.scrollIntoView({ behavior: 'smooth' });
-};
-
-// ── Save ──────────────────────────────────────────────────────────────────
-document.getElementById('btn-save').onclick = async () => {
-  const btn     = document.getElementById('btn-save');
-  const answer  = document.getElementById('answer-in').value.trim();
-  const aliases = document.getElementById('aliases-in').value;
-  const emoji   = selEmoji;
-  const clue    = document.getElementById('clue-in').value.trim();
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Publication…';
-
-  try {
-    const res  = await fetch('/api/admin/athlete', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ password: adminPw, answer, aliases, emoji, clue }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showMsg('save-msg', 'ok', `✅ "${data.answer}" publié ! (${data.wordCount} mots — classement remis à zéro)`);
-      loadCurrent();
-      document.getElementById('answer-in').value  = '';
-      document.getElementById('aliases-in').value = '';
-      document.getElementById('clue-in').value    = '';
-      document.getElementById('aliases-box').style.display   = 'none';
-      document.getElementById('preview-card').style.display  = 'none';
-      updateWordCount();
-    } else {
-      showMsg('save-msg', 'err', '❌ ' + (data.error || 'Erreur'));
-    }
-  } catch (e) {
-    showMsg('save-msg', 'err', '❌ Erreur réseau');
-  }
-  btn.disabled    = false;
-  btn.textContent = '🚀 Publier ce sportif';
-};
-
-document.getElementById('btn-game').onclick = () => window.location.href = '/';
-
-// ── Utils ─────────────────────────────────────────────────────────────────
-function showMsg(id, type, text) {
-  const el = document.getElementById(id);
-  el.className = 'msg ' + type;
-  el.textContent = text;
-  if (type === 'ok') setTimeout(() => el.className = 'msg', 5000);
 }
+
+async function deleteAthlete(id,name){
+  if(!confirm('Supprimer "'+name+'" et ses scores ?'))return;
+  const res=await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  const data=await res.json();
+  if(data.success)loadAthletes();
+}
+
+async function resetAthlete(id){
+  if(!confirm('Remettre à zéro le classement de ce sportif ?'))return;
+  const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  const data=await res.json();
+  if(data.success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
+}
+
+document.getElementById('btn-reset-global').onclick=async()=>{
+  if(!confirm('Remettre à zéro le classement global ?'))return;
+  const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  const data=await res.json();
+  if(data.success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
+};
+
+document.getElementById('clue-in').addEventListener('input',updateWC);
+document.getElementById('answer-in').addEventListener('input',updateAliases);
+document.getElementById('aliases-in').addEventListener('input',updateAliases);
+
+function updateWC(){
+  const words=document.getElementById('clue-in').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('word-count').textContent=words+' mot'+(words>1?'s':'');
+  document.getElementById('wc-fill').style.width=Math.min(100,(words/100)*100)+'%';
+  const diff=words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait (~100 pts)';
+  document.getElementById('diff-label').textContent=diff;
+  checkReady();
+}
+
+function updateAliases(){
+  const answer=document.getElementById('answer-in').value.trim();
+  if(!answer){document.getElementById('aliases-box').style.display='none';return}
+  const parts=answer.split(/\s+/);
+  const auto=[answer.toLowerCase(),...parts.map(p=>p.toLowerCase())];
+  const manual=document.getElementById('aliases-in').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const all=[...new Set([...auto,...manual])];
+  document.getElementById('aliases-box').style.display='block';
+  document.getElementById('aliases-preview').innerHTML=all.map(a=>'<span class="alias-tag">'+a+'</span>').join('');
+  checkReady();
+}
+
+function checkReady(){
+  const ok=document.getElementById('answer-in').value.trim()&&document.getElementById('clue-in').value.trim();
+  document.getElementById('btn-save').disabled=!ok;
+}
+
+document.getElementById('btn-preview').onclick=()=>{
+  const clue=document.getElementById('clue-in').value.trim();const box=document.getElementById('preview-box');
+  if(!clue)return;box.style.display='block';box.innerHTML='';
+  clue.match(/\S+|\s+/g).forEach(tok=>{
+    if(/^\s+$/.test(tok)){box.appendChild(document.createTextNode(' '));return}
+    const s=document.createElement('span');s.className='wb-prev';s.textContent=tok;
+    s.onclick=()=>{s.style.color='var(--txt)';s.style.background='transparent'};
+    box.appendChild(s);box.appendChild(document.createTextNode(' '));
+  });
+  box.scrollIntoView({behavior:'smooth'});
+};
+
+document.getElementById('btn-save').onclick=async()=>{
+  const btn=document.getElementById('btn-save');
+  const answer=document.getElementById('answer-in').value.trim();
+  const aliases=document.getElementById('aliases-in').value;
+  const clue=document.getElementById('clue-in').value.trim();
+  btn.disabled=true;btn.textContent='⏳ Publication…';
+  try{
+    const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:adminPw,answer,aliases,emoji:selEmoji,clue})});
+    const data=await res.json();
+    if(data.success){
+      showMsg('save-msg','ok','✅ "'+data.answer+'" ajouté ! ('+data.wordCount+' mots — '+(data.total)+' sportif'+(data.total>1?'s':'')+' au total)');
+      document.getElementById('answer-in').value='';document.getElementById('aliases-in').value='';document.getElementById('clue-in').value='';
+      document.getElementById('aliases-box').style.display='none';document.getElementById('preview-box').style.display='none';
+      updateWC();loadAthletes();
+    } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
+  }catch(e){showMsg('save-msg','err','❌ Erreur réseau')}
+  btn.disabled=false;btn.textContent='🚀 Publier ce sportif';
+};
+
+document.getElementById('btn-game').onclick=()=>window.location.href='/';
+
+function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 </script>
 </body>
 </html>
