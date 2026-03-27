@@ -248,7 +248,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 </section>
 
 <script>
-const GRID=10;
 const G={pseudo:'',athleteId:null,athleteName:null,score:0,max:0,total:0,revealed:0,wrongAnswers:0,active:false,type:'text'};
 let lbAthletes=[],lbActiveTab='global';
 
@@ -288,8 +287,10 @@ async function loadAthlete(){
     document.getElementById('sport-ico').textContent=data.emoji;
 
     if(data.type==='image'){
-      G.max=data.gridSize*data.gridSize; // 100
-      G.score=G.max; G.total=G.max;
+      const GRID=data.gridSize||10;
+    G.grid=GRID;
+    G.max=GRID*GRID;
+    G.score=G.max; G.total=G.max;
       setScore(G.score,false);
       setupImageMode(data);
     } else {
@@ -346,11 +347,12 @@ function setupImageMode(data){
   img.onerror=()=>{ img.src=''; img.alt='Image non disponible'; };
 
   const overlay=document.getElementById('grid-overlay');
-  overlay.style.gridTemplateColumns=`repeat(${GRID},1fr)`;
-  overlay.style.gridTemplateRows=`repeat(${GRID},1fr)`;
+  const gs=data.gridSize||10;
+  overlay.style.gridTemplateColumns=`repeat(${gs},1fr)`;
+  overlay.style.gridTemplateRows=`repeat(${gs},1fr)`;
   overlay.innerHTML='';
 
-  for(let i=0;i<GRID*GRID;i++){
+  for(let i=0;i<gs*gs;i++){
     const tile=document.createElement('div');
     tile.className='tile';
     tile.style.setProperty('--td',(i*0.03%3).toFixed(2)+'s');

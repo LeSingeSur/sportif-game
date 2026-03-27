@@ -77,6 +77,15 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 .preview-box{background:var(--c2);border-radius:10px;padding:12px;margin-top:8px;display:none;line-height:2.3;font-size:13px}
 .wb-prev{display:inline-block;background:#181830;border-radius:5px;padding:3px 7px;margin:2px;cursor:pointer;font-size:13px;color:transparent;user-select:none}
 .wb-prev:hover{background:#222240}
+/* GRID SIZE SELECTOR */
+.grid-size-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:5px 0}
+@media(min-width:400px){.grid-size-row{grid-template-columns:repeat(6,1fr)}}
+.gs-btn{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;
+  padding:8px 4px;font-size:12px;font-weight:800;font-family:var(--ff);color:var(--mute);
+  cursor:pointer;text-align:center;transition:border-color .15s,color .15s;line-height:1.3}
+.gs-btn span{font-size:10px;font-weight:400;display:block}
+.gs-btn:hover{border-color:rgba(255,255,255,.2)}
+.gs-btn.sel{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.06)}
 .grid-prev{display:none;margin-top:8px}
 .grid-prev-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000}
 .grid-prev-inner img{display:block;width:100%}
@@ -181,6 +190,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
         <span class="hint">💡 Sur Google Images : clic droit sur une image → "Copier l'adresse de l'image" → colle ici</span>
       </div>
+      <div class="field">
+        <label>Taille de la grille</label>
+        <div class="grid-size-row" id="grid-size-row">
+          <button type="button" class="gs-btn" onclick="setGrid(4)">4×4<br><span>16 cases</span></button>
+          <button type="button" class="gs-btn" onclick="setGrid(5)">5×5<br><span>25 cases</span></button>
+          <button type="button" class="gs-btn" onclick="setGrid(6)">6×6<br><span>36 cases</span></button>
+          <button type="button" class="gs-btn sel" onclick="setGrid(8)">8×8<br><span>64 cases</span></button>
+          <button type="button" class="gs-btn" onclick="setGrid(10)">10×10<br><span>100 cases</span></button>
+          <button type="button" class="gs-btn" onclick="setGrid(12)">12×12<br><span>144 cases</span></button>
+        </div>
+        <input type="hidden" id="grid-size-in" value="8">
+        <span class="hint" id="grid-hint">8×8 = 64 cases — score max 64 pts · difficulté moyenne</span>
+      </div>
       <img id="img-preview" class="img-preview" alt="Aperçu">
       <div class="grid-prev" id="grid-prev">
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px">Prévisualisation grille 10×10</div>
@@ -252,7 +274,7 @@ async function loadAthletes(){
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
           <div class="ath-meta">
             <span class="ath-type ${typeClass}">${typeLabel}</span>
-            <span>${a.type==='image'?'100 cases':(a.clue?.split(/\s+/).length||0)+' mots'}</span>
+            <span>${a.type==='image'?(a.gridSize||10)+'×'+(a.gridSize||10)+' = '+(a.gridSize||10)*(a.gridSize||10)+' cases':(a.clue?.split(/\s+/).length||0)+' mots'}</span>
             <span>${a.playerCount} joueur${a.playerCount!==1?'s':''}</span>
             <span>top: ${a.topScore??'—'}</span>
           </div>
@@ -278,6 +300,11 @@ async function startEdit(id){
   selectType(a.type||'text');
   if(a.type==='image'){
     document.getElementById('img-url-in').value=a.imageUrl||'';
+    const savedGs=a.gridSize||8;
+    document.getElementById('grid-size-in').value=savedGs;
+    document.querySelectorAll('.gs-btn').forEach(b=>b.classList.remove('sel'));
+    const gsBtn=document.querySelector(`.gs-btn[onclick='setGrid(${savedGs})']`);
+    if(gsBtn)gsBtn.classList.add('sel');
     previewImage(a.imageUrl||'');
   } else {
     document.getElementById('clue-in').value=a.clue||'';
@@ -375,7 +402,10 @@ function previewImage(url){
     document.getElementById('grid-prev-img').src=url;
     const overlay=document.getElementById('grid-prev-overlay');
     overlay.innerHTML='';
-    for(let i=0;i<100;i++){
+    const gs=parseInt(document.getElementById('grid-size-in').value)||8;
+    overlay.style.gridTemplateColumns=`repeat(${gs},1fr)`;
+    overlay.style.gridTemplateRows=`repeat(${gs},1fr)`;
+    for(let i=0;i<gs*gs;i++){
       const t=document.createElement('div');t.className='tile-prev';
       t.onclick=()=>{t.style.opacity='0';t.style.pointerEvents='none'};
       overlay.appendChild(t);
@@ -404,8 +434,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const aliases=document.getElementById('aliases-in').value;
   const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
   const imageUrl=currentType==='image'?document.getElementById('img-url-in').value.trim():'';
+  const gridSize=parseInt(document.getElementById('grid-size-in').value)||8;
   btn.disabled=true;btn.textContent='⏳…';
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -417,6 +448,19 @@ document.getElementById('btn-save').onclick=async()=>{
   }catch(e){showMsg('save-msg','err','❌ Erreur réseau')}
   btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
 };
+
+
+function setGrid(n){
+  document.getElementById('grid-size-in').value=n;
+  document.querySelectorAll('.gs-btn').forEach(b=>b.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+  const maxScore=n*n;
+  const diff=maxScore<=25?'🔴 Très difficile':maxScore<=49?'🟠 Difficile':maxScore<=81?'🟡 Moyen':'🟢 Facile';
+  document.getElementById('grid-hint').textContent=n+'×'+n+' = '+maxScore+' cases — score max '+maxScore+' pts · '+diff.split(' ').slice(1).join(' ');
+  // Refresh grid preview if image already loaded
+  const url=document.getElementById('img-url-in').value.trim();
+  if(url) previewImage(url);
+}
 
 document.getElementById('btn-game').onclick=()=>window.location.href='/';
 function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
