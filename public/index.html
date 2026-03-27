@@ -66,16 +66,31 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .img-wrap{position:relative;width:100%;border-radius:16px;overflow:hidden;background:var(--c1);flex-shrink:0;touch-action:none}
 .img-wrap img{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;pointer-events:none}
 .grid-overlay{position:absolute;inset:0;display:grid}
-.tile{cursor:pointer;background:rgba(10,10,20,.92);border:1px solid rgba(255,255,255,.04);transition:opacity .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;position:relative;overflow:hidden}
+.tile{background:rgba(10,10,20,.92);border:1px solid rgba(255,255,255,.04);transition:opacity .2s;position:relative;overflow:hidden}
 .tile:not(.rev)::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#181830,#0d0d1a)}
 .tile:not(.rev)::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);animation:tshim 3s infinite;animation-delay:var(--td,0s)}
 @keyframes tshim{0%{left:-100%}100%{left:200%}}
-.tile:not(.rev):active{background:rgba(30,30,60,.9)}
+
 .tile.rev{background:transparent!important;cursor:default;pointer-events:none}
 .tile.rev::before,.tile.rev::after{display:none}
 .tile.rev-anim{animation:tpop .25s cubic-bezier(.34,1.3,.64,1)}
 @keyframes tpop{0%{transform:scale(1.08);opacity:.5}100%{transform:scale(1);opacity:0}}
 .img-counter{text-align:center;font-size:12px;color:var(--mute);margin-top:6px;margin-bottom:8px}
+/* REVEAL BUTTONS */
+.reveal-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.reveal-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:12px 8px;
+  font-size:15px;font-weight:900;font-family:var(--fb);
+  background:rgba(0,229,200,.12);color:var(--cyan);
+  border:2px solid rgba(0,229,200,.25);border-radius:var(--r);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:transform .1s,background .15s;
+}
+.reveal-btn span{font-size:11px;font-weight:600;color:var(--mute)}
+.reveal-btn:active{transform:scale(.95);background:rgba(0,229,200,.22)}
+.reveal-btn:disabled{opacity:.3;cursor:not-allowed}
+
 
 /* SHARED ANSWER */
 .pf{position:fixed;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
@@ -195,6 +210,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="grid-overlay" id="grid-overlay"></div>
     </div>
     <div class="img-counter" id="img-counter"></div>
+    <div class="reveal-btns">
+      <button class="reveal-btn" onclick="revealN(1)">👁 ×1<span>−1 pt</span></button>
+      <button class="reveal-btn" onclick="revealN(3)">👁 ×3<span>−3 pts</span></button>
+      <button class="reveal-btn" onclick="revealN(5)">👁 ×5<span>−5 pts</span></button>
+    </div>
   </div>
 
   <div class="ans-area">
@@ -248,7 +268,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 </section>
 
 <script>
-const G={pseudo:'',athleteId:null,athleteName:null,score:0,max:0,total:0,revealed:0,wrongAnswers:0,active:false,type:'text'};
+const G={pseudo:'',athleteId:null,athleteName:null,score:0,max:0,total:0,revealed:0,wrongAnswers:0,active:false,type:'text',grid:10,tiles:[],spiralOrder:[],nextTileIdx:0};
 let lbAthletes=[],lbActiveTab='global';
 
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');window.scrollTo(0,0)}
@@ -287,8 +307,7 @@ async function loadAthlete(){
     document.getElementById('sport-ico').textContent=data.emoji;
 
     if(data.type==='image'){
-      const GRID=data.gridSize||10;
-    G.grid=GRID;
+      G.grid=10;
     G.max=GRID*GRID;
     G.score=G.max; G.total=G.max;
       setScore(G.score,false);
@@ -336,39 +355,68 @@ function revealWord(block){
 }
 
 // ── IMAGE MODE ────────────────────────────────────────────────────────────
+function getSpiralOrder(n){
+  const order=[];
+  let top=0,bottom=n-1,left=0,right=n-1;
+  while(top<=bottom&&left<=right){
+    for(let col=left;col<=right;col++) order.push(top*n+col);
+    for(let row=top+1;row<=bottom;row++) order.push(row*n+right);
+    if(top<bottom) for(let col=right-1;col>=left;col--) order.push(bottom*n+col);
+    if(left<right) for(let row=bottom-1;row>=top+1;row--) order.push(row*n+left);
+    top++;bottom--;left++;right--;
+  }
+  return order;
+}
 function setupImageMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='🖼 Mode image'; badge.className='type-badge img';
-  document.getElementById('game-tip').innerHTML='Révèle les cases <em>−1 pt</em> chacune &nbsp;·&nbsp; Mauvaise réponse <span class="ph">−10 pts</span>';
+  document.getElementById('game-tip').innerHTML='Révèle de l\'extérieur vers le centre <em>−1 pt</em> &nbsp;·&nbsp; Mauvaise réponse <span class="ph">−10 pts</span>';
   document.getElementById('img-zone').style.display='block';
 
   const img=document.getElementById('game-img');
   img.src=data.imageUrl;
   img.onerror=()=>{ img.src=''; img.alt='Image non disponible'; };
 
+  const gs=10;
+  G.grid=gs; G.spiralOrder=getSpiralOrder(gs); G.nextTileIdx=0;
+
   const overlay=document.getElementById('grid-overlay');
-  const gs=data.gridSize||10;
   overlay.style.gridTemplateColumns=`repeat(${gs},1fr)`;
   overlay.style.gridTemplateRows=`repeat(${gs},1fr)`;
   overlay.innerHTML='';
-
+  G.tiles=[];
   for(let i=0;i<gs*gs;i++){
     const tile=document.createElement('div');
     tile.className='tile';
     tile.style.setProperty('--td',(i*0.03%3).toFixed(2)+'s');
-    tile.addEventListener('click',()=>revealTile(tile));
     overlay.appendChild(tile);
+    G.tiles.push(tile);
   }
+  // Re-enable reveal buttons
+  document.querySelectorAll('.reveal-btn').forEach(b=>b.disabled=false);
   updateImgCounter();
 }
 
-function revealTile(tile){
-  if(!G.active||tile.classList.contains('rev'))return;
-  tile.classList.add('rev','rev-anim'); G.revealed++;
+function revealN(n){
+  if(!G.active) return;
+  let revealed=0;
+  while(revealed<n && G.nextTileIdx<G.spiralOrder.length){
+    const tileIdx=G.spiralOrder[G.nextTileIdx];
+    const tile=G.tiles[tileIdx];
+    G.nextTileIdx++;
+    if(!tile||tile.classList.contains('rev')) continue;
+    tile.classList.add('rev','rev-anim');
+    G.revealed++; revealed++;
+  }
+  if(revealed===0) return;
   G.score=Math.max(0,G.max-G.revealed-(G.wrongAnswers*10));
   setScore(G.score,true);
   document.getElementById('bar-f').style.width=(G.revealed/G.total*100)+'%';
   updateImgCounter();
+  // Disable buttons when all tiles revealed
+  if(G.nextTileIdx>=G.spiralOrder.length){
+    document.querySelectorAll('.reveal-btn').forEach(b=>b.disabled=true);
+  }
 }
 
 function updateImgCounter(){
@@ -396,7 +444,7 @@ async function checkAnswer(){
       G.active=false; G.athleteName=data.answer;
       // Révéler tout
       if(G.type==='image'){
-        document.querySelectorAll('.tile:not(.rev)').forEach(t=>t.classList.add('rev'));
+        G.tiles.forEach(t=>t.classList.add('rev'));
       } else {
         document.querySelectorAll('.wb:not(.rev)').forEach(b=>b.classList.add('rev'));
       }
