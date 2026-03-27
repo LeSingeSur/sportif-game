@@ -288,14 +288,20 @@ function startGame(){
 // LOAD ATHLETE
 async function loadAthlete(){
   // Reset UI
-  document.getElementById('clue').style.display='none';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').innerHTML='<div class="spin"><span></span><span></span><span></span></div>';
-  document.getElementById('ans-in').value='';
-  document.getElementById('fb').textContent=''; document.getElementById('fb').className='fb';
-  document.getElementById('bar-f').style.width='0%';
-  document.getElementById('type-badge').textContent='⏳'; document.getElementById('type-badge').className='type-badge';
-  document.getElementById('game-tip').textContent='Chargement…';
+  const _clue=document.getElementById('clue');
+  const _imgz=document.getElementById('img-zone');
+  const _barf=document.getElementById('bar-f');
+  const _ansi=document.getElementById('ans-in');
+  const _fb=document.getElementById('fb');
+  const _badge=document.getElementById('type-badge');
+  const _tip=document.getElementById('game-tip');
+  if(_clue){_clue.style.display='none';_clue.innerHTML='<div class="spin"><span></span><span></span><span></span></div>';}
+  if(_imgz) _imgz.style.display='none';
+  if(_barf) _barf.style.width='0%';
+  if(_ansi) _ansi.value='';
+  if(_fb){_fb.textContent='';_fb.className='fb';}
+  if(_badge){_badge.textContent='⏳';_badge.className='type-badge';}
+  if(_tip) _tip.textContent='Chargement…';
   G.revealed=0; G.wrongAnswers=0;
 
   try{
@@ -317,8 +323,8 @@ async function loadAthlete(){
     }
   }catch(e){
     console.error('loadAthlete error:', e.message, e.stack);
-    document.getElementById('clue').style.display='block';
-    document.getElementById('clue').innerHTML='<p style="color:var(--mute);text-align:center">Erreur: '+e.message+'</p>';
+    alert('Erreur JS: '+e.message);
+    const _ec=document.getElementById('clue');if(_ec){_ec.style.display='block';_ec.innerHTML='<p style="color:var(--mute);text-align:center">Erreur: '+e.message+'</p>';}
   }
 }
 
@@ -351,7 +357,7 @@ function revealWord(block){
   block.classList.add('rev'); G.revealed++;
   G.score=Math.max(0,G.max-G.revealed-(G.wrongAnswers*10));
   setScore(G.score,true);
-  document.getElementById('bar-f').style.width=(G.revealed/G.total*100)+'%';
+  const _bfw=document.getElementById('bar-f');if(_bfw)_bfw.style.width=(G.revealed/G.total*100)+'%';
 }
 
 // ── IMAGE MODE ────────────────────────────────────────────────────────────
@@ -359,10 +365,10 @@ function getSpiralOrder(n){
   const order=[];
   let top=0,bottom=n-1,left=0,right=n-1;
   while(top<=bottom&&left<=right){
-    for(let col=left;col<=right;col++) order.push(top*n+col);
-    for(let row=top+1;row<=bottom;row++) order.push(row*n+right);
-    if(top<bottom) for(let col=right-1;col>=left;col--) order.push(bottom*n+col);
-    if(left<right) for(let row=bottom-1;row>=top+1;row--) order.push(row*n+left);
+    for(let col=right;col>=left;col--) order.push(top*n+col);   // haut droite→gauche
+    for(let row=top+1;row<=bottom;row++) order.push(row*n+left); // gauche haut→bas
+    if(top<bottom) for(let col=left+1;col<=right;col++) order.push(bottom*n+col); // bas gauche→droite
+    if(left<right) for(let row=bottom-1;row>=top+1;row--) order.push(row*n+right); // droite bas→haut
     top++;bottom--;left++;right--;
   }
   return order;
@@ -411,7 +417,7 @@ function revealN(n){
   if(revealed===0) return;
   G.score=Math.max(0,G.max-G.revealed-(G.wrongAnswers*10));
   setScore(G.score,true);
-  document.getElementById('bar-f').style.width=(G.revealed/G.total*100)+'%';
+  const _bf=document.getElementById('bar-f');if(_bf)_bf.style.width=(G.revealed/G.total*100)+'%';
   updateImgCounter();
   // Disable buttons when all tiles revealed
   if(G.nextTileIdx>=G.spiralOrder.length){
@@ -427,7 +433,7 @@ function updateImgCounter(){
 
 // ── SHARED ────────────────────────────────────────────────────────────────
 function setScore(n,flash){
-  const el=document.getElementById('sc-val'); el.textContent=n;
+  const el=document.getElementById('sc-val'); if(!el) return; el.textContent=n;
   if(flash){el.classList.remove('fd');void el.offsetWidth;el.classList.add('fd')}
 }
 
@@ -449,7 +455,7 @@ async function checkAnswer(){
       } else {
         document.querySelectorAll('.wb:not(.rev)').forEach(b=>b.classList.add('rev'));
       }
-      document.getElementById('bar-f').style.width='100%';
+      const _bfv=document.getElementById('bar-f');if(_bfv)_bfv.style.width='100%';
       document.getElementById('ans-in').classList.add('ok');
       setTimeout(showVictory,350);
     } else {
