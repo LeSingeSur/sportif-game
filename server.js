@@ -53,7 +53,9 @@ function rebuildGlobalScores() {
 
 // ── IMAGE PROXY ───────────────────────────────────────────────────────────
 // Charge l'image côté serveur → contourne le CORS
-app.get('/api/img-proxy', async (req, res) => {
+// Support GET and HEAD (HEAD = validation sans télécharger l'image entière)
+app.all('/api/img-proxy', async (req, res) => {
+  if(req.method !== 'GET' && req.method !== 'HEAD') return res.status(405).end();
   const url = req.query.url;
   if (!url) return res.status(400).send('URL manquante');
   try {
@@ -70,6 +72,7 @@ app.get('/api/img-proxy', async (req, res) => {
     if (!contentType.startsWith('image/')) return res.status(400).send('Ce n\'est pas une image');
     res.set('Content-Type', contentType);
     res.set('Cache-Control', 'public, max-age=86400');
+    if(req.method === 'HEAD') return res.end();
     response.body.pipe(res);
   } catch(e) {
     console.error('Proxy image error:', e.message);
