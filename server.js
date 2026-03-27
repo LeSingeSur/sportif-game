@@ -1,7 +1,8 @@
-const express = require('express');
-const path    = require('path');
-const fs      = require('fs');
-const app     = express();
+const express  = require('express');
+const path     = require('path');
+const fs       = require('fs');
+const fetch    = require('node-fetch');
+const app      = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -9,7 +10,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sportif2024';
 const DATA_FILE      = path.join(__dirname, 'data.json');
 const WRONG_PENALTY  = 10;
-const GRID_SIZE      = 10; // 10x10 = 100 cases
 
 function loadData() {
   try {
@@ -48,9 +48,34 @@ function rebuildGlobalScores() {
   }
   globalScores = Object.values(map)
     .map(e => ({ pseudo: e.pseudo, score: e.totalScore, count: e.count, date: e.lastDate }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 200);
+    .sort((a, b) => b.score - a.score).slice(0, 200);
 }
+
+// ── IMAGE PROXY ───────────────────────────────────────────────────────────
+// Charge l'image côté serveur → contourne le CORS
+app.get('/api/img-proxy', async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).send('URL manquante');
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SportifGame/1.0)',
+        'Referer':    'https://www.google.com/',
+        'Accept':     'image/*',
+      },
+      timeout: 8000,
+    });
+    if (!response.ok) return res.status(response.status).send('Image inaccessible');
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) return res.status(400).send('Ce n\'est pas une image');
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=86400');
+    response.body.pipe(res);
+  } catch(e) {
+    console.error('Proxy image error:', e.message);
+    res.status(500).send('Impossible de charger l\'image');
+  }
+});
 
 // ── GAME ──────────────────────────────────────────────────────────────────
 
@@ -60,11 +85,13 @@ app.get('/api/athlete', (req, res) => {
   const athlete = nextAthleteFor(pseudo);
   if (!athlete) return res.json({ done: true });
 
+  const gridSize = athlete.gridSize || 10;
   const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text' };
   if (athlete.type === 'image') {
-    base.imageUrl  = athlete.imageUrl;
-    base.gridSize  = GRID_SIZE;
-    base.maxScore  = GRID_SIZE * GRID_SIZE; // 100
+    // On renvoie l'URL proxifiée pour éviter le CORS
+    base.imageUrl  = `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
+    base.gridSize  = gridSize;
+    base.maxScore  = gridSize * gridSize;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -111,9 +138,7 @@ app.post('/api/score', (req, res) => {
   res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length });
 });
 
-// IMPORTANT: /global avant /:athleteId
 app.get('/api/scores/global', (req, res) => res.json(globalScores.slice(0, 10)));
-
 app.get('/api/scores/:athleteId', (req, res) => {
   const id = parseInt(req.params.athleteId);
   if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
@@ -135,7 +160,7 @@ app.get('/api/admin/athletes', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, imageUrl, type, editId } = req.body;
+  const { password, answer, aliases, emoji, clue, imageUrl, gridSize, type, editId } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
@@ -146,6 +171,8 @@ app.post('/api/admin/athlete', (req, res) => {
   const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
+  const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10)); // entre 2 et 20
+
   const athleteData = {
     answer:   answer.trim(),
     aliases:  allAliases,
@@ -153,6 +180,7 @@ app.post('/api/admin/athlete', (req, res) => {
     type:     type || 'text',
     clue:     type !== 'image' ? clue.trim() : '',
     imageUrl: type === 'image' ? imageUrl.trim() : '',
+    gridSize: type === 'image' ? gs : undefined,
   };
 
   if (editId) {
@@ -167,7 +195,7 @@ app.post('/api/admin/athlete', (req, res) => {
   athletes.push({ id: newId, ...athleteData, createdAt: new Date().toISOString() });
   scores[newId] = [];
   saveData();
-  console.log(`✅ Ajouté (${athleteData.type}) : ${answer.trim()}`);
+  console.log(`✅ Ajouté (${athleteData.type}${type==='image'?` ${gs}x${gs}`:''}): ${answer.trim()}`);
   res.json({ success: true, edited: false, id: newId, answer: answer.trim(), total: athletes.length });
 });
 
@@ -177,8 +205,7 @@ app.delete('/api/admin/athlete/:id', (req, res) => {
   const id = parseInt(req.params.id);
   athletes = athletes.filter(a => a.id !== id);
   delete scores[id];
-  rebuildGlobalScores();
-  saveData();
+  rebuildGlobalScores(); saveData();
   res.json({ success: true });
 });
 
@@ -187,17 +214,14 @@ app.post('/api/admin/reset-global', (req, res) => {
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   globalScores = [];
   for (const id of Object.keys(scores)) scores[id] = [];
-  saveData();
-  res.json({ success: true });
+  saveData(); res.json({ success: true });
 });
 
 app.post('/api/admin/reset-athlete/:id', (req, res) => {
   const { password } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   scores[parseInt(req.params.id)] = [];
-  rebuildGlobalScores();
-  saveData();
-  res.json({ success: true });
+  rebuildGlobalScores(); saveData(); res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 3000;
