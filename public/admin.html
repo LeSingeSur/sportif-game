@@ -18,11 +18,11 @@ h1{font-size:26px;font-weight:800;color:var(--neon);margin-bottom:4px}
 .card-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
 label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
-input[type=text],input[type=password],textarea{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
+input[type=text],input[type=password],input[type=url],textarea{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
 input:focus,textarea:focus{border-color:var(--neon)}
 input::placeholder,textarea::placeholder{color:var(--mute);font-weight:400}
 textarea{resize:vertical;min-height:120px;line-height:1.6}
-.hint{font-size:11px;color:var(--mute);margin-top:3px}
+.hint{font-size:11px;color:var(--mute);margin-top:3px;line-height:1.4}
 .wc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:5px}
 .wc-track{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:4px}
 .wc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .3s}
@@ -31,7 +31,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn-p{background:var(--neon);color:#07070f}
 .btn-s{background:var(--c2);color:var(--txt);border:1px solid rgba(255,255,255,.09)}
-.btn-sm{padding:6px 12px;font-size:12px;width:auto;margin-bottom:0;border-radius:8px}
+.btn-sm{padding:6px 11px;font-size:12px;width:auto;margin-bottom:0;border-radius:8px}
 .btn-del{background:rgba(255,63,92,.15);color:var(--red);border:1px solid rgba(255,63,92,.3)}
 .btn-edit{background:rgba(0,229,200,.12);color:var(--cyan);border:1px solid rgba(0,229,200,.25)}
 .btn-reset{background:rgba(212,255,0,.1);color:var(--neon);border:1px solid rgba(212,255,0,.2)}
@@ -39,34 +39,58 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 .msg{text-align:center;font-size:13px;font-weight:700;padding:10px;border-radius:var(--r);margin-top:8px;display:none}
 .msg.ok{background:rgba(0,200,122,.15);color:var(--green);display:block}
 .msg.err{background:rgba(255,63,92,.15);color:var(--red);display:block}
-.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:5px 0}
-.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:5px;font-size:19px;cursor:pointer;text-align:center;transition:border-color .15s}
-.emoji-btn:hover,.emoji-btn.sel{border-color:var(--neon)}
+/* TYPE SELECTOR */
+.type-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 12px}
+.type-opt{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 12px;cursor:pointer;text-align:center;transition:border-color .15s}
+.type-opt:hover{border-color:rgba(255,255,255,.2)}
+.type-opt.sel{border-color:var(--neon);background:rgba(212,255,0,.06)}
+.type-opt .type-ico{font-size:26px;margin-bottom:5px}
+.type-opt .type-name{font-size:13px;font-weight:800;color:var(--txt)}
+.type-opt .type-desc{font-size:11px;color:var(--mute);margin-top:2px}
+/* IMAGE PREVIEW */
+.img-preview{width:100%;border-radius:12px;margin-top:8px;display:none;max-height:200px;object-fit:cover}
+/* ALIASES */
 .aliases-box{background:var(--c2);border-radius:10px;padding:10px 12px;margin-top:6px;display:none}
 .aliases-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
 .aliases-list{display:flex;flex-wrap:wrap;gap:5px}
 .alias-tag{background:rgba(212,255,0,.12);border:1px solid rgba(212,255,0,.2);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--neon)}
+/* EMOJI */
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:5px 0}
+.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:5px;font-size:19px;cursor:pointer;text-align:center;transition:border-color .15s}
+.emoji-btn:hover,.emoji-btn.sel{border-color:var(--neon)}
+/* ATHLETE LIST */
 .ath-list{display:flex;flex-direction:column;gap:8px}
 .ath-item{background:var(--c2);border-radius:12px;padding:12px 14px}
 .ath-top{display:flex;align-items:center;gap:10px}
-.ath-ico{font-size:26px;flex-shrink:0}
+.ath-ico{font-size:24px;flex-shrink:0}
 .ath-info{flex:1;min-width:0}
 .ath-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ath-meta{font-size:11px;color:var(--mute);margin-top:2px}
+.ath-meta{font-size:11px;color:var(--mute);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.ath-type{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+.ath-type.img{background:rgba(0,229,200,.12);color:var(--cyan)}
+.ath-type.txt{background:rgba(212,255,0,.1);color:var(--neon)}
 .ath-actions{display:flex;gap:5px;flex-shrink:0}
+/* EDIT BANNER */
 .edit-banner{background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--cyan);display:none;align-items:center;gap:8px}
 .edit-banner.on{display:flex}
+/* PREVIEW */
 .preview-box{background:var(--c2);border-radius:10px;padding:12px;margin-top:8px;display:none;line-height:2.3;font-size:13px}
 .wb-prev{display:inline-block;background:#181830;border-radius:5px;padding:3px 7px;margin:2px;cursor:pointer;font-size:13px;color:transparent;user-select:none}
 .wb-prev:hover{background:#222240}
+.grid-prev{display:none;margin-top:8px}
+.grid-prev-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000}
+.grid-prev-inner img{display:block;width:100%}
+.grid-prev-overlay{position:absolute;inset:0;display:grid}
+.tile-prev{background:rgba(10,10,20,.9);border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:opacity .15s}
+.tile-prev:hover{background:rgba(40,40,80,.7)}
 </style>
 </head>
 <body>
 <div class="wrap">
 
+<!-- LOGIN -->
 <div id="login-screen" class="on">
-  <h1>🔐 Admin</h1>
-  <p class="sub">Gestion des sportifs</p>
+  <h1>🔐 Admin</h1><p class="sub">Gestion des sportifs</p>
   <div class="card">
     <div class="card-title">Connexion</div>
     <div class="field"><label>Mot de passe</label><input type="password" id="pw-in" placeholder="••••••••"></div>
@@ -75,62 +99,100 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   </div>
 </div>
 
+<!-- ADMIN -->
 <div id="admin-screen">
   <h1>🏆 Admin</h1>
-  <p class="sub">Les joueurs voient les sportifs du plus ancien au plus récent</p>
+  <p class="sub">Les joueurs voient les défis du plus ancien au plus récent</p>
 
-  <!-- Liste sportifs -->
   <div class="card">
     <div class="card-title">
-      <span>📋 Sportifs actifs</span>
+      <span>📋 Défis actifs</span>
       <button class="btn btn-sm btn-reset" id="btn-reset-global">🔄 Reset classement global</button>
     </div>
     <div class="ath-list" id="ath-list"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
   </div>
 
-  <!-- Formulaire ajout / édition -->
   <div class="card">
-    <div class="card-title" id="form-title">➕ Ajouter un sportif</div>
+    <div class="card-title" id="form-title">➕ Ajouter un défi</div>
 
-    <!-- Bannière mode édition -->
     <div class="edit-banner" id="edit-banner">
-      ✏️ <span id="edit-banner-name">Modification en cours</span>
+      ✏️ <span id="edit-banner-name">Modification</span>
       <button class="btn btn-sm btn-cancel" id="btn-cancel-edit" style="margin-left:auto">✕ Annuler</button>
     </div>
 
+    <!-- Type selector -->
+    <div class="field">
+      <label>Type de défi</label>
+      <div class="type-sel">
+        <div class="type-opt sel" id="type-text" onclick="selectType('text')">
+          <div class="type-ico">📝</div>
+          <div class="type-name">Texte</div>
+          <div class="type-desc">Description masquée mot par mot</div>
+        </div>
+        <div class="type-opt" id="type-image" onclick="selectType('image')">
+          <div class="type-ico">🖼</div>
+          <div class="type-name">Image</div>
+          <div class="type-desc">Photo masquée case par case (10×10)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emoji -->
     <div class="field">
       <label>Emoji sport</label>
       <div class="emoji-grid" id="emoji-grid"></div>
       <input type="text" id="emoji-in" placeholder="Ou tape un emoji…" maxlength="4" style="margin-top:5px">
     </div>
 
+    <!-- Name -->
     <div class="field">
-      <label>Nom complet</label>
+      <label>Nom complet du sportif</label>
       <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
     </div>
 
+    <!-- Aliases -->
     <div class="field">
       <label>Alias supplémentaires (optionnel)</label>
       <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin">
-      <span class="hint">Prénom, nom de famille et nom complet sont ajoutés automatiquement</span>
+      <span class="hint">Prénom et nom de famille sont ajoutés automatiquement</span>
     </div>
     <div class="aliases-box" id="aliases-box">
       <div class="aliases-title">Réponses acceptées</div>
       <div class="aliases-list" id="aliases-preview"></div>
     </div>
 
-    <div class="field">
-      <label>Description (~100 mots)</label>
-      <textarea id="clue-in" placeholder="Tous les mots seront masqués. Plus tu en mets, plus c'est facile."></textarea>
-      <div class="wc-row"><span>Difficulté :</span><span id="diff-label">—</span></div>
-      <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
-      <div class="wc-row"><span id="word-count">0 mots</span><span style="color:var(--cyan)">100 mots ≈ 100 pts max</span></div>
+    <!-- TEXT fields -->
+    <div id="text-fields">
+      <div class="field">
+        <label>Description (~100 mots)</label>
+        <textarea id="clue-in" placeholder="Tous les mots seront masqués. ~100 mots = 100 pts max."></textarea>
+        <div class="wc-row"><span>Difficulté :</span><span id="diff-label">—</span></div>
+        <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
+        <div class="wc-row"><span id="word-count">0 mots</span><span style="color:var(--cyan)">100 mots ≈ 100 pts max</span></div>
+      </div>
+      <button class="btn btn-s" id="btn-preview-text" style="margin-bottom:4px">👁 Prévisualiser le texte</button>
+      <div class="preview-box" id="preview-box-text"></div>
     </div>
 
-    <button class="btn btn-s" id="btn-preview" style="margin-bottom:4px">👁 Prévisualiser</button>
-    <div class="preview-box" id="preview-box"></div>
+    <!-- IMAGE fields -->
+    <div id="image-fields" style="display:none">
+      <div class="field">
+        <label>URL de l'image</label>
+        <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
+        <span class="hint">💡 Sur Google Images : clic droit sur une image → "Copier l'adresse de l'image" → colle ici</span>
+      </div>
+      <img id="img-preview" class="img-preview" alt="Aperçu">
+      <div class="grid-prev" id="grid-prev">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px">Prévisualisation grille 10×10</div>
+        <div class="grid-prev-inner" id="grid-prev-inner">
+          <img id="grid-prev-img" style="display:block;width:100%" alt="">
+          <div class="grid-prev-overlay" id="grid-prev-overlay" style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr)"></div>
+        </div>
+        <div style="font-size:12px;color:var(--mute);margin-top:6px">Clique sur les cases pour simuler la révélation</div>
+      </div>
+    </div>
 
-    <button class="btn btn-p" id="btn-save" disabled style="margin-top:10px">🚀 Publier</button>
+    <button class="btn btn-p" id="btn-save" disabled style="margin-top:12px">🚀 Publier ce défi</button>
     <div class="msg" id="save-msg"></div>
   </div>
 
@@ -140,7 +202,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 
 <script>
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
-let adminPw='', selEmoji='🏆', editId=null;
+let adminPw='', selEmoji='🏆', editId=null, currentType='text';
 
 // Emoji grid
 const grid=document.getElementById('emoji-grid');
@@ -150,6 +212,16 @@ EMOJIS.forEach(e=>{
   grid.appendChild(btn);
 });
 document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.target.value||'🏆'});
+
+// Type selector
+function selectType(type){
+  currentType=type;
+  document.getElementById('type-text').classList.toggle('sel',type==='text');
+  document.getElementById('type-image').classList.toggle('sel',type==='image');
+  document.getElementById('text-fields').style.display=type==='text'?'block':'none';
+  document.getElementById('image-fields').style.display=type==='image'?'block':'none';
+  checkReady();
+}
 
 // Login
 document.getElementById('pw-in').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
@@ -162,21 +234,28 @@ async function login(){
   else showMsg('login-msg','err','❌ '+data.message);
 }
 
-// Load athletes list
+// Load list
 async function loadAthletes(){
   const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
   const athletes=await res.json();
   const list=document.getElementById('ath-list');
-  if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun sportif pour l\'instant.</div>';return}
+  if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
+    const typeLabel=a.type==='image'?'🖼 Image':'📝 Texte';
+    const typeClass=a.type==='image'?'img':'txt';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
       <div class="ath-top">
         <div class="ath-ico">${a.emoji}</div>
         <div class="ath-info">
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
-          <div class="ath-meta">${a.clue.split(/\s+/).length} mots · ${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div>
+          <div class="ath-meta">
+            <span class="ath-type ${typeClass}">${typeLabel}</span>
+            <span>${a.type==='image'?'100 cases':(a.clue?.split(/\s+/).length||0)+' mots'}</span>
+            <span>${a.playerCount} joueur${a.playerCount!==1?'s':''}</span>
+            <span>top: ${a.topScore??'—'}</span>
+          </div>
         </div>
         <div class="ath-actions">
           <button class="btn btn-sm btn-edit" onclick="startEdit(${a.id})">✏️</button>
@@ -188,27 +267,28 @@ async function loadAthletes(){
   });
 }
 
-// Edit mode
+// Edit
 async function startEdit(id){
   const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
   const athletes=await res.json();
-  const a=athletes.find(x=>x.id===id);
-  if(!a)return;
+  const a=athletes.find(x=>x.id===id);if(!a)return;
   editId=id;
-  // Fill form
   document.getElementById('answer-in').value=a.answer;
-  document.getElementById('clue-in').value=a.clue;
-  document.getElementById('emoji-in').value=a.emoji;
-  selEmoji=a.emoji;
-  // Aliases = tout sauf auto-générés
+  document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
+  selectType(a.type||'text');
+  if(a.type==='image'){
+    document.getElementById('img-url-in').value=a.imageUrl||'';
+    previewImage(a.imageUrl||'');
+  } else {
+    document.getElementById('clue-in').value=a.clue||'';
+  }
   const parts=a.answer.toLowerCase().split(/\s+/);
-  const manual=a.aliases.filter(x=>x!==a.answer.toLowerCase()&&!parts.includes(x)).join(', ');
+  const manual=(a.aliases||[]).filter(x=>x!==a.answer.toLowerCase()&&!parts.includes(x)).join(', ');
   document.getElementById('aliases-in').value=manual;
-  // UI
   document.getElementById('edit-banner').classList.add('on');
   document.getElementById('edit-banner-name').textContent='Modification : '+a.answer;
-  document.getElementById('form-title').textContent='✏️ Modifier le sportif';
-  document.getElementById('btn-save').textContent='💾 Enregistrer les modifications';
+  document.getElementById('form-title').textContent='✏️ Modifier le défi';
+  document.getElementById('btn-save').textContent='💾 Enregistrer';
   document.getElementById('btn-save').disabled=false;
   updateWC();updateAliases();
   document.getElementById('btn-save').scrollIntoView({behavior:'smooth'});
@@ -217,29 +297,30 @@ async function startEdit(id){
 function cancelEdit(){
   editId=null;
   document.getElementById('edit-banner').classList.remove('on');
-  document.getElementById('form-title').textContent='➕ Ajouter un sportif';
-  document.getElementById('btn-save').textContent='🚀 Publier';
+  document.getElementById('form-title').textContent='➕ Ajouter un défi';
+  document.getElementById('btn-save').textContent='🚀 Publier ce défi';
   document.getElementById('answer-in').value='';
   document.getElementById('clue-in').value='';
+  document.getElementById('img-url-in').value='';
   document.getElementById('aliases-in').value='';
-  document.getElementById('emoji-in').value='';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
   document.getElementById('aliases-box').style.display='none';
-  document.getElementById('preview-box').style.display='none';
-  updateWC();checkReady();
+  document.getElementById('preview-box-text').style.display='none';
+  selectType('text');updateWC();checkReady();
 }
 document.getElementById('btn-cancel-edit').onclick=cancelEdit;
 
 // Delete / Reset
 async function deleteAthlete(id,name){
-  if(!confirm('Supprimer "'+name+'" et ses scores ?'))return;
+  if(!confirm('Supprimer "'+name+'" ?'))return;
   await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
   loadAthletes();
 }
 async function resetAthlete(id){
-  if(!confirm('Remettre à zéro le classement de ce sportif ?'))return;
+  if(!confirm('Remettre à zéro le classement de ce défi ?'))return;
   const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
-  const data=await res.json();
-  if(data.success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
+  if((await res.json()).success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
 }
 document.getElementById('btn-reset-global').onclick=async()=>{
   if(!confirm('Remettre à zéro le classement global ?'))return;
@@ -256,8 +337,7 @@ function updateWC(){
   const words=document.getElementById('clue-in').value.trim().split(/\s+/).filter(Boolean).length;
   document.getElementById('word-count').textContent=words+' mot'+(words!==1?'s':'');
   document.getElementById('wc-fill').style.width=Math.min(100,(words/100)*100)+'%';
-  document.getElementById('diff-label').textContent=
-    words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait';
+  document.getElementById('diff-label').textContent=words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait';
   checkReady();
 }
 function updateAliases(){
@@ -272,13 +352,41 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  document.getElementById('btn-save').disabled=
-    !(document.getElementById('answer-in').value.trim()&&document.getElementById('clue-in').value.trim());
+  const hasAnswer=!!document.getElementById('answer-in').value.trim();
+  const hasContent=currentType==='image'?!!document.getElementById('img-url-in').value.trim():!!document.getElementById('clue-in').value.trim();
+  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
 
-// Preview
-document.getElementById('btn-preview').onclick=()=>{
-  const clue=document.getElementById('clue-in').value.trim();const box=document.getElementById('preview-box');
+// Image preview
+document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e.target.value.trim()));
+document.getElementById('img-url-in').addEventListener('input',checkReady);
+
+function previewImage(url){
+  if(!url){
+    document.getElementById('img-preview').style.display='none';
+    document.getElementById('grid-prev').style.display='none';
+    return;
+  }
+  const img=document.getElementById('img-preview');
+  img.src=url; img.style.display='block';
+  img.onload=()=>{
+    // Setup grid preview
+    document.getElementById('grid-prev').style.display='block';
+    document.getElementById('grid-prev-img').src=url;
+    const overlay=document.getElementById('grid-prev-overlay');
+    overlay.innerHTML='';
+    for(let i=0;i<100;i++){
+      const t=document.createElement('div');t.className='tile-prev';
+      t.onclick=()=>{t.style.opacity='0';t.style.pointerEvents='none'};
+      overlay.appendChild(t);
+    }
+  };
+  img.onerror=()=>{img.style.display='none';document.getElementById('grid-prev').style.display='none'};
+}
+
+// Text preview
+document.getElementById('btn-preview-text').onclick=()=>{
+  const clue=document.getElementById('clue-in').value.trim();const box=document.getElementById('preview-box-text');
   if(!clue)return;box.style.display='block';box.innerHTML='';
   clue.match(/\S+|\s+/g).forEach(tok=>{
     if(/^\s+$/.test(tok)){box.appendChild(document.createTextNode(' '));return}
@@ -289,32 +397,28 @@ document.getElementById('btn-preview').onclick=()=>{
   box.scrollIntoView({behavior:'smooth'});
 };
 
-// Save (add or edit)
+// Save
 document.getElementById('btn-save').onclick=async()=>{
   const btn=document.getElementById('btn-save');
   const answer=document.getElementById('answer-in').value.trim();
   const aliases=document.getElementById('aliases-in').value;
-  const clue=document.getElementById('clue-in').value.trim();
+  const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
+  const imageUrl=currentType==='image'?document.getElementById('img-url-in').value.trim():'';
   btn.disabled=true;btn.textContent='⏳…';
-
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,clue};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl};
   if(editId)body.editId=editId;
-
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();
     if(data.success){
-      const msg=data.edited?`✅ "${data.answer}" modifié ! (${data.wordCount} mots)`:`✅ "${data.answer}" ajouté ! (${data.wordCount} mots)`;
-      showMsg('save-msg','ok',msg);
+      showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
       cancelEdit();loadAthletes();
     } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
   }catch(e){showMsg('save-msg','err','❌ Erreur réseau')}
-  btn.disabled=false;
-  btn.textContent=editId?'💾 Enregistrer les modifications':'🚀 Publier';
+  btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
 };
 
 document.getElementById('btn-game').onclick=()=>window.location.href='/';
-
 function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 </script>
