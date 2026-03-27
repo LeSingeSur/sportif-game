@@ -180,7 +180,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div class="field">
         <label>URL de l'image</label>
         <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
-        <span class="hint">💡 Sur Google Images : clic droit sur une image → "Copier l'adresse de l'image" → colle ici</span>
+        <span class="hint">
+          💡 <strong>Conseils pour les URLs :</strong><br>
+          • <strong>Wikipédia</strong> : fonctionne toujours — cherche le sportif sur fr.wikipedia.org, clic droit sur la photo → Copier l'adresse de l'image<br>
+          • Google Images : peut bloquer selon les sites sources<br>
+          • URLs avec <code>token=</code> ou <code>auth=</code> expirent → à éviter
+        </span>
       </div>
 
         <div style="font-size:12px;color:var(--mute);margin-top:6px">Clique sur les cases pour simuler la révélation</div>
@@ -404,7 +409,26 @@ document.getElementById('btn-save').onclick=async()=>{
   const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
   const imageUrl=currentType==='image'?document.getElementById('img-url-in').value.trim():'';
   const gridSize=10;
-  btn.disabled=true;btn.textContent='⏳…';
+  btn.disabled=true;
+
+  // Test image accessibility before saving
+  if(currentType==='image' && imageUrl){
+    btn.textContent='🔍 Vérification de l\'image…';
+    try{
+      const testRes=await fetch('/api/img-proxy?url='+encodeURIComponent(imageUrl),{method:'HEAD'});
+      if(!testRes.ok){
+        showMsg('save-msg','err','❌ Image inaccessible ('+testRes.status+'). Essaie une autre URL — Wikipédia fonctionne bien.');
+        btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+        return;
+      }
+    }catch(e){
+      showMsg('save-msg','err','❌ Impossible de vérifier l\'image. Vérifie l\'URL ou essaie une URL Wikipédia.');
+      btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+      return;
+    }
+  }
+
+  btn.textContent='⏳…';
   const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize};
   if(editId)body.editId=editId;
   try{
@@ -414,7 +438,7 @@ document.getElementById('btn-save').onclick=async()=>{
       showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
       cancelEdit();loadAthletes();
     } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
-  }catch(e){showMsg('save-msg','err','❌ Erreur réseau')}
+  }catch(e){console.error('Save error:',e);showMsg('save-msg','err','❌ Erreur : '+e.message)}
   btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
 };
 
