@@ -316,8 +316,9 @@ async function loadAthlete(){
       setupTextMode(data);
     }
   }catch(e){
+    console.error('loadAthlete error:', e.message, e.stack);
     document.getElementById('clue').style.display='block';
-    document.getElementById('clue').innerHTML='<p style="color:var(--mute);text-align:center">Erreur réseau</p>';
+    document.getElementById('clue').innerHTML='<p style="color:var(--mute);text-align:center">Erreur: '+e.message+'</p>';
   }
 }
 
@@ -326,6 +327,7 @@ function setupTextMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='📝 Mode texte'; badge.className='type-badge txt';
   document.getElementById('game-tip').innerHTML='Tapote <em>−1 pt</em> &nbsp;·&nbsp; Mauvaise réponse <span class="ph">−10 pts</span>';
+  document.getElementById('img-zone').style.display='none';
   document.getElementById('clue').style.display='block';
   buildClue(data.clue);
 }
@@ -418,8 +420,9 @@ function revealN(n){
 }
 
 function updateImgCounter(){
+  const el=document.getElementById('img-counter'); if(!el) return;
   const rem=G.total-G.revealed;
-  document.getElementById('img-counter').textContent=rem+' case'+(rem>1?'s':'')+' restante'+(rem>1?'s':'');
+  el.textContent=rem+' case'+(rem>1?'s':'')+' restante'+(rem>1?'s':'');
 }
 
 // ── SHARED ────────────────────────────────────────────────────────────────
@@ -442,7 +445,7 @@ async function checkAnswer(){
       G.active=false; G.athleteName=data.answer;
       // Révéler tout
       if(G.type==='image'){
-        G.tiles.forEach(t=>t.classList.add('rev'));
+        if(G.tiles) G.tiles.forEach(t=>t.classList.add('rev'));
       } else {
         document.querySelectorAll('.wb:not(.rev)').forEach(b=>b.classList.add('rev'));
       }
@@ -453,7 +456,7 @@ async function checkAnswer(){
       G.wrongAnswers++;
       G.score=Math.max(0,G.max-G.revealed-(G.wrongAnswers*10));
       setScore(G.score,true);
-      const pf=document.getElementById('pf'); pf.classList.remove('show'); void pf.offsetWidth; pf.classList.add('show');
+      const pf=document.getElementById('pf'); if(pf){pf.classList.remove('show'); void pf.offsetWidth; pf.classList.add('show');}
       const inp=document.getElementById('ans-in'); const fb=document.getElementById('fb');
       inp.classList.add('err'); setTimeout(()=>inp.classList.remove('err'),400);
       fb.textContent=data.message; fb.className='fb pen';
