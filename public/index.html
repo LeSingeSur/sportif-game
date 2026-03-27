@@ -365,10 +365,10 @@ function getSpiralOrder(n){
   const order=[];
   let top=0,bottom=n-1,left=0,right=n-1;
   while(top<=bottom&&left<=right){
-    for(let col=right;col>=left;col--) order.push(top*n+col);   // haut droite→gauche
-    for(let row=top+1;row<=bottom;row++) order.push(row*n+left); // gauche haut→bas
-    if(top<bottom) for(let col=left+1;col<=right;col++) order.push(bottom*n+col); // bas gauche→droite
-    if(left<right) for(let row=bottom-1;row>=top+1;row--) order.push(row*n+right); // droite bas→haut
+    for(let row=top;row<=bottom;row++)    order.push(row*n+left);   // gauche haut→bas
+    for(let col=left+1;col<=right;col++) order.push(bottom*n+col); // bas gauche→droite
+    if(left<right) for(let row=bottom-1;row>=top;row--) order.push(row*n+right); // droite bas→haut
+    if(top<bottom) for(let col=right-1;col>=left+1;col--) order.push(top*n+col); // haut droite→gauche
     top++;bottom--;left++;right--;
   }
   return order;
