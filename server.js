@@ -98,8 +98,9 @@ app.get('/api/athlete', (req, res) => {
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
   } else if (athlete.type === 'buzz') {
-    base.clues     = athlete.clues; // array of clue strings
-    base.maxScore  = 100;
+    base.clues        = athlete.clues;
+    base.maxScore     = 100;
+    base.buzzDecrement = athlete.buzzDecrement || 5;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -207,7 +208,7 @@ app.get('/api/admin/scores', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
@@ -228,6 +229,7 @@ app.post('/api/admin/athlete', (req, res) => {
     type:     type || 'text',
     clue:     type === 'text' ? clue.trim() : '',
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
+    buzzDecrement: type === 'buzz' ? Math.min(20, Math.max(1, parseInt(buzzDecrement) || 5)) : undefined,
     imageUrl: type === 'image' ? imageUrl.trim() : '',
     gridSize: type === 'image' ? gs : undefined,
   };
