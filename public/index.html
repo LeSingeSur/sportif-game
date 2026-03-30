@@ -326,7 +326,7 @@ const G={
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
   buzzClues:[],buzzScore:100,buzzDecrement:5,buzzScorePaused:false,buzzTimerInterval:null,buzzWordInterval:null,
-  buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[]
+  buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[],buzzAnsTimeout:null
 };
 let lbAthletes=[],lbActiveTab='global';
 
@@ -539,16 +539,8 @@ function startBuzzChallenge(){
   // Reveal words from current clue
   showNextBuzzClue(0);
 
-  // Score drops pts/sec — paused while player is typing
-  G.buzzTimerInterval=setInterval(()=>{
-    if(!G.active||!G.buzzStarted||G.buzzScorePaused)return;
-    G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
-    G.score=G.buzzScore;
-    setScore(G.buzzScore,true);
-    updateBuzzRing(G.buzzScore);
-    document.getElementById('buzz-pts').textContent=G.buzzScore;
-    if(G.buzzScore<=0){ buzzStopAll(); autoFailBuzz(); }
-  },1000);
+  // Score drops pts/sec
+  resumeBuzzTimer();
 }
 
 function showNextBuzzClue(idx){
@@ -601,7 +593,42 @@ function onBuzz(){
   if(G.buzzWordInterval){clearInterval(G.buzzWordInterval);G.buzzWordInterval=null;}
   document.getElementById('buzz-input-row').classList.add('show');
   document.getElementById('buzz-btn').disabled=true;
+  document.getElementById('buzz-freeze-msg').textContent='';
   setTimeout(()=>document.getElementById('buzz-ans-in').focus(),80);
+
+  // 10s max pour répondre, sinon tout repart
+  let ansCountdown=10;
+  const fmsg=document.getElementById('buzz-freeze-msg');
+  fmsg.textContent=`⏱ ${ansCountdown}s pour répondre…`;
+  G.buzzAnsTimeout=setInterval(()=>{
+    ansCountdown--;
+    if(ansCountdown<=0){
+      clearInterval(G.buzzAnsTimeout); G.buzzAnsTimeout=null;
+      if(!G.active||!G.buzzStarted) return;
+      // Temps écoulé → cache l'input, repart
+      document.getElementById('buzz-input-row').classList.remove('show');
+      document.getElementById('buzz-ans-in').value='';
+      fmsg.textContent='';
+      document.getElementById('buzz-btn').disabled=false;
+      startBuzzWordInterval();
+      resumeBuzzTimer();
+    } else {
+      fmsg.textContent=`⏱ ${ansCountdown}s pour répondre…`;
+    }
+  },1000);
+}
+
+function resumeBuzzTimer(){
+  if(G.buzzTimerInterval) clearInterval(G.buzzTimerInterval);
+  G.buzzTimerInterval=setInterval(()=>{
+    if(!G.active||!G.buzzStarted)return;
+    G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
+    G.score=G.buzzScore;
+    setScore(G.buzzScore,true);
+    updateBuzzRing(G.buzzScore);
+    document.getElementById('buzz-pts').textContent=G.buzzScore;
+    if(G.buzzScore<=0){buzzStopAll();autoFailBuzz();}
+  },1000);
 }
 
 document.getElementById('buzz-chk-btn').onclick=checkBuzzAnswer;
@@ -611,6 +638,8 @@ async function checkBuzzAnswer(){
   if(!G.active||!G.buzzStarted)return;
   const ans=document.getElementById('buzz-ans-in').value.trim();
   if(!ans)return;
+  // Annuler le compte à rebours de réponse
+  if(G.buzzAnsTimeout){clearInterval(G.buzzAnsTimeout);G.buzzAnsTimeout=null;}
   try{
     const res=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,athleteId:G.athleteId,answer:ans})});
@@ -623,15 +652,24 @@ async function checkBuzzAnswer(){
       setTimeout(showVictory,300);
     } else {
       G.wrongAnswers++;
+      // −5 pts immédiat
+      G.buzzScore=Math.max(0,G.buzzScore-5);
+      G.score=G.buzzScore;
+      setScore(G.buzzScore,true);
+      updateBuzzRing(G.buzzScore);
+      document.getElementById('buzz-pts').textContent=G.buzzScore;
       document.getElementById('buzz-ans-in').value='';
       document.getElementById('buzz-ans-in').className='buzz-ans-in err';
       setTimeout(()=>document.getElementById('buzz-ans-in').classList.remove('err'),400);
       document.getElementById('buzz-input-row').classList.remove('show');
       document.getElementById('buzz-btn').disabled=true;
-      // Gel 3s puis tout repart
+      // Texte et timer repartent immédiatement
+      startBuzzWordInterval();
+      resumeBuzzTimer();
+      // Buzz bloqué 3s
       let countdown=3;
       const fmsg=document.getElementById('buzz-freeze-msg');
-      fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
+      fmsg.textContent=`−5 pts ! Rebuzz dans ${countdown}s…`;
       const fi=setInterval(()=>{
         countdown--;
         if(countdown<=0){
@@ -639,19 +677,8 @@ async function checkBuzzAnswer(){
           if(!G.active||!G.buzzStarted)return;
           fmsg.textContent='';
           document.getElementById('buzz-btn').disabled=false;
-          // Relancer timer ET texte
-          startBuzzWordInterval();
-          G.buzzTimerInterval=setInterval(()=>{
-            if(!G.active||!G.buzzStarted)return;
-            G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
-            G.score=G.buzzScore;
-            setScore(G.buzzScore,true);
-            updateBuzzRing(G.buzzScore);
-            document.getElementById('buzz-pts').textContent=G.buzzScore;
-            if(G.buzzScore<=0){buzzStopAll();autoFailBuzz();}
-          },1000);
         } else {
-          fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
+          fmsg.textContent=`−5 pts ! Rebuzz dans ${countdown}s…`;
         }
       },1000);
     }
@@ -680,6 +707,7 @@ function buzzStopAll(){
   if(G.buzzTimerInterval){clearInterval(G.buzzTimerInterval);G.buzzTimerInterval=null;}
   if(G.buzzWordInterval){clearInterval(G.buzzWordInterval);G.buzzWordInterval=null;}
   if(G.buzzFreezeTimeout){clearTimeout(G.buzzFreezeTimeout);G.buzzFreezeTimeout=null;}
+  if(G.buzzAnsTimeout){clearInterval(G.buzzAnsTimeout);G.buzzAnsTimeout=null;}
 }
 
 function updateBuzzRing(score){
