@@ -115,7 +115,72 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .buzz-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:15px 22px;font-size:18px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0}
 .buzz-freeze-msg{text-align:center;font-size:13px;color:var(--orange);font-weight:800;min-height:20px}
 
-/* SHARED ANSWER (text+image) */
+/* ── SPORTUS (MOTUS) MODE ─────────────────────────────────────────────── */
+#sportus-zone{display:none;flex-direction:column;gap:14px}
+.sportus-clue-box{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--mute);line-height:1.6;text-align:center}
+.sportus-clue-box em{color:var(--cyan);font-style:normal;font-weight:800}
+.sportus-grid{display:flex;flex-direction:column;gap:6px}
+.sportus-row{display:flex;gap:5px;justify-content:center}
+.sportus-cell{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
+.sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff}
+.sportus-cell.present{background:#f0c000;border-color:#f0c000;color:#07070f}
+.sportus-cell.absent{background:var(--c2);border-color:rgba(255,255,255,.08);color:var(--mute)}
+.sportus-cell.flip{animation:scellflip .35s ease forwards}
+@keyframes scellflip{0%{transform:scaleY(1)}50%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+.sportus-input-row{display:flex;gap:8px}
+.sportus-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:14px 16px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;text-transform:uppercase}
+.sportus-in:focus{border-color:var(--neon)}
+.sportus-in.err{animation:shake .35s ease;border-color:var(--red)}
+.sportus-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:14px 20px;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.sportus-fb{font-size:13px;text-align:center;min-height:18px;color:var(--mute)}
+.sportus-fb.err{color:var(--red);font-weight:800}
+/* Boules */
+.boules-section{display:flex;flex-direction:column;gap:8px}
+.boules-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);text-align:center}
+.boules-row{display:flex;gap:10px;justify-content:center}
+.boule{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;border:3px solid rgba(255,255,255,.12);background:var(--c1);transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;position:relative}
+.boule:active{transform:scale(.92)}
+.boule.hidden{visibility:hidden;pointer-events:none}
+.boule:not(.revealed):hover{box-shadow:0 0 16px rgba(212,255,0,.25);border-color:rgba(212,255,0,.4)}
+.boule.revealed-gold{background:rgba(240,192,0,.18);border-color:#f0c000;cursor:default}
+.boule.revealed-black{background:rgba(30,30,30,.9);border-color:#333;cursor:default}
+.boule-hint{background:var(--c1);border:1px solid rgba(240,192,0,.3);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--txt);line-height:1.5;text-align:center;animation:fu .3s ease}
+.boule-black-msg{background:rgba(20,20,20,.9);border:1px solid #333;border-radius:12px;padding:11px 14px;font-size:13px;color:#888;text-align:center;animation:fu .3s ease}
+/* keyboard hint strip */
+.sportus-kbd{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
+.kbd-key{min-width:26px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:var(--fh);background:var(--c2);color:var(--mute);transition:background .2s,color .2s}
+.kbd-key.correct{background:#e63030;color:#fff}
+.kbd-key.present{background:#f0c000;color:#07070f}
+.kbd-key.absent{background:#1a1a2a;color:#333}
+/* ── LE JUSTE PRIX MODE ───────────────────────────────────────────────── */
+#prix-zone{display:none;flex-direction:column;gap:14px}
+.prix-question{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px 16px;text-align:center}
+.prix-question-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
+.prix-question-txt{font-family:var(--fh);font-size:26px;letter-spacing:1px;color:var(--txt);line-height:1.2}
+.prix-question-unit{font-size:13px;color:var(--mute);margin-top:4px}
+.prix-direction{text-align:center;font-size:52px;min-height:68px;animation:fu .3s ease}
+.prix-history{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto}
+.prix-hist-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:9px 13px}
+.prix-hist-val{font-family:var(--fh);font-size:22px;color:var(--txt);min-width:60px}
+.prix-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.prix-hist-bar-f{height:100%;border-radius:99px;transition:width .5s}
+.prix-hist-pct{font-size:13px;font-weight:800;min-width:44px;text-align:right}
+.prix-hist-dir{font-size:20px;flex-shrink:0}
+.prix-score-detail{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.prix-score-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.prix-score-row span:first-child{color:var(--mute)}
+.prix-score-row span:last-child{font-weight:800;color:var(--txt)}
+.prix-score-row.total span:last-child{font-family:var(--fh);font-size:28px;color:var(--neon)}
+.prix-input-row{display:flex;gap:8px}
+.prix-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:15px 16px;font-size:20px;font-family:var(--fh);color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;letter-spacing:1px}
+.prix-in:focus{border-color:var(--neon)}
+.prix-in.err{animation:shake .35s ease;border-color:var(--red)}
+.prix-in.ok{border-color:var(--neon)}
+.prix-chk{background:var(--neon);color:#07070f;border:none;border-radius:var(--r);padding:15px 22px;font-size:18px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0}
+.prix-chk:active{transform:scale(.93)}
+.prix-chk:disabled{opacity:.3;cursor:not-allowed}
+.prix-fb{font-size:13px;text-align:center;min-height:18px;color:var(--mute);font-weight:700}
+
 .pf{position:fixed;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
 .pf.show{animation:pflash .4s ease}
 @keyframes pflash{0%{opacity:1}100%{opacity:0}}
@@ -203,7 +268,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="how-item"><strong>📝 Texte</strong> tapote les blocs<br>−1 pt par mot révélé</div>
       <div class="how-item"><strong>🖼 Image</strong> révèle les cases<br>−1 pt par case</div>
       <div class="how-item"><strong>⚡ Buzz</strong> score qui baisse<br>chaque seconde !</div>
-      <div class="how-item"><strong>−10 pts</strong> par mauvaise réponse</div>
+      <div class="how-item"><strong>🎯 Sportus</strong> Motus sportif<br>10 essais · boules mystère</div>
+      <div class="how-item"><strong>💰 Juste Prix</strong> devine la stat<br>50/50 stratégie</div>
     </div>
     <div class="field">
       <span class="flbl">Ton pseudo</span>
@@ -267,8 +333,51 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
 
-  <!-- Shared answer (text + image only) -->
-  <div class="ans-area" id="std-ans-area">
+  <!-- SPORTUS mode -->
+  <div id="sportus-zone">
+    <div class="sportus-clue-box" id="sportus-clue-box"></div>
+    <div class="sportus-grid" id="sportus-grid"></div>
+    <div class="sportus-kbd" id="sportus-kbd"></div>
+    <div class="sportus-input-row">
+      <input type="text" class="sportus-in" id="sportus-in" placeholder="Nom complet…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <button class="sportus-chk" id="sportus-chk">✓</button>
+    </div>
+    <div class="sportus-fb" id="sportus-fb"></div>
+    <!-- Boules -->
+    <div class="boules-section" id="boules-section">
+      <div class="boules-title">🎱 Tirer une boule (−20 pts si indice, −20 pts si Boule Noire)</div>
+      <div class="boules-row">
+        <div class="boule" id="boule-0" onclick="tirerBoule(0)">❓</div>
+        <div class="boule" id="boule-1" onclick="tirerBoule(1)">❓</div>
+        <div class="boule" id="boule-2" onclick="tirerBoule(2)">❓</div>
+      </div>
+      <div id="boule-result"></div>
+    </div>
+  </div>
+
+  <!-- LE JUSTE PRIX mode -->
+  <div id="prix-zone">
+    <div class="prix-question">
+      <div class="prix-question-lbl">À deviner</div>
+      <div class="prix-question-txt" id="prix-question-txt">…</div>
+      <div class="prix-question-unit" id="prix-question-unit"></div>
+    </div>
+    <div class="prix-direction" id="prix-direction"></div>
+    <div class="prix-score-detail" id="prix-score-detail" style="display:none">
+      <div class="prix-score-row"><span>Points fixes (acquis)</span><span id="prix-fixed">—</span></div>
+      <div class="prix-score-row"><span>Mise gagnée</span><span id="prix-gained">—</span></div>
+      <div class="prix-score-row"><span>Malus essais</span><span id="prix-malus">—</span></div>
+      <div class="prix-score-row total"><span>Score actuel</span><span id="prix-total">—</span></div>
+    </div>
+    <div class="prix-history" id="prix-history"></div>
+    <div class="prix-input-row">
+      <input type="number" class="prix-in" id="prix-in" placeholder="Ta réponse…" min="0" autocomplete="off">
+      <button class="prix-chk" id="prix-chk">✓</button>
+    </div>
+    <div class="prix-fb" id="prix-fb"></div>
+  </div>
+
+
     <div class="ans-row">
       <input type="text" class="ans-in" id="ans-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       <button class="chk-btn" id="chk-btn">✓</button>
@@ -325,8 +434,8 @@ const G={
   // image
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
-  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzScorePaused:false,buzzTimerInterval:null,buzzWordInterval:null,
-  buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[],buzzAnsTimeout:null
+  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzTimerInterval:null,buzzWordInterval:null,
+  buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[],buzzAnsTimeout:null
 };
 let lbAthletes=[],lbActiveTab='global';
 
@@ -360,6 +469,8 @@ async function loadAthlete(){
   if(_imgz) _imgz.style.display='none';
   if(_buzzz) _buzzz.style.display='none';
   document.getElementById('buzz-sticky').classList.remove('on');
+  document.getElementById('sportus-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='none';
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -384,6 +495,12 @@ async function loadAthlete(){
     } else if(data.type==='buzz'){
       document.getElementById('std-ans-area').style.display='none';
       setupBuzzMode(data);
+    } else if(data.type==='sportus'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupSportusMode(data);
+    } else if(data.type==='prix'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupPrixMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -492,7 +609,399 @@ function updateImgCounter(){
   el.textContent=rem+' case'+(rem>1?'s':'')+' restante'+(rem>1?'s':'');
 }
 
-// ── BUZZ CHRONO MODE ──────────────────────────────────────────────────────
+// ── LE JUSTE PRIX MODE ────────────────────────────────────────────────────
+const P = {
+  question:'', unit:'', tries:0, score:100,
+  fixed:0, stake:100, done:false, history:[]
+};
+
+function setupPrixMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='💰 Juste Prix'; badge.className='type-badge';
+  badge.style.color='#f0c000';
+  document.getElementById('game-tip').innerHTML='Estime la stat · <em>PLUS ⬆️</em> ou <em>MOINS ⬇️</em> · 1er essai gratuit';
+  document.getElementById('img-zone').style.display='none';
+  document.getElementById('clue').style.display='none';
+  document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('sportus-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='flex';
+
+  P.question = data.question;
+  P.unit     = data.unit || '';
+  P.tries    = 0;
+  P.score    = 100;
+  P.fixed    = 0;
+  P.stake    = 100;
+  P.done     = false;
+  P.history  = [];
+
+  G.score=100; G.max=100; setScore(100,false);
+  document.getElementById('bar-f').style.width='0%';
+
+  document.getElementById('prix-question-txt').textContent = data.question;
+  document.getElementById('prix-question-unit').textContent = data.unit ? `(en ${data.unit})` : '';
+  document.getElementById('prix-direction').textContent = '';
+  document.getElementById('prix-direction').className = 'prix-direction';
+  document.getElementById('prix-history').innerHTML = '';
+  document.getElementById('prix-score-detail').style.display = 'none';
+  document.getElementById('prix-fb').textContent = '';
+  document.getElementById('prix-in').value = '';
+  document.getElementById('prix-in').disabled = false;
+  document.getElementById('prix-chk').disabled = false;
+  setTimeout(()=>document.getElementById('prix-in').focus(), 80);
+}
+
+document.getElementById('prix-chk').onclick = checkPrix;
+document.getElementById('prix-in').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPrix(); });
+
+async function checkPrix(){
+  if(P.done || !G.active) return;
+  const raw = document.getElementById('prix-in').value.trim().replace(',','.');
+  const guess = parseFloat(raw);
+  if(isNaN(guess) || guess < 0){
+    document.getElementById('prix-in').classList.add('err');
+    setTimeout(()=>document.getElementById('prix-in').classList.remove('err'), 400);
+    return;
+  }
+
+  document.getElementById('prix-chk').disabled = true;
+  try{
+    const res = await fetch('/api/prix-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({athleteId:G.athleteId, guess})});
+    const data = await res.json();
+
+    P.tries++;
+    document.getElementById('prix-in').value = '';
+
+    if(data.exact){
+      // VICTOIRE
+      P.done = true; G.active = false;
+      G.athleteName = data.fullAnswer;
+      document.getElementById('prix-direction').textContent = '🎯';
+      document.getElementById('prix-direction').className = 'prix-direction';
+      // Score final = ce qu'on avait avant + bonus si 1er essai
+      const finalScore = Math.round(Math.max(0, P.score));
+      addPrixHistoryItem(guess, 100, 'exact');
+      updatePrixScoreDetail();
+      setTimeout(()=>showVictoryFromPrix(finalScore, data.fullAnswer), 500);
+    } else {
+      // Calcul du score selon les règles
+      let newScore;
+      if(P.tries === 1){
+        // 1er essai : la précision DEVIENT le score total, 1er essai gratuit
+        newScore = data.precision;
+        P.fixed  = 0;
+        P.stake  = newScore;
+      } else {
+        // Rounds suivants : 50% fixed + 50% remis en jeu selon précision, puis −10 malus
+        P.fixed  = P.score / 2;
+        P.stake  = P.score / 2;
+        const gained = P.stake * (data.precision / 100);
+        newScore = P.fixed + gained - 10;
+      }
+      newScore = Math.max(0, newScore);
+      P.score  = newScore;
+      G.score  = Math.round(newScore);
+      setScore(Math.round(newScore), true);
+      document.getElementById('bar-f').style.width = (newScore)+'%';
+
+      // Direction arrow
+      const dirEl = document.getElementById('prix-direction');
+      if(data.direction === 'plus'){
+        dirEl.textContent = '⬆️ PLUS';
+        dirEl.className = 'prix-direction up';
+      } else {
+        dirEl.textContent = '⬇️ MOINS';
+        dirEl.className = 'prix-direction down';
+      }
+
+      addPrixHistoryItem(guess, data.precision, data.direction);
+      updatePrixScoreDetail();
+
+      if(newScore <= 0){
+        // Score épuisé, fin forcée
+        P.done = true; G.active = false; P.score = 0; G.score = 0;
+        document.getElementById('prix-fb').textContent = 'Score épuisé !';
+        setTimeout(()=>showVictoryFromPrix(0, null), 1200);
+      } else {
+        document.getElementById('prix-chk').disabled = false;
+        setTimeout(()=>document.getElementById('prix-in').focus(), 80);
+      }
+    }
+  }catch(e){
+    console.error(e);
+    document.getElementById('prix-chk').disabled = false;
+  }
+}
+
+function addPrixHistoryItem(guess, precision, direction){
+  const hist = document.getElementById('prix-history');
+  const pct  = Math.round(precision);
+  // Color: green ≥80, orange ≥50, red below
+  const color = pct >= 80 ? 'var(--neon)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+  const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
+  const unit = P.unit ? ` ${P.unit}` : '';
+  const item = document.createElement('div');
+  item.className = 'prix-hist-item';
+  item.innerHTML = `
+    <div class="prix-hist-val">${guess}${unit}</div>
+    <div class="prix-hist-bar"><div class="prix-hist-bar-f" style="width:0%;background:${color}"></div></div>
+    <div class="prix-hist-pct" style="color:${color}">${pct}%</div>
+    <div class="prix-hist-dir">${dirIcon}</div>`;
+  hist.appendChild(item);
+  // Animate bar
+  requestAnimationFrame(()=>{
+    const bar = item.querySelector('.prix-hist-bar-f');
+    setTimeout(()=>{ bar.style.width = pct+'%'; }, 50);
+  });
+  hist.scrollTop = hist.scrollHeight;
+  P.history.push({guess, precision, direction});
+}
+
+function updatePrixScoreDetail(){
+  const el = document.getElementById('prix-score-detail');
+  el.style.display = 'flex';
+  if(P.tries === 1){
+    document.getElementById('prix-fixed').textContent   = '—';
+    document.getElementById('prix-gained').textContent  = Math.round(P.score) + ' pts';
+    document.getElementById('prix-malus').textContent   = '0 pt (1er essai gratuit)';
+  } else {
+    document.getElementById('prix-fixed').textContent   = Math.round(P.fixed) + ' pts';
+    const gained = Math.round(P.score - P.fixed + 10);
+    document.getElementById('prix-gained').textContent  = Math.round(gained) + ' pts';
+    document.getElementById('prix-malus').textContent   = '−10 pts';
+  }
+  document.getElementById('prix-total').textContent    = Math.round(Math.max(0, P.score)) + ' pts';
+}
+
+function showVictoryFromPrix(finalScore, fullAnswer){
+  G.athleteName = fullAnswer || '???';
+  document.getElementById('v-name').textContent = G.athleteName;
+  document.getElementById('v-sc').textContent   = Math.round(finalScore);
+  document.getElementById('v-sub').textContent  = fullAnswer
+    ? `Trouvé en ${P.tries} essai${P.tries > 1 ? 's' : ''} !`
+    : 'Score épuisé avant de trouver…';
+  document.getElementById('v-revealed').textContent    = P.tries;
+  document.getElementById('v-revealed-lbl').textContent = 'essais';
+  document.getElementById('v-wrong').textContent       = P.history.length > 0 ? Math.round(P.history[P.history.length-1].precision)+'%' : '—';
+  document.querySelector('#v-wrong').nextElementSibling.textContent = 'dernière précision';
+  show('sv'); confetti();
+  submitScore(Math.round(finalScore));
+}
+
+// ── SPORTUS MODE ──────────────────────────────────────────────────────────
+const SPORTUS_MAX_TRIES = 10;
+const SPORTUS_PENALTY   = 10; // per guess after first
+const BOULE_PENALTY     = 20;
+
+// S.* = sportus state
+const S = {
+  targetLen:0, tries:0, score:100,
+  bouleOrder:[], bouleUsed:[false,false,false],
+  hints:[], kbdState:{}, done:false
+};
+
+function setupSportusMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='🎯 Sportus'; badge.className='type-badge';
+  badge.style.color='#f0c000';
+  document.getElementById('game-tip').innerHTML='Devine le <em>nom de famille</em> · 10 essais · <span class="ph">−10 pts</span>/essai (sauf le 1er)';
+  document.getElementById('img-zone').style.display='none';
+  document.getElementById('clue').style.display='none';
+  document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('sportus-zone').style.display='flex';
+
+  S.targetLen   = data.lastNameLength;
+  S.tries       = 0;
+  S.score       = 100;
+  S.done        = false;
+  S.kbdState    = {};
+  S.bouleUsed   = [false,false,false];
+  S.bouleOrder  = shuffle([0,0,1]);
+  S.hints       = buildSportusHints(data);
+
+  G.score=100; G.max=100; setScore(100,false);
+  document.getElementById('bar-f').style.width='0%';
+
+  // Clue box
+  const cb=document.getElementById('sportus-clue-box');
+  cb.innerHTML = data.clue
+    ? `<em>Indice :</em> ${esc(data.clue)}`
+    : `Nom de famille en <em>${S.targetLen}</em> lettres — à toi de jouer !`;
+
+  // Build grid
+  buildSportusGrid();
+  buildSportusKbd();
+  resetBoules();
+
+  document.getElementById('sportus-fb').textContent='';
+  document.getElementById('sportus-fb').className='sportus-fb';
+  document.getElementById('sportus-in').value='';
+  document.getElementById('sportus-in').disabled=false;
+  document.getElementById('sportus-chk').disabled=false;
+  setTimeout(()=>document.getElementById('sportus-in').focus(),80);
+}
+
+function buildSportusHints(data){
+  return [
+    `Le nom de famille contient <strong>${data.lastNameLength}</strong> lettres.`,
+    data.clue
+      ? `Indice : <strong>${esc(data.clue)}</strong>`
+      : `Le nom commence par la lettre… à toi de chercher !`
+  ];
+}
+
+function buildSportusGrid(){
+  const grid=document.getElementById('sportus-grid');
+  grid.innerHTML='';
+  for(let r=0;r<SPORTUS_MAX_TRIES;r++){
+    const row=document.createElement('div'); row.className='sportus-row'; row.id='srow-'+r;
+    for(let c=0;c<S.targetLen;c++){
+      const cell=document.createElement('div'); cell.className='sportus-cell'; cell.id=`sc-${r}-${c}`;
+      row.appendChild(cell);
+    }
+    grid.appendChild(row);
+  }
+}
+
+function buildSportusKbd(){
+  const kbd=document.getElementById('sportus-kbd'); kbd.innerHTML='';
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l=>{
+    const k=document.createElement('div'); k.className='kbd-key'; k.textContent=l; k.id='kbd-'+l;
+    kbd.appendChild(k);
+  });
+}
+
+function resetBoules(){
+  for(let i=0;i<3;i++){
+    const b=document.getElementById('boule-'+i);
+    b.textContent='❓'; b.className='boule'; b.style.display='flex';
+    b.onclick=()=>tirerBoule(i);
+  }
+  document.getElementById('boule-result').innerHTML='';
+}
+
+function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+
+function tirerBoule(i){
+  if(S.bouleUsed[i]||S.done) return;
+  S.bouleUsed[i]=true;
+  const isBlack = S.bouleOrder[i]===1;
+  const b=document.getElementById('boule-'+i);
+  b.onclick=null;
+
+  S.score=Math.max(0,S.score-BOULE_PENALTY);
+  G.score=S.score; setScore(S.score,true);
+  document.getElementById('bar-f').style.width=((SPORTUS_MAX_TRIES-S.tries)/SPORTUS_MAX_TRIES*100)+'%';
+
+  const res=document.getElementById('boule-result');
+  if(isBlack){
+    b.textContent='⚫'; b.className='boule revealed-black';
+    res.innerHTML='<div class="boule-black-msg">⚫ Boule Noire ! −20 pts… pas d\'indice cette fois !</div>';
+  } else {
+    b.textContent='🌟'; b.className='boule revealed-gold';
+    // Count gold balls revealed so far (including this one)
+    let goldCount=0;
+    for(let k=0;k<3;k++) if(S.bouleUsed[k]&&S.bouleOrder[k]===0) goldCount++;
+    const hint = S.hints[goldCount-1] || S.hints[S.hints.length-1];
+    res.innerHTML=`<div class="boule-hint">💡 ${hint}</div>`;
+  }
+}
+
+document.getElementById('sportus-chk').onclick=checkSportus;
+document.getElementById('sportus-in').addEventListener('keydown',e=>{if(e.key==='Enter')checkSportus()});
+
+async function checkSportus(){
+  if(S.done||!G.active) return;
+  const raw=document.getElementById('sportus-in').value.trim();
+  if(!raw) return;
+  // Extract last word as the "last name" guess
+  const guessLastWord = raw.split(/\s+/).pop();
+  const guessNorm = guessLastWord.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(guessNorm.length !== S.targetLen){
+    const fb=document.getElementById('sportus-fb');
+    fb.textContent=`Le nom de famille doit faire ${S.targetLen} lettres !`; fb.className='sportus-fb err';
+    document.getElementById('sportus-in').classList.add('err');
+    setTimeout(()=>{document.getElementById('sportus-in').classList.remove('err');fb.textContent='';fb.className='sportus-fb';},1500);
+    return;
+  }
+
+  // Apply penalty (first try is free)
+  if(S.tries>0){
+    S.score=Math.max(0,S.score-SPORTUS_PENALTY);
+    G.score=S.score; setScore(S.score,true);
+  }
+
+  try{
+    const res=await fetch('/api/sportus-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:G.athleteId,guess:raw})});
+    const data=await res.json();
+
+    // Fill current row
+    fillSportusRow(S.tries, data.result, guessNorm.toUpperCase());
+    updateSportusKbd(data.result, guessNorm.toUpperCase());
+
+    S.tries++;
+    document.getElementById('sportus-in').value='';
+    document.getElementById('bar-f').style.width=(S.tries/SPORTUS_MAX_TRIES*100)+'%';
+
+    if(data.correct){
+      S.done=true; G.active=false; G.athleteName=data.fullAnswer;
+      document.getElementById('sportus-fb').textContent=''; 
+      setTimeout(()=>showVictoryFromSportus(data.fullAnswer), 350);
+    } else if(S.tries>=SPORTUS_MAX_TRIES){
+      S.done=true; G.active=false;
+      document.getElementById('sportus-in').disabled=true;
+      document.getElementById('sportus-chk').disabled=true;
+      const fb=document.getElementById('sportus-fb');
+      fb.textContent=`Raté ! Score : 0`; fb.className='sportus-fb err';
+      S.score=0; G.score=0; setScore(0,true);
+      setTimeout(()=>showVictoryFromSportus(null),1200);
+    } else {
+      const fb=document.getElementById('sportus-fb');
+      const rem=SPORTUS_MAX_TRIES-S.tries;
+      fb.textContent=`Pas encore… ${rem} essai${rem>1?'s':''} restant${rem>1?'s':''}`; fb.className='sportus-fb err';
+      setTimeout(()=>{fb.textContent='';fb.className='sportus-fb';},1800);
+    }
+  }catch(e){console.error(e)}
+}
+
+function fillSportusRow(row, result, letters){
+  result.forEach((state,i)=>{
+    const cell=document.getElementById(`sc-${row}-${i}`);
+    if(!cell) return;
+    cell.textContent=letters[i]||'';
+    setTimeout(()=>{
+      cell.classList.add('flip');
+      setTimeout(()=>{ cell.classList.remove('flip'); cell.classList.add(state); },175);
+    }, i*80);
+  });
+}
+
+function updateSportusKbd(result, letters){
+  const priority={correct:3,present:2,absent:1};
+  result.forEach((state,i)=>{
+    const l=letters[i]; if(!l) return;
+    const cur=S.kbdState[l]||'';
+    if((priority[state]||0)>(priority[cur]||0)) S.kbdState[l]=state;
+    const el=document.getElementById('kbd-'+l); if(el){ el.className='kbd-key '+S.kbdState[l]; }
+  });
+}
+
+function showVictoryFromSportus(fullAnswer){
+  G.athleteName = fullAnswer || '???';
+  document.getElementById('v-name').textContent = G.athleteName;
+  document.getElementById('v-sc').textContent = S.score;
+  document.getElementById('v-sub').textContent = fullAnswer ? `Trouvé en ${S.tries} essai${S.tries>1?'s':''}` : 'Non trouvé';
+  document.getElementById('v-revealed').textContent = S.tries;
+  document.getElementById('v-revealed-lbl').textContent = 'essais';
+  document.getElementById('v-wrong').textContent = S.bouleUsed.filter(Boolean).length;
+  document.querySelector('#v-wrong').nextElementSibling.textContent = 'boule(s) tirée(s)';
+  show('sv'); confetti();
+  submitScore(S.score);
+}
+
+
 function setupBuzzMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='⚡ Buzz Chrono'; badge.className='type-badge buzz';
@@ -506,7 +1015,6 @@ function setupBuzzMode(data){
   G.buzzDecrement = data.buzzDecrement || 5;
   G.buzzScore = 100; G.max=100; G.total=100; G.score=100;
   G.buzzStarted=false; G.buzzClueIdx=0; G.buzzWordIdx=0;
-  G.buzzFrozen=false; G.buzzScorePaused=false;
 
   setScore(100, false);
   updateBuzzRing(100);
@@ -841,7 +1349,7 @@ async function loadLB(){
     lbAthletes=await resA.json();
     tabs.appendChild(makeTab('🌍 Global','global'));
     lbAthletes.forEach((a,i)=>{
-      const icon=a.type==='image'?'🖼':a.type==='buzz'?'⚡':'📝';
+      const icon=a.type==='image'?'🖼':a.type==='buzz'?'⚡':a.type==='sportus'?'🎯':a.type==='prix'?'💰':'📝';
       tabs.appendChild(makeTab(a.emoji+' #'+(i+1)+' '+icon, a.id));
     });
     showTab(lbActiveTab,list);
