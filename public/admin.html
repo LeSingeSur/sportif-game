@@ -484,7 +484,8 @@ function updateAliases(){
   const answer=document.getElementById('answer-in').value.trim();
   if(!answer){document.getElementById('aliases-box').style.display='none';checkReady();return}
   const parts=answer.split(/\s+/);
-  const auto=[answer.toLowerCase(),...parts.map(p=>p.toLowerCase())];
+  const auto=[answer.toLowerCase()];
+  if(parts.length>1) auto.push(parts[parts.length-1].toLowerCase());
   const manual=document.getElementById('aliases-in').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
   const all=[...new Set([...auto,...manual])];
   document.getElementById('aliases-box').style.display='block';

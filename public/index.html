@@ -80,7 +80,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .reveal-btn:disabled{opacity:.3;cursor:not-allowed}
 
 /* ── BUZZ CHRONO MODE ──────────────────────────────────────────────────── */
-#buzz-zone{display:none;flex-direction:column;gap:12px}
+#buzz-zone{display:none;flex-direction:column;gap:12px;padding-bottom:100px}
+@media(min-width:600px){#buzz-zone{padding-bottom:0}}
 .buzz-score-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;margin:4px auto 0;width:120px;height:120px;border-radius:50%;border:4px solid rgba(212,255,0,.15);background:var(--c1);position:relative}
 .buzz-score-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .buzz-score-ring svg circle{fill:none;stroke-width:4;stroke-linecap:round}
@@ -101,6 +102,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .buzz-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:18px;font-size:18px;font-weight:900;font-family:var(--fb);border:none;border-radius:var(--r);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;background:var(--red);color:#fff;box-shadow:0 0 24px rgba(255,63,92,.35);transition:transform .1s,opacity .2s}
 .buzz-btn:active{transform:scale(.96)}
 .buzz-btn:disabled{opacity:.3;cursor:not-allowed;box-shadow:none}
+/* Sticky buzz bar on mobile */
+.buzz-sticky{position:fixed;bottom:0;left:0;right:0;padding:12px 18px 28px;background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:30;display:none}
+.buzz-sticky.on{display:block}
+@media(min-width:600px){.buzz-sticky{position:static;padding:0;background:none}.buzz-sticky.on{display:block}}
 .buzz-input-row{display:none;gap:8px;animation:fu .2s ease}
 .buzz-input-row.show{display:flex}
 .buzz-ans-in{flex:1;background:var(--c1);border:2px solid var(--red);border-radius:var(--r);padding:15px 16px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s}
@@ -249,15 +254,17 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="buzz-state-bar" id="buzz-dots"></div>
     <!-- clue text -->
     <div class="buzz-clue-box" id="buzz-clue-box">Prêt ? Appuie sur DÉBUT !</div>
-    <!-- buzz button -->
-    <button class="buzz-btn-start" id="buzz-btn-start">▶ DÉBUT</button>
-    <button class="buzz-btn" id="buzz-btn" style="display:none" disabled>⚡ BUZZ !</button>
-    <!-- answer input (shown after buzz) -->
-    <div class="buzz-input-row" id="buzz-input-row">
-      <input type="text" class="buzz-ans-in" id="buzz-ans-in" placeholder="Qui est-ce ?" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
-      <button class="buzz-chk" id="buzz-chk-btn">✓</button>
+    <!-- buzz button + answer — sticky on mobile -->
+    <div class="buzz-sticky" id="buzz-sticky">
+      <button class="buzz-btn-start" id="buzz-btn-start">▶ DÉBUT</button>
+      <button class="buzz-btn" id="buzz-btn" style="display:none" disabled>⚡ BUZZ !</button>
+      <!-- answer input (shown after buzz) -->
+      <div class="buzz-input-row" id="buzz-input-row">
+        <input type="text" class="buzz-ans-in" id="buzz-ans-in" placeholder="Qui est-ce ?" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        <button class="buzz-chk" id="buzz-chk-btn">✓</button>
+      </div>
+      <div class="buzz-freeze-msg" id="buzz-freeze-msg"></div>
     </div>
-    <div class="buzz-freeze-msg" id="buzz-freeze-msg"></div>
   </div>
 
   <!-- Shared answer (text + image only) -->
@@ -318,7 +325,7 @@ const G={
   // image
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
-  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzTimerInterval:null,buzzWordInterval:null,
+  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzScorePaused:false,buzzTimerInterval:null,buzzWordInterval:null,
   buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[]
 };
 let lbAthletes=[],lbActiveTab='global';
@@ -352,6 +359,7 @@ async function loadAthlete(){
   if(_clue){_clue.style.display='none';_clue.innerHTML='<div class="spin"><span></span><span></span><span></span></div>';}
   if(_imgz) _imgz.style.display='none';
   if(_buzzz) _buzzz.style.display='none';
+  document.getElementById('buzz-sticky').classList.remove('on');
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -492,12 +500,13 @@ function setupBuzzMode(data){
   document.getElementById('img-zone').style.display='none';
   document.getElementById('clue').style.display='none';
   document.getElementById('buzz-zone').style.display='flex';
+  document.getElementById('buzz-sticky').classList.add('on');
 
   G.buzzClues = data.clues || [];
   G.buzzDecrement = data.buzzDecrement || 5;
   G.buzzScore = 100; G.max=100; G.total=100; G.score=100;
   G.buzzStarted=false; G.buzzClueIdx=0; G.buzzWordIdx=0;
-  G.buzzFrozen=false;
+  G.buzzFrozen=false; G.buzzScorePaused=false;
 
   setScore(100, false);
   updateBuzzRing(100);
@@ -530,9 +539,9 @@ function startBuzzChallenge(){
   // Reveal words from current clue
   showNextBuzzClue(0);
 
-  // Score drops 5 pts/sec
+  // Score drops pts/sec — paused while player is typing
   G.buzzTimerInterval=setInterval(()=>{
-    if(!G.active||!G.buzzStarted)return;
+    if(!G.active||!G.buzzStarted||G.buzzScorePaused)return;
     G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
     G.score=G.buzzScore;
     setScore(G.buzzScore,true);
@@ -586,8 +595,9 @@ function startBuzzWordInterval(){
 
 document.getElementById('buzz-btn').onclick=onBuzz;
 function onBuzz(){
-  if(!G.active||!G.buzzStarted||G.buzzFrozen) return;
-  // Stop word reveal, show input
+  if(!G.active||!G.buzzStarted) return;
+  // Tout figer : timer + texte
+  if(G.buzzTimerInterval){clearInterval(G.buzzTimerInterval);G.buzzTimerInterval=null;}
   if(G.buzzWordInterval){clearInterval(G.buzzWordInterval);G.buzzWordInterval=null;}
   document.getElementById('buzz-input-row').classList.add('show');
   document.getElementById('buzz-btn').disabled=true;
@@ -612,24 +622,16 @@ async function checkBuzzAnswer(){
       document.getElementById('buzz-freeze-msg').textContent='';
       setTimeout(showVictory,300);
     } else {
-      // -10 pts immédiat
-      G.buzzScore=Math.max(0,G.buzzScore-10);
-      G.score=G.buzzScore;
-      setScore(G.buzzScore,true);
-      updateBuzzRing(G.buzzScore);
-      document.getElementById('buzz-pts').textContent=G.buzzScore;
       G.wrongAnswers++;
-      // Gel du bouton buzz 3s — le texte continue de défiler
       document.getElementById('buzz-ans-in').value='';
       document.getElementById('buzz-ans-in').className='buzz-ans-in err';
       setTimeout(()=>document.getElementById('buzz-ans-in').classList.remove('err'),400);
       document.getElementById('buzz-input-row').classList.remove('show');
       document.getElementById('buzz-btn').disabled=true;
-      // Reprendre le défilement immédiatement
-      startBuzzWordInterval();
+      // Gel 3s puis tout repart
       let countdown=3;
       const fmsg=document.getElementById('buzz-freeze-msg');
-      fmsg.textContent=`−10 pts ! Rebuzz dans ${countdown}s…`;
+      fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
       const fi=setInterval(()=>{
         countdown--;
         if(countdown<=0){
@@ -637,8 +639,19 @@ async function checkBuzzAnswer(){
           if(!G.active||!G.buzzStarted)return;
           fmsg.textContent='';
           document.getElementById('buzz-btn').disabled=false;
+          // Relancer timer ET texte
+          startBuzzWordInterval();
+          G.buzzTimerInterval=setInterval(()=>{
+            if(!G.active||!G.buzzStarted)return;
+            G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
+            G.score=G.buzzScore;
+            setScore(G.buzzScore,true);
+            updateBuzzRing(G.buzzScore);
+            document.getElementById('buzz-pts').textContent=G.buzzScore;
+            if(G.buzzScore<=0){buzzStopAll();autoFailBuzz();}
+          },1000);
         } else {
-          fmsg.textContent=`−10 pts ! Rebuzz dans ${countdown}s…`;
+          fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
         }
       },1000);
     }
@@ -717,9 +730,18 @@ async function checkAnswer(){
   }catch(e){console.error(e)}
 }
 
-document.getElementById('btn-quit').onclick=()=>{
+document.getElementById('btn-quit').onclick=async()=>{
   if(!G.active)return;
-  if(confirm('Abandonner cette partie ?')){G.active=false;buzzStopAll();show('sp')}
+  if(confirm('Abandonner cette partie ? 0 pt sera enregistré pour ce défi.')){
+    G.active=false;
+    buzzStopAll();
+    // Enregistre 0 pt puis passe au défi suivant
+    try{
+      await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({pseudo:G.pseudo,score:0,athleteId:G.athleteId})});
+    }catch(e){console.error('quit score error',e)}
+    show('sg'); loadAthlete();
+  }
 };
 
 // VICTORY
