@@ -318,7 +318,7 @@ const G={
   // image
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
-  buzzClues:[],buzzScore:100,buzzTimerInterval:null,buzzWordInterval:null,
+  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzTimerInterval:null,buzzWordInterval:null,
   buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[]
 };
 let lbAthletes=[],lbActiveTab='global';
@@ -494,6 +494,7 @@ function setupBuzzMode(data){
   document.getElementById('buzz-zone').style.display='flex';
 
   G.buzzClues = data.clues || [];
+  G.buzzDecrement = data.buzzDecrement || 5;
   G.buzzScore = 100; G.max=100; G.total=100; G.score=100;
   G.buzzStarted=false; G.buzzClueIdx=0; G.buzzWordIdx=0;
   G.buzzFrozen=false;
@@ -532,7 +533,7 @@ function startBuzzChallenge(){
   // Score drops 5 pts/sec
   G.buzzTimerInterval=setInterval(()=>{
     if(!G.active||!G.buzzStarted)return;
-    G.buzzScore=Math.max(0,G.buzzScore-5);
+    G.buzzScore=Math.max(0,G.buzzScore-G.buzzDecrement);
     G.score=G.buzzScore;
     setScore(G.buzzScore,true);
     updateBuzzRing(G.buzzScore);

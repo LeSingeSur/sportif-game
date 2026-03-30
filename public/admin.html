@@ -237,8 +237,13 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- BUZZ fields -->
       <div id="buzz-fields" style="display:none">
         <div class="field">
+          <label>Vitesse de décrément du score</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 2px" id="buzz-speed-grid"></div>
+          <span class="hint" id="buzz-speed-hint">−5 pts/sec → 20 secondes pour tomber à 0</span>
+        </div>
+        <div class="field">
           <label>Indices (du plus difficile au plus facile)</label>
-          <span class="hint">💡 Score commence à 100 pts et baisse de 5 pts/sec. Ajoute 3 à 6 indices progressifs. Le 1er doit être très difficile !</span>
+          <span class="hint">💡 Ajoute 3 à 6 indices progressifs. Le 1er doit être très difficile !</span>
           <textarea id="buzz-new-clue" placeholder="Ex: Né en 1987 à Manacor, cette légende de la terre battue compte 14 Roland-Garros à son palmarès." style="min-height:80px;margin-top:8px"></textarea>
           <button class="btn btn-s" id="btn-add-buzz-clue" style="margin-top:6px;margin-bottom:0">➕ Ajouter cet indice</button>
         </div>
@@ -282,7 +287,41 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 <script>
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
 let adminPw='', selEmoji='🏆', editId=null, currentType='text';
-let buzzClues=[];
+let buzzClues=[], buzzDecrement=5;
+
+// Buzz speed grid
+const BUZZ_SPEEDS=[
+  {val:2,label:'−2/s',desc:'~50s'},
+  {val:3,label:'−3/s',desc:'~33s'},
+  {val:5,label:'−5/s',desc:'~20s'},
+  {val:10,label:'−10/s',desc:'~10s'},
+];
+(function buildSpeedGrid(){
+  const grid=document.getElementById('buzz-speed-grid');
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div><div style="font-size:10px;color:var(--mute);margin-top:2px">${s.desc}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzSpeed(s.val);
+    btn.id='bspeed-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzSpeed(5);
+})();
+
+function selectBuzzSpeed(val){
+  buzzDecrement=val;
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.getElementById('bspeed-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  const secs=Math.round(100/val);
+  document.getElementById('buzz-speed-hint').textContent=`−${val} pts/sec → ~${secs} secondes pour tomber à 0`;
+}
 
 // Emoji grid
 const grid=document.getElementById('emoji-grid');
@@ -377,6 +416,7 @@ async function startEdit(id){
     previewImage(a.imageUrl||'');
   } else if(a.type==='buzz'){
     buzzClues=a.clues||[];
+    selectBuzzSpeed(a.buzzDecrement||5);
     renderBuzzClues();
   } else {
     document.getElementById('clue-in').value=a.clue||'';
@@ -555,7 +595,7 @@ document.getElementById('btn-save').onclick=async()=>{
   }
 
   btn.textContent='⏳…';
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
