@@ -35,6 +35,9 @@ function hasPlayed(pseudo, athleteId) {
 function nextAthleteFor(pseudo) {
   return athletes.find(a => !hasPlayed(pseudo, a.id)) || null;
 }
+function hasFinishedAll(pseudo) {
+  return athletes.length > 0 && athletes.every(a => hasPlayed(pseudo, a.id));
+}
 function rebuildGlobalScores() {
   const map = {};
   for (const list of Object.values(scores)) {
@@ -52,20 +55,20 @@ function rebuildGlobalScores() {
 }
 
 // ── IMAGE PROXY ───────────────────────────────────────────────────────────
-// Charge l'image côté serveur → contourne le CORS
-// Support GET and HEAD (HEAD = validation sans télécharger l'image entière)
+// FIX: Use GET with a range request for validation instead of HEAD (HEAD fails on many servers)
 app.all('/api/img-proxy', async (req, res) => {
   if(req.method !== 'GET' && req.method !== 'HEAD') return res.status(405).end();
   const url = req.query.url;
   if (!url) return res.status(400).send('URL manquante');
   try {
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; SportifGame/1.0)',
         'Referer':    'https://www.google.com/',
         'Accept':     'image/*',
       },
-      timeout: 8000,
+      timeout: 10000,
     });
     if (!response.ok) return res.status(response.status).send('Image inaccessible');
     const contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -91,10 +94,12 @@ app.get('/api/athlete', (req, res) => {
   const gridSize = athlete.gridSize || 10;
   const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text' };
   if (athlete.type === 'image') {
-    // On renvoie l'URL proxifiée pour éviter le CORS
     base.imageUrl  = `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
+  } else if (athlete.type === 'buzz') {
+    base.clues     = athlete.clues; // array of clue strings
+    base.maxScore  = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -109,6 +114,14 @@ app.get('/api/athletes/list', (req, res) => {
     type: a.type || 'text',
     played: pseudo ? hasPlayed(pseudo, a.id) : false,
   })));
+});
+
+// Check if pseudo has finished all games (for leaderboard access)
+app.get('/api/finished', (req, res) => {
+  const pseudo = (req.query.pseudo || '').trim();
+  if (!pseudo) return res.json({ finished: false, total: athletes.length, played: 0 });
+  const played = athletes.filter(a => hasPlayed(pseudo, a.id)).length;
+  res.json({ finished: hasFinishedAll(pseudo), total: athletes.length, played });
 });
 
 app.post('/api/check', (req, res) => {
@@ -141,11 +154,25 @@ app.post('/api/score', (req, res) => {
   res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length });
 });
 
-app.get('/api/scores/global', (req, res) => res.json(globalScores.slice(0, 10)));
+// Scores are only visible if pseudo has finished all games
+app.get('/api/scores/global', (req, res) => {
+  const pseudo = (req.query.pseudo || '').trim();
+  const isAdmin = req.query.admin === ADMIN_PASSWORD;
+  if (!isAdmin && pseudo && !hasFinishedAll(pseudo)) {
+    return res.json({ locked: true, played: athletes.filter(a => hasPlayed(pseudo, a.id)).length, total: athletes.length });
+  }
+  res.json(globalScores.slice(0, 10));
+});
+
 app.get('/api/scores/:athleteId', (req, res) => {
   const id = parseInt(req.params.athleteId);
   if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+  const pseudo = (req.query.pseudo || '').trim();
+  const isAdmin = req.query.admin === ADMIN_PASSWORD;
   const a = athletes.find(a => a.id === id);
+  if (!isAdmin && pseudo && !hasFinishedAll(pseudo)) {
+    return res.json({ locked: true, athlete: a ? { emoji: a.emoji, answer: '???', type: a.type || 'text' } : null, scores: [] });
+  }
   res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: (scores[id] || []).slice(0, 10) });
 });
 
@@ -162,26 +189,45 @@ app.get('/api/admin/athletes', (req, res) => {
   res.json(athletes.map(a => ({ ...a, playerCount: (scores[a.id] || []).length, topScore: (scores[a.id] || [])[0]?.score ?? null })));
 });
 
+// Admin: get full scores for a specific athlete
+app.get('/api/admin/scores/:athleteId', (req, res) => {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const id = parseInt(req.params.athleteId);
+  if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+  const a = athletes.find(a => a.id === id);
+  res.json({ athlete: a || null, scores: (scores[id] || []).slice(0, 50) });
+});
+
+// Admin: get global scores
+app.get('/api/admin/scores', (req, res) => {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  res.json(globalScores.slice(0, 100));
+});
+
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, imageUrl, gridSize, type, editId } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
-  if (type !== 'image' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
   const autoAliases   = [answer.trim().toLowerCase(), ...parts.map(p => p.toLowerCase())];
   const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
-  const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10)); // entre 2 et 20
+  const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10));
 
   const athleteData = {
     answer:   answer.trim(),
     aliases:  allAliases,
     emoji:    emoji || '🏆',
     type:     type || 'text',
-    clue:     type !== 'image' ? clue.trim() : '',
+    clue:     type === 'text' ? clue.trim() : '',
+    clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
     imageUrl: type === 'image' ? imageUrl.trim() : '',
     gridSize: type === 'image' ? gs : undefined,
   };
@@ -198,7 +244,7 @@ app.post('/api/admin/athlete', (req, res) => {
   athletes.push({ id: newId, ...athleteData, createdAt: new Date().toISOString() });
   scores[newId] = [];
   saveData();
-  console.log(`✅ Ajouté (${athleteData.type}${type==='image'?` ${gs}x${gs}`:''}): ${answer.trim()}`);
+  console.log(`✅ Ajouté (${athleteData.type}): ${answer.trim()}`);
   res.json({ success: true, edited: false, id: newId, answer: answer.trim(), total: athletes.length });
 });
 
