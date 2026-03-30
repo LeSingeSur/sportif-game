@@ -122,6 +122,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-grid{display:flex;flex-direction:column;gap:6px}
 .sportus-row{display:flex;gap:5px;justify-content:center}
 .sportus-cell{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
+.sportus-cell.active{border-color:rgba(255,255,255,.25);background:var(--c1)}
 .sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff}
 .sportus-cell.present{background:#f0c000;border-color:#f0c000;color:#07070f}
 .sportus-cell.absent{background:var(--c2);border-color:rgba(255,255,255,.08);color:var(--mute)}
@@ -377,7 +378,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="prix-fb" id="prix-fb"></div>
   </div>
 
-
+  <!-- Shared answer (text + image only) -->
+  <div class="ans-area" id="std-ans-area">
     <div class="ans-row">
       <input type="text" class="ans-in" id="ans-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       <button class="chk-btn" id="chk-btn">✓</button>
@@ -612,7 +614,8 @@ function updateImgCounter(){
 // ── LE JUSTE PRIX MODE ────────────────────────────────────────────────────
 const P = {
   question:'', unit:'', tries:0, score:100,
-  fixed:0, stake:100, done:false, history:[]
+  fixed:0, stake:100, done:false, history:[],
+  countdownInterval:null
 };
 
 function setupPrixMode(data){
@@ -634,6 +637,7 @@ function setupPrixMode(data){
   P.stake    = 100;
   P.done     = false;
   P.history  = [];
+  if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
 
   G.score=100; G.max=100; setScore(100,false);
   document.getElementById('bar-f').style.width='0%';
@@ -654,6 +658,29 @@ function setupPrixMode(data){
 document.getElementById('prix-chk').onclick = checkPrix;
 document.getElementById('prix-in').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPrix(); });
 
+function startPrixCountdown(){
+  if(P.countdownInterval) clearInterval(P.countdownInterval);
+  let t = 10;
+  const fb = document.getElementById('prix-fb');
+  fb.textContent = `⏱ ${t}s pour répondre…`;
+  P.countdownInterval = setInterval(()=>{
+    t--;
+    if(t <= 0){
+      clearInterval(P.countdownInterval); P.countdownInterval = null;
+      if(P.done || !G.active) return;
+      // Temps écoulé : malus −10 pts et direction répétée
+      P.score = Math.max(0, P.score - 10);
+      G.score = Math.round(P.score);
+      setScore(G.score, true);
+      document.getElementById('prix-total').textContent = G.score + ' pts';
+      fb.textContent = '⏰ Temps écoulé ! −10 pts';
+      setTimeout(()=>{ fb.textContent=''; startPrixCountdown(); }, 800);
+    } else {
+      fb.textContent = `⏱ ${t}s pour répondre…`;
+    }
+  }, 1000);
+}
+
 async function checkPrix(){
   if(P.done || !G.active) return;
   const raw = document.getElementById('prix-in').value.trim().replace(',','.');
@@ -664,6 +691,9 @@ async function checkPrix(){
     return;
   }
 
+  // Stop countdown while processing
+  if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
+  document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-chk').disabled = true;
   try{
     const res = await fetch('/api/prix-check',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -674,8 +704,8 @@ async function checkPrix(){
     document.getElementById('prix-in').value = '';
 
     if(data.exact){
-      // VICTOIRE
       P.done = true; G.active = false;
+      if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
       G.athleteName = data.fullAnswer;
       document.getElementById('prix-direction').textContent = '🎯';
       document.getElementById('prix-direction').className = 'prix-direction';
@@ -720,12 +750,14 @@ async function checkPrix(){
 
       if(newScore <= 0){
         // Score épuisé, fin forcée
+        if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
         P.done = true; G.active = false; P.score = 0; G.score = 0;
         document.getElementById('prix-fb').textContent = 'Score épuisé !';
         setTimeout(()=>showVictoryFromPrix(0, null), 1200);
       } else {
         document.getElementById('prix-chk').disabled = false;
         setTimeout(()=>document.getElementById('prix-in').focus(), 80);
+        startPrixCountdown();
       }
     }
   }catch(e){
@@ -809,6 +841,7 @@ function setupSportusMode(data){
   document.getElementById('img-zone').style.display='none';
   document.getElementById('clue').style.display='none';
   document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='none';
   document.getElementById('sportus-zone').style.display='flex';
 
   S.targetLen   = data.lastNameLength;
@@ -823,11 +856,9 @@ function setupSportusMode(data){
   G.score=100; G.max=100; setScore(100,false);
   document.getElementById('bar-f').style.width='0%';
 
-  // Clue box
+  // Clue box: show length only, hints are behind the boules
   const cb=document.getElementById('sportus-clue-box');
-  cb.innerHTML = data.clue
-    ? `<em>Indice :</em> ${esc(data.clue)}`
-    : `Nom de famille en <em>${S.targetLen}</em> lettres — à toi de jouer !`;
+  cb.innerHTML=`Nom de famille en <em>${S.targetLen}</em> lettre${S.targetLen>1?'s':''} — tire une boule pour un indice !`;
 
   // Build grid
   buildSportusGrid();
@@ -844,10 +875,8 @@ function setupSportusMode(data){
 
 function buildSportusHints(data){
   return [
-    `Le nom de famille contient <strong>${data.lastNameLength}</strong> lettres.`,
-    data.clue
-      ? `Indice : <strong>${esc(data.clue)}</strong>`
-      : `Le nom commence par la lettre… à toi de chercher !`
+    data.hint1 || `Le nom de famille contient <strong>${data.lastNameLength}</strong> lettres.`,
+    data.hint2 || `Aucun indice supplémentaire — bonne chance !`
   ];
 }
 
@@ -857,7 +886,9 @@ function buildSportusGrid(){
   for(let r=0;r<SPORTUS_MAX_TRIES;r++){
     const row=document.createElement('div'); row.className='sportus-row'; row.id='srow-'+r;
     for(let c=0;c<S.targetLen;c++){
-      const cell=document.createElement('div'); cell.className='sportus-cell'; cell.id=`sc-${r}-${c}`;
+      const cell=document.createElement('div');
+      cell.className='sportus-cell'+(r===0?' active':'');
+      cell.id=`sc-${r}-${c}`;
       row.appendChild(cell);
     }
     grid.appendChild(row);
@@ -967,6 +998,11 @@ async function checkSportus(){
 }
 
 function fillSportusRow(row, result, letters){
+  // Remove active from current row
+  for(let c=0;c<S.targetLen;c++){
+    const cell=document.getElementById(`sc-${row}-${c}`);
+    if(cell) cell.classList.remove('active');
+  }
   result.forEach((state,i)=>{
     const cell=document.getElementById(`sc-${row}-${i}`);
     if(!cell) return;
@@ -976,6 +1012,14 @@ function fillSportusRow(row, result, letters){
       setTimeout(()=>{ cell.classList.remove('flip'); cell.classList.add(state); },175);
     }, i*80);
   });
+  // Mark next row active
+  const nextRow=row+1;
+  if(nextRow<SPORTUS_MAX_TRIES){
+    for(let c=0;c<S.targetLen;c++){
+      const cell=document.getElementById(`sc-${nextRow}-${c}`);
+      if(cell) cell.classList.add('active');
+    }
+  }
 }
 
 function updateSportusKbd(result, letters){
@@ -990,15 +1034,16 @@ function updateSportusKbd(result, letters){
 
 function showVictoryFromSportus(fullAnswer){
   G.athleteName = fullAnswer || '???';
+  const finalScore = Math.round(Math.max(0, S.score));
   document.getElementById('v-name').textContent = G.athleteName;
-  document.getElementById('v-sc').textContent = S.score;
-  document.getElementById('v-sub').textContent = fullAnswer ? `Trouvé en ${S.tries} essai${S.tries>1?'s':''}` : 'Non trouvé';
+  document.getElementById('v-sc').textContent = finalScore;
+  document.getElementById('v-sub').textContent = fullAnswer ? `Trouvé en ${S.tries} essai${S.tries>1?'s':''}` : 'Non trouvé — score 0';
   document.getElementById('v-revealed').textContent = S.tries;
   document.getElementById('v-revealed-lbl').textContent = 'essais';
   document.getElementById('v-wrong').textContent = S.bouleUsed.filter(Boolean).length;
   document.querySelector('#v-wrong').nextElementSibling.textContent = 'boule(s) tirée(s)';
   show('sv'); confetti();
-  submitScore(S.score);
+  submitScore(finalScore);
 }
 
 
@@ -1271,6 +1316,7 @@ document.getElementById('btn-quit').onclick=async()=>{
   if(confirm('Abandonner cette partie ? 0 pt sera enregistré pour ce défi.')){
     G.active=false;
     buzzStopAll();
+    if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
     // Enregistre 0 pt puis passe au défi suivant
     try{
       await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},

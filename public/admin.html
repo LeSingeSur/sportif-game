@@ -266,9 +266,17 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- SPORTUS fields -->
       <div id="sportus-fields" style="display:none">
         <div class="field">
-          <label>Indice contextuel (optionnel)</label>
-          <textarea id="sportus-clue-in" placeholder="Ex: Multiple fois champion du monde de Formule 1, cette légende a roulé pour Ferrari et Mercedes." style="min-height:80px"></textarea>
-          <span class="hint">💡 Affiché au joueur dès le début comme aide contextuelle. La 1ère lettre et la longueur du nom sont toujours révélées automatiquement.<br>Les boules d'indices révèleront ces infos si tirées.</span>
+          <label>💡 Indice Boule Dorée #1</label>
+          <input type="text" id="sportus-hint1-in" placeholder="Ex: Ce sportif a remporté 14 fois Roland-Garros.">
+          <span class="hint">Révélé quand le joueur tire la 1ère boule dorée (−20 pts).</span>
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #2</label>
+          <input type="text" id="sportus-hint2-in" placeholder="Ex: Il est né en Espagne en 1986.">
+          <span class="hint">Révélé quand le joueur tire la 2ème boule dorée (−20 pts).</span>
+        </div>
+        <div style="background:rgba(30,30,30,.6);border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
+          ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement parmi les 3 boules — elle retire 20 pts sans donner d'indice.
         </div>
       </div>
 
@@ -462,7 +470,8 @@ async function startEdit(id){
     selectBuzzSpeed(a.buzzDecrement||5);
     renderBuzzClues();
   } else if(a.type==='sportus'){
-    document.getElementById('sportus-clue-in').value=a.clue||'';
+    document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
+    document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
   } else if(a.type==='prix'){
     document.getElementById('prix-question-in').value=a.question||'';
     document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
@@ -490,7 +499,8 @@ function cancelEdit(){
   document.getElementById('answer-in').value='';
   document.getElementById('clue-in').value='';
   document.getElementById('img-url-in').value='';
-  document.getElementById('sportus-clue-in').value='';
+  document.getElementById('sportus-hint1-in').value='';
+  document.getElementById('sportus-hint2-in').value='';
   document.getElementById('prix-question-in').value='';
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
@@ -561,6 +571,8 @@ document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e
 document.getElementById('img-url-in').addEventListener('input',checkReady);
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
+document.getElementById('sportus-hint1-in').addEventListener('input',checkReady);
+document.getElementById('sportus-hint2-in').addEventListener('input',checkReady);
 
 function previewImage(url){
   if(!url){
@@ -630,9 +642,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const btn=document.getElementById('btn-save');
   const answer=document.getElementById('answer-in').value.trim();
   const aliases=document.getElementById('aliases-in').value;
-  const clue=currentType==='text'?document.getElementById('clue-in').value.trim()
-    :currentType==='sportus'?document.getElementById('sportus-clue-in').value.trim()
-    :'';
+  const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
+  const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
+  const sportusHint2=currentType==='sportus'?document.getElementById('sportus-hint2-in').value.trim():'';
   const imageUrl=currentType==='image'?document.getElementById('img-url-in').value.trim():'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
@@ -658,7 +670,7 @@ document.getElementById('btn-save').onclick=async()=>{
   }
 
   btn.textContent='⏳…';
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
