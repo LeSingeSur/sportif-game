@@ -105,7 +105,8 @@ app.get('/api/athlete', (req, res) => {
     const lastName = athlete.answer.trim().split(/\s+/).pop();
     const normLast = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
     base.lastNameLength = normLast.length;
-    base.clue           = athlete.clue || '';
+    base.hint1          = athlete.sportusHint1 || '';
+    base.hint2          = athlete.sportusHint2 || '';
     base.maxScore       = 100;
   } else if (athlete.type === 'prix') {
     base.question  = athlete.question;  // ex: "Combien de Grands Chelems ?"
@@ -277,7 +278,7 @@ app.get('/api/admin/scores', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2 } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
@@ -299,7 +300,7 @@ app.post('/api/admin/athlete', (req, res) => {
     aliases:  allAliases,
     emoji:    emoji || '🏆',
     type:     type || 'text',
-    clue:     (type === 'text' || type === 'sportus') ? (clue||'').trim() : '',
+    clue:     type === 'text' ? (clue||'').trim() : '',
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
     buzzDecrement: type === 'buzz' ? Math.min(20, Math.max(1, parseInt(buzzDecrement) || 5)) : undefined,
     imageUrl: type === 'image' ? imageUrl.trim() : '',
@@ -307,6 +308,8 @@ app.post('/api/admin/athlete', (req, res) => {
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
     targetValue: type === 'prix' ? parseFloat(targetValue) : undefined,
+    sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
+    sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
   };
 
   if (editId) {
