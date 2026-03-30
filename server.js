@@ -101,6 +101,16 @@ app.get('/api/athlete', (req, res) => {
     base.clues        = athlete.clues;
     base.maxScore     = 100;
     base.buzzDecrement = athlete.buzzDecrement || 5;
+  } else if (athlete.type === 'sportus') {
+    const lastName = athlete.answer.trim().split(/\s+/).pop();
+    const normLast = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    base.lastNameLength = normLast.length;
+    base.clue           = athlete.clue || '';
+    base.maxScore       = 100;
+  } else if (athlete.type === 'prix') {
+    base.question  = athlete.question;  // ex: "Combien de Grands Chelems ?"
+    base.unit      = athlete.unit || ''; // ex: "titres", "cm", "ans"
+    base.maxScore  = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -177,7 +187,66 @@ app.get('/api/scores/:athleteId', (req, res) => {
   res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: (scores[id] || []).slice(0, 10) });
 });
 
-// ── ADMIN ─────────────────────────────────────────────────────────────────
+// ── SPORTUS (Motus) ──────────────────────────────────────────────────────
+app.post('/api/sportus-check', (req, res) => {
+  const { athleteId, guess } = req.body;
+  if (!athleteId || !guess) return res.status(400).json({ error: 'Données manquantes' });
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete) return res.status(404).json({ error: 'Sportif introuvable' });
+
+  // Target = last name, normalised, uppercase
+  const lastName = athlete.answer.trim().split(/\s+/).pop();
+  const target   = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  const attempt  = guess.trim().split(/\s+/).pop()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+
+  const correct = norm(lastName) === norm(guess.trim().split(/\s+/).pop());
+
+  // Motus coloring: 🟥 bien placé, 🟡 mal placé, ⬜ absent
+  const result = Array(target.length).fill('absent');
+  const tLeft  = target.split('');
+  const aLeft  = attempt.split('').slice(0, target.length);
+  // Pad/trim attempt to target length
+  const atArr  = Array.from({length: target.length}, (_,i) => aLeft[i] || '');
+
+  // Pass 1: exact matches
+  for (let i = 0; i < target.length; i++) {
+    if (atArr[i] === tLeft[i]) { result[i] = 'correct'; tLeft[i] = null; atArr[i] = null; }
+  }
+  // Pass 2: present but wrong position
+  for (let i = 0; i < target.length; i++) {
+    if (atArr[i] === null) continue;
+    const j = tLeft.indexOf(atArr[i]);
+    if (j !== -1) { result[i] = 'present'; tLeft[j] = null; }
+  }
+
+  res.json({
+    correct,
+    result,           // array of 'correct'|'present'|'absent'
+    target: correct ? target : null,
+    fullAnswer: correct ? athlete.answer : null,
+  });
+});
+
+// ── LE JUSTE PRIX ────────────────────────────────────────────────────────
+// Illimité, score peut tomber à 0, bloqué là
+app.post('/api/prix-check', (req, res) => {
+  const { athleteId, guess } = req.body;
+  if (!athleteId || guess === undefined) return res.status(400).json({ error: 'Données manquantes' });
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'prix') return res.status(404).json({ error: 'Défi introuvable' });
+
+  const target = athlete.targetValue;
+  const g      = parseFloat(String(guess).replace(',', '.'));
+  if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
+
+  const exact     = g === target;
+  const diff      = Math.abs(target - g);
+  const precision = Math.max(0, 100 - (diff / target * 100));
+  const direction = g < target ? 'plus' : g > target ? 'moins' : 'exact';
+
+  res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: exact ? athlete.answer : null });
+});
 
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
@@ -208,12 +277,14 @@ app.get('/api/admin/scores', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
+  if (type === 'prix' && (!question || targetValue === undefined)) return res.status(400).json({ error: 'Question et valeur cible obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
   const autoAliases   = [answer.trim().toLowerCase()]; // nom complet
@@ -228,11 +299,14 @@ app.post('/api/admin/athlete', (req, res) => {
     aliases:  allAliases,
     emoji:    emoji || '🏆',
     type:     type || 'text',
-    clue:     type === 'text' ? clue.trim() : '',
+    clue:     (type === 'text' || type === 'sportus') ? (clue||'').trim() : '',
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
     buzzDecrement: type === 'buzz' ? Math.min(20, Math.max(1, parseInt(buzzDecrement) || 5)) : undefined,
     imageUrl: type === 'image' ? imageUrl.trim() : '',
     gridSize: type === 'image' ? gs : undefined,
+    question: type === 'prix' ? (question||'').trim() : undefined,
+    unit:     type === 'prix' ? (unit||'').trim() : undefined,
+    targetValue: type === 'prix' ? parseFloat(targetValue) : undefined,
   };
 
   if (editId) {
