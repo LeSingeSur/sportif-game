@@ -216,7 +216,8 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type !== 'image' && type !== 'buzz' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
-  const autoAliases   = [answer.trim().toLowerCase(), ...parts.map(p => p.toLowerCase())];
+  const autoAliases   = [answer.trim().toLowerCase()]; // nom complet
+  if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase()); // nom de famille seulement
   const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
