@@ -319,7 +319,7 @@ const G={
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
   buzzClues:[],buzzScore:100,buzzTimerInterval:null,buzzWordInterval:null,
-  buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0
+  buzzFrozen:false,buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[]
 };
 let lbAthletes=[],lbActiveTab='global';
 
@@ -532,7 +532,6 @@ function startBuzzChallenge(){
   // Score drops 5 pts/sec
   G.buzzTimerInterval=setInterval(()=>{
     if(!G.active||!G.buzzStarted)return;
-    if(G.buzzFrozen) return; // paused during buzz, still ticking
     G.buzzScore=Math.max(0,G.buzzScore-5);
     G.score=G.buzzScore;
     setScore(G.buzzScore,true);
@@ -547,36 +546,33 @@ function showNextBuzzClue(idx){
   G.buzzClueIdx=idx; G.buzzWordIdx=0;
   const dot=document.getElementById('buzz-dot-'+idx);
   if(dot) dot.classList.add('active');
-  // Enable buzz button after clue starts
   document.getElementById('buzz-btn').disabled=false;
-  revealBuzzWords();
-}
-
-function revealBuzzWords(){
-  if(G.buzzWordInterval) clearInterval(G.buzzWordInterval);
+  // Build DOM fresh for this new clue
   const clue=G.buzzClues[G.buzzClueIdx]||'';
   const words=clue.match(/\S+|\s+/g)||[];
   const box=document.getElementById('buzz-clue-box');
-  box.innerHTML='';
-  // Build spans
-  const wordEls=[];
+  box.innerHTML=''; G.buzzWordEls=[];
   words.forEach(tok=>{
     if(/^\s+$/.test(tok)){box.appendChild(document.createTextNode(' '));return}
     const sp=document.createElement('span');sp.className='buzz-clue-word';sp.textContent=tok;
     box.appendChild(sp); box.appendChild(document.createTextNode(' '));
-    wordEls.push(sp);
+    G.buzzWordEls.push(sp);
   });
-  G.buzzWordIdx=0;
+  startBuzzWordInterval();
+}
+
+// Starts (or resumes) revealing words from current G.buzzWordIdx — does NOT touch DOM
+function startBuzzWordInterval(){
+  if(G.buzzWordInterval) clearInterval(G.buzzWordInterval);
   G.buzzWordInterval=setInterval(()=>{
     if(!G.active||!G.buzzStarted) return;
+    const wordEls=G.buzzWordEls;
     if(G.buzzWordIdx<wordEls.length){
       wordEls[G.buzzWordIdx].classList.add('vis');
       G.buzzWordIdx++;
-      const prog=G.buzzWordIdx/wordEls.length;
-      document.getElementById('bar-f').style.width=(prog*100)+'%';
+      document.getElementById('bar-f').style.width=(G.buzzWordIdx/wordEls.length*100)+'%';
     } else {
       clearInterval(G.buzzWordInterval); G.buzzWordInterval=null;
-      // Move to next clue after pause
       const nextIdx=G.buzzClueIdx+1;
       if(nextIdx<G.buzzClues.length){
         const dot=document.getElementById('buzz-dot-'+G.buzzClueIdx);
@@ -615,31 +611,35 @@ async function checkBuzzAnswer(){
       document.getElementById('buzz-freeze-msg').textContent='';
       setTimeout(showVictory,300);
     } else {
-      // Freeze 3 seconds
-      G.buzzFrozen=true;
+      // -10 pts immédiat
+      G.buzzScore=Math.max(0,G.buzzScore-10);
+      G.score=G.buzzScore;
+      setScore(G.buzzScore,true);
+      updateBuzzRing(G.buzzScore);
+      document.getElementById('buzz-pts').textContent=G.buzzScore;
+      G.wrongAnswers++;
+      // Gel du bouton buzz 3s — le texte continue de défiler
       document.getElementById('buzz-ans-in').value='';
       document.getElementById('buzz-ans-in').className='buzz-ans-in err';
       setTimeout(()=>document.getElementById('buzz-ans-in').classList.remove('err'),400);
       document.getElementById('buzz-input-row').classList.remove('show');
       document.getElementById('buzz-btn').disabled=true;
+      // Reprendre le défilement immédiatement
+      startBuzzWordInterval();
       let countdown=3;
       const fmsg=document.getElementById('buzz-freeze-msg');
-      fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
+      fmsg.textContent=`−10 pts ! Rebuzz dans ${countdown}s…`;
       const fi=setInterval(()=>{
         countdown--;
         if(countdown<=0){
           clearInterval(fi);
           if(!G.active||!G.buzzStarted)return;
-          G.buzzFrozen=false;
           fmsg.textContent='';
           document.getElementById('buzz-btn').disabled=false;
-          // Continue word reveal from where we are
-          revealBuzzWords();
         } else {
-          fmsg.textContent=`Mauvaise réponse ! Rebuzz dans ${countdown}s…`;
+          fmsg.textContent=`−10 pts ! Rebuzz dans ${countdown}s…`;
         }
       },1000);
-      G.wrongAnswers++;
     }
   }catch(e){console.error(e)}
 }
