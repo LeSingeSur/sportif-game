@@ -164,8 +164,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .prix-chaleur{display:flex;flex-direction:column;align-items:center;gap:8px}
 .prix-chaleur-ico{font-size:64px;min-height:72px;line-height:1;transition:transform .3s;animation:fu .3s ease}
 .prix-chaleur-label{font-family:var(--fh);font-size:22px;letter-spacing:2px}
-.prix-chaleur-jauge{width:100%;height:10px;background:var(--c2);border-radius:99px;overflow:hidden}
-.prix-chaleur-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1),background .6s}
 /* History */
 .prix-history{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
 .prix-hist-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 14px}
@@ -376,11 +374,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="prix-chaleur" id="prix-chaleur" style="display:none">
       <div class="prix-chaleur-ico" id="prix-chaleur-ico">🧊</div>
       <div class="prix-chaleur-label" id="prix-chaleur-label">—</div>
-      <div class="prix-chaleur-jauge"><div class="prix-chaleur-fill" id="prix-chaleur-fill" style="width:0%"></div></div>
     </div>
     <div class="prix-history" id="prix-history"></div>
     <div class="prix-input-row">
       <input type="number" class="prix-in" id="prix-in" placeholder="Ta réponse…" min="0" autocomplete="off">
+      <div id="prix-countdown" style="font-family:var(--fh);font-size:42px;line-height:1;min-width:44px;text-align:center;color:var(--neon);transition:color .3s,transform .2s;flex-shrink:0">10</div>
       <button class="prix-chk" id="prix-chk">✓</button>
     </div>
     <div class="prix-fb" id="prix-fb"></div>
@@ -655,13 +653,11 @@ function setupPrixMode(data){
   document.getElementById('prix-chaleur').style.display = 'none';
   document.getElementById('prix-chaleur-ico').textContent = '🧊';
   document.getElementById('prix-chaleur-label').textContent = '—';
-  document.getElementById('prix-chaleur-fill').style.width = '0%';
   document.getElementById('prix-history').innerHTML = '';
   document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-in').value = '';
-  document.getElementById('prix-in').disabled = false;
-  document.getElementById('prix-chk').disabled = false;
-  setTimeout(()=>document.getElementById('prix-in').focus(), 80);
+  updatePrixCountdownDisplay(10);
+  startPrixCountdown();
 }
 
 document.getElementById('prix-chk').onclick = checkPrix;
@@ -677,8 +673,9 @@ async function checkPrix(){
     return;
   }
 
-  // Stop countdown while processing
+  // Stop countdown as soon as player submits
   if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
+  updatePrixCountdownDisplay(10);
   document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-chk').disabled = true;
   try{
@@ -732,27 +729,47 @@ async function checkPrix(){
   }
 }
 
-// Countdown anti-triche : bloque l'input 10s après chaque PLUS/MOINS, sans malus
+// Countdown : démarre AVANT la saisie. 10s pour taper une réponse.
+// S'arrête quand le joueur valide. Si 0 → entrée annulée, recommence.
 function startPrixCountdown(){
   if(P.countdownInterval) clearInterval(P.countdownInterval);
-  document.getElementById('prix-chk').disabled = true;
-  document.getElementById('prix-in').disabled  = true;
   let t = 10;
-  const fb = document.getElementById('prix-fb');
-  fb.textContent = `⏱ ${t}s`;
+  updatePrixCountdownDisplay(t);
+  document.getElementById('prix-in').disabled  = false;
+  document.getElementById('prix-chk').disabled = false;
+  setTimeout(()=>document.getElementById('prix-in').focus(), 80);
   P.countdownInterval = setInterval(()=>{
     t--;
+    updatePrixCountdownDisplay(t);
     if(t <= 0){
       clearInterval(P.countdownInterval); P.countdownInterval = null;
       if(P.done || !G.active) return;
-      fb.textContent = '';
-      document.getElementById('prix-in').disabled  = false;
-      document.getElementById('prix-chk').disabled = false;
-      setTimeout(()=>document.getElementById('prix-in').focus(), 80);
-    } else {
-      fb.textContent = `⏱ ${t}s`;
+      // Temps écoulé : -20 pts + vide l'input + repart
+      P.score = Math.max(0, Math.floor(P.score - 20));
+      G.score = P.score;
+      setScore(P.score, true);
+      document.getElementById('bar-f').style.width = P.score+'%';
+      document.getElementById('prix-in').value = '';
+      document.getElementById('prix-fb').textContent = '⏰ −20 pts !';
+      if(P.score <= 0){
+        P.done = true; G.active = false;
+        setTimeout(()=>showVictoryFromPrix(0, null), 1000);
+        return;
+      }
+      setTimeout(()=>{
+        document.getElementById('prix-fb').textContent = '';
+        startPrixCountdown();
+      }, 800);
     }
   }, 1000);
+}
+
+function updatePrixCountdownDisplay(t){
+  const el = document.getElementById('prix-countdown');
+  if(!el) return;
+  el.textContent = t;
+  el.style.color = t <= 3 ? 'var(--red)' : t <= 6 ? 'var(--orange)' : 'var(--neon)';
+  el.style.transform = t <= 3 ? 'scale(1.2)' : 'scale(1)';
 }
 
 // Chaleur — formule symétrique min/max, niveaux exacts selon spec
@@ -781,18 +798,11 @@ function updateChaleur(precision, direction){
   el.style.padding     = '16px';
   el.style.border      = `1px solid ${lvl.color}55`;
 
+  // Jauge supprimée — température seule
   document.getElementById('prix-chaleur-ico').textContent   = lvl.ico;
-
-  // Direction arrow + label, no percentage
   const arrow = direction==='plus' ? ' ⬆️' : direction==='moins' ? ' ⬇️' : '';
   document.getElementById('prix-chaleur-label').textContent = lvl.label + arrow;
   document.getElementById('prix-chaleur-label').style.color = lvl.color;
-
-  // Jauge colorée
-  const fill = document.getElementById('prix-chaleur-fill');
-  fill.style.background = lvl.color;
-  fill.style.boxShadow  = `0 0 8px ${lvl.color}88`;
-  fill.style.width      = pct + '%';
 }
 
 function addPrixHistoryItem(guess, precision, direction){
