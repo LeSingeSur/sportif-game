@@ -40,17 +40,19 @@ function hasFinishedAll(pseudo) {
 }
 function rebuildGlobalScores() {
   const map = {};
-  for (const list of Object.values(scores)) {
+  for (const [athleteId, list] of Object.entries(scores)) {
+    const athlete = athletes.find(a => String(a.id) === String(athleteId));
+    const coeff   = athlete?.coefficient ?? 1;
     for (const entry of list) {
       const key = norm(entry.pseudo);
       if (!map[key]) map[key] = { pseudo: entry.pseudo, totalScore: 0, count: 0, lastDate: entry.date };
-      map[key].totalScore += entry.score;
+      map[key].totalScore += entry.score * coeff;
       map[key].count++;
       if (entry.date > map[key].lastDate) map[key].lastDate = entry.date;
     }
   }
   globalScores = Object.values(map)
-    .map(e => ({ pseudo: e.pseudo, score: e.totalScore, count: e.count, date: e.lastDate }))
+    .map(e => ({ pseudo: e.pseudo, score: Math.round(e.totalScore), count: e.count, date: e.lastDate }))
     .sort((a, b) => b.score - a.score).slice(0, 200);
 }
 
@@ -245,8 +247,7 @@ app.post('/api/prix-check', (req, res) => {
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
   const exact     = g === target;
-  const diff      = Math.abs(target - g);
-  const precision = Math.max(0, 100 - (diff / target * 100));
+  const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
   const direction = g < target ? 'plus' : g > target ? 'moins' : 'exact';
 
   res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: exact ? athlete.answer : null });
@@ -281,7 +282,7 @@ app.get('/api/admin/scores', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0 } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
@@ -315,6 +316,7 @@ app.post('/api/admin/athlete', (req, res) => {
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
     revealedLetters: type === 'sportus' ? (req.body.revealedLetters || []) : undefined,
+    coefficient: parseFloat(coefficient) || 1,
   };
 
   if (editId) {
