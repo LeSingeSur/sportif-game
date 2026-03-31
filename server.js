@@ -107,6 +107,7 @@ app.get('/api/athlete', (req, res) => {
     base.lastNameLength = normLast.length;
     base.hint1          = athlete.sportusHint1 || '';
     base.hint2          = athlete.sportusHint2 || '';
+    base.freeHint       = athlete.sportusHint0 || '';
     base.maxScore       = 100;
   } else if (athlete.type === 'prix') {
     base.question  = athlete.question;  // ex: "Combien de Grands Chelems ?"
@@ -278,7 +279,7 @@ app.get('/api/admin/scores', (req, res) => {
 });
 
 app.post('/api/admin/athlete', (req, res) => {
-  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2 } = req.body;
+  const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0 } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl) return res.status(400).json({ error: 'URL image obligatoire' });
@@ -310,6 +311,7 @@ app.post('/api/admin/athlete', (req, res) => {
     targetValue: type === 'prix' ? parseFloat(targetValue) : undefined,
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
+    sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
   };
 
   if (editId) {
