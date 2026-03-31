@@ -442,7 +442,7 @@ const G={
   // image
   grid:10,tiles:[],spiralOrder:[],nextTileIdx:0,
   // buzz
-  buzzClues:[],buzzScore:100,buzzDecrement:5,buzzTimerInterval:null,buzzWordInterval:null,
+  buzzClues:[],buzzScore:100,buzzDecrement:2,buzzFreezeDuration:3,buzzTimerInterval:null,buzzWordInterval:null,
   buzzFreezeTimeout:null,buzzStarted:false,buzzClueIdx:0,buzzWordIdx:0,buzzWordEls:[],buzzAnsTimeout:null
 };
 let lbAthletes=[],lbActiveTab='global';
@@ -1087,7 +1087,8 @@ function setupBuzzMode(data){
   document.getElementById('buzz-sticky').classList.add('on');
 
   G.buzzClues = data.clues || [];
-  G.buzzDecrement = data.buzzDecrement || 5;
+  G.buzzDecrement      = data.buzzDecrement || 2;
+  G.buzzFreezeDuration = data.buzzFreezeDuration || 3;
   G.buzzScore = 100; G.max=100; G.total=100; G.score=100;
   G.buzzStarted=false; G.buzzClueIdx=0; G.buzzWordIdx=0;
 
@@ -1247,7 +1248,7 @@ async function checkBuzzAnswer(){
       document.getElementById('buzz-btn').disabled=true;
       startBuzzWordInterval();
       resumeBuzzTimer();
-      let countdown=3;
+      let countdown=G.buzzFreezeDuration;
       const fmsg=document.getElementById('buzz-freeze-msg');
       fmsg.textContent=`−5 pts ! Rebuzz dans ${countdown}s…`;
       const fi=setInterval(()=>{
@@ -1344,12 +1345,20 @@ document.getElementById('btn-quit').onclick=async()=>{
     G.active=false;
     buzzStopAll();
     if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
-    // Enregistre 0 pt puis passe au défi suivant
     try{
       await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({pseudo:G.pseudo,score:0,athleteId:G.athleteId})});
     }catch(e){console.error('quit score error',e)}
-    show('sg'); loadAthlete();
+    // Affiche l'écran victoire avec 0 pt — le joueur ne peut pas recommencer ce défi
+    document.getElementById('v-name').textContent = '—';
+    document.getElementById('v-sc').textContent = '0';
+    document.getElementById('v-sub').textContent = 'Abandonné — 0 pt enregistré';
+    document.getElementById('v-revealed').textContent = '0';
+    document.getElementById('v-revealed-lbl').textContent = 'score';
+    document.getElementById('v-wrong').textContent = '—';
+    document.querySelector('#v-wrong').nextElementSibling.textContent = '';
+    document.getElementById('rank-badge').textContent = '✅ Score enregistré';
+    show('sv');
   }
 };
 
