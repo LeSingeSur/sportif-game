@@ -622,7 +622,7 @@ function updateImgCounter(){
 // ── LE JUSTE PRIX MODE ────────────────────────────────────────────────────
 const P = {
   question:'', unit:'', tries:0, score:100,
-  fixed:0, stake:100, done:false, history:[],
+  done:false, history:[],
   countdownInterval:null
 };
 
@@ -667,27 +667,6 @@ function setupPrixMode(data){
 document.getElementById('prix-chk').onclick = checkPrix;
 document.getElementById('prix-in').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPrix(); });
 
-function startPrixCountdown(){
-  if(P.countdownInterval) clearInterval(P.countdownInterval);
-  let t = 10;
-  const fb = document.getElementById('prix-fb');
-  fb.textContent = `⏱ ${t}s pour répondre…`;
-  P.countdownInterval = setInterval(()=>{
-    t--;
-    if(t <= 0){
-      clearInterval(P.countdownInterval); P.countdownInterval = null;
-      if(P.done || !G.active) return;
-      P.score = Math.max(0, P.score - 5);
-      G.score = Math.round(P.score);
-      setScore(G.score, true);
-      fb.textContent = '⏰ Temps écoulé ! −5 pts';
-      setTimeout(()=>{ fb.textContent=''; startPrixCountdown(); }, 800);
-    } else {
-      fb.textContent = `⏱ ${t}s pour répondre…`;
-    }
-  }, 1000);
-}
-
 async function checkPrix(){
   if(P.done || !G.active) return;
   const raw = document.getElementById('prix-in').value.trim().replace(',','.');
@@ -714,41 +693,36 @@ async function checkPrix(){
       P.done = true; G.active = false;
       if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
       G.athleteName = data.fullAnswer;
-      const finalScore = Math.round(Math.max(0, P.score));
+      const finalScore = Math.floor(Math.max(0, P.score));
       addPrixHistoryItem(guess, 100, 'exact');
       updateChaleur(100, 'exact');
       setTimeout(()=>showVictoryFromPrix(finalScore, data.fullAnswer), 600);
     } else {
-      // Calcul du score selon les règles
+      // 50/50 : 50% acquis + 50% remis en jeu selon précision, −1 pt par essai
       let newScore;
       if(P.tries === 1){
-        newScore = data.precision;
-        P.fixed  = 0;
-        P.stake  = newScore;
+        newScore = Math.floor(data.precision);
       } else {
-        P.fixed  = P.score / 2;
-        P.stake  = P.score / 2;
-        const gained = P.stake * (data.precision / 100);
-        newScore = P.fixed + gained - 5;
+        const fixed  = P.score / 2;
+        const stake  = P.score / 2;
+        const gained = stake * (data.precision / 100);
+        newScore = fixed + gained - 1;
       }
-      newScore = Math.max(0, newScore);
+      newScore = Math.max(0, Math.floor(newScore));
       P.score  = newScore;
-      G.score  = Math.round(newScore);
-      setScore(Math.round(newScore), true);
-      document.getElementById('bar-f').style.width = (newScore)+'%';
+      G.score  = newScore;
+      setScore(newScore, true);
+      document.getElementById('bar-f').style.width = newScore+'%';
 
       updateChaleur(data.precision, data.direction);
       addPrixHistoryItem(guess, data.precision, data.direction);
 
       if(newScore <= 0){
-        // Score épuisé, fin forcée
         if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
         P.done = true; G.active = false; P.score = 0; G.score = 0;
         document.getElementById('prix-fb').textContent = 'Score épuisé !';
         setTimeout(()=>showVictoryFromPrix(0, null), 1200);
       } else {
-        document.getElementById('prix-chk').disabled = false;
-        setTimeout(()=>document.getElementById('prix-in').focus(), 80);
         startPrixCountdown();
       }
     }
@@ -758,18 +732,37 @@ async function checkPrix(){
   }
 }
 
-// Chaleur levels — échelle réaliste basée sur proximité relative
-// ex: cible=100, proposition=50 → precision=50% → FROID
-// proposition=90 → precision=90% → CHAUD
-// proposition=99 → precision=99% → BOUILLANT
+// Countdown anti-triche : bloque l'input 10s après chaque PLUS/MOINS, sans malus
+function startPrixCountdown(){
+  if(P.countdownInterval) clearInterval(P.countdownInterval);
+  document.getElementById('prix-chk').disabled = true;
+  document.getElementById('prix-in').disabled  = true;
+  let t = 10;
+  const fb = document.getElementById('prix-fb');
+  fb.textContent = `⏱ ${t}s`;
+  P.countdownInterval = setInterval(()=>{
+    t--;
+    if(t <= 0){
+      clearInterval(P.countdownInterval); P.countdownInterval = null;
+      if(P.done || !G.active) return;
+      fb.textContent = '';
+      document.getElementById('prix-in').disabled  = false;
+      document.getElementById('prix-chk').disabled = false;
+      setTimeout(()=>document.getElementById('prix-in').focus(), 80);
+    } else {
+      fb.textContent = `⏱ ${t}s`;
+    }
+  }, 1000);
+}
+
+// Chaleur — formule symétrique min/max, niveaux exacts selon spec
 const CHALEUR_LEVELS = [
-  {min:0,  ico:'🧊', label:'GLACIAL',    color:'#4fc3f7', bg:'rgba(79,195,247,.12)'},
-  {min:30, ico:'🌬️', label:'FROID',      color:'#81d4fa', bg:'rgba(129,212,250,.12)'},
-  {min:55, ico:'🌤️', label:'TIÈDE',      color:'#fff176', bg:'rgba(255,241,118,.12)'},
-  {min:75, ico:'🌡️', label:'CHAUD',      color:'var(--orange)', bg:'rgba(255,140,0,.12)'},
-  {min:90, ico:'🔥', label:'TRÈS CHAUD', color:'#ff6030', bg:'rgba(255,96,48,.15)'},
-  {min:96, ico:'🌶️', label:'BRÛLANT',   color:'var(--red)', bg:'rgba(255,63,92,.18)'},
-  {min:99, ico:'💥', label:'BOUILLANT!', color:'#ff00aa', bg:'rgba(255,0,170,.18)'},
+  {min:0,  ico:'⛄', label:'GLACIAL',   color:'#1565c0', bg:'rgba(21,101,192,.15)'},
+  {min:10, ico:'🧊', label:'FROID',     color:'#4fc3f7', bg:'rgba(79,195,247,.12)'},
+  {min:40, ico:'🌤️', label:'TIÈDE',     color:'#fff176', bg:'rgba(255,241,118,.12)'},
+  {min:70, ico:'🌡️', label:'CHAUD',     color:'var(--orange)', bg:'rgba(255,140,0,.13)'},
+  {min:90, ico:'🔥', label:'BRÛLANT',   color:'#ff4020', bg:'rgba(255,64,32,.16)'},
+  {min:100,ico:'🎯', label:'JUSTE PRIX !', color:'#00e676', bg:'rgba(0,230,118,.18)'},
 ];
 
 function getChaleurLevel(pct){
@@ -782,17 +775,24 @@ function updateChaleur(precision, direction){
   const pct = Math.round(precision);
   const lvl = getChaleurLevel(pct);
   const el  = document.getElementById('prix-chaleur');
-  el.style.display = 'flex';
+  el.style.display     = 'flex';
+  el.style.background  = lvl.bg;
+  el.style.borderRadius = '16px';
+  el.style.padding     = '16px';
+  el.style.border      = `1px solid ${lvl.color}55`;
+
   document.getElementById('prix-chaleur-ico').textContent   = lvl.ico;
-  document.getElementById('prix-chaleur-label').textContent = (direction==='plus'?'⬆️ ':direction==='moins'?'⬇️ ':'')+lvl.label;
+
+  // Direction arrow + label, no percentage
+  const arrow = direction==='plus' ? ' ⬆️' : direction==='moins' ? ' ⬇️' : '';
+  document.getElementById('prix-chaleur-label').textContent = lvl.label + arrow;
   document.getElementById('prix-chaleur-label').style.color = lvl.color;
+
+  // Jauge colorée
   const fill = document.getElementById('prix-chaleur-fill');
   fill.style.background = lvl.color;
-  fill.style.width = pct+'%';
-  el.style.background = lvl.bg;
-  el.style.borderRadius = '16px';
-  el.style.padding = '14px 16px';
-  el.style.border = `1px solid ${lvl.color}44`;
+  fill.style.boxShadow  = `0 0 8px ${lvl.color}88`;
+  fill.style.width      = pct + '%';
 }
 
 function addPrixHistoryItem(guess, precision, direction){
@@ -811,7 +811,7 @@ function addPrixHistoryItem(guess, precision, direction){
 function showVictoryFromPrix(finalScore, fullAnswer){
   G.athleteName = fullAnswer || '???';
   document.getElementById('v-name').textContent = G.athleteName;
-  document.getElementById('v-sc').textContent   = Math.round(finalScore);
+  document.getElementById('v-sc').textContent   = Math.floor(finalScore);
   document.getElementById('v-sub').textContent  = fullAnswer
     ? `Trouvé en ${P.tries} essai${P.tries > 1 ? 's' : ''} !`
     : 'Score épuisé avant de trouver…';
@@ -1225,7 +1225,6 @@ async function checkBuzzAnswer(){
       setTimeout(showVictory,300);
     } else {
       G.wrongAnswers++;
-      // −5 pts immédiat
       G.buzzScore=Math.max(0,G.buzzScore-5);
       G.score=G.buzzScore;
       setScore(G.buzzScore,true);
@@ -1236,10 +1235,8 @@ async function checkBuzzAnswer(){
       setTimeout(()=>document.getElementById('buzz-ans-in').classList.remove('err'),400);
       document.getElementById('buzz-input-row').classList.remove('show');
       document.getElementById('buzz-btn').disabled=true;
-      // Texte et timer repartent immédiatement
       startBuzzWordInterval();
       resumeBuzzTimer();
-      // Buzz bloqué 3s
       let countdown=3;
       const fmsg=document.getElementById('buzz-freeze-msg');
       fmsg.textContent=`−5 pts ! Rebuzz dans ${countdown}s…`;
