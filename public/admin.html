@@ -283,6 +283,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div style="background:rgba(30,30,30,.6);border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
           ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement — elle retire 20 pts sans donner d'indice.
         </div>
+        <div class="field" style="margin-top:10px">
+          <label>Lettres pré-révélées (optionnel)</label>
+          <span class="hint">Saisis le nom de famille avec des <strong>_</strong> pour les lettres masquées.<br>Ex: pour NADAL → <code>_A_A_</code> révèle les A dès le départ.</span>
+          <input type="text" id="sportus-revealed-in" placeholder="Ex: _A_A_ ou N___L" autocomplete="off" autocorrect="off" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-size:18px">
+          <div id="sportus-revealed-preview" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap"></div>
+        </div>
       </div>
 
       <!-- PRIX fields -->
@@ -483,6 +489,16 @@ async function startEdit(id){
     document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
     document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
     document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
+    // Rebuild pattern from revealedLetters
+    if(a.revealedLetters&&a.revealedLetters.length){
+      const lastName=a.answer.trim().split(/\s+/).pop().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+      const pat=lastName.split('').map((ch,i)=>a.revealedLetters.find(r=>r.index===i)?ch:'_').join('');
+      document.getElementById('sportus-revealed-in').value=pat;
+      document.getElementById('sportus-revealed-in').dispatchEvent(new Event('input'));
+    } else {
+      document.getElementById('sportus-revealed-in').value='';
+      document.getElementById('sportus-revealed-preview').innerHTML='';
+    }
   } else if(a.type==='prix'){
     document.getElementById('prix-question-in').value=a.question||'';
     document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
@@ -513,6 +529,8 @@ function cancelEdit(){
   document.getElementById('sportus-hint0-in').value='';
   document.getElementById('sportus-hint1-in').value='';
   document.getElementById('sportus-hint2-in').value='';
+  document.getElementById('sportus-revealed-in').value='';
+  document.getElementById('sportus-revealed-preview').innerHTML='';
   document.getElementById('prix-question-in').value='';
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
@@ -585,6 +603,20 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 document.getElementById('sportus-hint1-in').addEventListener('input',checkReady);
 document.getElementById('sportus-hint2-in').addEventListener('input',checkReady);
+
+// Revealed letters preview
+document.getElementById('sportus-revealed-in').addEventListener('input', e=>{
+  const val = e.target.value.toUpperCase().replace(/[^A-Z_]/g,'');
+  e.target.value = val;
+  const prev = document.getElementById('sportus-revealed-preview');
+  prev.innerHTML = '';
+  val.split('').forEach((ch,i)=>{
+    const span = document.createElement('span');
+    span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-family:monospace;font-size:16px;font-weight:800;border:2px solid ${ch==='_'?'rgba(255,255,255,.1)':'rgba(212,255,0,.5)'};background:${ch==='_'?'var(--c2)':'rgba(212,255,0,.1)'};color:${ch==='_'?'var(--mute)':'var(--neon)'}`;
+    span.textContent = ch === '_' ? '?' : ch;
+    prev.appendChild(span);
+  });
+});
 
 function previewImage(url){
   if(!url){
@@ -682,7 +714,13 @@ document.getElementById('btn-save').onclick=async()=>{
   }
 
   btn.textContent='⏳…';
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():''};
+  // Build revealedLetters array from pattern for sportus
+  let revealedLetters = [];
+  if(currentType==='sportus'){
+    const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
+    pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
+  }
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

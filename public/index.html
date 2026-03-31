@@ -124,6 +124,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-cell{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
 .sportus-cell.active{border-color:rgba(255,255,255,.25);background:var(--c1)}
 .sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff}
+.sportus-cell.revealed-lock{background:rgba(212,255,0,.12);border-color:rgba(212,255,0,.4);color:var(--neon);font-weight:900}
 .sportus-cell.present{background:#f0c000;border-color:#f0c000;color:#07070f}
 .sportus-cell.absent{background:var(--c2);border-color:rgba(255,255,255,.08);color:var(--mute)}
 .sportus-cell.flip{animation:scellflip .35s ease forwards}
@@ -713,13 +714,10 @@ async function checkPrix(){
       P.done = true; G.active = false;
       if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
       G.athleteName = data.fullAnswer;
-      document.getElementById('prix-direction').textContent = '🎯';
-      document.getElementById('prix-direction').className = 'prix-direction';
-      // Score final = ce qu'on avait avant + bonus si 1er essai
       const finalScore = Math.round(Math.max(0, P.score));
       addPrixHistoryItem(guess, 100, 'exact');
       updateChaleur(100, 'exact');
-      setTimeout(()=>showVictoryFromPrix(finalScore, data.fullAnswer), 500);
+      setTimeout(()=>showVictoryFromPrix(finalScore, data.fullAnswer), 600);
     } else {
       // Calcul du score selon les règles
       let newScore;
@@ -760,14 +758,18 @@ async function checkPrix(){
   }
 }
 
-// Chaleur levels: 0-20 🧊 Glacial, 20-40 🌬️ Froid, 40-60 🌤️ Tiède, 60-80 🔥 Chaud, 80-95 🌶️ Brûlant, 95-100 💥 Bouillant
+// Chaleur levels — échelle réaliste basée sur proximité relative
+// ex: cible=100, proposition=50 → precision=50% → FROID
+// proposition=90 → precision=90% → CHAUD
+// proposition=99 → precision=99% → BOUILLANT
 const CHALEUR_LEVELS = [
-  {min:0,  ico:'🧊', label:'GLACIAL',  color:'#4fc3f7', bg:'rgba(79,195,247,.15)'},
-  {min:20, ico:'🌬️', label:'FROID',    color:'#81d4fa', bg:'rgba(129,212,250,.15)'},
-  {min:40, ico:'🌤️', label:'TIÈDE',    color:'#fff176', bg:'rgba(255,241,118,.15)'},
-  {min:60, ico:'🔥', label:'CHAUD',    color:'var(--orange)', bg:'rgba(255,140,0,.15)'},
-  {min:80, ico:'🌶️', label:'BRÛLANT', color:'var(--red)', bg:'rgba(255,63,92,.2)'},
-  {min:95, ico:'💥', label:'BOUILLANT!', color:'#ff00aa', bg:'rgba(255,0,170,.2)'},
+  {min:0,  ico:'🧊', label:'GLACIAL',    color:'#4fc3f7', bg:'rgba(79,195,247,.12)'},
+  {min:30, ico:'🌬️', label:'FROID',      color:'#81d4fa', bg:'rgba(129,212,250,.12)'},
+  {min:55, ico:'🌤️', label:'TIÈDE',      color:'#fff176', bg:'rgba(255,241,118,.12)'},
+  {min:75, ico:'🌡️', label:'CHAUD',      color:'var(--orange)', bg:'rgba(255,140,0,.12)'},
+  {min:90, ico:'🔥', label:'TRÈS CHAUD', color:'#ff6030', bg:'rgba(255,96,48,.15)'},
+  {min:96, ico:'🌶️', label:'BRÛLANT',   color:'var(--red)', bg:'rgba(255,63,92,.18)'},
+  {min:99, ico:'💥', label:'BOUILLANT!', color:'#ff00aa', bg:'rgba(255,0,170,.18)'},
 ];
 
 function getChaleurLevel(pct){
@@ -830,7 +832,8 @@ const BOULE_PENALTY     = 20;
 const S = {
   targetLen:0, tries:0, score:100,
   bouleOrder:[], bouleUsed:[false,false,false],
-  hints:[], kbdState:{}, done:false
+  hints:[], kbdState:{}, done:false,
+  revealedLetters:[] // [{index, letter}]
 };
 
 function setupSportusMode(data){
@@ -844,7 +847,8 @@ function setupSportusMode(data){
   document.getElementById('prix-zone').style.display='none';
   document.getElementById('sportus-zone').style.display='flex';
 
-  S.targetLen   = data.lastNameLength;
+  S.targetLen        = data.lastNameLength;
+  S.revealedLetters  = data.revealedLetters || [];
   S.tries       = 0;
   S.score       = 100;
   S.done        = false;
@@ -896,7 +900,14 @@ function buildSportusGrid(){
     const row=document.createElement('div'); row.className='sportus-row'; row.id='srow-'+r;
     for(let c=0;c<S.targetLen;c++){
       const cell=document.createElement('div');
-      cell.className='sportus-cell'+(r===0?' active':'');
+      const revealed = S.revealedLetters.find(rl=>rl.index===c);
+      if(revealed){
+        cell.className='sportus-cell revealed-lock';
+        cell.textContent=revealed.letter;
+        cell.dataset.locked='1';
+      } else {
+        cell.className='sportus-cell'+(r===0?' active':'');
+      }
       cell.id=`sc-${r}-${c}`;
       row.appendChild(cell);
     }
@@ -1007,26 +1018,26 @@ async function checkSportus(){
 }
 
 function fillSportusRow(row, result, letters){
-  // Remove active from current row
+  // Remove active from current row non-locked cells
   for(let c=0;c<S.targetLen;c++){
     const cell=document.getElementById(`sc-${row}-${c}`);
-    if(cell) cell.classList.remove('active');
+    if(cell&&!cell.dataset.locked) cell.classList.remove('active');
   }
   result.forEach((state,i)=>{
     const cell=document.getElementById(`sc-${row}-${i}`);
-    if(!cell) return;
+    if(!cell||cell.dataset.locked) return; // skip pre-revealed locked cells
     cell.textContent=letters[i]||'';
     setTimeout(()=>{
       cell.classList.add('flip');
       setTimeout(()=>{ cell.classList.remove('flip'); cell.classList.add(state); },175);
     }, i*80);
   });
-  // Mark next row active
+  // Mark next row active (non-locked only)
   const nextRow=row+1;
   if(nextRow<SPORTUS_MAX_TRIES){
     for(let c=0;c<S.targetLen;c++){
       const cell=document.getElementById(`sc-${nextRow}-${c}`);
-      if(cell) cell.classList.add('active');
+      if(cell&&!cell.dataset.locked) cell.classList.add('active');
     }
   }
 }
