@@ -104,11 +104,13 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'sportus') {
     const lastName = athlete.answer.trim().split(/\s+/).pop();
     const normLast = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    base.lastNameLength = normLast.length;
-    base.hint1          = athlete.sportusHint1 || '';
-    base.hint2          = athlete.sportusHint2 || '';
-    base.freeHint       = athlete.sportusHint0 || '';
-    base.maxScore       = 100;
+    base.lastNameLength   = normLast.length;
+    base.hint1            = athlete.sportusHint1 || '';
+    base.hint2            = athlete.sportusHint2 || '';
+    base.freeHint         = athlete.sportusHint0 || '';
+    // revealedLetters: array of {index, letter} — pre-revealed positions
+    base.revealedLetters  = athlete.revealedLetters || [];
+    base.maxScore         = 100;
   } else if (athlete.type === 'prix') {
     base.question  = athlete.question;  // ex: "Combien de Grands Chelems ?"
     base.unit      = athlete.unit || ''; // ex: "titres", "cm", "ans"
@@ -312,6 +314,7 @@ app.post('/api/admin/athlete', (req, res) => {
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
+    revealedLetters: type === 'sportus' ? (req.body.revealedLetters || []) : undefined,
   };
 
   if (editId) {
