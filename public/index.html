@@ -154,26 +154,26 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .kbd-key.present{background:#f0c000;color:#07070f}
 .kbd-key.absent{background:#1a1a2a;color:#333}
 /* ── LE JUSTE PRIX MODE ───────────────────────────────────────────────── */
-#prix-zone{display:none;flex-direction:column;gap:14px}
+#prix-zone{display:none;flex-direction:column;gap:16px}
 .prix-question{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px 16px;text-align:center}
 .prix-question-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
 .prix-question-txt{font-family:var(--fh);font-size:26px;letter-spacing:1px;color:var(--txt);line-height:1.2}
 .prix-question-unit{font-size:13px;color:var(--mute);margin-top:4px}
-.prix-direction{text-align:center;font-size:52px;min-height:68px;animation:fu .3s ease}
-.prix-history{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto}
-.prix-hist-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:9px 13px}
-.prix-hist-val{font-family:var(--fh);font-size:22px;color:var(--txt);min-width:60px}
-.prix-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
-.prix-hist-bar-f{height:100%;border-radius:99px;transition:width .5s}
-.prix-hist-pct{font-size:13px;font-weight:800;min-width:44px;text-align:right}
-.prix-hist-dir{font-size:20px;flex-shrink:0}
-.prix-score-detail{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
-.prix-score-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.prix-score-row span:first-child{color:var(--mute)}
-.prix-score-row span:last-child{font-weight:800;color:var(--txt)}
-.prix-score-row.total span:last-child{font-family:var(--fh);font-size:28px;color:var(--neon)}
+/* Chaleur */
+.prix-chaleur{display:flex;flex-direction:column;align-items:center;gap:8px}
+.prix-chaleur-ico{font-size:64px;min-height:72px;line-height:1;transition:transform .3s;animation:fu .3s ease}
+.prix-chaleur-label{font-family:var(--fh);font-size:22px;letter-spacing:2px}
+.prix-chaleur-jauge{width:100%;height:10px;background:var(--c2);border-radius:99px;overflow:hidden}
+.prix-chaleur-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1),background .6s}
+/* History */
+.prix-history{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.prix-hist-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 14px}
+.prix-hist-val{font-family:var(--fh);font-size:22px;color:var(--txt);min-width:64px}
+.prix-hist-dir{font-size:22px;flex-shrink:0}
+.prix-hist-chaleur{font-size:13px;font-weight:800;flex:1;text-align:right}
+/* Input */
 .prix-input-row{display:flex;gap:8px}
-.prix-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:15px 16px;font-size:20px;font-family:var(--fh);color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;letter-spacing:1px}
+.prix-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:15px 16px;font-size:22px;font-family:var(--fh);color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;letter-spacing:1px}
 .prix-in:focus{border-color:var(--neon)}
 .prix-in.err{animation:shake .35s ease;border-color:var(--red)}
 .prix-in.ok{border-color:var(--neon)}
@@ -181,6 +181,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .prix-chk:active{transform:scale(.93)}
 .prix-chk:disabled{opacity:.3;cursor:not-allowed}
 .prix-fb{font-size:13px;text-align:center;min-height:18px;color:var(--mute);font-weight:700}
+/* Sportus sticky input on mobile */
+.sportus-bottom{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:10px 0 20px;display:flex;flex-direction:column;gap:8px;z-index:10}
+@media(min-width:600px){.sportus-bottom{position:static;padding:0;background:none}}
 
 .pf{position:fixed;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
 .pf.show{animation:pflash .4s ease}
@@ -337,22 +340,27 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <!-- SPORTUS mode -->
   <div id="sportus-zone">
     <div class="sportus-clue-box" id="sportus-clue-box"></div>
+    <!-- Indice gratuit -->
+    <div id="sportus-free-hint" style="display:none;background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--cyan);line-height:1.5"></div>
     <div class="sportus-grid" id="sportus-grid"></div>
-    <div class="sportus-kbd" id="sportus-kbd"></div>
-    <div class="sportus-input-row">
-      <input type="text" class="sportus-in" id="sportus-in" placeholder="Nom complet…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
-      <button class="sportus-chk" id="sportus-chk">✓</button>
-    </div>
-    <div class="sportus-fb" id="sportus-fb"></div>
-    <!-- Boules -->
-    <div class="boules-section" id="boules-section">
-      <div class="boules-title">🎱 Tirer une boule (−20 pts si indice, −20 pts si Boule Noire)</div>
-      <div class="boules-row">
-        <div class="boule" id="boule-0" onclick="tirerBoule(0)">❓</div>
-        <div class="boule" id="boule-1" onclick="tirerBoule(1)">❓</div>
-        <div class="boule" id="boule-2" onclick="tirerBoule(2)">❓</div>
+    <!-- Sticky bottom: kbd + input + feedback + boules -->
+    <div class="sportus-bottom">
+      <div class="sportus-kbd" id="sportus-kbd"></div>
+      <div class="sportus-input-row">
+        <input type="text" class="sportus-in" id="sportus-in" placeholder="Nom complet…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+        <button class="sportus-chk" id="sportus-chk">✓</button>
       </div>
-      <div id="boule-result"></div>
+      <div class="sportus-fb" id="sportus-fb"></div>
+      <!-- Boules -->
+      <div class="boules-section" id="boules-section">
+        <div class="boules-title">🎱 Boule mystère (−20 pts)</div>
+        <div class="boules-row">
+          <div class="boule" id="boule-0" onclick="tirerBoule(0)">❓</div>
+          <div class="boule" id="boule-1" onclick="tirerBoule(1)">❓</div>
+          <div class="boule" id="boule-2" onclick="tirerBoule(2)">❓</div>
+        </div>
+        <div id="boule-result"></div>
+      </div>
     </div>
   </div>
 
@@ -363,12 +371,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="prix-question-txt" id="prix-question-txt">…</div>
       <div class="prix-question-unit" id="prix-question-unit"></div>
     </div>
-    <div class="prix-direction" id="prix-direction"></div>
-    <div class="prix-score-detail" id="prix-score-detail" style="display:none">
-      <div class="prix-score-row"><span>Points fixes (acquis)</span><span id="prix-fixed">—</span></div>
-      <div class="prix-score-row"><span>Mise gagnée</span><span id="prix-gained">—</span></div>
-      <div class="prix-score-row"><span>Malus essais</span><span id="prix-malus">—</span></div>
-      <div class="prix-score-row total"><span>Score actuel</span><span id="prix-total">—</span></div>
+    <!-- Jauge de chaleur -->
+    <div class="prix-chaleur" id="prix-chaleur" style="display:none">
+      <div class="prix-chaleur-ico" id="prix-chaleur-ico">🧊</div>
+      <div class="prix-chaleur-label" id="prix-chaleur-label">—</div>
+      <div class="prix-chaleur-jauge"><div class="prix-chaleur-fill" id="prix-chaleur-fill" style="width:0%"></div></div>
     </div>
     <div class="prix-history" id="prix-history"></div>
     <div class="prix-input-row">
@@ -644,10 +651,11 @@ function setupPrixMode(data){
 
   document.getElementById('prix-question-txt').textContent = data.question;
   document.getElementById('prix-question-unit').textContent = data.unit ? `(en ${data.unit})` : '';
-  document.getElementById('prix-direction').textContent = '';
-  document.getElementById('prix-direction').className = 'prix-direction';
+  document.getElementById('prix-chaleur').style.display = 'none';
+  document.getElementById('prix-chaleur-ico').textContent = '🧊';
+  document.getElementById('prix-chaleur-label').textContent = '—';
+  document.getElementById('prix-chaleur-fill').style.width = '0%';
   document.getElementById('prix-history').innerHTML = '';
-  document.getElementById('prix-score-detail').style.display = 'none';
   document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-in').value = '';
   document.getElementById('prix-in').disabled = false;
@@ -668,12 +676,10 @@ function startPrixCountdown(){
     if(t <= 0){
       clearInterval(P.countdownInterval); P.countdownInterval = null;
       if(P.done || !G.active) return;
-      // Temps écoulé : malus −10 pts et direction répétée
-      P.score = Math.max(0, P.score - 10);
+      P.score = Math.max(0, P.score - 5);
       G.score = Math.round(P.score);
       setScore(G.score, true);
-      document.getElementById('prix-total').textContent = G.score + ' pts';
-      fb.textContent = '⏰ Temps écoulé ! −10 pts';
+      fb.textContent = '⏰ Temps écoulé ! −5 pts';
       setTimeout(()=>{ fb.textContent=''; startPrixCountdown(); }, 800);
     } else {
       fb.textContent = `⏱ ${t}s pour répondre…`;
@@ -712,22 +718,20 @@ async function checkPrix(){
       // Score final = ce qu'on avait avant + bonus si 1er essai
       const finalScore = Math.round(Math.max(0, P.score));
       addPrixHistoryItem(guess, 100, 'exact');
-      updatePrixScoreDetail();
+      updateChaleur(100, 'exact');
       setTimeout(()=>showVictoryFromPrix(finalScore, data.fullAnswer), 500);
     } else {
       // Calcul du score selon les règles
       let newScore;
       if(P.tries === 1){
-        // 1er essai : la précision DEVIENT le score total, 1er essai gratuit
         newScore = data.precision;
         P.fixed  = 0;
         P.stake  = newScore;
       } else {
-        // Rounds suivants : 50% fixed + 50% remis en jeu selon précision, puis −10 malus
         P.fixed  = P.score / 2;
         P.stake  = P.score / 2;
         const gained = P.stake * (data.precision / 100);
-        newScore = P.fixed + gained - 10;
+        newScore = P.fixed + gained - 5;
       }
       newScore = Math.max(0, newScore);
       P.score  = newScore;
@@ -735,18 +739,8 @@ async function checkPrix(){
       setScore(Math.round(newScore), true);
       document.getElementById('bar-f').style.width = (newScore)+'%';
 
-      // Direction arrow
-      const dirEl = document.getElementById('prix-direction');
-      if(data.direction === 'plus'){
-        dirEl.textContent = '⬆️ PLUS';
-        dirEl.className = 'prix-direction up';
-      } else {
-        dirEl.textContent = '⬇️ MOINS';
-        dirEl.className = 'prix-direction down';
-      }
-
+      updateChaleur(data.precision, data.direction);
       addPrixHistoryItem(guess, data.precision, data.direction);
-      updatePrixScoreDetail();
 
       if(newScore <= 0){
         // Score épuisé, fin forcée
@@ -766,44 +760,50 @@ async function checkPrix(){
   }
 }
 
-function addPrixHistoryItem(guess, precision, direction){
-  const hist = document.getElementById('prix-history');
-  const pct  = Math.round(precision);
-  // Color: green ≥80, orange ≥50, red below
-  const color = pct >= 80 ? 'var(--neon)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
-  const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
-  const unit = P.unit ? ` ${P.unit}` : '';
-  const item = document.createElement('div');
-  item.className = 'prix-hist-item';
-  item.innerHTML = `
-    <div class="prix-hist-val">${guess}${unit}</div>
-    <div class="prix-hist-bar"><div class="prix-hist-bar-f" style="width:0%;background:${color}"></div></div>
-    <div class="prix-hist-pct" style="color:${color}">${pct}%</div>
-    <div class="prix-hist-dir">${dirIcon}</div>`;
-  hist.appendChild(item);
-  // Animate bar
-  requestAnimationFrame(()=>{
-    const bar = item.querySelector('.prix-hist-bar-f');
-    setTimeout(()=>{ bar.style.width = pct+'%'; }, 50);
-  });
-  hist.scrollTop = hist.scrollHeight;
-  P.history.push({guess, precision, direction});
+// Chaleur levels: 0-20 🧊 Glacial, 20-40 🌬️ Froid, 40-60 🌤️ Tiède, 60-80 🔥 Chaud, 80-95 🌶️ Brûlant, 95-100 💥 Bouillant
+const CHALEUR_LEVELS = [
+  {min:0,  ico:'🧊', label:'GLACIAL',  color:'#4fc3f7', bg:'rgba(79,195,247,.15)'},
+  {min:20, ico:'🌬️', label:'FROID',    color:'#81d4fa', bg:'rgba(129,212,250,.15)'},
+  {min:40, ico:'🌤️', label:'TIÈDE',    color:'#fff176', bg:'rgba(255,241,118,.15)'},
+  {min:60, ico:'🔥', label:'CHAUD',    color:'var(--orange)', bg:'rgba(255,140,0,.15)'},
+  {min:80, ico:'🌶️', label:'BRÛLANT', color:'var(--red)', bg:'rgba(255,63,92,.2)'},
+  {min:95, ico:'💥', label:'BOUILLANT!', color:'#ff00aa', bg:'rgba(255,0,170,.2)'},
+];
+
+function getChaleurLevel(pct){
+  let lvl = CHALEUR_LEVELS[0];
+  for(const l of CHALEUR_LEVELS) if(pct >= l.min) lvl = l;
+  return lvl;
 }
 
-function updatePrixScoreDetail(){
-  const el = document.getElementById('prix-score-detail');
+function updateChaleur(precision, direction){
+  const pct = Math.round(precision);
+  const lvl = getChaleurLevel(pct);
+  const el  = document.getElementById('prix-chaleur');
   el.style.display = 'flex';
-  if(P.tries === 1){
-    document.getElementById('prix-fixed').textContent   = '—';
-    document.getElementById('prix-gained').textContent  = Math.round(P.score) + ' pts';
-    document.getElementById('prix-malus').textContent   = '0 pt (1er essai gratuit)';
-  } else {
-    document.getElementById('prix-fixed').textContent   = Math.round(P.fixed) + ' pts';
-    const gained = Math.round(P.score - P.fixed + 10);
-    document.getElementById('prix-gained').textContent  = Math.round(gained) + ' pts';
-    document.getElementById('prix-malus').textContent   = '−10 pts';
-  }
-  document.getElementById('prix-total').textContent    = Math.round(Math.max(0, P.score)) + ' pts';
+  document.getElementById('prix-chaleur-ico').textContent   = lvl.ico;
+  document.getElementById('prix-chaleur-label').textContent = (direction==='plus'?'⬆️ ':direction==='moins'?'⬇️ ':'')+lvl.label;
+  document.getElementById('prix-chaleur-label').style.color = lvl.color;
+  const fill = document.getElementById('prix-chaleur-fill');
+  fill.style.background = lvl.color;
+  fill.style.width = pct+'%';
+  el.style.background = lvl.bg;
+  el.style.borderRadius = '16px';
+  el.style.padding = '14px 16px';
+  el.style.border = `1px solid ${lvl.color}44`;
+}
+
+function addPrixHistoryItem(guess, precision, direction){
+  const hist = document.getElementById('prix-history');
+  const lvl  = getChaleurLevel(Math.round(precision));
+  const unit = P.unit ? ` ${P.unit}` : '';
+  const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
+  const item = document.createElement('div');
+  item.className = 'prix-hist-item';
+  item.innerHTML = `<div class="prix-hist-val">${guess}${unit}</div><div class="prix-hist-dir">${dirIcon}</div><div class="prix-hist-chaleur" style="color:${lvl.color}">${lvl.ico} ${lvl.label}</div>`;
+  hist.appendChild(item);
+  hist.scrollTop = hist.scrollHeight;
+  P.history.push({guess, precision, direction});
 }
 
 function showVictoryFromPrix(finalScore, fullAnswer){
@@ -856,7 +856,16 @@ function setupSportusMode(data){
   G.score=100; G.max=100; setScore(100,false);
   document.getElementById('bar-f').style.width='0%';
 
-  // Clue box: show length only, hints are behind the boules
+  // Free hint (always visible if set)
+  const freeHintEl = document.getElementById('sportus-free-hint');
+  if(data.freeHint){
+    freeHintEl.innerHTML = `💡 <strong>Indice :</strong> ${esc(data.freeHint)}`;
+    freeHintEl.style.display = 'block';
+  } else {
+    freeHintEl.style.display = 'none';
+  }
+
+  // Clue box: show length only
   const cb=document.getElementById('sportus-clue-box');
   cb.innerHTML=`Nom de famille en <em>${S.targetLen}</em> lettre${S.targetLen>1?'s':''} — tire une boule pour un indice !`;
 

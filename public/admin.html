@@ -196,20 +196,22 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
 
       <!-- Name -->
-      <div class="field">
+      <div class="field" id="field-answer">
         <label>Nom complet du sportif</label>
         <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
       </div>
 
       <!-- Aliases -->
-      <div class="field">
-        <label>Alias supplémentaires (optionnel)</label>
-        <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin">
-        <span class="hint">Prénom et nom de famille sont ajoutés automatiquement</span>
-      </div>
-      <div class="aliases-box" id="aliases-box">
-        <div class="aliases-title">Réponses acceptées</div>
-        <div class="aliases-list" id="aliases-preview"></div>
+      <div id="field-aliases">
+        <div class="field">
+          <label>Alias supplémentaires (optionnel)</label>
+          <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin">
+          <span class="hint">Prénom et nom de famille sont ajoutés automatiquement</span>
+        </div>
+        <div class="aliases-box" id="aliases-box">
+          <div class="aliases-title">Réponses acceptées</div>
+          <div class="aliases-list" id="aliases-preview"></div>
+        </div>
       </div>
 
       <!-- TEXT fields -->
@@ -266,17 +268,20 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- SPORTUS fields -->
       <div id="sportus-fields" style="display:none">
         <div class="field">
-          <label>💡 Indice Boule Dorée #1</label>
-          <input type="text" id="sportus-hint1-in" placeholder="Ex: Ce sportif a remporté 14 fois Roland-Garros.">
-          <span class="hint">Révélé quand le joueur tire la 1ère boule dorée (−20 pts).</span>
+          <label>💬 Indice gratuit (affiché dès le début)</label>
+          <input type="text" id="sportus-hint0-in" placeholder="Ex: Il est considéré comme le meilleur tennisman de tous les temps.">
+          <span class="hint">Visible dès le début, sans coût. Laisser vide si aucun.</span>
         </div>
         <div class="field">
-          <label>💡 Indice Boule Dorée #2</label>
+          <label>💡 Indice Boule Dorée #1 (−20 pts)</label>
+          <input type="text" id="sportus-hint1-in" placeholder="Ex: Ce sportif a remporté 14 fois Roland-Garros.">
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #2 (−20 pts)</label>
           <input type="text" id="sportus-hint2-in" placeholder="Ex: Il est né en Espagne en 1986.">
-          <span class="hint">Révélé quand le joueur tire la 2ème boule dorée (−20 pts).</span>
         </div>
         <div style="background:rgba(30,30,30,.6);border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
-          ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement parmi les 3 boules — elle retire 20 pts sans donner d'indice.
+          ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement — elle retire 20 pts sans donner d'indice.
         </div>
       </div>
 
@@ -390,6 +395,11 @@ function selectType(type){
   document.getElementById('buzz-fields').style.display=type==='buzz'?'block':'none';
   document.getElementById('sportus-fields').style.display=type==='sportus'?'block':'none';
   document.getElementById('prix-fields').style.display=type==='prix'?'block':'none';
+  // Pour le Juste Prix, le "nom" = identifiant du défi (ex: "Âge de Nadal"), pas un vrai nom de sportif
+  const isPrix = type==='prix';
+  document.getElementById('field-answer').querySelector('label').textContent = isPrix ? 'Identifiant du défi' : 'Nom complet du sportif';
+  document.getElementById('answer-in').placeholder = isPrix ? 'Ex: Âge de Nadal en 2024' : 'Ex: Corentin Moutet';
+  document.getElementById('field-aliases').style.display = isPrix ? 'none' : 'block';
   checkReady();
 }
 
@@ -470,6 +480,7 @@ async function startEdit(id){
     selectBuzzSpeed(a.buzzDecrement||5);
     renderBuzzClues();
   } else if(a.type==='sportus'){
+    document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
     document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
     document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
   } else if(a.type==='prix'){
@@ -499,6 +510,7 @@ function cancelEdit(){
   document.getElementById('answer-in').value='';
   document.getElementById('clue-in').value='';
   document.getElementById('img-url-in').value='';
+  document.getElementById('sportus-hint0-in').value='';
   document.getElementById('sportus-hint1-in').value='';
   document.getElementById('sportus-hint2-in').value='';
   document.getElementById('prix-question-in').value='';
@@ -670,7 +682,7 @@ document.getElementById('btn-save').onclick=async()=>{
   }
 
   btn.textContent='⏳…';
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():''};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
