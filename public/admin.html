@@ -252,13 +252,22 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div id="buzz-fields" style="display:none">
         <div class="field">
           <label>Vitesse de décrément du score</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 2px" id="buzz-speed-grid"></div>
-          <span class="hint" id="buzz-speed-hint">−5 pts/sec → 20 secondes pour tomber à 0</span>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:4px 0 2px" id="buzz-speed-grid"></div>
+          <span class="hint" id="buzz-speed-hint">−2 pts/sec → ~50 secondes pour tomber à 0</span>
+        </div>
+        <div class="field">
+          <label>⏱ Gel du bouton Buzz après mauvaise réponse</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 2px" id="buzz-freeze-grid"></div>
+          <span class="hint" id="buzz-freeze-hint">3s de gel par défaut</span>
         </div>
         <div class="field">
           <label>Indices (du plus difficile au plus facile)</label>
-          <span class="hint">💡 Ajoute 3 à 6 indices progressifs. Le 1er doit être très difficile !</span>
-          <textarea id="buzz-new-clue" placeholder="Ex: Né en 1987 à Manacor, cette légende de la terre battue compte 14 Roland-Garros à son palmarès." style="min-height:80px;margin-top:8px"></textarea>
+          <span class="hint">💡 Ajoute 3 à 6 indices progressifs.</span>
+          <textarea id="buzz-new-clue" placeholder="Colle ton texte ici…" style="min-height:80px;margin-top:8px"></textarea>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+            <span id="buzz-word-count" style="color:var(--mute)">0 mots</span>
+            <span id="buzz-word-guide" style="color:var(--cyan)">idéal : ~113 mots pour −2/s</span>
+          </div>
           <button class="btn btn-s" id="btn-add-buzz-clue" style="margin-top:6px;margin-bottom:0">➕ Ajouter cet indice</button>
         </div>
         <div class="buzz-clues-list" id="buzz-clues-list"></div>
@@ -355,14 +364,13 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 <script>
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
 let adminPw='', selEmoji='🏆', editId=null, currentType='text';
-let buzzClues=[], buzzDecrement=5;
+let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
 
-// Buzz speed grid
+// Buzz speed grid — 1/2/3 pts/sec only, default 2
 const BUZZ_SPEEDS=[
+  {val:1,label:'−1/s',desc:'~100s'},
   {val:2,label:'−2/s',desc:'~50s'},
   {val:3,label:'−3/s',desc:'~33s'},
-  {val:5,label:'−5/s',desc:'~20s'},
-  {val:10,label:'−10/s',desc:'~10s'},
 ];
 (function buildSpeedGrid(){
   const grid=document.getElementById('buzz-speed-grid');
@@ -376,7 +384,26 @@ const BUZZ_SPEEDS=[
     btn.id='bspeed-'+s.val;
     grid.appendChild(btn);
   });
-  selectBuzzSpeed(5);
+  selectBuzzSpeed(2);
+})();
+
+// Buzz freeze duration grid — 1/2/3/5s
+const BUZZ_FREEZES=[
+  {val:1,label:'1s'},{val:2,label:'2s'},{val:3,label:'3s'},{val:5,label:'5s'},
+];
+(function buildFreezeGrid(){
+  const grid=document.getElementById('buzz-freeze-grid');
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzFreeze(s.val);
+    btn.id='bfreeze-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzFreeze(3);
 })();
 
 function selectBuzzSpeed(val){
@@ -388,7 +415,21 @@ function selectBuzzSpeed(val){
     btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
   });
   const secs=Math.round(100/val);
-  document.getElementById('buzz-speed-hint').textContent=`−${val} pts/sec → ~${secs} secondes pour tomber à 0`;
+  const maxWords=Math.round(secs/0.22);
+  const idealWords=Math.round(maxWords*0.5);
+  document.getElementById('buzz-speed-hint').textContent=`−${val} pts/sec → ~${secs}s avant d'arriver à 0`;
+  if(document.getElementById('buzz-word-count')) updateBuzzWordCount();
+}
+
+function selectBuzzFreeze(val){
+  buzzFreezeDuration=val;
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.getElementById('bfreeze-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  document.getElementById('buzz-freeze-hint').textContent=`${val}s de gel après une mauvaise réponse`;
 }
 
 // Emoji grid
@@ -494,7 +535,8 @@ async function startEdit(id){
     previewImage(a.imageUrl||'');
   } else if(a.type==='buzz'){
     buzzClues=a.clues||[];
-    selectBuzzSpeed(a.buzzDecrement||5);
+    selectBuzzSpeed(a.buzzDecrement||2);
+    selectBuzzFreeze(a.buzzFreezeDuration||3);
     renderBuzzClues();
   } else if(a.type==='sportus'){
     document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
@@ -555,6 +597,8 @@ function cancelEdit(){
   document.getElementById('aliases-box').style.display='none';
   document.getElementById('preview-box-text').style.display='none';
   renderBuzzClues();
+  selectBuzzSpeed(2);
+  selectBuzzFreeze(3);
   selectType('text');updateWC();checkReady();
 }
 document.getElementById('btn-cancel-edit').onclick=cancelEdit;
@@ -681,6 +725,35 @@ document.getElementById('btn-preview-text').onclick=()=>{
 };
 
 // BUZZ clues management
+document.getElementById('buzz-new-clue').addEventListener('input', updateBuzzWordCount);
+
+function updateBuzzWordCount(){
+  const words = document.getElementById('buzz-new-clue').value.trim().split(/\s+/).filter(Boolean).length;
+  const secs  = Math.round(100 / buzzDecrement);
+  const ideal = Math.round(secs / 0.22 * 0.5);
+  const max   = Math.round(secs / 0.22);
+  const wc    = document.getElementById('buzz-word-count');
+  const wg    = document.getElementById('buzz-word-guide');
+  wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  if(words === 0){
+    wc.style.color = 'var(--mute)';
+    wg.textContent = `Idéal ~${ideal} mots · max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--cyan)';
+  } else if(words > max){
+    wc.style.color = 'var(--red)';
+    wg.textContent = `⚠️ Trop long ! Max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--red)';
+  } else if(words >= ideal){
+    wc.style.color = 'var(--neon)';
+    wg.textContent = `✅ Parfait pour −${buzzDecrement}/s (idéal ~${ideal} mots)`;
+    wg.style.color = 'var(--neon)';
+  } else {
+    wc.style.color = 'var(--orange)';
+    wg.textContent = `Encore ${ideal - words} mots pour atteindre l'idéal (~${ideal} mots)`;
+    wg.style.color = 'var(--orange)';
+  }
+}
+
 document.getElementById('btn-add-buzz-clue').onclick=()=>{
   const txt=document.getElementById('buzz-new-clue').value.trim();
   if(!txt)return;
@@ -743,7 +816,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
