@@ -56,7 +56,10 @@ function rebuildGlobalScores() {
     .sort((a, b) => b.score - a.score).slice(0, 200);
 }
 
-// ── IMAGE PROXY ───────────────────────────────────────────────────────────
+// ── PING (keepalive pour cron-job.org) ───────────────────────────────────
+app.get('/ping', (req, res) => res.send('OK'));
+
+
 // FIX: Use GET with a range request for validation instead of HEAD (HEAD fails on many servers)
 app.all('/api/img-proxy', async (req, res) => {
   if(req.method !== 'GET' && req.method !== 'HEAD') return res.status(405).end();
@@ -100,9 +103,10 @@ app.get('/api/athlete', (req, res) => {
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
   } else if (athlete.type === 'buzz') {
-    base.clues        = athlete.clues;
-    base.maxScore     = 100;
-    base.buzzDecrement = athlete.buzzDecrement || 5;
+    base.clues             = athlete.clues;
+    base.maxScore          = 100;
+    base.buzzDecrement     = athlete.buzzDecrement || 2;
+    base.buzzFreezeDuration = athlete.buzzFreezeDuration || 3;
   } else if (athlete.type === 'sportus') {
     const lastName = athlete.answer.trim().split(/\s+/).pop();
     const normLast = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -306,7 +310,8 @@ app.post('/api/admin/athlete', (req, res) => {
     type:     type || 'text',
     clue:     type === 'text' ? (clue||'').trim() : '',
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
-    buzzDecrement: type === 'buzz' ? Math.min(20, Math.max(1, parseInt(buzzDecrement) || 5)) : undefined,
+    buzzDecrement: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(buzzDecrement) || 2)) : undefined,
+    buzzFreezeDuration: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(req.body.buzzFreezeDuration) || 3)) : undefined,
     imageUrl: type === 'image' ? imageUrl.trim() : '',
     gridSize: type === 'image' ? gs : undefined,
     question: type === 'prix' ? (question||'').trim() : undefined,
