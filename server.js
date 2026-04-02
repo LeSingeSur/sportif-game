@@ -157,6 +157,7 @@ app.post('/api/check', (req, res) => {
   res.json({
     correct,
     answer:  correct ? athlete.answer : null,
+    fullAnswer: athlete.answer,
     penalty: correct ? 0 : WRONG_PENALTY,
     message: correct ? `Bravo ! C'est bien ${athlete.answer} ! 🎉` : `Pas encore… −${WRONG_PENALTY} points !`,
   });
@@ -235,9 +236,9 @@ app.post('/api/sportus-check', (req, res) => {
 
   res.json({
     correct,
-    result,           // array of 'correct'|'present'|'absent'
+    result,
     target: correct ? target : null,
-    fullAnswer: correct ? athlete.answer : null,
+    fullAnswer: athlete.answer,
   });
 });
 
@@ -261,7 +262,7 @@ app.post('/api/prix-check', (req, res) => {
   const precision = exact ? 100 : (Math.min(g, effectiveTarget) / Math.max(g, effectiveTarget)) * 100;
   const direction = g < target - tolerance ? 'plus' : g > target + tolerance ? 'moins' : 'exact';
 
-  res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: exact ? athlete.answer : null });
+  res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: athlete.answer });
 });
 
 app.post('/api/admin/login', (req, res) => {
