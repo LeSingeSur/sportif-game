@@ -682,6 +682,7 @@ async function checkPrix(){
     const res = await fetch('/api/prix-check',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify({athleteId:G.athleteId, guess})});
     const data = await res.json();
+    if(data.fullAnswer) G.athleteName = data.fullAnswer; // always store
 
     P.tries++;
     document.getElementById('prix-in').value = '';
@@ -718,7 +719,7 @@ async function checkPrix(){
         if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
         P.done = true; G.active = false; P.score = 0; G.score = 0;
         document.getElementById('prix-fb').textContent = 'Score épuisé !';
-        setTimeout(()=>showVictoryFromPrix(0, null), 1200);
+        setTimeout(()=>showVictoryFromPrix(0, G.athleteName), 1200);
       } else {
         startPrixCountdown();
       }
@@ -753,7 +754,7 @@ function startPrixCountdown(){
       document.getElementById('prix-fb').textContent = '⏰ −20 pts !';
       if(P.score <= 0){
         P.done = true; G.active = false;
-        setTimeout(()=>showVictoryFromPrix(0, null), 1000);
+        setTimeout(()=>showVictoryFromPrix(0, G.athleteName), 1000);
         return;
       }
       setTimeout(()=>{
@@ -820,18 +821,19 @@ function addPrixHistoryItem(guess, precision, direction){
 }
 
 function showVictoryFromPrix(finalScore, fullAnswer){
-  G.athleteName = fullAnswer || '???';
-  document.getElementById('v-name').textContent = G.athleteName;
+  const name = fullAnswer || G.athleteName || '???';
+  G.athleteName = name;
+  document.getElementById('v-name').textContent = name;
   document.getElementById('v-sc').textContent   = Math.floor(finalScore);
-  document.getElementById('v-sub').textContent  = fullAnswer
+  document.getElementById('v-sub').textContent  = (finalScore > 0 && fullAnswer)
     ? `Trouvé en ${P.tries} essai${P.tries > 1 ? 's' : ''} !`
-    : 'Score épuisé avant de trouver…';
+    : `Score épuisé — c'était ${name}`;
   document.getElementById('v-revealed').textContent    = P.tries;
   document.getElementById('v-revealed-lbl').textContent = 'essais';
-  document.getElementById('v-wrong').textContent       = P.history.length > 0 ? Math.round(P.history[P.history.length-1].precision)+'%' : '—';
-  document.querySelector('#v-wrong').nextElementSibling.textContent = 'dernière précision';
+  document.getElementById('v-wrong').textContent       = '—';
+  document.querySelector('#v-wrong').nextElementSibling.textContent = '';
   show('sv'); confetti();
-  submitScore(Math.round(finalScore));
+  submitScore(Math.floor(finalScore));
 }
 
 // ── SPORTUS MODE ──────────────────────────────────────────────────────────
@@ -998,8 +1000,8 @@ async function checkSportus(){
     const res=await fetch('/api/sportus-check',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({athleteId:G.athleteId,guess:raw})});
     const data=await res.json();
+    if(data.fullAnswer) G.athleteName=data.fullAnswer; // always store
 
-    // Fill current row
     fillSportusRow(S.tries, data.result, guessNorm.toUpperCase());
     updateSportusKbd(data.result, guessNorm.toUpperCase());
 
@@ -1064,17 +1066,16 @@ function updateSportusKbd(result, letters){
 }
 
 function showVictoryFromSportus(fullAnswer){
-  G.athleteName = fullAnswer || '???';
-  const finalScore = Math.round(Math.max(0, S.score));
-  document.getElementById('v-name').textContent = G.athleteName;
-  document.getElementById('v-sc').textContent = finalScore;
-  document.getElementById('v-sub').textContent = fullAnswer ? `Trouvé en ${S.tries} essai${S.tries>1?'s':''}` : 'Non trouvé — score 0';
+  const name = fullAnswer || G.athleteName || '???';
+  document.getElementById('v-name').textContent = name;
+  document.getElementById('v-sc').textContent = Math.round(Math.max(0, S.score));
+  document.getElementById('v-sub').textContent = fullAnswer ? `Trouvé en ${S.tries} essai${S.tries>1?'s':''}` : `Non trouvé — c'était ${name}`;
   document.getElementById('v-revealed').textContent = S.tries;
   document.getElementById('v-revealed-lbl').textContent = 'essais';
   document.getElementById('v-wrong').textContent = S.bouleUsed.filter(Boolean).length;
   document.querySelector('#v-wrong').nextElementSibling.textContent = 'boule(s) tirée(s)';
   show('sv'); confetti();
-  submitScore(finalScore);
+  submitScore(Math.round(Math.max(0, S.score)));
 }
 
 
@@ -1229,8 +1230,9 @@ async function checkBuzzAnswer(){
     const res=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,athleteId:G.athleteId,answer:ans})});
     const data=await res.json();
+    if(data.fullAnswer) G.athleteName=data.fullAnswer; // always store for failure screen
     if(data.correct){
-      G.active=false; G.athleteName=data.answer;
+      G.active=false;
       buzzStopAll();
       document.getElementById('buzz-ans-in').className='buzz-ans-in ok';
       document.getElementById('buzz-freeze-msg').textContent='';
@@ -1270,16 +1272,17 @@ async function checkBuzzAnswer(){
 function autoFailBuzz(){
   // Score reached 0, end game with score 0
   if(!G.active)return;
-  G.score=0; G.active=false; G.athleteName='???';
+  G.score=0; G.active=false;
   buzzStopAll();
+  const name = G.athleteName || '???';
   setTimeout(()=>{
-    // Still show victory screen but with 0 pts
-    document.getElementById('v-name').textContent='Temps écoulé ! C\'était ???';
-    document.getElementById('v-sc').textContent=0;
-    document.getElementById('v-sub').textContent='Score épuisé — meilleure chance la prochaine fois !';
+    document.getElementById('v-name').textContent = name;
+    document.getElementById('v-sc').textContent = 0;
+    document.getElementById('v-sub').textContent = `Score épuisé — c'était ${name}`;
     document.getElementById('v-revealed').textContent=G.buzzClueIdx+1;
     document.getElementById('v-revealed-lbl').textContent='indice(s) vus';
     document.getElementById('v-wrong').textContent=G.wrongAnswers;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='mauvais buzz';
     show('sv'); confetti();
     submitScore(0);
   },200);
