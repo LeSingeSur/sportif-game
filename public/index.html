@@ -609,6 +609,12 @@ function revealN(n){
   updateImgCounter();
   if(G.nextTileIdx>=G.spiralOrder.length){
     document.querySelectorAll('.reveal-btn').forEach(b=>b.disabled=true);
+    // Score atteint 0 : toutes les cases révélées, soumettre et passer
+    if(G.score<=0 && G.active){
+      G.active=false;
+      // Récupérer le nom du sportif via le score endpoint pour l'afficher
+      submitScoreAndReveal(0);
+    }
   }
 }
 function updateImgCounter(){
@@ -619,7 +625,7 @@ function updateImgCounter(){
 
 // ── LE JUSTE PRIX MODE ────────────────────────────────────────────────────
 const P = {
-  question:'', unit:'', tries:0, score:100,
+  question:'', unit:'', targetValue:null, tries:0, score:100,
   done:false, history:[],
   countdownInterval:null
 };
@@ -635,8 +641,9 @@ function setupPrixMode(data){
   document.getElementById('sportus-zone').style.display='none';
   document.getElementById('prix-zone').style.display='flex';
 
-  P.question = data.question;
-  P.unit     = data.unit || '';
+  P.question    = data.question;
+  P.unit        = data.unit || '';
+  P.targetValue = data.targetValue;
   P.tries    = 0;
   P.score    = 100;
   P.fixed    = 0;
@@ -822,12 +829,15 @@ function addPrixHistoryItem(guess, precision, direction){
 
 function showVictoryFromPrix(finalScore, fullAnswer){
   const name = fullAnswer || G.athleteName || '???';
+  const targetStr = P.targetValue !== null && P.targetValue !== undefined
+    ? `Réponse : ${P.targetValue}${P.unit ? ' ' + P.unit : ''}`
+    : '';
   G.athleteName = name;
   document.getElementById('v-name').textContent = name;
   document.getElementById('v-sc').textContent   = Math.floor(finalScore);
   document.getElementById('v-sub').textContent  = (finalScore > 0 && fullAnswer)
-    ? `Trouvé en ${P.tries} essai${P.tries > 1 ? 's' : ''} !`
-    : `Score épuisé — c'était ${name}`;
+    ? `Trouvé en ${P.tries} essai${P.tries > 1 ? 's' : ''} ! ${targetStr}`
+    : `Score épuisé — ${targetStr}`;
   document.getElementById('v-revealed').textContent    = P.tries;
   document.getElementById('v-revealed-lbl').textContent = 'essais';
   document.getElementById('v-wrong').textContent       = '—';
@@ -1320,6 +1330,7 @@ async function checkAnswer(){
     const res=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,athleteId:G.athleteId,answer:ans})});
     const data=await res.json();
+    if(data.fullAnswer) G.athleteName=data.fullAnswer;
     if(data.correct){
       G.active=false; G.athleteName=data.answer;
       if(G.type==='image'){
@@ -1339,6 +1350,13 @@ async function checkAnswer(){
       inp.classList.add('err'); setTimeout(()=>inp.classList.remove('err'),400);
       fb.textContent=data.message; fb.className='fb pen';
       setTimeout(()=>{fb.textContent='';fb.className='fb'},2500);
+      // Score 0 : auto-submit et afficher la réponse
+      if(G.score<=0){
+        G.active=false;
+        setTimeout(async()=>{
+          await submitScoreAndRevealText();
+        }, 800);
+      }
     }
   }catch(e){console.error(e)}
 }
@@ -1396,11 +1414,58 @@ async function submitScore(score){
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score,athleteId:G.athleteId})});
     const data=await res.json();
+    if(data.answer && !G.athleteName) G.athleteName=data.answer;
     if(data.success){
       const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
       document.getElementById('rank-badge').textContent=m+'  '+data.rank+'e sur '+data.total+' joueur'+(data.total>1?'s':'');
     } else document.getElementById('rank-badge').textContent='✅ Score enregistré !';
   }catch(e){document.getElementById('rank-badge').textContent='✅ Score enregistré !'}
+}
+
+// Text mode: score 0 → reveal all words, show answer
+async function submitScoreAndRevealText(){
+  document.querySelectorAll('.wb:not(.rev)').forEach(b=>b.classList.add('rev'));
+  document.getElementById('bar-f').style.width='100%';
+  try{
+    const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pseudo:G.pseudo,score:0,athleteId:G.athleteId})});
+    const data=await res.json();
+    const name=data.answer||G.athleteName||'???';
+    G.athleteName=name;
+    if(data.success){
+      const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
+      document.getElementById('rank-badge').textContent=m+'  '+data.rank+'e sur '+data.total+' joueur'+(data.total>1?'s':'');
+    }
+    document.getElementById('v-name').textContent=name;
+    document.getElementById('v-sc').textContent=0;
+    document.getElementById('v-sub').textContent=`Score épuisé — c'était ${name}`;
+    document.getElementById('v-revealed').textContent=G.revealed;
+    document.getElementById('v-revealed-lbl').textContent='mots révélés';
+    document.getElementById('v-wrong').textContent=G.wrongAnswers;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='mauvaises rép.';
+    show('sv'); confetti();
+  }catch(e){console.error(e);}
+}
+async function submitScoreAndReveal(score){
+  try{
+    const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pseudo:G.pseudo,score,athleteId:G.athleteId})});
+    const data=await res.json();
+    const name=data.answer||G.athleteName||'???';
+    G.athleteName=name;
+    if(data.success){
+      const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
+      document.getElementById('rank-badge').textContent=m+'  '+data.rank+'e sur '+data.total+' joueur'+(data.total>1?'s':'');
+    }
+    document.getElementById('v-name').textContent=name;
+    document.getElementById('v-sc').textContent=score;
+    document.getElementById('v-sub').textContent=`Toutes les cases révélées — c'était ${name}`;
+    document.getElementById('v-revealed').textContent=G.revealed;
+    document.getElementById('v-revealed-lbl').textContent='cases révélées';
+    document.getElementById('v-wrong').textContent=G.wrongAnswers;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='mauvaises rép.';
+    show('sv'); confetti();
+  }catch(e){console.error(e);}
 }
 
 document.getElementById('btn-next').onclick=()=>{buzzStopAll();show('sg');loadAthlete()};
