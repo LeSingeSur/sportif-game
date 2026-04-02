@@ -324,6 +324,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <label>Unité (optionnel)</label>
           <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
         </div>
+        <div class="field">
+          <label>Tolérance ±</label>
+          <input type="number" id="prix-tolerance-in" placeholder="0" min="0" step="any" value="0">
+          <span class="hint">Ex: ±10 → réponses entre cible−10 et cible+10 acceptées. 0 = valeur exacte uniquement.</span>
+        </div>
       </div>
 
       <!-- Coefficient -->
@@ -502,7 +507,7 @@ async function loadAthletes(){
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
     else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
-    else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`;
+    else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
@@ -572,6 +577,7 @@ async function startEdit(id){
     document.getElementById('prix-question-in').value=a.question||'';
     document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
     document.getElementById('prix-unit-in').value=a.unit||'';
+    document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
   } else {
     document.getElementById('clue-in').value=a.clue||'';
   }
@@ -609,6 +615,7 @@ function cancelEdit(){
   document.getElementById('prix-question-in').value='';
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
+  document.getElementById('prix-tolerance-in').value='0';
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -838,6 +845,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
+  const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
@@ -865,7 +873,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
