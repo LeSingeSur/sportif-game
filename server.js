@@ -249,13 +249,17 @@ app.post('/api/prix-check', (req, res) => {
   const athlete = athletes.find(a => a.id === athleteId);
   if (!athlete || athlete.type !== 'prix') return res.status(404).json({ error: 'Défi introuvable' });
 
-  const target = athlete.targetValue;
-  const g      = parseFloat(String(guess).replace(',', '.'));
+  const target    = athlete.targetValue;
+  const tolerance = athlete.prixTolerance || 0;
+  const g         = parseFloat(String(guess).replace(',', '.'));
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
-  const exact     = Math.round(g * 1000) === Math.round(target * 1000);
-  const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
-  const direction = g < target ? 'plus' : g > target ? 'moins' : 'exact';
+  const diff      = Math.abs(g - target);
+  const exact     = diff <= tolerance;
+  // Precision calculated against nearest edge of accepted range
+  const effectiveTarget = exact ? g : (g < target ? target - tolerance : target + tolerance);
+  const precision = exact ? 100 : (Math.min(g, effectiveTarget) / Math.max(g, effectiveTarget)) * 100;
+  const direction = g < target - tolerance ? 'plus' : g > target + tolerance ? 'moins' : 'exact';
 
   res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: exact ? athlete.answer : null });
 });
@@ -320,7 +324,8 @@ app.post('/api/admin/athlete', (req, res) => {
     gridSize: type === 'image' ? gs : undefined,
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
-    targetValue: type === 'prix' ? parseFloat(targetValue) : undefined,
+    targetValue:    type === 'prix' ? parseFloat(targetValue) : undefined,
+    prixTolerance:  type === 'prix' ? (parseFloat(req.body.prixTolerance) || 0) : undefined,
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
