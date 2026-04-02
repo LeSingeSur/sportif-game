@@ -4,7 +4,7 @@ const fs       = require('fs');
 const fetch    = require('node-fetch');
 const app      = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sportif2024';
@@ -99,7 +99,10 @@ app.get('/api/athlete', (req, res) => {
   const gridSize = athlete.gridSize || 10;
   const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text' };
   if (athlete.type === 'image') {
-    base.imageUrl  = `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
+    // If image stored as base64 data URI, serve directly; otherwise proxy the URL
+    base.imageUrl  = athlete.imageBase64
+      ? athlete.imageBase64
+      : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
   } else if (athlete.type === 'buzz') {
@@ -250,7 +253,7 @@ app.post('/api/prix-check', (req, res) => {
   const g      = parseFloat(String(guess).replace(',', '.'));
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
-  const exact     = g === target;
+  const exact     = Math.round(g * 1000) === Math.round(target * 1000);
   const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
   const direction = g < target ? 'plus' : g > target ? 'moins' : 'exact';
 
@@ -312,7 +315,8 @@ app.post('/api/admin/athlete', (req, res) => {
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
     buzzDecrement: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(buzzDecrement) || 2)) : undefined,
     buzzFreezeDuration: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(req.body.buzzFreezeDuration) || 3)) : undefined,
-    imageUrl: type === 'image' ? imageUrl.trim() : '',
+    imageUrl:    type === 'image' ? (req.body.imageBase64 ? '' : imageUrl.trim()) : '',
+    imageBase64: type === 'image' ? (req.body.imageBase64 || '') : '',
     gridSize: type === 'image' ? gs : undefined,
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
