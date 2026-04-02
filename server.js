@@ -121,9 +121,11 @@ app.get('/api/athlete', (req, res) => {
     base.revealedLetters  = athlete.revealedLetters || [];
     base.maxScore         = 100;
   } else if (athlete.type === 'prix') {
-    base.question  = athlete.question;  // ex: "Combien de Grands Chelems ?"
-    base.unit      = athlete.unit || ''; // ex: "titres", "cm", "ans"
-    base.maxScore  = 100;
+    base.question      = athlete.question;
+    base.unit          = athlete.unit || '';
+    base.targetValue   = athlete.targetValue;
+    base.prixTolerance = athlete.prixTolerance || 0;
+    base.maxScore      = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -176,7 +178,7 @@ app.post('/api/score', (req, res) => {
   scores[athleteId].sort((a, b) => b.score - a.score);
   rebuildGlobalScores();
   saveData();
-  res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length });
+  res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length, answer: athlete.answer });
 });
 
 // Scores are only visible if pseudo has finished all games
