@@ -656,7 +656,7 @@ function setupPrixMode(data){
   document.getElementById('prix-history').innerHTML = '';
   document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-in').value = '';
-  updatePrixCountdownDisplay(10);
+  updatePrixCountdownDisplay(20);
   startPrixCountdown();
 }
 
@@ -675,7 +675,7 @@ async function checkPrix(){
 
   // Stop countdown as soon as player submits
   if(P.countdownInterval){clearInterval(P.countdownInterval);P.countdownInterval=null;}
-  updatePrixCountdownDisplay(10);
+  updatePrixCountdownDisplay(20);
   document.getElementById('prix-fb').textContent = '';
   document.getElementById('prix-chk').disabled = true;
   try{
@@ -733,7 +733,7 @@ async function checkPrix(){
 // S'arrête quand le joueur valide. Si 0 → entrée annulée, recommence.
 function startPrixCountdown(){
   if(P.countdownInterval) clearInterval(P.countdownInterval);
-  let t = 10;
+  let t = 20;
   updatePrixCountdownDisplay(t);
   document.getElementById('prix-in').disabled  = false;
   document.getElementById('prix-chk').disabled = false;
@@ -789,8 +789,9 @@ function getChaleurLevel(pct){
 }
 
 function updateChaleur(precision, direction){
-  const pct = Math.round(precision);
-  const lvl = getChaleurLevel(pct);
+  // Utiliser floor pour éviter qu'un arrondi à 100 affiche "JUSTE PRIX" alors que c'est faux
+  const pct = direction === 'exact' ? 100 : Math.floor(precision);
+  const lvl = getChaleurLevel(Math.min(pct, direction === 'exact' ? 100 : 99));
   const el  = document.getElementById('prix-chaleur');
   el.style.display     = 'flex';
   el.style.background  = lvl.bg;
@@ -807,7 +808,7 @@ function updateChaleur(precision, direction){
 
 function addPrixHistoryItem(guess, precision, direction){
   const hist = document.getElementById('prix-history');
-  const lvl  = getChaleurLevel(Math.round(precision));
+  const lvl  = getChaleurLevel(direction === 'exact' ? 100 : Math.min(Math.floor(precision), 99));
   const unit = P.unit ? ` ${P.unit}` : '';
   const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
   const item = document.createElement('div');

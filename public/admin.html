@@ -230,13 +230,21 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- IMAGE fields -->
       <div id="image-fields" style="display:none">
         <div class="field">
-          <label>URL de l'image</label>
-          <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
-          <span class="hint">
-            💡 <strong>Conseils :</strong><br>
-            • <strong>Wikipédia</strong> : fonctionne toujours — cherche le sportif, clic droit sur la photo → Copier l'adresse de l'image<br>
-            • URLs avec <code>token=</code> ou <code>auth=</code> expirent → à éviter
-          </span>
+          <label>Source de l'image</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div id="img-src-url" onclick="selectImgSrc('url')" style="background:rgba(212,255,0,.06);border:2px solid var(--neon);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">🔗 URL</div>
+            <div id="img-src-file" onclick="selectImgSrc('file')" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">📁 Fichier</div>
+          </div>
+          <!-- URL input -->
+          <div id="img-url-zone">
+            <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
+            <span class="hint">💡 <strong>Wikipédia</strong> : fonctionne toujours — clic droit sur la photo → Copier l'adresse de l'image</span>
+          </div>
+          <!-- File upload -->
+          <div id="img-file-zone" style="display:none">
+            <input type="file" id="img-file-in" accept="image/*" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px;width:100%;color:var(--txt)">
+            <span class="hint">💡 Max 2MB recommandé. L'image est stockée directement dans la base.</span>
+          </div>
         </div>
         <img class="img-preview" id="img-preview" alt="Prévisualisation">
         <div class="grid-prev" id="grid-prev">
@@ -531,8 +539,16 @@ async function startEdit(id){
   document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
   selectType(a.type||'text');
   if(a.type==='image'){
-    document.getElementById('img-url-in').value=a.imageUrl||'';
-    previewImage(a.imageUrl||'');
+    if(a.imageBase64){
+      imgSrc='file'; imgBase64=a.imageBase64;
+      selectImgSrc('file');
+      previewImageSrc(a.imageBase64);
+    } else {
+      imgSrc='url'; imgBase64='';
+      selectImgSrc('url');
+      document.getElementById('img-url-in').value=a.imageUrl||'';
+      previewImage(a.imageUrl||'');
+    }
   } else if(a.type==='buzz'){
     buzzClues=a.clues||[];
     selectBuzzSpeed(a.buzzDecrement||2);
@@ -583,6 +599,8 @@ function cancelEdit(){
   document.getElementById('answer-in').value='';
   document.getElementById('clue-in').value='';
   document.getElementById('img-url-in').value='';
+  imgSrc='url'; imgBase64='';
+  selectImgSrc('url');
   document.getElementById('sportus-hint0-in').value='';
   document.getElementById('sportus-hint1-in').value='';
   document.getElementById('sportus-hint2-in').value='';
@@ -647,7 +665,7 @@ function updateAliases(){
 function checkReady(){
   const hasAnswer=!!document.getElementById('answer-in').value.trim();
   let hasContent=false;
-  if(currentType==='image') hasContent=!!document.getElementById('img-url-in').value.trim();
+  if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
   else if(currentType==='sportus') hasContent=true;
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
@@ -658,6 +676,33 @@ function checkReady(){
 // Image preview
 document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e.target.value.trim()));
 document.getElementById('img-url-in').addEventListener('input',checkReady);
+
+let imgSrc='url', imgBase64='';
+
+function selectImgSrc(src){
+  imgSrc=src; imgBase64='';
+  document.getElementById('img-src-url').style.background=src==='url'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-url').style.borderColor=src==='url'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-src-file').style.background=src==='file'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-file').style.borderColor=src==='file'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-url-zone').style.display=src==='url'?'block':'none';
+  document.getElementById('img-file-zone').style.display=src==='file'?'block':'none';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  checkReady();
+}
+
+document.getElementById('img-file-in').addEventListener('change', e=>{
+  const file=e.target.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){alert('Image trop lourde (max 5MB)');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    imgBase64=ev.target.result;
+    previewImageSrc(imgBase64);
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+});
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
@@ -690,13 +735,16 @@ function previewImage(url){
     document.getElementById('grid-prev').style.display='none';
     return;
   }
+  previewImageSrc('/api/img-proxy?url='+encodeURIComponent(url));
+}
+
+function previewImageSrc(src){
+  if(!src){document.getElementById('img-preview').style.display='none';document.getElementById('grid-prev').style.display='none';return;}
   const img=document.getElementById('img-preview');
-  // Use proxy to preview too
-  img.src='/api/img-proxy?url='+encodeURIComponent(url);
-  img.style.display='block';
+  img.src=src; img.style.display='block';
   img.onload=()=>{
     document.getElementById('grid-prev').style.display='block';
-    document.getElementById('grid-prev-img').src='/api/img-proxy?url='+encodeURIComponent(url);
+    document.getElementById('grid-prev-img').src=src;
     const overlay=document.getElementById('grid-prev-overlay');
     overlay.innerHTML='';
     const gs=10;
@@ -784,15 +832,16 @@ document.getElementById('btn-save').onclick=async()=>{
   const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
   const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
   const sportusHint2=currentType==='sportus'?document.getElementById('sportus-hint2-in').value.trim():'';
-  const imageUrl=currentType==='image'?document.getElementById('img-url-in').value.trim():'';
+  const imageUrl=currentType==='image'&&imgSrc==='url'?document.getElementById('img-url-in').value.trim():'';
+  const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   btn.disabled=true;
 
-  // Validate image via proxy (GET instead of HEAD for reliability)
-  if(currentType==='image' && imageUrl){
+  // Validate image via proxy only for URL mode
+  if(currentType==='image' && imgSrc==='url' && imageUrl){
     btn.textContent='🔍 Vérification de l\'image…';
     try{
       const testRes=await fetch('/api/img-proxy?url='+encodeURIComponent(imageUrl));
@@ -816,7 +865,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
