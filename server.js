@@ -124,7 +124,8 @@ app.get('/api/athlete', (req, res) => {
     base.question      = athlete.question;
     base.unit          = athlete.unit || '';
     base.targetValue   = athlete.targetValue;
-    base.prixTolerance = athlete.prixTolerance || 0;
+    base.prixTolerance   = athlete.prixTolerance || 0;
+    base.prixSensibilite = athlete.prixSensibilite || 25;
     base.maxScore      = 100;
   } else {
     base.clue      = athlete.clue;
@@ -252,16 +253,18 @@ app.post('/api/prix-check', (req, res) => {
   const athlete = athletes.find(a => a.id === athleteId);
   if (!athlete || athlete.type !== 'prix') return res.status(404).json({ error: 'Défi introuvable' });
 
-  const target    = athlete.targetValue;
-  const tolerance = athlete.prixTolerance || 0;
-  const g         = parseFloat(String(guess).replace(',', '.'));
+  const target       = athlete.targetValue;
+  const tolerance    = athlete.prixTolerance || 0;
+  const sensibilite  = athlete.prixSensibilite || 25; // % d'écart pour atteindre 0
+  const g            = parseFloat(String(guess).replace(',', '.'));
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
   const diff      = Math.abs(g - target);
   const exact     = diff <= tolerance;
-  // Precision calculated against nearest edge of accepted range
-  const effectiveTarget = exact ? g : (g < target ? target - tolerance : target + tolerance);
-  const precision = exact ? 100 : (Math.min(g, effectiveTarget) / Math.max(g, effectiveTarget)) * 100;
+  // Precision: linéaire basée sur l'écart relatif, calibrée par sensibilite
+  // sensibilite=10 → un écart de 10% de target = precision 0%
+  const ecartRelatif = (diff / target) * 100;
+  const precision = exact ? 100 : Math.max(0, 100 - (ecartRelatif / sensibilite) * 100);
   const direction = g < target - tolerance ? 'plus' : g > target + tolerance ? 'moins' : 'exact';
 
   res.json({ exact, precision, direction, target: exact ? target : null, fullAnswer: athlete.answer });
@@ -328,7 +331,8 @@ app.post('/api/admin/athlete', (req, res) => {
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
     targetValue:    type === 'prix' ? parseFloat(targetValue) : undefined,
-    prixTolerance:  type === 'prix' ? (parseFloat(req.body.prixTolerance) || 0) : undefined,
+    prixTolerance:     type === 'prix' ? (parseFloat(req.body.prixTolerance) || 0) : undefined,
+    prixSensibilite:   type === 'prix' ? (parseFloat(req.body.prixSensibilite) || 10) : undefined,
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
