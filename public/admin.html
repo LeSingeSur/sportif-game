@@ -325,6 +325,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
         </div>
         <div class="field">
+          <label>🌡️ Sensibilité de l'échelle (% d'écart = 0%)</label>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:4px 0 2px" id="prix-sensib-grid"></div>
+          <span class="hint" id="prix-sensib-hint">Défaut 10% : un écart de 10% de la cible = ⛄ Glacial. Ex: cible=100, réponse=90 → brûlant.</span>
+        </div>
+        <div class="field">
           <label>Tolérance ±</label>
           <input type="number" id="prix-tolerance-in" placeholder="0" min="0" step="any" value="0">
           <span class="hint">Ex: ±10 → réponses entre cible−10 et cible+10 acceptées. 0 = valeur exacte uniquement.</span>
@@ -578,6 +583,7 @@ async function startEdit(id){
     document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
     document.getElementById('prix-unit-in').value=a.unit||'';
     document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
+    selectPrixSensib(a.prixSensibilite||25);
   } else {
     document.getElementById('clue-in').value=a.clue||'';
   }
@@ -616,6 +622,7 @@ function cancelEdit(){
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
   document.getElementById('prix-tolerance-in').value='0';
+  selectPrixSensib(25);
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -712,6 +719,40 @@ document.getElementById('img-file-in').addEventListener('change', e=>{
 });
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// Prix sensibilite grid
+let prixSensibilite = 10;
+const PRIX_SENSIB = [
+  {val:2, label:'2%', desc:'Très précis'},
+  {val:5, label:'5%', desc:'Précis'},
+  {val:10, label:'10%', desc:'Normal'},
+  {val:25, label:'25%', desc:'Large'},
+  {val:50, label:'50%', desc:'Très large'},
+];
+(function buildSensibGrid(){
+  const grid = document.getElementById('prix-sensib-grid');
+  PRIX_SENSIB.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:13px;font-weight:800;color:var(--txt)">${s.label}</div><div style="font-size:9px;color:var(--mute);margin-top:1px">${s.desc}</div>`;
+    btn.id='psensib-'+s.val;
+    btn.onclick=()=>selectPrixSensib(s.val);
+    grid.appendChild(btn);
+  });
+  selectPrixSensib(25);
+})();
+function selectPrixSensib(val){
+  prixSensibilite=val;
+  PRIX_SENSIB.forEach(s=>{
+    const btn=document.getElementById('psensib-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  document.getElementById('prix-sensib-hint').textContent=
+    `Écart de ${val}% de la cible = ⛄ Glacial. Ex: cible=100 → réponse entre ${100-val} et ${100+val} = 🔥 Brûlant+`;
+}
 
 // Coefficient preview
 document.getElementById('coeff-in').addEventListener('input', e=>{
@@ -846,6 +887,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
+  const prixSensib=currentType==='prix'?prixSensibilite:25;
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
@@ -873,7 +915,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
