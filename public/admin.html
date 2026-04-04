@@ -327,7 +327,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>🌡️ Sensibilité de l'échelle (% d'écart = 0%)</label>
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:4px 0 2px" id="prix-sensib-grid"></div>
-          <span class="hint" id="prix-sensib-hint">Défaut 10% : un écart de 10% de la cible = ⛄ Glacial. Ex: cible=100, réponse=90 → brûlant.</span>
+          <span class="hint" id="prix-sensib-hint">Défaut 25% : un écart de 25% de la cible = ⛄ Glacial.</span>
         </div>
         <div class="field">
           <label>Tolérance ±</label>
@@ -721,7 +721,7 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // Prix sensibilite grid
-let prixSensibilite = 10;
+let prixSensibilite = 25;
 const PRIX_SENSIB = [
   {val:2, label:'2%', desc:'Très précis'},
   {val:5, label:'5%', desc:'Précis'},
@@ -750,8 +750,10 @@ function selectPrixSensib(val){
     btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
     btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
   });
+  const ex100lo=Math.round(100*(1-val/100));
+  const ex100hi=Math.round(100*(1+val/100));
   document.getElementById('prix-sensib-hint').textContent=
-    `Écart de ${val}% de la cible = ⛄ Glacial. Ex: cible=100 → réponse entre ${100-val} et ${100+val} = 🔥 Brûlant+`;
+    `Écart de ${val}% = ⛄ Glacial (0 pts de mise). Ex: cible=100 → brûlant entre ${ex100lo} et ${ex100hi}.`;
 }
 
 // Coefficient preview
