@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — SPORTIF ?</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07070f;--c1:#111120;--c2:#191928;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--green:#00c87a;--orange:#ff8c00;--txt:#ededf8;--mute:#52526e;--r:12px;--ff:'Nunito',sans-serif}
+body{font-family:var(--ff);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;justify-content:center;padding:24px 16px 60px;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:580px}
+h1{font-size:26px;font-weight:800;color:var(--neon);margin-bottom:4px}
+.sub{font-size:13px;color:var(--mute);margin-bottom:22px}
+#login-screen,#admin-screen{display:none}
+#login-screen.on,#admin-screen.on{display:block}
+.card{background:var(--c1);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;margin-bottom:14px}
+.card-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+input[type=text],input[type=password],input[type=url],textarea{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--neon)}
+input::placeholder,textarea::placeholder{color:var(--mute);font-weight:400}
+textarea{resize:vertical;min-height:120px;line-height:1.6}
+.hint{font-size:11px;color:var(--mute);margin-top:3px;line-height:1.4}
+.wc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:5px}
+.wc-track{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:4px}
+.wc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .3s}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 16px;font-size:14px;font-weight:800;font-family:var(--ff);border:none;border-radius:var(--r);cursor:pointer;transition:transform .1s;width:100%;margin-bottom:7px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--neon);color:#07070f}
+.btn-s{background:var(--c2);color:var(--txt);border:1px solid rgba(255,255,255,.09)}
+.btn-sm{padding:6px 11px;font-size:12px;width:auto;margin-bottom:0;border-radius:8px}
+.btn-del{background:rgba(255,63,92,.15);color:var(--red);border:1px solid rgba(255,63,92,.3)}
+.btn-edit{background:rgba(0,229,200,.12);color:var(--cyan);border:1px solid rgba(0,229,200,.25)}
+.btn-reset{background:rgba(212,255,0,.1);color:var(--neon);border:1px solid rgba(212,255,0,.2)}
+.btn-cancel{background:rgba(255,255,255,.06);color:var(--mute);border:1px solid rgba(255,255,255,.1)}
+.btn-scores{background:rgba(255,140,0,.12);color:var(--orange);border:1px solid rgba(255,140,0,.25)}
+.msg{text-align:center;font-size:13px;font-weight:700;padding:10px;border-radius:var(--r);margin-top:8px;display:none}
+.msg.ok{background:rgba(0,200,122,.15);color:var(--green);display:block}
+.msg.err{background:rgba(255,63,92,.15);color:var(--red);display:block}
+/* TYPE SELECTOR */
+.type-sel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0 12px}
+.type-opt{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 8px;cursor:pointer;text-align:center;transition:border-color .15s}
+.type-opt:hover{border-color:rgba(255,255,255,.2)}
+.type-opt.sel{border-color:var(--neon);background:rgba(212,255,0,.06)}
+.type-opt .type-ico{font-size:22px;margin-bottom:4px}
+.type-opt .type-name{font-size:12px;font-weight:800;color:var(--txt)}
+.type-opt .type-desc{font-size:10px;color:var(--mute);margin-top:2px;line-height:1.3}
+/* IMAGE PREVIEW */
+.img-preview{width:100%;border-radius:12px;margin-top:8px;display:none;max-height:200px;object-fit:cover}
+/* ALIASES */
+.aliases-box{background:var(--c2);border-radius:10px;padding:10px 12px;margin-top:6px;display:none}
+.aliases-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.aliases-list{display:flex;flex-wrap:wrap;gap:5px}
+.alias-tag{background:rgba(212,255,0,.12);border:1px solid rgba(212,255,0,.2);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--neon)}
+/* EMOJI */
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:5px 0}
+.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:5px;font-size:19px;cursor:pointer;text-align:center;transition:border-color .15s}
+.emoji-btn:hover,.emoji-btn.sel{border-color:var(--neon)}
+/* ATHLETE LIST */
+.ath-list{display:flex;flex-direction:column;gap:8px}
+.ath-item{background:var(--c2);border-radius:12px;padding:12px 14px}
+.ath-top{display:flex;align-items:center;gap:10px}
+.ath-ico{font-size:24px;flex-shrink:0}
+.ath-info{flex:1;min-width:0}
+.ath-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ath-meta{font-size:11px;color:var(--mute);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.ath-type{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+.ath-type.img{background:rgba(0,229,200,.12);color:var(--cyan)}
+.ath-type.txt{background:rgba(212,255,0,.1);color:var(--neon)}
+.ath-type.buzz{background:rgba(255,63,92,.12);color:var(--red)}
+.ath-type.sportus{background:rgba(240,192,0,.12);color:#f0c000}
+.ath-type.prix{background:rgba(0,200,122,.12);color:var(--green)}
+.ath-actions{display:flex;gap:5px;flex-shrink:0}
+/* EDIT BANNER */
+.edit-banner{background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--cyan);display:none;align-items:center;gap:8px}
+.edit-banner.on{display:flex}
+/* PREVIEW */
+.preview-box{background:var(--c2);border-radius:10px;padding:12px;margin-top:8px;display:none;line-height:2.3;font-size:13px}
+.wb-prev{display:inline-block;background:#181830;border-radius:5px;padding:3px 7px;margin:2px;cursor:pointer;font-size:13px;color:transparent;user-select:none}
+.wb-prev:hover{background:#222240}
+.grid-prev{display:none;margin-top:8px}
+.grid-prev-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000}
+.grid-prev-inner img{display:block;width:100%}
+.grid-prev-overlay{position:absolute;inset:0;display:grid}
+.tile-prev{background:rgba(10,10,20,.9);border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:opacity .15s}
+.tile-prev:hover{background:rgba(40,40,80,.7)}
+/* BUZZ CLUES */
+.buzz-clues-list{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.buzz-clue-item{display:flex;align-items:flex-start;gap:8px;background:var(--c2);border-radius:10px;padding:10px}
+.buzz-clue-num{font-size:11px;font-weight:800;color:var(--orange);min-width:22px;padding-top:3px}
+.buzz-clue-text{flex:1;font-size:13px;color:var(--txt);line-height:1.5;word-break:break-word}
+.buzz-clue-del{background:rgba(255,63,92,.15);color:var(--red);border:1px solid rgba(255,63,92,.3);border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer;flex-shrink:0}
+/* SCORES MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.on{display:flex}
+.modal{background:var(--c1);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;gap:12px}
+.modal-title{font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:var(--c2);border:none;color:var(--mute);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:var(--ff);font-weight:700}
+.modal-close:hover{color:var(--txt)}
+.modal-body{overflow-y:auto;flex:1}
+.score-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.score-rank{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.score-info{flex:1;min-width:0}
+.score-pseudo{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-date{font-size:11px;color:var(--mute);margin-top:1px}
+.score-pts{font-weight:900;font-size:22px;color:var(--neon);flex-shrink:0}
+/* NAV TABS */
+.nav-tabs{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;transition:border-color .15s,color .15s}
+.nav-tab.active{border-color:var(--neon);color:var(--neon)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- LOGIN -->
+<div id="login-screen" class="on">
+  <h1>🔐 Admin</h1><p class="sub">Gestion des sportifs</p>
+  <div class="card">
+    <div class="card-title">Connexion</div>
+    <div class="field"><label>Mot de passe</label><input type="password" id="pw-in" placeholder="••••••••"></div>
+    <button class="btn btn-p" id="btn-login">Connexion →</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <h1>🏆 Admin</h1>
+  <p class="sub">Les joueurs voient les défis du plus ancien au plus récent</p>
+
+  <!-- NAV -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showAdminTab('defis')">📋 Défis</button>
+    <button class="nav-tab" onclick="showAdminTab('classement')">🏆 Classement</button>
+  </div>
+
+  <!-- TAB: DÉFIS -->
+  <div id="tab-defis">
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Défis actifs</span>
+        <button class="btn btn-sm btn-reset" id="btn-reset-global">🔄 Reset classement global</button>
+      </div>
+      <div class="ath-list" id="ath-list"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="form-title">➕ Ajouter un défi</div>
+
+      <div class="edit-banner" id="edit-banner">
+        ✏️ <span id="edit-banner-name">Modification</span>
+        <button class="btn btn-sm btn-cancel" id="btn-cancel-edit" style="margin-left:auto">✕ Annuler</button>
+      </div>
+
+      <!-- Type selector -->
+      <div class="field">
+        <label>Type de défi</label>
+        <div class="type-sel">
+          <div class="type-opt sel" id="type-text" onclick="selectType('text')">
+            <div class="type-ico">📝</div>
+            <div class="type-name">Texte</div>
+            <div class="type-desc">Mots masqués</div>
+          </div>
+          <div class="type-opt" id="type-image" onclick="selectType('image')">
+            <div class="type-ico">🖼</div>
+            <div class="type-name">Image</div>
+            <div class="type-desc">Photo masquée</div>
+          </div>
+          <div class="type-opt" id="type-buzz" onclick="selectType('buzz')">
+            <div class="type-ico">⚡</div>
+            <div class="type-name">Buzz</div>
+            <div class="type-desc">Chrono dégressif</div>
+          </div>
+          <div class="type-opt" id="type-sportus" onclick="selectType('sportus')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Sportus</div>
+            <div class="type-desc">Motus sportif</div>
+          </div>
+          <div class="type-opt" id="type-prix" onclick="selectType('prix')">
+            <div class="type-ico">💰</div>
+            <div class="type-name">Juste Prix</div>
+            <div class="type-desc">Devine la stat</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emoji -->
+      <div class="field">
+        <label>Emoji sport</label>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <input type="text" id="emoji-in" placeholder="Ou tape un emoji…" maxlength="4" style="margin-top:5px">
+      </div>
+
+      <!-- Name -->
+      <div class="field" id="field-answer">
+        <label>Nom complet du sportif</label>
+        <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
+      </div>
+
+      <!-- Aliases -->
+      <div id="field-aliases">
+        <div class="field">
+          <label>Alias supplémentaires (optionnel)</label>
+          <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin">
+          <span class="hint">Prénom et nom de famille sont ajoutés automatiquement</span>
+        </div>
+        <div class="aliases-box" id="aliases-box">
+          <div class="aliases-title">Réponses acceptées</div>
+          <div class="aliases-list" id="aliases-preview"></div>
+        </div>
+      </div>
+
+      <!-- TEXT fields -->
+      <div id="text-fields">
+        <div class="field">
+          <label>Description (~100 mots)</label>
+          <textarea id="clue-in" placeholder="Tous les mots seront masqués. ~100 mots = 100 pts max."></textarea>
+          <div class="wc-row"><span>Difficulté :</span><span id="diff-label">—</span></div>
+          <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
+          <div class="wc-row"><span id="word-count">0 mots</span><span style="color:var(--cyan)">100 mots ≈ 100 pts max</span></div>
+        </div>
+        <button class="btn btn-s" id="btn-preview-text" style="margin-bottom:4px">👁 Prévisualiser le texte</button>
+        <div class="preview-box" id="preview-box-text"></div>
+      </div>
+
+      <!-- IMAGE fields -->
+      <div id="image-fields" style="display:none">
+        <div class="field">
+          <label>Source de l'image</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div id="img-src-url" onclick="selectImgSrc('url')" style="background:rgba(212,255,0,.06);border:2px solid var(--neon);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">🔗 URL</div>
+            <div id="img-src-file" onclick="selectImgSrc('file')" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">📁 Fichier</div>
+          </div>
+          <!-- URL input -->
+          <div id="img-url-zone">
+            <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
+            <span class="hint">💡 <strong>Wikipédia</strong> : fonctionne toujours — clic droit sur la photo → Copier l'adresse de l'image</span>
+          </div>
+          <!-- File upload -->
+          <div id="img-file-zone" style="display:none">
+            <input type="file" id="img-file-in" accept="image/*" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px;width:100%;color:var(--txt)">
+            <span class="hint">💡 Max 2MB recommandé. L'image est stockée directement dans la base.</span>
+          </div>
+        </div>
+        <img class="img-preview" id="img-preview" alt="Prévisualisation">
+        <div class="grid-prev" id="grid-prev">
+          <div style="font-size:12px;color:var(--mute);margin-bottom:4px">Prévisualisation grille (clique pour tester)</div>
+          <div class="grid-prev-inner">
+            <img id="grid-prev-img" src="" alt="">
+            <div class="grid-prev-overlay" id="grid-prev-overlay"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUZZ fields -->
+      <div id="buzz-fields" style="display:none">
+        <div class="field">
+          <label>Vitesse de décrément du score</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:4px 0 2px" id="buzz-speed-grid"></div>
+          <span class="hint" id="buzz-speed-hint">−2 pts/sec → ~50 secondes pour tomber à 0</span>
+        </div>
+        <div class="field">
+          <label>⏱ Gel du bouton Buzz après mauvaise réponse</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 2px" id="buzz-freeze-grid"></div>
+          <span class="hint" id="buzz-freeze-hint">3s de gel par défaut</span>
+        </div>
+        <div class="field">
+          <label>Indices (du plus difficile au plus facile)</label>
+          <span class="hint">💡 Ajoute 3 à 6 indices progressifs.</span>
+          <textarea id="buzz-new-clue" placeholder="Colle ton texte ici…" style="min-height:80px;margin-top:8px"></textarea>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+            <span id="buzz-word-count" style="color:var(--mute)">0 mots</span>
+            <span id="buzz-word-guide" style="color:var(--cyan)">idéal : ~113 mots pour −2/s</span>
+          </div>
+          <button class="btn btn-s" id="btn-add-buzz-clue" style="margin-top:6px;margin-bottom:0">➕ Ajouter cet indice</button>
+        </div>
+        <div class="buzz-clues-list" id="buzz-clues-list"></div>
+        <div style="font-size:12px;color:var(--mute);margin-top:8px" id="buzz-clue-count">0 indice(s) ajouté(s)</div>
+      </div>
+
+      <!-- SPORTUS fields -->
+      <div id="sportus-fields" style="display:none">
+        <div class="field">
+          <label>💬 Indice gratuit (affiché dès le début)</label>
+          <input type="text" id="sportus-hint0-in" placeholder="Ex: Il est considéré comme le meilleur tennisman de tous les temps.">
+          <span class="hint">Visible dès le début, sans coût. Laisser vide si aucun.</span>
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #1 (−20 pts)</label>
+          <input type="text" id="sportus-hint1-in" placeholder="Ex: Ce sportif a remporté 14 fois Roland-Garros.">
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #2 (−20 pts)</label>
+          <input type="text" id="sportus-hint2-in" placeholder="Ex: Il est né en Espagne en 1986.">
+        </div>
+        <div style="background:rgba(30,30,30,.6);border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
+          ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement — elle retire 20 pts sans donner d'indice.
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label>Lettres pré-révélées (optionnel)</label>
+          <span class="hint">Saisis le nom de famille avec des <strong>_</strong> pour les lettres masquées.<br>Ex: pour NADAL → <code>_A_A_</code> révèle les A dès le départ.</span>
+          <input type="text" id="sportus-revealed-in" placeholder="Ex: _A_A_ ou N___L" autocomplete="off" autocorrect="off" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-size:18px">
+          <div id="sportus-revealed-preview" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+
+      <!-- PRIX fields -->
+      <div id="prix-fields" style="display:none">
+        <div class="field">
+          <label>Question posée au joueur</label>
+          <input type="text" id="prix-question-in" placeholder="Ex: Combien de Grands Chelems a-t-il remportés ?">
+          <span class="hint">Affichée pendant le jeu à la place de l'indice.</span>
+        </div>
+        <div class="field">
+          <label>Valeur exacte à deviner</label>
+          <input type="number" id="prix-target-in" placeholder="Ex: 22" min="0" step="any">
+          <span class="hint">Le chiffre exact que le joueur doit trouver.</span>
+        </div>
+        <div class="field">
+          <label>Unité (optionnel)</label>
+          <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
+        </div>
+        <div class="field">
+          <label>🌡️ Sensibilité de l'échelle (% d'écart = 0%)</label>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:4px 0 2px" id="prix-sensib-grid"></div>
+          <span class="hint" id="prix-sensib-hint">Défaut 25% : un écart de 25% de la cible = ⛄ Glacial.</span>
+        </div>
+        <div class="field">
+          <label>Tolérance ±</label>
+          <input type="number" id="prix-tolerance-in" placeholder="0" min="0" step="any" value="0">
+          <span class="hint">Ex: ±10 → réponses entre cible−10 et cible+10 acceptées. 0 = valeur exacte uniquement.</span>
+        </div>
+      </div>
+
+      <!-- Coefficient -->
+      <div class="field" style="margin-top:12px">
+        <label>⚖️ Coefficient score total</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" id="coeff-in" value="1" min="0.1" max="5" step="0.1" style="width:100px;text-align:center;font-size:18px;font-weight:800">
+          <span style="font-size:13px;color:var(--mute);flex:1">Score × coeff dans le classement global.<br>Ex: ×2 = défi vaut le double.</span>
+        </div>
+        <div id="coeff-preview" style="font-size:12px;color:var(--cyan);margin-top:4px">Score de 80 pts → 80 pts au classement</div>
+      </div>
+
+      <button class="btn btn-p" id="btn-save" disabled style="margin-top:12px">🚀 Publier ce défi</button>
+      <div class="msg" id="save-msg"></div>
+    </div>
+
+    <button class="btn btn-s" id="btn-game">← Voir le jeu</button>
+  </div>
+
+  <!-- TAB: CLASSEMENT -->
+  <div id="tab-classement" style="display:none">
+    <div class="card">
+      <div class="card-title">🌍 Classement Global</div>
+      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Scores par défi</div>
+      <div style="margin-bottom:10px;font-size:13px;color:var(--mute)">Clique sur un défi pour voir ses scores</div>
+      <div id="admin-ath-selector" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORES MODAL -->
+<div class="modal-overlay" id="scores-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">Scores</span>
+      <button class="modal-close" id="modal-close-btn">✕ Fermer</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+</div>
+<script>
+const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
+let adminPw='', selEmoji='🏆', editId=null, currentType='text';
+let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
+
+// Buzz speed grid — 1/2/3 pts/sec only, default 2
+const BUZZ_SPEEDS=[
+  {val:1,label:'−1/s',desc:'~100s'},
+  {val:2,label:'−2/s',desc:'~50s'},
+  {val:3,label:'−3/s',desc:'~33s'},
+];
+(function buildSpeedGrid(){
+  const grid=document.getElementById('buzz-speed-grid');
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div><div style="font-size:10px;color:var(--mute);margin-top:2px">${s.desc}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzSpeed(s.val);
+    btn.id='bspeed-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzSpeed(2);
+})();
+
+// Buzz freeze duration grid — 1/2/3/5s
+const BUZZ_FREEZES=[
+  {val:1,label:'1s'},{val:2,label:'2s'},{val:3,label:'3s'},{val:5,label:'5s'},
+];
+(function buildFreezeGrid(){
+  const grid=document.getElementById('buzz-freeze-grid');
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzFreeze(s.val);
+    btn.id='bfreeze-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzFreeze(3);
+})();
+
+function selectBuzzSpeed(val){
+  buzzDecrement=val;
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.getElementById('bspeed-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  const secs=Math.round(100/val);
+  const maxWords=Math.round(secs/0.22);
+  const idealWords=Math.round(maxWords*0.5);
+  document.getElementById('buzz-speed-hint').textContent=`−${val} pts/sec → ~${secs}s avant d'arriver à 0`;
+  if(document.getElementById('buzz-word-count')) updateBuzzWordCount();
+}
+
+function selectBuzzFreeze(val){
+  buzzFreezeDuration=val;
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.getElementById('bfreeze-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  document.getElementById('buzz-freeze-hint').textContent=`${val}s de gel après une mauvaise réponse`;
+}
+
+// Emoji grid
+const grid=document.getElementById('emoji-grid');
+EMOJIS.forEach(e=>{
+  const btn=document.createElement('button');btn.className='emoji-btn';btn.textContent=e;
+  btn.onclick=()=>{document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selEmoji=e;document.getElementById('emoji-in').value=e};
+  grid.appendChild(btn);
+});
+document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.target.value||'🏆'});
+
+// Type selector
+function selectType(type){
+  currentType=type;
+  ['text','image','buzz','sportus','prix'].forEach(t=>{
+    document.getElementById('type-'+t).classList.toggle('sel',t===type);
+  });
+  document.getElementById('text-fields').style.display=type==='text'?'block':'none';
+  document.getElementById('image-fields').style.display=type==='image'?'block':'none';
+  document.getElementById('buzz-fields').style.display=type==='buzz'?'block':'none';
+  document.getElementById('sportus-fields').style.display=type==='sportus'?'block':'none';
+  document.getElementById('prix-fields').style.display=type==='prix'?'block':'none';
+  // Pour le Juste Prix, le "nom" = identifiant du défi (ex: "Âge de Nadal"), pas un vrai nom de sportif
+  const isPrix = type==='prix';
+  document.getElementById('field-answer').querySelector('label').textContent = isPrix ? 'Identifiant du défi' : 'Nom complet du sportif';
+  document.getElementById('answer-in').placeholder = isPrix ? 'Ex: Âge de Nadal en 2024' : 'Ex: Corentin Moutet';
+  document.getElementById('field-aliases').style.display = isPrix ? 'none' : 'block';
+  checkReady();
+}
+
+// Admin tab nav
+function showAdminTab(tab){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
+  document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
+  if(tab==='classement') loadAdminScores();
+}
+
+// Login
+document.getElementById('pw-in').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+document.getElementById('btn-login').onclick=login;
+async function login(){
+  const pw=document.getElementById('pw-in').value.trim();if(!pw)return;
+  const res=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const data=await res.json();
+  if(data.success){adminPw=pw;document.getElementById('login-screen').classList.remove('on');document.getElementById('admin-screen').classList.add('on');loadAthletes()}
+  else showMsg('login-msg','err','❌ '+data.message);
+}
+
+// Load list
+async function loadAthletes(){
+  const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  const athletes=await res.json();
+  const list=document.getElementById('ath-list');
+  if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
+  list.innerHTML='';
+  athletes.forEach((a,i)=>{
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':'txt';
+    let meta='';
+    if(a.type==='image') meta='10×10 · 100 cases';
+    else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
+    else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
+    else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
+    else meta=(a.clue?.split(/\s+/).length||0)+' mots';
+    const d=document.createElement('div');d.className='ath-item';
+    d.innerHTML=`
+      <div class="ath-top">
+        <div class="ath-ico">${a.emoji}</div>
+        <div class="ath-info">
+          <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
+          <div class="ath-meta">
+            <span class="ath-type ${typeClass}">${typeLabel}</span>
+            <span>${meta}</span>
+            <span>${a.playerCount} joueur${a.playerCount!==1?'s':''}</span>
+            <span>top: ${a.topScore??'—'}</span>
+            <span style="color:var(--cyan)">×${a.coefficient??1}</span>
+          </div>
+        </div>
+        <div class="ath-actions">
+          <button class="btn btn-sm btn-scores" onclick="showAthleteScores(${a.id},'${esc(a.answer)}')">📊</button>
+          <button class="btn btn-sm btn-edit" onclick="startEdit(${a.id})">✏️</button>
+          <button class="btn btn-sm btn-reset" onclick="resetAthlete(${a.id})">🔄</button>
+          <button class="btn btn-sm btn-del" onclick="deleteAthlete(${a.id},'${esc(a.answer)}')">🗑</button>
+        </div>
+      </div>`;
+    list.appendChild(d);
+  });
+}
+
+// Edit
+async function startEdit(id){
+  const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  const athletes=await res.json();
+  const a=athletes.find(x=>x.id===id);if(!a)return;
+  editId=id;
+  document.getElementById('answer-in').value=a.answer;
+  document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
+  selectType(a.type||'text');
+  if(a.type==='image'){
+    if(a.imageBase64){
+      imgSrc='file'; imgBase64=a.imageBase64;
+      selectImgSrc('file');
+      previewImageSrc(a.imageBase64);
+    } else {
+      imgSrc='url'; imgBase64='';
+      selectImgSrc('url');
+      document.getElementById('img-url-in').value=a.imageUrl||'';
+      previewImage(a.imageUrl||'');
+    }
+  } else if(a.type==='buzz'){
+    buzzClues=a.clues||[];
+    selectBuzzSpeed(a.buzzDecrement||2);
+    selectBuzzFreeze(a.buzzFreezeDuration||3);
+    renderBuzzClues();
+  } else if(a.type==='sportus'){
+    document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
+    document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
+    document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
+    // Rebuild pattern from revealedLetters
+    if(a.revealedLetters&&a.revealedLetters.length){
+      const lastName=a.answer.trim().split(/\s+/).pop().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+      const pat=lastName.split('').map((ch,i)=>a.revealedLetters.find(r=>r.index===i)?ch:'_').join('');
+      document.getElementById('sportus-revealed-in').value=pat;
+      document.getElementById('sportus-revealed-in').dispatchEvent(new Event('input'));
+    } else {
+      document.getElementById('sportus-revealed-in').value='';
+      document.getElementById('sportus-revealed-preview').innerHTML='';
+    }
+  } else if(a.type==='prix'){
+    document.getElementById('prix-question-in').value=a.question||'';
+    document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
+    document.getElementById('prix-unit-in').value=a.unit||'';
+    document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
+    selectPrixSensib(a.prixSensibilite||25);
+  } else {
+    document.getElementById('clue-in').value=a.clue||'';
+  }
+  const parts=a.answer.toLowerCase().split(/\s+/);
+  const manual=(a.aliases||[]).filter(x=>x!==a.answer.toLowerCase()&&!parts.includes(x)).join(', ');
+  document.getElementById('aliases-in').value=manual;
+  document.getElementById('edit-banner').classList.add('on');
+  document.getElementById('edit-banner-name').textContent='Modification : '+a.answer;
+  document.getElementById('form-title').textContent='✏️ Modifier le défi';
+  document.getElementById('coeff-in').value = a.coefficient ?? 1;
+  document.getElementById('coeff-in').dispatchEvent(new Event('input'));
+  document.getElementById('btn-save').textContent='💾 Enregistrer';
+  document.getElementById('btn-save').disabled=false;
+  updateWC();updateAliases();
+  document.getElementById('btn-save').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editId=null; buzzClues=[];
+  document.getElementById('coeff-in').value = 1;
+  document.getElementById('coeff-preview').textContent = 'Score de 80 pts → 80 pts au classement';
+  document.getElementById('edit-banner').classList.remove('on');
+  document.getElementById('form-title').textContent='➕ Ajouter un défi';
+  document.getElementById('btn-save').textContent='🚀 Publier ce défi';
+  document.getElementById('answer-in').value='';
+  document.getElementById('clue-in').value='';
+  document.getElementById('img-url-in').value='';
+  imgSrc='url'; imgBase64='';
+  selectImgSrc('url');
+  document.getElementById('sportus-hint0-in').value='';
+  document.getElementById('sportus-hint1-in').value='';
+  document.getElementById('sportus-hint2-in').value='';
+  document.getElementById('sportus-revealed-in').value='';
+  document.getElementById('sportus-revealed-preview').innerHTML='';
+  document.getElementById('prix-question-in').value='';
+  document.getElementById('prix-target-in').value='';
+  document.getElementById('prix-unit-in').value='';
+  document.getElementById('prix-tolerance-in').value='0';
+  selectPrixSensib(25);
+  document.getElementById('aliases-in').value='';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  document.getElementById('aliases-box').style.display='none';
+  document.getElementById('preview-box-text').style.display='none';
+  renderBuzzClues();
+  selectBuzzSpeed(2);
+  selectBuzzFreeze(3);
+  selectType('text');updateWC();checkReady();
+}
+document.getElementById('btn-cancel-edit').onclick=cancelEdit;
+
+// Delete / Reset
+async function deleteAthlete(id,name){
+  if(!confirm('Supprimer "'+name+'" ?'))return;
+  await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadAthletes();
+}
+async function resetAthlete(id){
+  if(!confirm('Remettre à zéro le classement de ce défi ?'))return;
+  const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
+}
+document.getElementById('btn-reset-global').onclick=async()=>{
+  if(!confirm('Remettre à zéro le classement global ?'))return;
+  const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
+};
+
+// Word count
+document.getElementById('clue-in').addEventListener('input',updateWC);
+document.getElementById('answer-in').addEventListener('input',updateAliases);
+document.getElementById('aliases-in').addEventListener('input',updateAliases);
+
+function updateWC(){
+  const words=document.getElementById('clue-in').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('word-count').textContent=words+' mot'+(words!==1?'s':'');
+  document.getElementById('wc-fill').style.width=Math.min(100,(words/100)*100)+'%';
+  document.getElementById('diff-label').textContent=words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait';
+  checkReady();
+}
+function updateAliases(){
+  const answer=document.getElementById('answer-in').value.trim();
+  if(!answer){document.getElementById('aliases-box').style.display='none';checkReady();return}
+  const parts=answer.split(/\s+/);
+  const auto=[answer.toLowerCase()];
+  if(parts.length>1) auto.push(parts[parts.length-1].toLowerCase());
+  const manual=document.getElementById('aliases-in').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const all=[...new Set([...auto,...manual])];
+  document.getElementById('aliases-box').style.display='block';
+  document.getElementById('aliases-preview').innerHTML=all.map(a=>'<span class="alias-tag">'+a+'</span>').join('');
+  checkReady();
+}
+function checkReady(){
+  const hasAnswer=!!document.getElementById('answer-in').value.trim();
+  let hasContent=false;
+  if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
+  else if(currentType==='buzz') hasContent=buzzClues.length>0;
+  else if(currentType==='sportus') hasContent=true;
+  else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
+  else hasContent=!!document.getElementById('clue-in').value.trim();
+  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
+}
+
+// Image preview
+document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e.target.value.trim()));
+document.getElementById('img-url-in').addEventListener('input',checkReady);
+
+let imgSrc='url', imgBase64='';
+
+function selectImgSrc(src){
+  imgSrc=src; imgBase64='';
+  document.getElementById('img-src-url').style.background=src==='url'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-url').style.borderColor=src==='url'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-src-file').style.background=src==='file'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-file').style.borderColor=src==='file'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-url-zone').style.display=src==='url'?'block':'none';
+  document.getElementById('img-file-zone').style.display=src==='file'?'block':'none';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  checkReady();
+}
+
+document.getElementById('img-file-in').addEventListener('change', e=>{
+  const file=e.target.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){alert('Image trop lourde (max 5MB)');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    imgBase64=ev.target.result;
+    previewImageSrc(imgBase64);
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('prix-question-in').addEventListener('input',checkReady);
+document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// Prix sensibilite grid
+let prixSensibilite = 25;
+const PRIX_SENSIB = [
+  {val:2, label:'2%', desc:'Très précis'},
+  {val:5, label:'5%', desc:'Précis'},
+  {val:10, label:'10%', desc:'Normal'},
+  {val:25, label:'25%', desc:'Large'},
+  {val:50, label:'50%', desc:'Très large'},
+];
+(function buildSensibGrid(){
+  const grid = document.getElementById('prix-sensib-grid');
+  PRIX_SENSIB.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:13px;font-weight:800;color:var(--txt)">${s.label}</div><div style="font-size:9px;color:var(--mute);margin-top:1px">${s.desc}</div>`;
+    btn.id='psensib-'+s.val;
+    btn.onclick=()=>selectPrixSensib(s.val);
+    grid.appendChild(btn);
+  });
+  selectPrixSensib(25);
+})();
+function selectPrixSensib(val){
+  prixSensibilite=val;
+  PRIX_SENSIB.forEach(s=>{
+    const btn=document.getElementById('psensib-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  const ex100lo=Math.round(100*(1-val/100));
+  const ex100hi=Math.round(100*(1+val/100));
+  document.getElementById('prix-sensib-hint').textContent=
+    `Écart de ${val}% = ⛄ Glacial (0 pts de mise). Ex: cible=100 → brûlant entre ${ex100lo} et ${ex100hi}.`;
+}
+
+// Coefficient preview
+document.getElementById('coeff-in').addEventListener('input', e=>{
+  const v = parseFloat(e.target.value)||1;
+  const example = Math.round(80 * v);
+  document.getElementById('coeff-preview').textContent = `Score de 80 pts → ${example} pts au classement`;
+});
+document.getElementById('sportus-hint1-in').addEventListener('input',checkReady);
+document.getElementById('sportus-hint2-in').addEventListener('input',checkReady);
+
+// Revealed letters preview
+document.getElementById('sportus-revealed-in').addEventListener('input', e=>{
+  const val = e.target.value.toUpperCase().replace(/[^A-Z_]/g,'');
+  e.target.value = val;
+  const prev = document.getElementById('sportus-revealed-preview');
+  prev.innerHTML = '';
+  val.split('').forEach((ch,i)=>{
+    const span = document.createElement('span');
+    span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-family:monospace;font-size:16px;font-weight:800;border:2px solid ${ch==='_'?'rgba(255,255,255,.1)':'rgba(212,255,0,.5)'};background:${ch==='_'?'var(--c2)':'rgba(212,255,0,.1)'};color:${ch==='_'?'var(--mute)':'var(--neon)'}`;
+    span.textContent = ch === '_' ? '?' : ch;
+    prev.appendChild(span);
+  });
+});
+
+function previewImage(url){
+  if(!url){
+    document.getElementById('img-preview').style.display='none';
+    document.getElementById('grid-prev').style.display='none';
+    return;
+  }
+  previewImageSrc('/api/img-proxy?url='+encodeURIComponent(url));
+}
+
+function previewImageSrc(src){
+  if(!src){document.getElementById('img-preview').style.display='none';document.getElementById('grid-prev').style.display='none';return;}
+  const img=document.getElementById('img-preview');
+  img.src=src; img.style.display='block';
+  img.onload=()=>{
+    document.getElementById('grid-prev').style.display='block';
+    document.getElementById('grid-prev-img').src=src;
+    const overlay=document.getElementById('grid-prev-overlay');
+    overlay.innerHTML='';
+    const gs=10;
+    overlay.style.gridTemplateColumns=`repeat(${gs},1fr)`;
+    overlay.style.gridTemplateRows=`repeat(${gs},1fr)`;
+    for(let i=0;i<gs*gs;i++){
+      const t=document.createElement('div');t.className='tile-prev';
+      t.onclick=()=>{t.style.opacity='0';t.style.pointerEvents='none'};
+      overlay.appendChild(t);
+    }
+  };
+  img.onerror=()=>{img.style.display='none';document.getElementById('grid-prev').style.display='none'};
+}
+
+// Text preview
+document.getElementById('btn-preview-text').onclick=()=>{
+  const clue=document.getElementById('clue-in').value.trim();const box=document.getElementById('preview-box-text');
+  if(!clue)return;box.style.display='block';box.innerHTML='';
+  clue.match(/\S+|\s+/g).forEach(tok=>{
+    if(/^\s+$/.test(tok)){box.appendChild(document.createTextNode(' '));return}
+    const s=document.createElement('span');s.className='wb-prev';s.textContent=tok;
+    s.onclick=()=>{s.style.color='var(--txt)';s.style.background='transparent'};
+    box.appendChild(s);box.appendChild(document.createTextNode(' '));
+  });
+  box.scrollIntoView({behavior:'smooth'});
+};
+
+// BUZZ clues management
+document.getElementById('buzz-new-clue').addEventListener('input', updateBuzzWordCount);
+
+function updateBuzzWordCount(){
+  const words = document.getElementById('buzz-new-clue').value.trim().split(/\s+/).filter(Boolean).length;
+  const secs  = Math.round(100 / buzzDecrement);
+  const ideal = Math.round(secs / 0.22 * 0.5);
+  const max   = Math.round(secs / 0.22);
+  const wc    = document.getElementById('buzz-word-count');
+  const wg    = document.getElementById('buzz-word-guide');
+  wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  if(words === 0){
+    wc.style.color = 'var(--mute)';
+    wg.textContent = `Idéal ~${ideal} mots · max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--cyan)';
+  } else if(words > max){
+    wc.style.color = 'var(--red)';
+    wg.textContent = `⚠️ Trop long ! Max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--red)';
+  } else if(words >= ideal){
+    wc.style.color = 'var(--neon)';
+    wg.textContent = `✅ Parfait pour −${buzzDecrement}/s (idéal ~${ideal} mots)`;
+    wg.style.color = 'var(--neon)';
+  } else {
+    wc.style.color = 'var(--orange)';
+    wg.textContent = `Encore ${ideal - words} mots pour atteindre l'idéal (~${ideal} mots)`;
+    wg.style.color = 'var(--orange)';
+  }
+}
+
+document.getElementById('btn-add-buzz-clue').onclick=()=>{
+  const txt=document.getElementById('buzz-new-clue').value.trim();
+  if(!txt)return;
+  buzzClues.push(txt);
+  document.getElementById('buzz-new-clue').value='';
+  renderBuzzClues();
+  checkReady();
+};
+function renderBuzzClues(){
+  const list=document.getElementById('buzz-clues-list');
+  list.innerHTML='';
+  buzzClues.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='buzz-clue-item';
+    d.innerHTML=`<div class="buzz-clue-num">#${i+1}</div><div class="buzz-clue-text">${esc(c)}</div><button class="buzz-clue-del" onclick="removeBuzzClue(${i})">✕</button>`;
+    list.appendChild(d);
+  });
+  document.getElementById('buzz-clue-count').textContent=buzzClues.length+' indice(s) ajouté(s)';
+}
+function removeBuzzClue(i){
+  buzzClues.splice(i,1);renderBuzzClues();checkReady();
+}
+
+// Save
+document.getElementById('btn-save').onclick=async()=>{
+  const btn=document.getElementById('btn-save');
+  const answer=document.getElementById('answer-in').value.trim();
+  const aliases=document.getElementById('aliases-in').value;
+  const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
+  const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
+  const sportusHint2=currentType==='sportus'?document.getElementById('sportus-hint2-in').value.trim():'';
+  const imageUrl=currentType==='image'&&imgSrc==='url'?document.getElementById('img-url-in').value.trim():'';
+  const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
+  const gridSize=10;
+  const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
+  const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
+  const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
+  const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
+  const prixSensib=currentType==='prix'?prixSensibilite:25;
+  btn.disabled=true;
+
+  // Validate image via proxy only for URL mode
+  if(currentType==='image' && imgSrc==='url' && imageUrl){
+    btn.textContent='🔍 Vérification de l\'image…';
+    try{
+      const testRes=await fetch('/api/img-proxy?url='+encodeURIComponent(imageUrl));
+      if(!testRes.ok){
+        showMsg('save-msg','err','❌ Image inaccessible ('+testRes.status+'). Essaie une URL Wikipédia.');
+        btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+        return;
+      }
+    }catch(e){
+      showMsg('save-msg','err','❌ Impossible de vérifier l\'image. Vérifie l\'URL.');
+      btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+      return;
+    }
+  }
+
+  btn.textContent='⏳…';
+  const coefficient = parseFloat(document.getElementById('coeff-in').value) || 1;
+  // Build revealedLetters array from pattern for sportus
+  let revealedLetters = [];
+  if(currentType==='sportus'){
+    const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
+    pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
+  }
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  if(editId)body.editId=editId;
+  try{
+    const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.success){
+      showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
+      cancelEdit();loadAthletes();
+    } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
+  }catch(e){console.error('Save error:',e);showMsg('save-msg','err','❌ Erreur : '+e.message)}
+  btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+};
+
+// ── SCORES ADMIN ──────────────────────────────────────────────────────────
+async function loadAdminScores(){
+  // Global
+  const gEl=document.getElementById('admin-global-scores');
+  gEl.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement…</div>';
+  try{
+    const res=await fetch('/api/admin/scores?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    if(!data.length){gEl.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun score pour l\'instant.</div>';} 
+    else {
+      gEl.innerHTML='';
+      data.forEach((e,i)=>{
+        const medals=['🥇','🥈','🥉'];
+        const d=document.createElement('div');d.className='score-item';
+        d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${e.count} défi${e.count>1?'s':''} · ${new Date(e.date).toLocaleDateString('fr-FR')}</div></div><div class="score-pts">${e.score}</div>`;
+        gEl.appendChild(d);
+      });
+    }
+  }catch(err){gEl.innerHTML='<div style="color:var(--red);font-size:13px">Erreur de chargement</div>';}
+
+  // Per-athlete selector
+  const sel=document.getElementById('admin-ath-selector');
+  sel.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement…</div>';
+  try{
+    const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+    const athletes=await res.json();
+    sel.innerHTML='';
+    athletes.forEach((a,i)=>{
+      const typeLabel=a.type==='image'?'🖼':a.type==='buzz'?'⚡':'📝';
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;cursor:pointer';
+      d.innerHTML=`<div style="font-size:20px">${a.emoji}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)} ${typeLabel}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
+      d.onclick=()=>showAthleteScores(a.id, a.answer);
+      sel.appendChild(d);
+    });
+    if(!athletes.length) sel.innerHTML='<div style="color:var(--mute);font-size:13px">Aucun défi.</div>';
+  }catch(err){sel.innerHTML='<div style="color:var(--red);font-size:13px">Erreur.</div>';}
+}
+
+async function showAthleteScores(id,name){
+  document.getElementById('modal-title-text').textContent='📊 '+name;
+  document.getElementById('modal-body').innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Chargement…</div>';
+  document.getElementById('scores-modal').classList.add('on');
+  try{
+    const res=await fetch('/api/admin/scores/'+id+'?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    const body=document.getElementById('modal-body');
+    if(!data.scores||!data.scores.length){
+      body.innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Aucun score pour ce défi.</div>';
+      return;
+    }
+    body.innerHTML='';
+    data.scores.forEach((e,i)=>{
+      const medals=['🥇','🥈','🥉'];
+      const d=document.createElement('div');d.className='score-item';
+      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${new Date(e.date).toLocaleDateString('fr-FR')} ${new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div><div class="score-pts">${e.score}</div>`;
+      body.appendChild(d);
+    });
+  }catch(err){document.getElementById('modal-body').innerHTML='<div style="color:var(--red);text-align:center;padding:20px">Erreur.</div>';}
+}
+
+document.getElementById('modal-close-btn').onclick=()=>document.getElementById('scores-modal').classList.remove('on');
+document.getElementById('scores-modal').onclick=(e)=>{if(e.target===document.getElementById('scores-modal'))document.getElementById('scores-modal').classList.remove('on')};
+
+document.getElementById('btn-game').onclick=()=>window.location.href='/';
+function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+</script>
+</body>
+</html>
