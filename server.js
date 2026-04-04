@@ -332,7 +332,7 @@ app.post('/api/admin/athlete', (req, res) => {
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
     targetValue:    type === 'prix' ? parseFloat(targetValue) : undefined,
     prixTolerance:     type === 'prix' ? (parseFloat(req.body.prixTolerance) || 0) : undefined,
-    prixSensibilite:   type === 'prix' ? (parseFloat(req.body.prixSensibilite) || 10) : undefined,
+    prixSensibilite:   type === 'prix' ? (parseFloat(req.body.prixSensibilite) || 25) : undefined,
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
