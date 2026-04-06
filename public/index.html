@@ -897,6 +897,7 @@ function setupTrappeMode(data){
   T.capital   = 100;
   T.timer     = data.trappeTimer || 30;
   T.done      = false;
+  G.athleteName = data.themeName || 'La Trappe';
   if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
 
   G.score=100; G.max=100; setScore(100,false);
@@ -1128,6 +1129,7 @@ function setupSportusMode(data){
 
   S.targetLen        = data.lastNameLength;
   S.revealedLetters  = data.revealedLetters || [];
+  S.timerVal         = data.sportusTimer || 45;
   S.tries       = 0;
   S.score       = 100;
   S.done        = false;
@@ -1169,15 +1171,15 @@ function setupSportusMode(data){
 
 function startSportusTimer(){
   if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
-  S.timerVal=45;
-  updateSportusTimerDisplay(45);
-  S.timerInterval=setInterval(()=>{
-    S.timerVal--;
-    updateSportusTimerDisplay(S.timerVal);
-    if(S.timerVal<=0){
+  let t = S.timerVal || 45;
+  updateSportusTimerDisplay(t);
+  S.timerInterval = setInterval(()=>{
+    t--;
+    updateSportusTimerDisplay(t);
+    if(t <= 0){
       clearInterval(S.timerInterval); S.timerInterval=null;
       if(S.done||!G.active) return;
-      // Temps écoulé : −10 pts, essai brûlé
+      // Temps écoulé : essai brûlé, −10 pts
       S.tries++;
       S.score=Math.max(0,S.score-(S.tries>1?SPORTUS_PENALTY:0));
       G.score=S.score; setScore(S.score,true);
