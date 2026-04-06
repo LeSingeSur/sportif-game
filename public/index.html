@@ -886,7 +886,7 @@ function setupTrappeMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='🕳️ La Trappe'; badge.className='type-badge';
   badge.style.color='#ff9800';
-  document.getElementById('game-tip').innerHTML='Répartis tes points · Au moins une trappe vide · Score = capital final';
+  document.getElementById('game-tip').innerHTML='Répartis tous tes points · Score = capital final';
   document.getElementById('img-zone').style.display='none';
   document.getElementById('clue').style.display='none';
   document.getElementById('buzz-zone').style.display='none';
@@ -1010,15 +1010,12 @@ function updateTrappeUI(){
     document.getElementById('trappe-plus-'+i).style.opacity = unalloc<10?'0.3':'1';
   });
 
-  // Valider enabled if: tout le capital misé ET au moins une trappe à 0
+  // Valider enabled dès que tout le capital est placé
   const allPlaced = unalloc === 0;
-  const oneEmpty  = T.bets.some(b => b === 0);
-  document.getElementById('trappe-valider').disabled = !(allPlaced && oneEmpty);
+  document.getElementById('trappe-valider').disabled = !allPlaced;
 
-  // Feedback
   const fb = document.getElementById('trappe-fb');
-  if(unalloc > 0) fb.textContent = `Encore ${unalloc} pts à placer · au moins une trappe doit rester vide`;
-  else if(!oneEmpty) fb.textContent = 'Laisse au moins une trappe vide !';
+  if(unalloc > 0) fb.textContent = `Encore ${unalloc} pts à placer`;
   else fb.textContent = '✅ Prêt à valider !';
 }
 
