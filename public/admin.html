@@ -349,33 +349,24 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- TRAPPE fields -->
       <div id="trappe-fields" style="display:none">
         <div class="field">
-          <label>Question</label>
-          <input type="text" id="trappe-q-in" placeholder="Ex: Quel pays a gagné la Coupe du Monde 2018 ?">
-        </div>
-        <div class="field">
-          <label>Réponse A</label>
-          <input type="text" id="trappe-a0" placeholder="Ex: France">
-        </div>
-        <div class="field">
-          <label>Réponse B</label>
-          <input type="text" id="trappe-a1" placeholder="Ex: Brésil">
-        </div>
-        <div class="field">
-          <label>Réponse C</label>
-          <input type="text" id="trappe-a2" placeholder="Ex: Allemagne">
-        </div>
-        <div class="field">
-          <label>Réponse D</label>
-          <input type="text" id="trappe-a3" placeholder="Ex: Argentine">
-        </div>
-        <div class="field">
-          <label>Bonne réponse</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px" id="trappe-correct-grid"></div>
-        </div>
-        <div class="field">
-          <label>⏱ Durée de mise (secondes)</label>
+          <label>⏱ Durée de mise par question (secondes)</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="trappe-timer-grid"></div>
         </div>
+        <div class="field">
+          <label>Ajouter une question</label>
+          <input type="text" id="trappe-q-in" placeholder="Question…" style="margin-bottom:6px">
+          <input type="text" id="trappe-a0" placeholder="Réponse A" style="margin-bottom:4px">
+          <input type="text" id="trappe-a1" placeholder="Réponse B" style="margin-bottom:4px">
+          <input type="text" id="trappe-a2" placeholder="Réponse C" style="margin-bottom:4px">
+          <input type="text" id="trappe-a3" placeholder="Réponse D" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:13px;color:var(--mute)">Bonne réponse :</span>
+            <div style="display:flex;gap:6px" id="trappe-correct-grid"></div>
+          </div>
+          <button class="btn btn-s" id="btn-add-trappe-q" style="margin-top:4px">➕ Ajouter cette question</button>
+        </div>
+        <div id="trappe-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="font-size:12px;color:var(--mute);margin-top:4px" id="trappe-q-count">0 question(s)</div>
       </div>
 
       <!-- Coefficient -->
@@ -629,13 +620,10 @@ async function startEdit(id){
     document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
     selectPrixSensib(a.prixSensibilite||[0,10,40,70,90]);
   } else if(a.type==='trappe'){
-    document.getElementById('trappe-q-in').value=a.trappeQuestion||'';
-    (a.trappeAnswers||[]).forEach((ans,i)=>{
-      const el=document.getElementById('trappe-a'+i);
-      if(el) el.value=ans;
-    });
-    selectTrappeCorrect(a.trappeCorrect||0);
+    trappeQuestions = a.trappeQuestions || (a.trappeQuestion ? [{question:a.trappeQuestion, answers:a.trappeAnswers||[], correct:a.trappeCorrect||0}] : []);
     selectTrappeTimer(a.trappeTimer||30);
+    renderTrappeQuestions();
+    checkReady();
   } else {
     document.getElementById('clue-in').value=a.clue||'';
   }
@@ -679,6 +667,8 @@ function cancelEdit(){
   ['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>document.getElementById(id).value='');
   selectTrappeCorrect(0);
   selectTrappeTimer(30);
+  trappeQuestions=[];
+  renderTrappeQuestions();
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -739,7 +729,7 @@ function checkReady(){
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
   else if(currentType==='sportus') hasContent=true;
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
-  else if(currentType==='trappe') hasContent=!!document.getElementById('trappe-q-in').value.trim()&&['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].every(id=>!!document.getElementById(id).value.trim());
+  else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
   else hasContent=!!document.getElementById('clue-in').value.trim();
   document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
@@ -774,29 +764,26 @@ document.getElementById('img-file-in').addEventListener('change', e=>{
   };
   reader.readAsDataURL(file);
 });
-// Trappe correct answer grid
+// TRAPPE — multi-questions
 let trappeCorrect = 0;
 let trappeTimer   = 30;
+let trappeQuestions = []; // [{question, answers:[a,b,c,d], correct:0}]
 const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'}];
 
 (function buildTrappeGrids(){
-  // Correct answer
   const cg = document.getElementById('trappe-correct-grid');
   ['A','B','C','D'].forEach((l,i)=>{
     const btn=document.createElement('button');
-    btn.type='button';
-    btn.id='tcorrect-'+i;
-    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 4px;cursor:pointer;font-family:var(--fh);font-size:18px;transition:border-color .15s';
+    btn.type='button'; btn.id='tcorrect-'+i;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:var(--fh);font-size:16px;transition:border-color .15s';
     btn.textContent=l;
     btn.onclick=()=>selectTrappeCorrect(i);
     cg.appendChild(btn);
   });
-  // Timer
   const tg = document.getElementById('trappe-timer-grid');
   TRAPPE_TIMERS.forEach(s=>{
     const btn=document.createElement('button');
-    btn.type='button';
-    btn.id='ttimer-'+s.val;
+    btn.type='button'; btn.id='ttimer-'+s.val;
     btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
     btn.textContent=s.label;
     btn.onclick=()=>selectTrappeTimer(s.val);
@@ -825,6 +812,46 @@ function selectTrappeTimer(val){
     btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
     btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
   });
+}
+
+document.getElementById('btn-add-trappe-q').onclick=()=>{
+  const q=document.getElementById('trappe-q-in').value.trim();
+  const answers=['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].map(id=>document.getElementById(id).value.trim());
+  if(!q || answers.some(a=>!a)){
+    alert('Remplis la question et les 4 réponses !');return;
+  }
+  trappeQuestions.push({question:q, answers, correct:trappeCorrect});
+  // Clear inputs
+  document.getElementById('trappe-q-in').value='';
+  ['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>document.getElementById(id).value='');
+  selectTrappeCorrect(0);
+  renderTrappeQuestions();
+  checkReady();
+};
+
+function renderTrappeQuestions(){
+  const list=document.getElementById('trappe-q-list');
+  list.innerHTML='';
+  trappeQuestions.forEach((q,i)=>{
+    const item=document.createElement('div');
+    item.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px';
+    const correct=['A','B','C','D'][q.correct];
+    item.innerHTML=`
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px">${i+1}. ${q.question}</div>
+        <div style="font-size:11px;color:var(--mute)">${q.answers.map((a,j)=>`<span style="color:${j===q.correct?'var(--neon)':'inherit'}">${['A','B','C','D'][j]}:${a}</span>`).join(' · ')}</div>
+      </div>
+      <button onclick="removeTrappeQ(${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
+    `;
+    list.appendChild(item);
+  });
+  document.getElementById('trappe-q-count').textContent=trappeQuestions.length+' question'+(trappeQuestions.length>1?'s':'');
+}
+
+function removeTrappeQ(i){
+  trappeQuestions.splice(i,1);
+  renderTrappeQuestions();
+  checkReady();
 }
 
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
@@ -1031,9 +1058,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
-  const trappeQuestion = currentType==='trappe'?document.getElementById('trappe-q-in').value.trim():'';
-  const trappeAnswers  = currentType==='trappe'?['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].map(id=>document.getElementById(id).value.trim()):[];
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?(trappeQuestion||'La Trappe'):rawAnswer;
+  const trappeQuestion = currentType==='trappe'?'La Trappe':'';
+  const trappeAnswers  = [];
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -1065,7 +1092,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[]};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

@@ -876,15 +876,15 @@ function showVictoryFromPrix(finalScore, fullAnswer){
 
 // ── LA TRAPPE MODE ────────────────────────────────────────────────────────
 const T = {
-  capital:100, bets:[0,0,0,0], answers:[], correctIndex:-1,
-  timer:30, timerInterval:null, done:false, resolved:false
+  capital:100, bets:[0,0,0,0], questions:[], currentQ:0,
+  timer:30, timerInterval:null, done:false
 };
 
 function setupTrappeMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='🕳️ La Trappe'; badge.className='type-badge';
   badge.style.color='#ff9800';
-  document.getElementById('game-tip').innerHTML='Répartis tes points · Au moins une trappe vide · Score = points sur la bonne réponse';
+  document.getElementById('game-tip').innerHTML='Répartis tes points · Au moins une trappe vide · Score = capital final';
   document.getElementById('img-zone').style.display='none';
   document.getElementById('clue').style.display='none';
   document.getElementById('buzz-zone').style.display='none';
@@ -892,29 +892,59 @@ function setupTrappeMode(data){
   document.getElementById('prix-zone').style.display='none';
   document.getElementById('trappe-zone').style.display='flex';
 
-  T.capital     = 100;
-  T.bets        = [0,0,0,0];
-  T.answers     = data.trappeAnswers || ['A','B','C','D'];
-  T.correctIndex= -1; // unknown until reveal
-  T.timer       = data.trappeTimer || 30;
-  T.done        = false;
-  T.resolved    = false;
+  T.questions = data.trappeQuestions || [];
+  T.currentQ  = 0;
+  T.capital   = 100;
+  T.timer     = data.trappeTimer || 30;
+  T.done      = false;
   if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
 
   G.score=100; G.max=100; setScore(100,false);
-  document.getElementById('trappe-question').textContent = data.trappeQuestion || '';
-  buildTrappeBlocs();
+  loadTrappeQuestion();
+}
+
+function loadTrappeQuestion(){
+  if(T.currentQ >= T.questions.length){ endTrappeGame(); return; }
+  const q = T.questions[T.currentQ];
+  T.bets = [0,0,0,0];
+  if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
+
+  // Header
+  document.getElementById('trappe-capital').textContent = T.capital;
+  document.getElementById('trappe-unalloc').textContent = T.capital;
+
+  // Progress indicator
+  const qNum = T.currentQ+1, qTot = T.questions.length;
+  document.getElementById('trappe-question').innerHTML =
+    `<div style="font-size:11px;color:var(--mute);margin-bottom:6px">Question ${qNum}/${qTot}</div>${q.question}`;
+
+  buildTrappeBlocs(q.answers);
   updateTrappeUI();
-  document.getElementById('trappe-fb').textContent = '';
-  document.getElementById('trappe-valider').disabled = true;
-  document.getElementById('trappe-valider').onclick = resolveTrappes;
+  document.getElementById('trappe-fb').textContent='';
+  document.getElementById('trappe-valider').disabled=true;
+  document.getElementById('trappe-valider').onclick=resolveTrappes;
   startTrappeTimer();
 }
 
-function buildTrappeBlocs(){
+function endTrappeGame(){
+  T.done=true; G.active=false;
+  const finalScore = Math.round(T.capital);
+  G.score = finalScore;
+  document.getElementById('v-name').textContent   = G.athleteName||'???';
+  document.getElementById('v-sc').textContent     = finalScore;
+  document.getElementById('v-sub').textContent    = `Toutes les questions passées ! Capital final : ${finalScore} pts`;
+  document.getElementById('v-revealed').textContent    = T.questions.length;
+  document.getElementById('v-revealed-lbl').textContent = 'questions';
+  document.getElementById('v-wrong').textContent        = 100 - finalScore;
+  document.querySelector('#v-wrong').nextElementSibling.textContent = 'pts perdus';
+  show('sv'); confetti();
+  submitScore(finalScore);
+}
+
+function buildTrappeBlocs(answers){
   const zone = document.getElementById('trappe-trappes');
   zone.innerHTML = '';
-  T.answers.forEach((ans, i)=>{
+  (answers||['A','B','C','D']).forEach((ans, i)=>{
     const bloc = document.createElement('div');
     bloc.className = 'trappe-bloc';
     bloc.id = 'trappe-bloc-'+i;
@@ -993,50 +1023,80 @@ function startTrappeTimer(){
 }
 
 async function resolveTrappes(){
-  if(T.done) return;
-  T.done = true;
   if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
   document.getElementById('trappe-valider').disabled = true;
+  // Disable all bet buttons during reveal
+  for(let i=0;i<4;i++){
+    const p=document.getElementById('trappe-plus-'+i);
+    const m=document.getElementById('trappe-minus-'+i);
+    if(p)p.onclick=null; if(m)m.onclick=null;
+  }
 
   try{
     const res = await fetch('/api/trappe-check',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({athleteId:G.athleteId})});
+      body: JSON.stringify({athleteId:G.athleteId, questionIndex:T.currentQ})});
     const data = await res.json();
-    T.correctIndex = data.correctIndex;
+    const correctIndex = data.correctIndex;
     if(data.fullAnswer) G.athleteName = data.fullAnswer;
 
-    // Animate trappes
+    // Capital survivant = points misés sur la bonne réponse
+    const won = T.bets[correctIndex] || 0;
+    const lost = T.bets.reduce((a,b)=>a+b,0) - won;
+
+    // Animate all 4 blocs
     T.bets.forEach((bet, i)=>{
-      const bloc = document.getElementById('trappe-bloc-'+i);
       setTimeout(()=>{
-        if(i === T.correctIndex){
+        const bloc = document.getElementById('trappe-bloc-'+i);
+        if(!bloc) return;
+        if(i === correctIndex){
           bloc.classList.add('correct');
           bloc.querySelector('.trappe-mise-val').style.color = '#00e676';
+          bloc.querySelector('.trappe-mise-val').textContent = '+'+bet;
         } else {
           bloc.classList.add('wrong');
-          bloc.querySelector('.trappe-mise-val').textContent = '−'+bet;
           bloc.querySelector('.trappe-mise-val').style.color = 'var(--red)';
+          bloc.querySelector('.trappe-mise-val').textContent = bet > 0 ? '−'+bet : '0';
         }
       }, i*300);
     });
 
-    // Final score = points on correct answer
-    const finalScore = T.bets[T.correctIndex] || 0;
-    G.score = finalScore;
+    const animDelay = 4*300 + 600;
 
     setTimeout(()=>{
-      document.getElementById('v-name').textContent   = G.athleteName || '???';
-      document.getElementById('v-sc').textContent     = finalScore;
-      document.getElementById('v-sub').textContent    = finalScore > 0
-        ? `Tu avais misé ${finalScore} pts sur la bonne réponse !`
-        : `Tu n'avais rien misé sur la bonne réponse…`;
-      document.getElementById('v-revealed').textContent    = T.bets.filter(b=>b>0).length;
-      document.getElementById('v-revealed-lbl').textContent = 'trappes misées';
-      document.getElementById('v-wrong').textContent        = T.bets.filter((_,i)=>i!==T.correctIndex).reduce((a,b)=>a+b,0);
-      document.querySelector('#v-wrong').nextElementSibling.textContent = 'pts perdus';
-      show('sv'); confetti();
-      submitScore(finalScore);
-    }, T.answers.length*300 + 800);
+      T.capital = won;
+      G.score = won;
+      setScore(won, true);
+
+      if(won <= 0){
+        // Capital épuisé → fin
+        T.done = true; G.active = false;
+        document.getElementById('trappe-fb').textContent = '⛔ Capital épuisé !';
+        setTimeout(()=>{
+          document.getElementById('v-name').textContent   = G.athleteName||'???';
+          document.getElementById('v-sc').textContent     = 0;
+          document.getElementById('v-sub').textContent    = `Capital épuisé à la question ${T.currentQ+1}/${T.questions.length}`;
+          document.getElementById('v-revealed').textContent    = T.currentQ+1;
+          document.getElementById('v-revealed-lbl').textContent = 'questions';
+          document.getElementById('v-wrong').textContent        = '0';
+          document.querySelector('#v-wrong').nextElementSibling.textContent = 'capital restant';
+          show('sv'); confetti();
+          submitScore(0);
+        }, 800);
+        return;
+      }
+
+      T.currentQ++;
+      if(T.currentQ >= T.questions.length){
+        // Toutes les questions passées → victoire
+        T.done = true; G.active = false;
+        setTimeout(()=>endTrappeGame(), 600);
+      } else {
+        // Question suivante
+        const fb = document.getElementById('trappe-fb');
+        fb.textContent = `✅ +${won} pts conservés ! Capital : ${won} pts`;
+        setTimeout(()=>loadTrappeQuestion(), 1800);
+      }
+    }, animDelay);
 
   }catch(e){console.error(e);}
 }
