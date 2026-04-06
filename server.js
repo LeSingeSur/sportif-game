@@ -125,8 +125,13 @@ app.get('/api/athlete', (req, res) => {
     base.unit          = athlete.unit || '';
     base.targetValue   = athlete.targetValue;
     base.prixTolerance   = athlete.prixTolerance || 0;
-    base.prixSensibilite = athlete.prixSensibilite || 25;
+    base.chaleurSeuils   = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0,10,40,70,90];
     base.maxScore      = 100;
+  } else if (athlete.type === 'trappe') {
+    base.trappeQuestion = athlete.trappeQuestion;
+    base.trappeAnswers  = athlete.trappeAnswers;
+    base.trappeTimer    = athlete.trappeTimer || 30;
+    base.maxScore       = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -245,7 +250,15 @@ app.post('/api/sportus-check', (req, res) => {
   });
 });
 
-// ── LE JUSTE PRIX ────────────────────────────────────────────────────────
+// ── LA TRAPPE ─────────────────────────────────────────────────────────────
+app.post('/api/trappe-check', (req, res) => {
+  const { athleteId } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'trappe') return res.status(404).json({ error: 'Défi introuvable' });
+  res.json({ correctIndex: athlete.trappeCorrect, fullAnswer: athlete.answer });
+});
+
+// ── LE JUSTE PRIX ─────────────────────────────────────────────────────────
 // Illimité, score peut tomber à 0, bloqué là
 app.post('/api/prix-check', (req, res) => {
   const { athleteId, guess } = req.body;
@@ -253,25 +266,20 @@ app.post('/api/prix-check', (req, res) => {
   const athlete = athletes.find(a => a.id === athleteId);
   if (!athlete || athlete.type !== 'prix') return res.status(404).json({ error: 'Défi introuvable' });
 
-  const target       = athlete.targetValue;
-  const tolerance    = athlete.prixTolerance || 0;
-  const sensibilite  = athlete.prixSensibilite || 25;
-  const g            = parseFloat(String(guess).replace(',', '.'));
+  const target    = athlete.targetValue;
+  const tolerance = athlete.prixTolerance || 0;
+  const seuils    = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0,10,40,70,90];
+  const g         = parseFloat(String(guess).replace(',', '.'));
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
   const diff  = Math.abs(g - target);
   const exact = diff <= tolerance;
 
-  // Score precision: formule min/max symétrique (ne dépend PAS de la sensibilité)
-  const scorePrecision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
-
-  // Display precision: linéaire calibrée par sensibilite (pour la chaleur uniquement)
-  const ecartRelatif      = (diff / target) * 100;
-  const displayPrecision  = exact ? 100 : Math.max(0, 100 - (ecartRelatif / sensibilite) * 100);
-
+  // Score ET affichage : même formule min/max symétrique
+  const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
   const direction = g < target - tolerance ? 'plus' : g > target + tolerance ? 'moins' : 'exact';
 
-  res.json({ exact, precision: scorePrecision, displayPrecision, direction, target: exact ? target : null, fullAnswer: athlete.answer });
+  res.json({ exact, precision, displayPrecision: precision, seuils, direction, target: exact ? target : null, fullAnswer: athlete.answer });
 });
 
 app.post('/api/admin/login', (req, res) => {
@@ -305,12 +313,13 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer) return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'prix' && (!question || targetValue === undefined)) return res.status(400).json({ error: 'Question et valeur cible obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'trappe' && (!req.body.trappeQuestion || !req.body.trappeAnswers || req.body.trappeCorrect === undefined)) return res.status(400).json({ error: 'Question, réponses et bonne réponse obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
   const autoAliases   = [answer.trim().toLowerCase()]; // nom complet
@@ -336,11 +345,15 @@ app.post('/api/admin/athlete', (req, res) => {
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
     targetValue:    type === 'prix' ? parseFloat(targetValue) : undefined,
     prixTolerance:     type === 'prix' ? (parseFloat(req.body.prixTolerance) || 0) : undefined,
-    prixSensibilite:   type === 'prix' ? (parseFloat(req.body.prixSensibilite) || 25) : undefined,
+    prixSensibilite:   type === 'prix' ? (req.body.prixSensibilite || [0,10,40,70,90]) : undefined,
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
     revealedLetters: type === 'sportus' ? (req.body.revealedLetters || []) : undefined,
+    trappeQuestion: type === 'trappe' ? (req.body.trappeQuestion||'').trim() : undefined,
+    trappeAnswers:  type === 'trappe' ? req.body.trappeAnswers : undefined,
+    trappeCorrect:  type === 'trappe' ? parseInt(req.body.trappeCorrect) : undefined,
+    trappeTimer:    type === 'trappe' ? (parseInt(req.body.trappeTimer) || 30) : undefined,
     coefficient: parseFloat(coefficient) || 1,
   };
 
