@@ -119,6 +119,7 @@ app.get('/api/athlete', (req, res) => {
     base.freeHint         = athlete.sportusHint0 || '';
     // revealedLetters: array of {index, letter} — pre-revealed positions
     base.revealedLetters  = athlete.revealedLetters || [];
+    base.sportusTimer     = athlete.sportusTimer || 45;
     base.maxScore         = 100;
   } else if (athlete.type === 'prix') {
     base.question      = athlete.question;
@@ -128,10 +129,12 @@ app.get('/api/athlete', (req, res) => {
     base.chaleurSeuils   = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0,10,40,70,90];
     base.maxScore      = 100;
   } else if (athlete.type === 'trappe') {
-    base.trappeQuestion = athlete.trappeQuestion;
-    base.trappeAnswers  = athlete.trappeAnswers;
+    base.trappeQuestions = athlete.trappeQuestions && athlete.trappeQuestions.length
+      ? athlete.trappeQuestions
+      : [];
     base.trappeTimer    = athlete.trappeTimer || 30;
     base.maxScore       = 100;
+    base.themeName      = athlete.answer || 'La Trappe'; // displayed as defi name
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -252,10 +255,15 @@ app.post('/api/sportus-check', (req, res) => {
 
 // ── LA TRAPPE ─────────────────────────────────────────────────────────────
 app.post('/api/trappe-check', (req, res) => {
-  const { athleteId } = req.body;
+  const { athleteId, questionIndex } = req.body;
   const athlete = athletes.find(a => a.id === athleteId);
   if (!athlete || athlete.type !== 'trappe') return res.status(404).json({ error: 'Défi introuvable' });
-  res.json({ correctIndex: athlete.trappeCorrect, fullAnswer: athlete.answer });
+  const questions = athlete.trappeQuestions && athlete.trappeQuestions.length
+    ? athlete.trappeQuestions
+    : (athlete.trappeQuestion ? [{question:athlete.trappeQuestion, answers:athlete.trappeAnswers||[], correct:athlete.trappeCorrect||0}] : []);
+  const q = questions[questionIndex || 0];
+  if (!q) return res.status(404).json({ error: 'Question introuvable' });
+  res.json({ correctIndex: q.correct, fullAnswer: athlete.answer || 'La Trappe', totalQuestions: questions.length });
 });
 
 // ── LE JUSTE PRIX ─────────────────────────────────────────────────────────
@@ -318,7 +326,7 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'prix' && (!question || targetValue === undefined)) return res.status(400).json({ error: 'Question et valeur cible obligatoires' });
-  if (type === 'trappe' && (!req.body.trappeQuestion || !req.body.trappeAnswers || req.body.trappeCorrect === undefined)) return res.status(400).json({ error: 'Question, réponses et bonne réponse obligatoires' });
+  if (type === 'trappe' && (!req.body.trappeQuestions || !req.body.trappeQuestions.length)) return res.status(400).json({ error: 'Au moins une question obligatoire' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
@@ -349,11 +357,13 @@ app.post('/api/admin/athlete', (req, res) => {
     sportusHint1: type === 'sportus' ? (sportusHint1||'').trim() : undefined,
     sportusHint2: type === 'sportus' ? (sportusHint2||'').trim() : undefined,
     sportusHint0: type === 'sportus' ? (sportusHint0||'').trim() : undefined,
+    sportusTimer: type === 'sportus' ? (parseInt(req.body.sportusTimer) || 45) : undefined,
     revealedLetters: type === 'sportus' ? (req.body.revealedLetters || []) : undefined,
-    trappeQuestion: type === 'trappe' ? (req.body.trappeQuestion||'').trim() : undefined,
-    trappeAnswers:  type === 'trappe' ? req.body.trappeAnswers : undefined,
-    trappeCorrect:  type === 'trappe' ? parseInt(req.body.trappeCorrect) : undefined,
+    trappeQuestion: type === 'trappe' ? '' : undefined,
+    trappeAnswers:  type === 'trappe' ? [] : undefined,
+    trappeCorrect:  type === 'trappe' ? 0 : undefined,
     trappeTimer:    type === 'trappe' ? (parseInt(req.body.trappeTimer) || 30) : undefined,
+    trappeQuestions:type === 'trappe' ? (req.body.trappeQuestions || []) : undefined,
     coefficient: parseFloat(coefficient) || 1,
   };
 
