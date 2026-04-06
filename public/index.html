@@ -406,7 +406,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:13px;color:var(--orange)">Non misé : <span id="trappe-unalloc" style="font-weight:800">0</span></div>
     </div>
     <div id="trappe-question" style="font-family:var(--fh);font-size:18px;text-align:center;padding:14px;background:var(--c1);border-radius:var(--r);line-height:1.4"></div>
-    <div id="trappe-trappes" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="trappe-trappes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
     <button id="trappe-valider" class="btn btn-p" disabled>🕳️ OUVRIR LES TRAPPES</button>
     <div id="trappe-fb" style="font-size:13px;text-align:center;color:var(--mute);min-height:18px"></div>
   </div>
@@ -876,7 +876,7 @@ function showVictoryFromPrix(finalScore, fullAnswer){
 
 // ── LA TRAPPE MODE ────────────────────────────────────────────────────────
 const T = {
-  capital:100, bets:[0,0,0,0], questions:[], currentQ:0,
+  capital:100, bets:[0,0,0], questions:[], currentQ:0,
   timer:30, timerInterval:null, done:false
 };
 
@@ -945,16 +945,16 @@ function endTrappeGame(){
 function buildTrappeBlocs(answers){
   const zone = document.getElementById('trappe-trappes');
   zone.innerHTML = '';
-  (answers||['A','B','C','D']).forEach((ans, i)=>{
+  (answers||['A','B','C']).forEach((ans, i)=>{
     const bloc = document.createElement('div');
     bloc.className = 'trappe-bloc';
     bloc.id = 'trappe-bloc-'+i;
     bloc.innerHTML = `
-      <div class="trappe-label">${['A','B','C','D'][i]}. ${ans}</div>
-      <div class="trappe-mise-row">
-        <button class="trappe-mise-btn" id="trappe-minus-${i}">−</button>
-        <div class="trappe-mise-val" id="trappe-mise-${i}">0</div>
-        <button class="trappe-mise-btn" id="trappe-plus-${i}">+</button>
+      <div class="trappe-label" style="font-size:12px;min-height:40px;line-height:1.3">${['A','B','C'][i]}. ${ans}</div>
+      <div class="trappe-mise-row" style="justify-content:center;gap:6px">
+        <button class="trappe-mise-btn" id="trappe-minus-${i}" style="width:30px;height:30px;font-size:16px">−</button>
+        <div class="trappe-mise-val" id="trappe-mise-${i}" style="font-size:20px;min-width:28px;text-align:center">0</div>
+        <button class="trappe-mise-btn" id="trappe-plus-${i}" style="width:30px;height:30px;font-size:16px">+</button>
       </div>
       <div class="trappe-mise-bar"><div class="trappe-mise-bar-fill" id="trappe-bar-${i}" style="width:0%"></div></div>
     `;
@@ -1061,7 +1061,7 @@ async function resolveTrappes(){
       }, i*300);
     });
 
-    const animDelay = 4*300 + 600;
+    const animDelay = 3*300 + 600;
 
     setTimeout(()=>{
       T.capital = won;

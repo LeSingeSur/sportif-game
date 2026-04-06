@@ -362,8 +362,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="trappe-q-in" placeholder="Question…" style="margin-bottom:6px">
           <input type="text" id="trappe-a0" placeholder="Réponse A" style="margin-bottom:4px">
           <input type="text" id="trappe-a1" placeholder="Réponse B" style="margin-bottom:4px">
-          <input type="text" id="trappe-a2" placeholder="Réponse C" style="margin-bottom:4px">
-          <input type="text" id="trappe-a3" placeholder="Réponse D" style="margin-bottom:8px">
+          <input type="text" id="trappe-a2" placeholder="Réponse C" style="margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-size:13px;color:var(--mute)">Bonne réponse :</span>
             <div style="display:flex;gap:6px" id="trappe-correct-grid"></div>
@@ -552,7 +551,7 @@ async function loadAthletes(){
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
     else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
     else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
-    else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'4 trappes';
+    else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'3 trappes';
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
@@ -671,7 +670,7 @@ function cancelEdit(){
   document.getElementById('prix-tolerance-in').value='0';
   selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
-  ['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>document.getElementById(id).value='');
+  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
   selectTrappeCorrect(0);
   selectTrappeTimer(30);
   trappeQuestions=[];
@@ -779,7 +778,7 @@ const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'
 
 (function buildTrappeGrids(){
   const cg = document.getElementById('trappe-correct-grid');
-  ['A','B','C','D'].forEach((l,i)=>{
+  ['A','B','C'].forEach((l,i)=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.id='tcorrect-'+i;
     btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:var(--fh);font-size:16px;transition:border-color .15s';
@@ -802,7 +801,7 @@ const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'
 
 function selectTrappeCorrect(idx){
   trappeCorrect=idx;
-  ['A','B','C','D'].forEach((_,i)=>{
+  ['A','B','C'].forEach((_,i)=>{
     const btn=document.getElementById('tcorrect-'+i);
     if(!btn)return;
     btn.style.borderColor=i===idx?'var(--neon)':'rgba(255,255,255,.07)';
@@ -823,14 +822,14 @@ function selectTrappeTimer(val){
 
 document.getElementById('btn-add-trappe-q').onclick=()=>{
   const q=document.getElementById('trappe-q-in').value.trim();
-  const answers=['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].map(id=>document.getElementById(id).value.trim());
+  const answers=['trappe-a0','trappe-a1','trappe-a2'].map(id=>document.getElementById(id).value.trim());
   if(!q || answers.some(a=>!a)){
     alert('Remplis la question et les 4 réponses !');return;
   }
   trappeQuestions.push({question:q, answers, correct:trappeCorrect});
   // Clear inputs
   document.getElementById('trappe-q-in').value='';
-  ['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>document.getElementById(id).value='');
+  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
   selectTrappeCorrect(0);
   renderTrappeQuestions();
   checkReady();
@@ -842,11 +841,11 @@ function renderTrappeQuestions(){
   trappeQuestions.forEach((q,i)=>{
     const item=document.createElement('div');
     item.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px';
-    const correct=['A','B','C','D'][q.correct];
+    const correct=['A','B','C'][q.correct];
     item.innerHTML=`
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px">${i+1}. ${q.question}</div>
-        <div style="font-size:11px;color:var(--mute)">${q.answers.map((a,j)=>`<span style="color:${j===q.correct?'var(--neon)':'inherit'}">${['A','B','C','D'][j]}:${a}</span>`).join(' · ')}</div>
+        <div style="font-size:11px;color:var(--mute)">${q.answers.map((a,j)=>`<span style="color:${j===q.correct?'var(--neon)':'inherit'}">${['A','B','C'][j]}:${a}</span>`).join(' · ')}</div>
       </div>
       <button onclick="removeTrappeQ(${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
     `;
@@ -888,7 +887,7 @@ function selectSportusTimer(val){
 }
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
-['trappe-q-in','trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>{
+['trappe-q-in','trappe-a0','trappe-a1','trappe-a2'].forEach(id=>{
   document.getElementById(id).addEventListener('input', checkReady);
 });
 
