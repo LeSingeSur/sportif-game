@@ -907,7 +907,8 @@ function setupTrappeMode(data){
 function loadTrappeQuestion(){
   if(T.currentQ >= T.questions.length){ endTrappeGame(); return; }
   const q = T.questions[T.currentQ];
-  T.bets = [0,0,0,0];
+  T.bets = [0,0,0];
+  T.done = false;
   if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
 
   // Header
@@ -1024,10 +1025,11 @@ function startTrappeTimer(){
 }
 
 async function resolveTrappes(){
+  if(T.done) return; // garde anti-double appel
+  T.done = true;
   if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
   document.getElementById('trappe-valider').disabled = true;
-  // Disable all bet buttons during reveal
-  for(let i=0;i<4;i++){
+  for(let i=0;i<3;i++){
     const p=document.getElementById('trappe-plus-'+i);
     const m=document.getElementById('trappe-minus-'+i);
     if(p)p.onclick=null; if(m)m.onclick=null;
