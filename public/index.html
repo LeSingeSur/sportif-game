@@ -216,7 +216,18 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .v-stat-lbl{font-size:11px;color:var(--mute);margin-top:2px}
 .rank-badge{display:inline-flex;align-items:center;gap:6px;background:var(--c2);border-radius:99px;padding:8px 17px;font-size:14px;color:var(--cyan);font-weight:700;margin-bottom:22px;animation:fu .45s .4s both ease}
 .v-btns{display:flex;flex-direction:column;gap:10px;width:100%;animation:fu .45s .5s both ease}
-/* LEADERBOARD */
+/* LA TRAPPE */
+.trappe-bloc{background:var(--c1);border:2px solid rgba(255,255,255,.08);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .3s,background .3s}
+.trappe-bloc.correct{border-color:#00e676;background:rgba(0,230,118,.1)}
+.trappe-bloc.wrong{border-color:var(--red);background:rgba(255,63,92,.1);animation:trappe-fall .5s ease forwards}
+.trappe-label{font-size:14px;color:var(--txt);line-height:1.4}
+.trappe-mise-row{display:flex;align-items:center;gap:10px}
+.trappe-mise-btn{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.trappe-mise-btn:active{background:rgba(212,255,0,.15)}
+.trappe-mise-val{font-family:var(--fh);font-size:26px;flex:1;text-align:center;color:var(--neon)}
+.trappe-mise-bar{height:4px;border-radius:99px;background:var(--c2);overflow:hidden}
+.trappe-mise-bar-fill{height:100%;background:var(--neon);border-radius:99px;transition:width .15s}
+@keyframes trappe-fall{0%{transform:translateY(0);opacity:1}60%{transform:translateY(8px);opacity:.6}100%{transform:translateY(0);opacity:.35}}
 #sl{gap:16px;min-height:0}
 .lb-title{font-family:var(--fh);font-size:38px;letter-spacing:2px;color:var(--neon)}
 .lb-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-ms-overflow-style:none;scrollbar-width:none}
@@ -384,6 +395,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="prix-fb" id="prix-fb"></div>
   </div>
 
+  <!-- LA TRAPPE zone -->
+  <div id="trappe-zone" style="display:none;flex-direction:column;gap:12px">
+    <div id="trappe-timer-bar" style="height:6px;background:var(--c2);border-radius:99px;overflow:hidden">
+      <div id="trappe-timer-fill" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear;border-radius:99px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="trappe-timer-txt" style="font-family:var(--fh);font-size:22px;color:var(--neon)">30s</div>
+      <div style="font-size:13px;color:var(--mute)">Capital : <span id="trappe-capital" style="color:var(--txt);font-weight:800">100</span> pts</div>
+      <div style="font-size:13px;color:var(--orange)">Non misé : <span id="trappe-unalloc" style="font-weight:800">0</span></div>
+    </div>
+    <div id="trappe-question" style="font-family:var(--fh);font-size:18px;text-align:center;padding:14px;background:var(--c1);border-radius:var(--r);line-height:1.4"></div>
+    <div id="trappe-trappes" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button id="trappe-valider" class="btn btn-p" disabled>🕳️ OUVRIR LES TRAPPES</button>
+    <div id="trappe-fb" style="font-size:13px;text-align:center;color:var(--mute);min-height:18px"></div>
+  </div>
+
   <!-- Shared answer (text + image only) -->
   <div class="ans-area" id="std-ans-area">
     <div class="ans-row">
@@ -479,6 +506,7 @@ async function loadAthlete(){
   document.getElementById('buzz-sticky').classList.remove('on');
   document.getElementById('sportus-zone').style.display='none';
   document.getElementById('prix-zone').style.display='none';
+  document.getElementById('trappe-zone').style.display='none';
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -509,6 +537,9 @@ async function loadAthlete(){
     } else if(data.type==='prix'){
       document.getElementById('std-ans-area').style.display='none';
       setupPrixMode(data);
+    } else if(data.type==='trappe'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupTrappeMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -627,7 +658,8 @@ function updateImgCounter(){
 const P = {
   question:'', unit:'', targetValue:null, tries:0, score:100,
   done:false, history:[],
-  countdownInterval:null
+  countdownInterval:null,
+  chaleurSeuils:[0,10,40,70,90]
 };
 
 function setupPrixMode(data){
@@ -641,9 +673,10 @@ function setupPrixMode(data){
   document.getElementById('sportus-zone').style.display='none';
   document.getElementById('prix-zone').style.display='flex';
 
-  P.question    = data.question;
-  P.unit        = data.unit || '';
-  P.targetValue = data.targetValue;
+  P.question      = data.question;
+  P.unit          = data.unit || '';
+  P.targetValue   = data.targetValue;
+  P.chaleurSeuils = data.chaleurSeuils || [0,10,40,70,90];
   P.tries    = 0;
   P.score    = 100;
   P.fixed    = 0;
@@ -776,34 +809,33 @@ function updatePrixCountdownDisplay(t){
   el.style.transform = t <= 3 ? 'scale(1.2)' : 'scale(1)';
 }
 
-// Chaleur — formule symétrique min/max, niveaux exacts selon spec
-const CHALEUR_LEVELS = [
-  {min:0,  ico:'⛄', label:'GLACIAL',   color:'#1565c0', bg:'rgba(21,101,192,.15)'},
-  {min:10, ico:'🧊', label:'FROID',     color:'#4fc3f7', bg:'rgba(79,195,247,.12)'},
-  {min:40, ico:'🌤️', label:'TIÈDE',     color:'#fff176', bg:'rgba(255,241,118,.12)'},
-  {min:70, ico:'🌡️', label:'CHAUD',     color:'var(--orange)', bg:'rgba(255,140,0,.13)'},
-  {min:90, ico:'🔥', label:'BRÛLANT',   color:'#ff4020', bg:'rgba(255,64,32,.16)'},
-  {min:100,ico:'🎯', label:'JUSTE PRIX !', color:'#00e676', bg:'rgba(0,230,118,.18)'},
+// Chaleur — niveaux fixes, seuils configurables via P.chaleurSeuils
+const CHALEUR_DEF = [
+  {ico:'⛄', label:'GLACIAL',  color:'#1565c0', bg:'rgba(21,101,192,.15)'},
+  {ico:'🧊', label:'FROID',    color:'#4fc3f7', bg:'rgba(79,195,247,.12)'},
+  {ico:'🌤️', label:'TIÈDE',    color:'#fff176', bg:'rgba(255,241,118,.12)'},
+  {ico:'🌡️', label:'CHAUD',    color:'#ff9800', bg:'rgba(255,152,0,.13)'},
+  {ico:'🔥', label:'BRÛLANT',  color:'#ff4020', bg:'rgba(255,64,32,.16)'},
+  {ico:'🎯', label:'JUSTE PRIX !', color:'#00e676', bg:'rgba(0,230,118,.18)'},
 ];
 
-function getChaleurLevel(pct){
-  let lvl = CHALEUR_LEVELS[0];
-  for(const l of CHALEUR_LEVELS) if(pct >= l.min) lvl = l;
-  return lvl;
+function getChaleurLevel(pct, direction){
+  if(direction === 'exact' || pct >= 100) return CHALEUR_DEF[5];
+  const seuils = P.chaleurSeuils || [0,10,40,70,90];
+  let idx = 0;
+  seuils.forEach((s,i) => { if(pct >= s) idx = i; });
+  return CHALEUR_DEF[idx];
 }
 
 function updateChaleur(precision, direction){
-  // Utiliser floor pour éviter qu'un arrondi à 100 affiche "JUSTE PRIX" alors que c'est faux
   const pct = direction === 'exact' ? 100 : Math.floor(precision);
-  const lvl = getChaleurLevel(Math.min(pct, direction === 'exact' ? 100 : 99));
+  const lvl = getChaleurLevel(pct, direction);
   const el  = document.getElementById('prix-chaleur');
   el.style.display     = 'flex';
   el.style.background  = lvl.bg;
   el.style.borderRadius = '16px';
   el.style.padding     = '16px';
   el.style.border      = `1px solid ${lvl.color}55`;
-
-  // Jauge supprimée — température seule
   document.getElementById('prix-chaleur-ico').textContent   = lvl.ico;
   const arrow = direction==='plus' ? ' ⬆️' : direction==='moins' ? ' ⬇️' : '';
   document.getElementById('prix-chaleur-label').textContent = lvl.label + arrow;
@@ -812,7 +844,7 @@ function updateChaleur(precision, direction){
 
 function addPrixHistoryItem(guess, precision, direction){
   const hist = document.getElementById('prix-history');
-  const lvl  = getChaleurLevel(direction === 'exact' ? 100 : Math.min(Math.floor(precision), 99));
+  const lvl  = getChaleurLevel(direction === 'exact' ? 100 : Math.floor(precision), direction);
   const unit = P.unit ? ` ${P.unit}` : '';
   const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
   const item = document.createElement('div');
@@ -842,6 +874,173 @@ function showVictoryFromPrix(finalScore, fullAnswer){
   submitScore(Math.floor(finalScore));
 }
 
+// ── LA TRAPPE MODE ────────────────────────────────────────────────────────
+const T = {
+  capital:100, bets:[0,0,0,0], answers:[], correctIndex:-1,
+  timer:30, timerInterval:null, done:false, resolved:false
+};
+
+function setupTrappeMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='🕳️ La Trappe'; badge.className='type-badge';
+  badge.style.color='#ff9800';
+  document.getElementById('game-tip').innerHTML='Répartis tes points · Au moins une trappe vide · Score = points sur la bonne réponse';
+  document.getElementById('img-zone').style.display='none';
+  document.getElementById('clue').style.display='none';
+  document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('sportus-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='none';
+  document.getElementById('trappe-zone').style.display='flex';
+
+  T.capital     = 100;
+  T.bets        = [0,0,0,0];
+  T.answers     = data.trappeAnswers || ['A','B','C','D'];
+  T.correctIndex= -1; // unknown until reveal
+  T.timer       = data.trappeTimer || 30;
+  T.done        = false;
+  T.resolved    = false;
+  if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
+
+  G.score=100; G.max=100; setScore(100,false);
+  document.getElementById('trappe-question').textContent = data.trappeQuestion || '';
+  buildTrappeBlocs();
+  updateTrappeUI();
+  document.getElementById('trappe-fb').textContent = '';
+  document.getElementById('trappe-valider').disabled = true;
+  document.getElementById('trappe-valider').onclick = resolveTrappes;
+  startTrappeTimer();
+}
+
+function buildTrappeBlocs(){
+  const zone = document.getElementById('trappe-trappes');
+  zone.innerHTML = '';
+  T.answers.forEach((ans, i)=>{
+    const bloc = document.createElement('div');
+    bloc.className = 'trappe-bloc';
+    bloc.id = 'trappe-bloc-'+i;
+    bloc.innerHTML = `
+      <div class="trappe-label">${['A','B','C','D'][i]}. ${ans}</div>
+      <div class="trappe-mise-row">
+        <button class="trappe-mise-btn" id="trappe-minus-${i}">−</button>
+        <div class="trappe-mise-val" id="trappe-mise-${i}">0</div>
+        <button class="trappe-mise-btn" id="trappe-plus-${i}">+</button>
+      </div>
+      <div class="trappe-mise-bar"><div class="trappe-mise-bar-fill" id="trappe-bar-${i}" style="width:0%"></div></div>
+    `;
+    zone.appendChild(bloc);
+    document.getElementById('trappe-plus-'+i).onclick  = ()=>changeBet(i, +10);
+    document.getElementById('trappe-minus-'+i).onclick = ()=>changeBet(i, -10);
+  });
+}
+
+function changeBet(idx, delta){
+  if(T.done) return;
+  const unalloc = T.capital - T.bets.reduce((a,b)=>a+b,0);
+  if(delta > 0 && unalloc < delta) return; // pas assez de capital
+  if(delta < 0 && T.bets[idx] < -delta) return; // pas en dessous de 0
+  T.bets[idx] = Math.max(0, T.bets[idx] + delta);
+  updateTrappeUI();
+}
+
+function updateTrappeUI(){
+  const total = T.bets.reduce((a,b)=>a+b,0);
+  const unalloc = T.capital - total;
+  document.getElementById('trappe-capital').textContent = T.capital;
+  document.getElementById('trappe-unalloc').textContent = unalloc;
+
+  T.bets.forEach((b,i)=>{
+    document.getElementById('trappe-mise-'+i).textContent = b;
+    document.getElementById('trappe-bar-'+i).style.width = (b/T.capital*100)+'%';
+    // Disable minus if 0
+    document.getElementById('trappe-minus-'+i).style.opacity = b===0?'0.3':'1';
+    // Disable plus if no unalloc
+    document.getElementById('trappe-plus-'+i).style.opacity = unalloc<10?'0.3':'1';
+  });
+
+  // Valider enabled if: tout le capital misé ET au moins une trappe à 0
+  const allPlaced = unalloc === 0;
+  const oneEmpty  = T.bets.some(b => b === 0);
+  document.getElementById('trappe-valider').disabled = !(allPlaced && oneEmpty);
+
+  // Feedback
+  const fb = document.getElementById('trappe-fb');
+  if(unalloc > 0) fb.textContent = `Encore ${unalloc} pts à placer · au moins une trappe doit rester vide`;
+  else if(!oneEmpty) fb.textContent = 'Laisse au moins une trappe vide !';
+  else fb.textContent = '✅ Prêt à valider !';
+}
+
+function startTrappeTimer(){
+  let t = T.timer;
+  document.getElementById('trappe-timer-txt').textContent = t+'s';
+  document.getElementById('trappe-timer-fill').style.transition = 'none';
+  document.getElementById('trappe-timer-fill').style.width = '100%';
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      document.getElementById('trappe-timer-fill').style.transition = `width ${t}s linear`;
+      document.getElementById('trappe-timer-fill').style.width = '0%';
+    });
+  });
+  T.timerInterval = setInterval(()=>{
+    t--;
+    const el = document.getElementById('trappe-timer-txt');
+    if(el) el.textContent = t+'s';
+    if(el) el.style.color = t<=5?'var(--red)':t<=10?'var(--orange)':'var(--neon)';
+    if(t <= 0){
+      clearInterval(T.timerInterval); T.timerInterval=null;
+      if(!T.done) resolveTrappes();
+    }
+  },1000);
+}
+
+async function resolveTrappes(){
+  if(T.done) return;
+  T.done = true;
+  if(T.timerInterval){clearInterval(T.timerInterval);T.timerInterval=null;}
+  document.getElementById('trappe-valider').disabled = true;
+
+  try{
+    const res = await fetch('/api/trappe-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({athleteId:G.athleteId})});
+    const data = await res.json();
+    T.correctIndex = data.correctIndex;
+    if(data.fullAnswer) G.athleteName = data.fullAnswer;
+
+    // Animate trappes
+    T.bets.forEach((bet, i)=>{
+      const bloc = document.getElementById('trappe-bloc-'+i);
+      setTimeout(()=>{
+        if(i === T.correctIndex){
+          bloc.classList.add('correct');
+          bloc.querySelector('.trappe-mise-val').style.color = '#00e676';
+        } else {
+          bloc.classList.add('wrong');
+          bloc.querySelector('.trappe-mise-val').textContent = '−'+bet;
+          bloc.querySelector('.trappe-mise-val').style.color = 'var(--red)';
+        }
+      }, i*300);
+    });
+
+    // Final score = points on correct answer
+    const finalScore = T.bets[T.correctIndex] || 0;
+    G.score = finalScore;
+
+    setTimeout(()=>{
+      document.getElementById('v-name').textContent   = G.athleteName || '???';
+      document.getElementById('v-sc').textContent     = finalScore;
+      document.getElementById('v-sub').textContent    = finalScore > 0
+        ? `Tu avais misé ${finalScore} pts sur la bonne réponse !`
+        : `Tu n'avais rien misé sur la bonne réponse…`;
+      document.getElementById('v-revealed').textContent    = T.bets.filter(b=>b>0).length;
+      document.getElementById('v-revealed-lbl').textContent = 'trappes misées';
+      document.getElementById('v-wrong').textContent        = T.bets.filter((_,i)=>i!==T.correctIndex).reduce((a,b)=>a+b,0);
+      document.querySelector('#v-wrong').nextElementSibling.textContent = 'pts perdus';
+      show('sv'); confetti();
+      submitScore(finalScore);
+    }, T.answers.length*300 + 800);
+
+  }catch(e){console.error(e);}
+}
+
 // ── SPORTUS MODE ──────────────────────────────────────────────────────────
 const SPORTUS_MAX_TRIES = 10;
 const SPORTUS_PENALTY   = 10; // per guess after first
@@ -852,7 +1051,8 @@ const S = {
   targetLen:0, tries:0, score:100,
   bouleOrder:[], bouleUsed:[false,false,false],
   hints:[], kbdState:{}, done:false,
-  revealedLetters:[] // [{index, letter}]
+  revealedLetters:[],
+  timerInterval:null, timerVal:45
 };
 
 function setupSportusMode(data){
@@ -902,7 +1102,53 @@ function setupSportusMode(data){
   document.getElementById('sportus-in').value='';
   document.getElementById('sportus-in').disabled=false;
   document.getElementById('sportus-chk').disabled=false;
+  if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
   setTimeout(()=>document.getElementById('sportus-in').focus(),80);
+  startSportusTimer();
+}
+
+function startSportusTimer(){
+  if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
+  S.timerVal=45;
+  updateSportusTimerDisplay(45);
+  S.timerInterval=setInterval(()=>{
+    S.timerVal--;
+    updateSportusTimerDisplay(S.timerVal);
+    if(S.timerVal<=0){
+      clearInterval(S.timerInterval); S.timerInterval=null;
+      if(S.done||!G.active) return;
+      // Temps écoulé : −10 pts, essai brûlé
+      S.tries++;
+      S.score=Math.max(0,S.score-(S.tries>1?SPORTUS_PENALTY:0));
+      G.score=S.score; setScore(S.score,true);
+      document.getElementById('bar-f').style.width=(S.tries/SPORTUS_MAX_TRIES*100)+'%';
+      const fb=document.getElementById('sportus-fb');
+      fb.textContent='⏰ Temps écoulé !'; fb.className='sportus-fb err';
+      setTimeout(()=>{fb.textContent='';fb.className='sportus-fb';},1200);
+      document.getElementById('sportus-in').value='';
+      if(S.tries>=SPORTUS_MAX_TRIES||S.score<=0){
+        S.done=true; G.active=false;
+        document.getElementById('sportus-in').disabled=true;
+        document.getElementById('sportus-chk').disabled=true;
+        setTimeout(()=>showVictoryFromSportus(null),1200);
+      } else {
+        startSportusTimer();
+      }
+    }
+  },1000);
+}
+
+function updateSportusTimerDisplay(t){
+  let el=document.getElementById('sportus-timer');
+  if(!el){
+    el=document.createElement('div');
+    el.id='sportus-timer';
+    el.style.cssText='font-family:var(--fh);font-size:28px;text-align:center;margin-bottom:8px;transition:color .3s';
+    const zone=document.getElementById('sportus-zone');
+    zone.insertBefore(el, zone.firstChild);
+  }
+  el.textContent='⏱ '+t+'s';
+  el.style.color=t<=10?'var(--red)':t<=20?'var(--orange)':'var(--mute)';
 }
 
 function buildSportusHints(data){
@@ -990,6 +1236,8 @@ document.getElementById('sportus-in').addEventListener('keydown',e=>{if(e.key===
 
 async function checkSportus(){
   if(S.done||!G.active) return;
+  // Stop timer while processing
+  if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
   const raw=document.getElementById('sportus-in').value.trim();
   if(!raw) return;
   // Extract last word as the "last name" guess
@@ -1024,10 +1272,12 @@ async function checkSportus(){
 
     if(data.correct){
       S.done=true; G.active=false; G.athleteName=data.fullAnswer;
-      document.getElementById('sportus-fb').textContent=''; 
+      if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
+      document.getElementById('sportus-fb').textContent='';
       setTimeout(()=>showVictoryFromSportus(data.fullAnswer), 350);
     } else if(S.tries>=SPORTUS_MAX_TRIES || S.score<=0){
       S.done=true; G.active=false;
+      if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
       document.getElementById('sportus-in').disabled=true;
       document.getElementById('sportus-chk').disabled=true;
       const fb=document.getElementById('sportus-fb');
@@ -1040,6 +1290,7 @@ async function checkSportus(){
       const rem=SPORTUS_MAX_TRIES-S.tries;
       fb.textContent=`Pas encore… ${rem} essai${rem>1?'s':''} restant${rem>1?'s':''}`; fb.className='sportus-fb err';
       setTimeout(()=>{fb.textContent='';fb.className='sportus-fb';},1800);
+      startSportusTimer(); // restart 45s for next guess
     }
   }catch(e){console.error(e)}
 }

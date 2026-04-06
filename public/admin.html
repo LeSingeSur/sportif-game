@@ -185,6 +185,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Juste Prix</div>
             <div class="type-desc">Devine la stat</div>
           </div>
+          <div class="type-opt" id="type-trappe" onclick="selectType('trappe')">
+            <div class="type-ico">🕳️</div>
+            <div class="type-name">La Trappe</div>
+            <div class="type-desc">Mise sur les réponses</div>
+          </div>
         </div>
       </div>
 
@@ -325,19 +330,51 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
         </div>
         <div class="field">
-          <label>🌡️ Sensibilité de la jauge de chaleur</label>
-          <div style="display:flex;align-items:center;gap:12px;margin:6px 0 2px">
-            <span style="font-size:12px;color:var(--mute);white-space:nowrap">Précis 1%</span>
-            <input type="range" id="prix-sensib-range" min="1" max="100" step="1" value="25"
-              style="flex:1;accent-color:var(--neon);cursor:pointer">
-            <span style="font-size:12px;color:var(--mute);white-space:nowrap">Large 100%</span>
+          <label>🌡️ Échelle de chaleur — seuils personnalisables</label>
+          <div id="chaleur-config" style="margin:8px 0;display:flex;flex-direction:column;gap:6px"></div>
+          <div id="chaleur-preview" style="background:var(--c2);border-radius:12px;padding:12px;margin-top:6px;text-align:center;font-size:22px;transition:background .3s">
+            <span id="chaleur-prev-ico">🌡️</span> <span id="chaleur-prev-label" style="font-family:var(--fh);font-size:16px">CHAUD</span>
           </div>
-          <span class="hint" id="prix-sensib-hint">Sensibilité 25% : brûlant si écart &lt; 2.5% de la cible</span>
+          <input type="range" id="chaleur-test-slider" min="0" max="100" value="75"
+            style="width:100%;accent-color:var(--neon);margin-top:8px;cursor:pointer">
+          <span class="hint">Glisse le curseur du bas pour tester l'échelle en temps réel.</span>
         </div>
         <div class="field">
           <label>Tolérance ±</label>
           <input type="number" id="prix-tolerance-in" placeholder="0" min="0" step="any" value="0">
           <span class="hint">Ex: ±10 → réponses entre cible−10 et cible+10 acceptées. 0 = valeur exacte uniquement.</span>
+        </div>
+      </div>
+
+      <!-- TRAPPE fields -->
+      <div id="trappe-fields" style="display:none">
+        <div class="field">
+          <label>Question</label>
+          <input type="text" id="trappe-q-in" placeholder="Ex: Quel pays a gagné la Coupe du Monde 2018 ?">
+        </div>
+        <div class="field">
+          <label>Réponse A</label>
+          <input type="text" id="trappe-a0" placeholder="Ex: France">
+        </div>
+        <div class="field">
+          <label>Réponse B</label>
+          <input type="text" id="trappe-a1" placeholder="Ex: Brésil">
+        </div>
+        <div class="field">
+          <label>Réponse C</label>
+          <input type="text" id="trappe-a2" placeholder="Ex: Allemagne">
+        </div>
+        <div class="field">
+          <label>Réponse D</label>
+          <input type="text" id="trappe-a3" placeholder="Ex: Argentine">
+        </div>
+        <div class="field">
+          <label>Bonne réponse</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px" id="trappe-correct-grid"></div>
+        </div>
+        <div class="field">
+          <label>⏱ Durée de mise (secondes)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="trappe-timer-grid"></div>
         </div>
       </div>
 
@@ -391,9 +428,9 @@ let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
 
 // Buzz speed grid — 1/2/3 pts/sec only, default 2
 const BUZZ_SPEEDS=[
-  {val:1,label:'−1/s',desc:'~100s'},
-  {val:2,label:'−2/s',desc:'~50s'},
-  {val:3,label:'−3/s',desc:'~33s'},
+  {val:2,  label:'−2/s',  desc:'~50s'},
+  {val:2.5,label:'−2.5/s',desc:'~40s'},
+  {val:3,  label:'−3/s',  desc:'~33s'},
 ];
 (function buildSpeedGrid(){
   const grid=document.getElementById('buzz-speed-grid');
@@ -467,19 +504,20 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 // Type selector
 function selectType(type){
   currentType=type;
-  ['text','image','buzz','sportus','prix'].forEach(t=>{
-    document.getElementById('type-'+t).classList.toggle('sel',t===type);
+  ['text','image','buzz','sportus','prix','trappe'].forEach(t=>{
+    const el=document.getElementById('type-'+t);
+    if(el) el.classList.toggle('sel',t===type);
   });
-  document.getElementById('text-fields').style.display=type==='text'?'block':'none';
-  document.getElementById('image-fields').style.display=type==='image'?'block':'none';
-  document.getElementById('buzz-fields').style.display=type==='buzz'?'block':'none';
-  document.getElementById('sportus-fields').style.display=type==='sportus'?'block':'none';
-  document.getElementById('prix-fields').style.display=type==='prix'?'block':'none';
-  // Pour le Juste Prix, le "nom" = identifiant du défi (ex: "Âge de Nadal"), pas un vrai nom de sportif
-  const isPrix = type==='prix';
-  document.getElementById('field-answer').querySelector('label').textContent = isPrix ? 'Identifiant du défi' : 'Nom complet du sportif';
-  document.getElementById('answer-in').placeholder = isPrix ? 'Ex: Âge de Nadal en 2024' : 'Ex: Corentin Moutet';
-  document.getElementById('field-aliases').style.display = isPrix ? 'none' : 'block';
+  document.getElementById('text-fields').style.display    = type==='text'?'block':'none';
+  document.getElementById('image-fields').style.display   = type==='image'?'block':'none';
+  document.getElementById('buzz-fields').style.display    = type==='buzz'?'block':'none';
+  document.getElementById('sportus-fields').style.display = type==='sportus'?'block':'none';
+  document.getElementById('prix-fields').style.display    = type==='prix'?'block':'none';
+  document.getElementById('trappe-fields').style.display  = type==='trappe'?'block':'none';
+  // Masquer nom/alias pour prix et trappe
+  const hideAnswer = type==='prix' || type==='trappe';
+  document.getElementById('field-answer').style.display = hideAnswer ? 'none' : 'block';
+  document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
 }
 
@@ -511,13 +549,14 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':'📝 Texte';
-    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':'txt';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
     else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
     else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
+    else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'4 trappes';
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
@@ -588,7 +627,16 @@ async function startEdit(id){
     document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
     document.getElementById('prix-unit-in').value=a.unit||'';
     document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
-    selectPrixSensib(a.prixSensibilite||25);  } else {
+    selectPrixSensib(a.prixSensibilite||[0,10,40,70,90]);
+  } else if(a.type==='trappe'){
+    document.getElementById('trappe-q-in').value=a.trappeQuestion||'';
+    (a.trappeAnswers||[]).forEach((ans,i)=>{
+      const el=document.getElementById('trappe-a'+i);
+      if(el) el.value=ans;
+    });
+    selectTrappeCorrect(a.trappeCorrect||0);
+    selectTrappeTimer(a.trappeTimer||30);
+  } else {
     document.getElementById('clue-in').value=a.clue||'';
   }
   const parts=a.answer.toLowerCase().split(/\s+/);
@@ -626,7 +674,11 @@ function cancelEdit(){
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
   document.getElementById('prix-tolerance-in').value='0';
-  selectPrixSensib(25);
+  selectPrixSensib([0,10,40,70,90]);
+  document.getElementById('trappe-q-in').value='';
+  ['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>document.getElementById(id).value='');
+  selectTrappeCorrect(0);
+  selectTrappeTimer(30);
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -681,12 +733,13 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer=!!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
   else if(currentType==='sportus') hasContent=true;
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
+  else if(currentType==='trappe') hasContent=!!document.getElementById('trappe-q-in').value.trim()&&['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].every(id=>!!document.getElementById(id).value.trim());
   else hasContent=!!document.getElementById('clue-in').value.trim();
   document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
@@ -721,24 +774,132 @@ document.getElementById('img-file-in').addEventListener('change', e=>{
   };
   reader.readAsDataURL(file);
 });
+// Trappe correct answer grid
+let trappeCorrect = 0;
+let trappeTimer   = 30;
+const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'}];
+
+(function buildTrappeGrids(){
+  // Correct answer
+  const cg = document.getElementById('trappe-correct-grid');
+  ['A','B','C','D'].forEach((l,i)=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.id='tcorrect-'+i;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 4px;cursor:pointer;font-family:var(--fh);font-size:18px;transition:border-color .15s';
+    btn.textContent=l;
+    btn.onclick=()=>selectTrappeCorrect(i);
+    cg.appendChild(btn);
+  });
+  // Timer
+  const tg = document.getElementById('trappe-timer-grid');
+  TRAPPE_TIMERS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.id='ttimer-'+s.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.onclick=()=>selectTrappeTimer(s.val);
+    tg.appendChild(btn);
+  });
+  selectTrappeCorrect(0);
+  selectTrappeTimer(30);
+})();
+
+function selectTrappeCorrect(idx){
+  trappeCorrect=idx;
+  ['A','B','C','D'].forEach((_,i)=>{
+    const btn=document.getElementById('tcorrect-'+i);
+    if(!btn)return;
+    btn.style.borderColor=i===idx?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=i===idx?'rgba(212,255,0,.06)':'var(--c2)';
+    btn.style.color=i===idx?'var(--neon)':'var(--txt)';
+  });
+}
+
+function selectTrappeTimer(val){
+  trappeTimer=val;
+  TRAPPE_TIMERS.forEach(s=>{
+    const btn=document.getElementById('ttimer-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
+
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
-
-// Prix sensibilite — range slider (affichage chaleur uniquement, pas le score)
-let prixSensibilite = 25;
-document.getElementById('prix-sensib-range').addEventListener('input', e=>{
-  selectPrixSensib(parseInt(e.target.value));
+['trappe-q-in','trappe-a0','trappe-a1','trappe-a2','trappe-a3'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', checkReady);
 });
-function selectPrixSensib(val){
-  prixSensibilite=val;
-  const rangeEl=document.getElementById('prix-sensib-range');
-  if(rangeEl) rangeEl.value=val;
-  // "Brûlant" = top 10% de l'échelle = écart < val*0.1 de la cible
-  const brulantPct = (val*0.1).toFixed(1);
-  document.getElementById('prix-sensib-hint').textContent=
-    `Sensibilité ${val}% : 🔥 Brûlant si écart < ${brulantPct}% de la cible. ⛄ Glacial si écart ≥ ${val}%.`;
+
+// Chaleur configurator — seuils des 5 niveaux (affichage uniquement, pas le score)
+// chaleurSeuils[i] = seuil min du niveau i (le joueur voit ce niveau si displayPrecision >= seuil)
+let chaleurSeuils = [0, 10, 40, 70, 90]; // GLACIAL, FROID, TIÈDE, CHAUD, BRÛLANT
+const CHALEUR_DEF = [
+  {ico:'⛄', label:'GLACIAL',  color:'#1565c0'},
+  {ico:'🧊', label:'FROID',    color:'#4fc3f7'},
+  {ico:'🌤️', label:'TIÈDE',    color:'#fff176'},
+  {ico:'🌡️', label:'CHAUD',    color:'#ff9800'},
+  {ico:'🔥', label:'BRÛLANT',  color:'#ff4020'},
+];
+
+function buildChaleurConfig(){
+  const container=document.getElementById('chaleur-config');
+  container.innerHTML='';
+  chaleurSeuils.forEach((seuil,i)=>{
+    const def=CHALEUR_DEF[i];
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px';
+    const maxVal = i===4 ? 99 : (chaleurSeuils[i+1]-1);
+    const minVal = i===0 ? 0 : (chaleurSeuils[i-1]+1);
+    row.innerHTML=`
+      <span style="font-size:18px;width:28px;text-align:center">${def.ico}</span>
+      <span style="font-family:var(--fh);font-size:12px;color:${def.color};width:64px">${def.label}</span>
+      <input type="range" min="${minVal}" max="${maxVal}" value="${seuil}" data-idx="${i}"
+        style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
+        ${i===0?'disabled':''}
+      >
+      <span style="font-size:12px;color:var(--mute);width:32px;text-align:right" id="cseuil-val-${i}">${seuil}%</span>
+    `;
+    container.appendChild(row);
+    if(i>0){
+      row.querySelector('.chaleur-seuil-range').addEventListener('input', e=>{
+        const idx=parseInt(e.target.dataset.idx);
+        const val=parseInt(e.target.value);
+        chaleurSeuils[idx]=val;
+        // Push adjacent sliders to maintain order
+        if(idx>0 && chaleurSeuils[idx-1]>=val) chaleurSeuils[idx-1]=val-1;
+        if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
+        buildChaleurConfig();
+        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+      });
+    }
+  });
 }
-selectPrixSensib(25);
+
+function updateChaleurPreview(pct){
+  let lvl=CHALEUR_DEF[0];
+  chaleurSeuils.forEach((s,i)=>{if(pct>=s)lvl=CHALEUR_DEF[i];});
+  const prev=document.getElementById('chaleur-preview');
+  prev.style.background=lvl.color+'22';
+  prev.style.border='1px solid '+lvl.color+'55';
+  document.getElementById('chaleur-prev-ico').textContent=lvl.ico;
+  document.getElementById('chaleur-prev-label').style.color=lvl.color;
+  document.getElementById('chaleur-prev-label').textContent=lvl.label+' ('+pct+'%)';
+}
+
+document.getElementById('chaleur-test-slider').addEventListener('input',e=>{
+  updateChaleurPreview(parseInt(e.target.value));
+});
+
+function selectPrixSensib(seuilsArr){
+  if(Array.isArray(seuilsArr)) chaleurSeuils=[...seuilsArr];
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+}
+buildChaleurConfig();
+updateChaleurPreview(75);
 
 // Coefficient preview
 document.getElementById('coeff-in').addEventListener('input', e=>{
@@ -861,7 +1022,7 @@ function removeBuzzClue(i){
 // Save
 document.getElementById('btn-save').onclick=async()=>{
   const btn=document.getElementById('btn-save');
-  const answer=document.getElementById('answer-in').value.trim();
+  const rawAnswer=document.getElementById('answer-in').value.trim();
   const aliases=document.getElementById('aliases-in').value;
   const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
   const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
@@ -870,10 +1031,13 @@ document.getElementById('btn-save').onclick=async()=>{
   const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
+  const trappeQuestion = currentType==='trappe'?document.getElementById('trappe-q-in').value.trim():'';
+  const trappeAnswers  = currentType==='trappe'?['trappe-a0','trappe-a1','trappe-a2','trappe-a3'].map(id=>document.getElementById(id).value.trim()):[];
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?(trappeQuestion||'La Trappe'):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
-  const prixSensib=currentType==='prix'?prixSensibilite:25;
+  const prixSensib=currentType==='prix'?chaleurSeuils:[0,10,40,70,90];
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
@@ -901,7 +1065,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
