@@ -344,7 +344,7 @@ app.post('/api/admin/athlete', (req, res) => {
     type:     type || 'text',
     clue:     type === 'text' ? (clue||'').trim() : '',
     clues:    type === 'buzz' ? (Array.isArray(clues) ? clues : clues.split('\n').map(s=>s.trim()).filter(Boolean)) : [],
-    buzzDecrement: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(buzzDecrement) || 2)) : undefined,
+    buzzDecrement: type === 'buzz' ? Math.min(10, Math.max(0.5, parseFloat(buzzDecrement) || 2)) : undefined,
     buzzFreezeDuration: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(req.body.buzzFreezeDuration) || 3)) : undefined,
     imageUrl:    type === 'image' ? (req.body.imageBase64 ? '' : imageUrl.trim()) : '',
     imageBase64: type === 'image' ? (req.body.imageBase64 || '') : '',
