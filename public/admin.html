@@ -902,7 +902,29 @@ const CHALEUR_DEF = [
   {ico:'🔥', label:'BRÛLANT',  color:'#ff4020'},
 ];
 
+function getChaleurTarget(){
+  const t=parseFloat(document.getElementById('prix-target-in').value);
+  return isNaN(t)||t<=0 ? null : t;
+}
+
+function seuilToDisplay(seuil, target){
+  // seuil = min/max ratio * 100 (ex: 90 = guess/target = 0.9)
+  // En valeur brute : guess = target * seuil/100 ou target * 100/seuil
+  if(!target) return (100-seuil).toFixed(0)+'% d\'écart';
+  // La valeur brute qui donne ce ratio : target * seuil/100 (en dessous) ou target * 100/seuil (au dessus)
+  // On affiche l'écart brut : target - target*seuil/100 = target*(1-seuil/100)
+  const ecartBrut = Math.round(target * (1 - seuil/100));
+  const unit = document.getElementById('prix-unit-in').value.trim();
+  return '±' + ecartBrut + (unit?' '+unit:'');
+}
+
+function seuilFromRawEcart(ecartBrut, target){
+  // Inverse : ratio = 1 - ecartBrut/target → seuil = (1 - ecartBrut/target)*100
+  return Math.round((1 - ecartBrut/target)*100);
+}
+
 function buildChaleurConfig(){
+  const target = getChaleurTarget();
   const container=document.getElementById('chaleur-config');
   container.innerHTML='';
   chaleurSeuils.forEach((seuil,i)=>{
@@ -911,14 +933,15 @@ function buildChaleurConfig(){
     row.style.cssText='display:flex;align-items:center;gap:8px';
     const maxVal = i===4 ? 99 : (chaleurSeuils[i+1]-1);
     const minVal = i===0 ? 0 : (chaleurSeuils[i-1]+1);
+    const displayVal = i===0 ? (target?'> ±'+Math.round(target*(1-chaleurSeuils[1]/100)):'loin') : seuilToDisplay(seuil, target);
     row.innerHTML=`
       <span style="font-size:18px;width:28px;text-align:center">${def.ico}</span>
-      <span style="font-family:var(--fh);font-size:12px;color:${def.color};width:64px">${def.label}</span>
+      <span style="font-family:var(--fh);font-size:11px;color:${def.color};width:56px">${def.label}</span>
       <input type="range" min="${minVal}" max="${maxVal}" value="${seuil}" data-idx="${i}"
         style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
         ${i===0?'disabled':''}
       >
-      <span style="font-size:12px;color:var(--mute);width:32px;text-align:right" id="cseuil-val-${i}">${seuil}%</span>
+      <span style="font-size:11px;color:var(--mute);width:56px;text-align:right" id="cseuil-val-${i}">${displayVal}</span>
     `;
     container.appendChild(row);
     if(i>0){
@@ -926,7 +949,6 @@ function buildChaleurConfig(){
         const idx=parseInt(e.target.dataset.idx);
         const val=parseInt(e.target.value);
         chaleurSeuils[idx]=val;
-        // Push adjacent sliders to maintain order
         if(idx>0 && chaleurSeuils[idx-1]>=val) chaleurSeuils[idx-1]=val-1;
         if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
         buildChaleurConfig();
@@ -937,6 +959,7 @@ function buildChaleurConfig(){
 }
 
 function updateChaleurPreview(pct){
+  const target = getChaleurTarget();
   let lvl=CHALEUR_DEF[0];
   chaleurSeuils.forEach((s,i)=>{if(pct>=s)lvl=CHALEUR_DEF[i];});
   const prev=document.getElementById('chaleur-preview');
@@ -944,8 +967,25 @@ function updateChaleurPreview(pct){
   prev.style.border='1px solid '+lvl.color+'55';
   document.getElementById('chaleur-prev-ico').textContent=lvl.ico;
   document.getElementById('chaleur-prev-label').style.color=lvl.color;
-  document.getElementById('chaleur-prev-label').textContent=lvl.label+' ('+pct+'%)';
+  const unit = document.getElementById('prix-unit-in').value.trim();
+  if(target){
+    const ecartBrut = Math.round(target*(1-pct/100));
+    const guessEx   = Math.round(target*(pct/100));
+    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — écart ±${ecartBrut}${unit?' '+unit:''} (ex: ${guessEx})`;
+  } else {
+    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — ${(100-pct)}% d'écart`;
+  }
 }
+
+// Rebuild when target or unit changes
+document.getElementById('prix-target-in').addEventListener('input',()=>{
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+});
+document.getElementById('prix-unit-in').addEventListener('input',()=>{
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+});
 
 document.getElementById('chaleur-test-slider').addEventListener('input',e=>{
   updateChaleurPreview(parseInt(e.target.value));
