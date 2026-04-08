@@ -941,7 +941,13 @@ function buildChaleurConfig(){
         style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
         ${i===0?'disabled':''}
       >
-      <span style="font-size:11px;color:var(--mute);width:56px;text-align:right" id="cseuil-val-${i}">${displayVal}</span>
+      <input type="number" id="cseuil-val-${i}" data-idx="${i}"
+        value="${target ? Math.round(target*(seuil/100)) : seuil}"
+        min="0" step="1"
+        style="width:52px;background:var(--c2);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 6px;font-size:11px;color:${i===0?'var(--mute)':'var(--txt)'};text-align:center"
+        ${i===0?'disabled':''}
+        class="chaleur-seuil-num"
+      >
     `;
     container.appendChild(row);
     if(i>0){
@@ -949,8 +955,24 @@ function buildChaleurConfig(){
         const idx=parseInt(e.target.dataset.idx);
         const val=parseInt(e.target.value);
         chaleurSeuils[idx]=val;
-        if(idx>0 && chaleurSeuils[idx-1]>=val) chaleurSeuils[idx-1]=val-1;
+        // Only push the NEXT (higher) level up to avoid collision — never push down
         if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
+        buildChaleurConfig();
+        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+      });
+      row.querySelector('.chaleur-seuil-num').addEventListener('change', e=>{
+        const idx=parseInt(e.target.dataset.idx);
+        const target2=getChaleurTarget();
+        let newSeuil;
+        if(target2){
+          // User typed a raw value — convert back to seuil %
+          const rawVal=parseFloat(e.target.value)||0;
+          newSeuil=Math.round((rawVal/target2)*100);
+        } else {
+          newSeuil=parseInt(e.target.value)||0;
+        }
+        newSeuil=Math.max(chaleurSeuils[idx-1]+1, Math.min(idx<4?chaleurSeuils[idx+1]-1:99, newSeuil));
+        chaleurSeuils[idx]=newSeuil;
         buildChaleurConfig();
         updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
       });
