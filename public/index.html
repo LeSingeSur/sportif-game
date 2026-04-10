@@ -483,6 +483,25 @@ document.getElementById('btn-start').onclick=startGame;
 document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
 document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
 
+// Preview mode detection
+const _urlParams = new URLSearchParams(window.location.search);
+const PREVIEW_MODE = _urlParams.get('preview') === '1';
+const PREVIEW_ID   = _urlParams.get('previewId');
+const PREVIEW_PW   = _urlParams.get('previewPw');
+
+if(PREVIEW_MODE){
+  // Hide pseudo screen, go straight to game
+  document.addEventListener('DOMContentLoaded',()=>{});
+  G.pseudo = '__preview__';
+  document.getElementById('ptag').textContent = '👁 PREVIEW';
+  // Show preview banner
+  const banner = document.createElement('div');
+  banner.id = 'preview-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#ff9800;color:#000;text-align:center;font-size:12px;font-weight:800;padding:4px;letter-spacing:1px';
+  banner.textContent = '👁 MODE PREVIEW — Score non enregistré';
+  document.body.prepend(banner);
+}
+
 function startGame(){
   const p=document.getElementById('pseudo-in').value.trim();
   if(!p){shake('pseudo-in');return}
@@ -519,9 +538,14 @@ async function loadAthlete(){
   buzzStopAll();
 
   try{
-    const res=await fetch('/api/athlete?pseudo='+encodeURIComponent(G.pseudo));
+    let res;
+    if(PREVIEW_MODE){
+      res = await fetch('/api/preview?id='+encodeURIComponent(PREVIEW_ID)+'&password='+encodeURIComponent(PREVIEW_PW));
+    } else {
+      res = await fetch('/api/athlete?pseudo='+encodeURIComponent(G.pseudo));
+    }
     const data=await res.json();
-    if(data.done){show('sd');return}
+    if(!PREVIEW_MODE && data.done){show('sd');return}
     G.athleteId=data.id; G.type=data.type||'text'; G.active=true;
     document.getElementById('sport-ico').textContent=data.emoji;
 
@@ -1747,6 +1771,10 @@ async function showVictory(){
 }
 
 async function submitScore(score){
+  if(PREVIEW_MODE){
+    document.getElementById('rank-badge').textContent='👁 Preview — score non enregistré';
+    return;
+  }
   try{
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score,athleteId:G.athleteId})});
@@ -1763,6 +1791,17 @@ async function submitScore(score){
 async function submitScoreAndRevealText(){
   document.querySelectorAll('.wb:not(.rev)').forEach(b=>b.classList.add('rev'));
   document.getElementById('bar-f').style.width='100%';
+  if(PREVIEW_MODE){
+    document.getElementById('rank-badge').textContent='👁 Preview — score non enregistré';
+    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-sc').textContent=0;
+    document.getElementById('v-sub').textContent=`Score épuisé — c'était ${G.athleteName||'???'}`;
+    document.getElementById('v-revealed').textContent=G.revealed;
+    document.getElementById('v-revealed-lbl').textContent='mots révélés';
+    document.getElementById('v-wrong').textContent=G.wrongAnswers;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='mauvaises rép.';
+    show('sv'); confetti(); return;
+  }
   try{
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score:0,athleteId:G.athleteId})});
@@ -1783,7 +1822,19 @@ async function submitScoreAndRevealText(){
     show('sv'); confetti();
   }catch(e){console.error(e);}
 }
+
 async function submitScoreAndReveal(score){
+  if(PREVIEW_MODE){
+    document.getElementById('rank-badge').textContent='👁 Preview — score non enregistré';
+    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-sc').textContent=score;
+    document.getElementById('v-sub').textContent=`Toutes les cases révélées — c'était ${G.athleteName||'???'}`;
+    document.getElementById('v-revealed').textContent=G.revealed;
+    document.getElementById('v-revealed-lbl').textContent='cases révélées';
+    document.getElementById('v-wrong').textContent=G.wrongAnswers;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='mauvaises rép.';
+    show('sv'); confetti(); return;
+  }
   try{
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score,athleteId:G.athleteId})});
@@ -1805,7 +1856,17 @@ async function submitScoreAndReveal(score){
   }catch(e){console.error(e);}
 }
 
-document.getElementById('btn-next').onclick=()=>{buzzStopAll();show('sg');loadAthlete()};
+document.getElementById('btn-next').onclick=()=>{
+  buzzStopAll();
+  show('sg');
+  loadAthlete();
+};
+// In preview mode adapt button label
+if(PREVIEW_MODE){
+  document.getElementById('btn-next').textContent='🔄 Rejouer';
+  document.getElementById('btn-v-lb').style.display='none';
+  document.getElementById('btn-done-lb').style.display='none';
+}
 document.getElementById('btn-v-lb').onclick=()=>{loadLB();show('sl')};
 document.getElementById('btn-done-lb').onclick=()=>{loadLB();show('sl')};
 
@@ -1892,7 +1953,14 @@ function confetti(){
 
 function shake(id){const el=document.getElementById(id);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),400)}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-window.addEventListener('load',()=>setTimeout(()=>document.getElementById('pseudo-in').focus(),300));
+window.addEventListener('load',()=>{
+  if(PREVIEW_MODE){
+    show('sg');
+    loadAthlete();
+  } else {
+    setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
+  }
+});
 </script>
 </body>
 </html>

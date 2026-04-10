@@ -561,6 +561,7 @@ async function loadAthletes(){
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
           <div class="ath-meta">
             <span class="ath-type ${typeClass}">${typeLabel}</span>
+            <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;${a.published?'background:rgba(0,230,118,.15);color:#00e676':'background:rgba(255,200,0,.12);color:#ffc800'}">${a.published?'✅ PUBLIÉ':'⏳ BROUILLON'}</span>
             <span>${meta}</span>
             <span>${a.playerCount} joueur${a.playerCount!==1?'s':''}</span>
             <span>top: ${a.topScore??'—'}</span>
@@ -568,10 +569,12 @@ async function loadAthletes(){
           </div>
         </div>
         <div class="ath-actions">
-          <button class="btn btn-sm btn-scores" onclick="showAthleteScores(${a.id},'${esc(a.answer)}')">📊</button>
+          <button class="btn btn-sm btn-scores" onclick="showAthleteScores(${a.id})" data-name="${esc(a.answer)}">📊</button>
           <button class="btn btn-sm btn-edit" onclick="startEdit(${a.id})">✏️</button>
           <button class="btn btn-sm btn-reset" onclick="resetAthlete(${a.id})">🔄</button>
-          <button class="btn btn-sm btn-del" onclick="deleteAthlete(${a.id},'${esc(a.answer)}')">🗑</button>
+          <button class="btn btn-sm" style="background:rgba(0,200,255,.15);color:#00c8ff;border:1px solid rgba(0,200,255,.3)" onclick="previewAthlete(${a.id})">▶ Tester</button>
+          <button class="btn btn-sm ${a.published?'btn-unpublish':'btn-publish'}" onclick="togglePublish(${a.id},${a.published?'false':'true'})">${a.published?'⬇️ Dépublier':'✅ Publier'}</button>
+          <button class="btn btn-sm btn-del" onclick="deleteAthlete(${a.id})" data-name="${esc(a.answer)}">🗑</button>
         </div>
       </div>`;
     list.appendChild(d);
@@ -688,7 +691,20 @@ function cancelEdit(){
 document.getElementById('btn-cancel-edit').onclick=cancelEdit;
 
 // Delete / Reset
-async function deleteAthlete(id,name){
+async function togglePublish(id, publish){
+  const res=await fetch('/api/admin/publish/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,published:publish})});
+  const data=await res.json();
+  if(data.success) loadAthletes();
+}
+
+function previewAthlete(id){
+  const url=`/?preview=1&previewId=${id}&previewPw=${encodeURIComponent(adminPw)}`;
+  window.open(url,'_blank');
+}
+
+async function deleteAthlete(id){
+  const btn=document.querySelector(`.btn-del[onclick="deleteAthlete(${id})"]`);
+  const name=btn?btn.dataset.name:'ce défi';
   if(!confirm('Supprimer "'+name+'" ?'))return;
   await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
   loadAthletes();
@@ -1237,7 +1253,9 @@ async function loadAdminScores(){
   }catch(err){sel.innerHTML='<div style="color:var(--red);font-size:13px">Erreur.</div>';}
 }
 
-async function showAthleteScores(id,name){
+async function showAthleteScores(id){
+  const btn=document.querySelector(`.btn-scores[onclick="showAthleteScores(${id})"]`);
+  const name=btn?btn.dataset.name:'Défi';
   document.getElementById('modal-title-text').textContent='📊 '+name;
   document.getElementById('modal-body').innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Chargement…</div>';
   document.getElementById('scores-modal').classList.add('on');
