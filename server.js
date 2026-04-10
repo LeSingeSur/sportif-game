@@ -32,11 +32,15 @@ const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036
 function hasPlayed(pseudo, athleteId) {
   return (scores[athleteId] || []).some(e => norm(e.pseudo) === norm(pseudo));
 }
+function publishedAthletes() {
+  return athletes.filter(a => a.published !== false);
+}
 function nextAthleteFor(pseudo) {
-  return athletes.find(a => !hasPlayed(pseudo, a.id)) || null;
+  return publishedAthletes().find(a => !hasPlayed(pseudo, a.id)) || null;
 }
 function hasFinishedAll(pseudo) {
-  return athletes.length > 0 && athletes.every(a => hasPlayed(pseudo, a.id));
+  const pub = publishedAthletes();
+  return pub.length > 0 && pub.every(a => hasPlayed(pseudo, a.id));
 }
 function rebuildGlobalScores() {
   const map = {};
@@ -58,6 +62,56 @@ function rebuildGlobalScores() {
 
 // ── PING (keepalive pour cron-job.org) ───────────────────────────────────
 app.get('/ping', (req, res) => res.send('OK'));
+
+// ── PREVIEW (admin only, score not saved) ────────────────────────────────
+app.get('/api/preview', (req, res) => {
+  const { id, password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const athlete = athletes.find(a => String(a.id) === String(id));
+  if (!athlete) return res.status(404).json({ error: 'Défi introuvable' });
+  const gridSize = athlete.gridSize || 10;
+  const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text', preview: true };
+  // Same data as /api/athlete but no pseudo required
+  if (athlete.type === 'image') {
+    base.imageUrl = athlete.imageBase64 ? athlete.imageBase64 : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
+    base.gridSize = gridSize; base.maxScore = gridSize * gridSize;
+  } else if (athlete.type === 'buzz') {
+    base.clues = athlete.clues; base.maxScore = 100;
+    base.buzzDecrement = athlete.buzzDecrement || 2;
+    base.buzzFreezeDuration = athlete.buzzFreezeDuration || 3;
+  } else if (athlete.type === 'sportus') {
+    const lastName = athlete.answer.trim().split(/\s+/).pop();
+    const normLast = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    base.lastNameLength = normLast.length; base.hint1 = athlete.sportusHint1 || '';
+    base.hint2 = athlete.sportusHint2 || ''; base.freeHint = athlete.sportusHint0 || '';
+    base.revealedLetters = athlete.revealedLetters || []; base.sportusTimer = athlete.sportusTimer || 45;
+    base.maxScore = 100;
+  } else if (athlete.type === 'prix') {
+    base.question = athlete.question; base.unit = athlete.unit || '';
+    base.targetValue = athlete.targetValue; base.prixTolerance = athlete.prixTolerance || 0;
+    base.chaleurSeuils = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0,10,40,70,90];
+    base.maxScore = 100;
+  } else if (athlete.type === 'trappe') {
+    base.trappeQuestions = athlete.trappeQuestions || [];
+    base.trappeTimer = athlete.trappeTimer || 30; base.maxScore = 100;
+    base.themeName = athlete.answer || 'La Trappe';
+  } else {
+    base.clue = athlete.clue;
+    base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
+  }
+  res.json(base);
+});
+
+// ── PUBLISH / UNPUBLISH ──────────────────────────────────────────────────
+app.post('/api/admin/publish/:id', (req, res) => {
+  const { password, published } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const athlete = athletes.find(a => String(a.id) === String(req.params.id));
+  if (!athlete) return res.status(404).json({ error: 'Introuvable' });
+  athlete.published = !!published;
+  saveData();
+  res.json({ success: true, published: athlete.published });
+});
 
 
 // FIX: Use GET with a range request for validation instead of HEAD (HEAD fails on many servers)
@@ -364,13 +418,15 @@ app.post('/api/admin/athlete', (req, res) => {
     trappeCorrect:  type === 'trappe' ? 0 : undefined,
     trappeTimer:    type === 'trappe' ? (parseInt(req.body.trappeTimer) || 30) : undefined,
     trappeQuestions:type === 'trappe' ? (req.body.trappeQuestions || []) : undefined,
+    published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
 
   if (editId) {
     const idx = athletes.findIndex(a => a.id === editId);
     if (idx < 0) return res.status(404).json({ error: 'Sportif introuvable' });
-    athletes[idx] = { ...athletes[idx], ...athleteData };
+    const prevPublished = athletes[idx].published; // preserve published status on edit
+    athletes[idx] = { ...athletes[idx], ...athleteData, published: prevPublished };
     saveData();
     return res.json({ success: true, edited: true, answer: athletes[idx].answer });
   }
