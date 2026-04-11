@@ -204,7 +204,18 @@ app.get('/api/athlete', (req, res) => {
       : [];
     base.trappeTimer    = athlete.trappeTimer || 30;
     base.maxScore       = 100;
-    base.themeName      = athlete.answer || 'La Trappe'; // displayed as defi name
+    base.themeName      = athlete.answer || 'La Trappe';
+  } else if (athlete.type === 'demineur') {
+    base.demineurItems = (athlete.demineurItems || []).map(it => ({ text: it.text }));
+    base.demineurTimer = athlete.demineurTimer || 60;
+    base.maxScore      = 100;
+  } else if (athlete.type === 'chase') {
+    base.chaseTheme       = athlete.chaseTheme || '';
+    base.chaseTargetToWin = athlete.chaseTargetToWin || 10;
+    base.chasePlayerStart = athlete.chasePlayerStart || 3;
+    base.chaseGrace       = athlete.chaseGrace || 12;
+    base.chaseSpeed       = athlete.chaseSpeed || 6;
+    base.maxScore         = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
