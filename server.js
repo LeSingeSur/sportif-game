@@ -95,6 +95,16 @@ app.get('/api/preview', (req, res) => {
     base.trappeQuestions = athlete.trappeQuestions || [];
     base.trappeTimer = athlete.trappeTimer || 30; base.maxScore = 100;
     base.themeName = athlete.answer || 'La Trappe';
+  } else if (athlete.type === 'demineur') {
+    base.demineurItems = (athlete.demineurItems || []).map(it => ({ text: it.text }));
+    base.demineurTimer = athlete.demineurTimer || 60; base.maxScore = 100;
+  } else if (athlete.type === 'chase') {
+    base.chaseTheme         = athlete.chaseTheme || '';
+    base.chaseTargetToWin   = athlete.chaseTargetToWin || 10;
+    base.chasePlayerStart   = athlete.chasePlayerStart || 3;
+    base.chaseGrace         = athlete.chaseGrace || 12;
+    base.chaseSpeed         = athlete.chaseSpeed || 6;
+    base.maxScore           = 100;
   } else {
     base.clue = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -307,6 +317,32 @@ app.post('/api/sportus-check', (req, res) => {
   });
 });
 
+// ── THE CHASE ────────────────────────────────────────────────────────────
+app.post('/api/chase-check', (req, res) => {
+  const { athleteId, answer, found } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'chase') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const normAns = norm(answer || '');
+  if (!normAns) return res.json({ correct: false, reason: 'empty' });
+  // Check if already found
+  const alreadyFound = (found || []).map(norm);
+  if (alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
+  // Check against accepted answers
+  const correct = (athlete.chaseAnswers || []).some(a => norm(a) === normAns);
+  res.json({ correct, fullAnswer: athlete.answer });
+});
+
+// ── LE DÉMINEUR ───────────────────────────────────────────────────────────
+app.post('/api/demineur-check', (req, res) => {
+  const { athleteId, index } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'demineur') return res.status(404).json({ error: 'Défi introuvable' });
+  const item = (athlete.demineurItems || [])[index];
+  if (!item) return res.status(404).json({ error: 'Item introuvable' });
+  res.json({ isMine: !!item.isMine, fullAnswer: athlete.answer });
+});
+
 // ── LA TRAPPE ─────────────────────────────────────────────────────────────
 app.post('/api/trappe-check', (req, res) => {
   const { athleteId, questionIndex } = req.body;
@@ -381,6 +417,8 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'prix' && (!question || targetValue === undefined)) return res.status(400).json({ error: 'Question et valeur cible obligatoires' });
   if (type === 'trappe' && (!req.body.trappeQuestions || !req.body.trappeQuestions.length)) return res.status(400).json({ error: 'Au moins une question obligatoire' });
+  if (type === 'demineur' && (!req.body.demineurItems || req.body.demineurItems.length < 3)) return res.status(400).json({ error: 'Au moins 3 items obligatoires' });
+  if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
@@ -418,6 +456,14 @@ app.post('/api/admin/athlete', (req, res) => {
     trappeCorrect:  type === 'trappe' ? 0 : undefined,
     trappeTimer:    type === 'trappe' ? (parseInt(req.body.trappeTimer) || 30) : undefined,
     trappeQuestions:type === 'trappe' ? (req.body.trappeQuestions || []) : undefined,
+    demineurItems:  type === 'demineur' ? (req.body.demineurItems || []) : undefined,
+    demineurTimer:  type === 'demineur' ? (parseInt(req.body.demineurTimer) || 60) : undefined,
+    chaseTheme:       type === 'chase' ? (req.body.chaseTheme||'').trim() : undefined,
+    chaseAnswers:     type === 'chase' ? (req.body.chaseAnswers||[]).map(s=>s.trim()).filter(Boolean) : undefined,
+    chaseTargetToWin: type === 'chase' ? (parseInt(req.body.chaseTargetToWin)||10) : undefined,
+    chasePlayerStart: type === 'chase' ? (parseInt(req.body.chasePlayerStart)||3) : undefined,
+    chaseGrace:       type === 'chase' ? (parseInt(req.body.chaseGrace)||12) : undefined,
+    chaseSpeed:       type === 'chase' ? (parseInt(req.body.chaseSpeed)||6) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
