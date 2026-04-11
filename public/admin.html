@@ -190,6 +190,16 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">La Trappe</div>
             <div class="type-desc">Mise sur les réponses</div>
           </div>
+          <div class="type-opt" id="type-demineur" onclick="selectType('demineur')">
+            <div class="type-ico">💣</div>
+            <div class="type-name">Démineur</div>
+            <div class="type-desc">Évite les mines</div>
+          </div>
+          <div class="type-opt" id="type-chase" onclick="selectType('chase')">
+            <div class="type-ico">🏃</div>
+            <div class="type-name">The Chase</div>
+            <div class="type-desc">Fuis le chasseur</div>
+          </div>
         </div>
       </div>
 
@@ -373,6 +383,48 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div style="font-size:12px;color:var(--mute);margin-top:4px" id="trappe-q-count">0 question(s)</div>
       </div>
 
+      <!-- DÉMINEUR fields -->
+      <div id="demineur-fields" style="display:none">
+        <div class="field">
+          <label>⏱ Chronomètre</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="dem-timer-grid"></div>
+        </div>
+        <div class="field">
+          <label>Cases de la grille (12 cases, 2 mines)</label>
+          <span class="hint">Ajoute jusqu'à 12 cases. Coche 💣 pour marquer une mine.</span>
+          <div id="dem-items-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+          <button class="btn btn-s" id="btn-add-dem-item" style="margin-top:8px">➕ Ajouter une case</button>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px" id="dem-item-count">0 case(s) · 0 mine(s)</div>
+        </div>
+      </div>
+
+      <!-- THE CHASE fields -->
+      <div id="chase-fields" style="display:none">
+        <div class="field">
+          <label>Thème / Consigne</label>
+          <input type="text" id="chase-theme-in" placeholder="Ex: Citez 10 joueurs français ayant joué en Ligue des Champions">
+          <span class="hint">Affiché en grand pendant le jeu.</span>
+        </div>
+        <div class="field">
+          <label>Réponses acceptées (une par ligne)</label>
+          <textarea id="chase-answers-in" placeholder="Zidane&#10;Henry&#10;Thuram&#10;Vieira&#10;…" style="min-height:120px"></textarea>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="chase-answers-count">0 réponse(s)</div>
+        </div>
+        <div class="field">
+          <label>🏃 Avance de départ du joueur (cases)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-start-grid"></div>
+          <span class="hint">0 = aucune avance. 3 = 3 cases d'avance sur le Chasseur.</span>
+        </div>
+        <div class="field">
+          <label>😴 Période de grâce (secondes avant que le Chasseur se réveille)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-grace-grid"></div>
+        </div>
+        <div class="field">
+          <label>😈 Vitesse du Chasseur (secondes entre chaque pas)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-speed-grid"></div>
+        </div>
+      </div>
+
       <!-- Coefficient -->
       <div class="field" style="margin-top:12px">
         <label>⚖️ Coefficient score total</label>
@@ -499,19 +551,20 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 // Type selector
 function selectType(type){
   currentType=type;
-  ['text','image','buzz','sportus','prix','trappe'].forEach(t=>{
+  ['text','image','buzz','sportus','prix','trappe','demineur','chase'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
-  document.getElementById('text-fields').style.display    = type==='text'?'block':'none';
-  document.getElementById('image-fields').style.display   = type==='image'?'block':'none';
-  document.getElementById('buzz-fields').style.display    = type==='buzz'?'block':'none';
-  document.getElementById('sportus-fields').style.display = type==='sportus'?'block':'none';
-  document.getElementById('prix-fields').style.display    = type==='prix'?'block':'none';
-  document.getElementById('trappe-fields').style.display  = type==='trappe'?'block':'none';
-  // Masquer nom/alias pour prix et trappe
-  const hideAnswer = type==='prix' || type==='trappe';
-  document.getElementById('field-answer').style.display = hideAnswer ? 'none' : 'block';
+  document.getElementById('text-fields').style.display     = type==='text'?'block':'none';
+  document.getElementById('image-fields').style.display    = type==='image'?'block':'none';
+  document.getElementById('buzz-fields').style.display     = type==='buzz'?'block':'none';
+  document.getElementById('sportus-fields').style.display  = type==='sportus'?'block':'none';
+  document.getElementById('prix-fields').style.display     = type==='prix'?'block':'none';
+  document.getElementById('trappe-fields').style.display   = type==='trappe'?'block':'none';
+  document.getElementById('demineur-fields').style.display = type==='demineur'?'block':'none';
+  document.getElementById('chase-fields').style.display    = type==='chase'?'block':'none';
+  const hideAnswer = type==='prix' || type==='trappe' || type==='demineur' || type==='chase';
+  document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
 }
@@ -544,14 +597,16 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':'📝 Texte';
-    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':'txt';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
     else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
     else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
     else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'3 trappes';
+    else if(a.type==='demineur') meta=`${(a.demineurItems||[]).length} cases · ${(a.demineurItems||[]).filter(i=>i.isMine).length} mine(s) · ${a.demineurTimer||60}s`;
+    else if(a.type==='chase') meta=`${(a.chaseAnswers||[]).length} réponses · ×${a.chaseTargetToWin||10} cases · ${a.chaseSpeed||6}s/pas`;
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
@@ -632,6 +687,19 @@ async function startEdit(id){
     selectTrappeTimer(a.trappeTimer||30);
     renderTrappeQuestions();
     checkReady();
+  } else if(a.type==='demineur'){
+    demItems = a.demineurItems ? a.demineurItems.map(it=>({text:it.text,isMine:!!it.isMine})) : [];
+    selectDemTimer(a.demineurTimer||60);
+    renderDemItems();
+    checkReady();
+  } else if(a.type==='chase'){
+    document.getElementById('chase-theme-in').value=a.chaseTheme||'';
+    document.getElementById('chase-answers-in').value=(a.chaseAnswers||[]).join('\n');
+    document.getElementById('chase-answers-count').textContent=(a.chaseAnswers||[]).length+' réponse(s)';
+    buildChaseGrid('chase-start-grid',[{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],a.chasePlayerStart||3,v=>{chasePlayerStart=v;});
+    buildChaseGrid('chase-grace-grid',[{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],a.chaseGrace||12,v=>{chaseGrace=v;});
+    buildChaseGrid('chase-speed-grid',[{val:4,label:'4s'},{val:5,label:'5s'},{val:6,label:'6s'},{val:8,label:'8s'}],a.chaseSpeed||6,v=>{chaseSpeed=v;});
+    checkReady();
   } else {
     document.getElementById('clue-in').value=a.clue||'';
   }
@@ -678,6 +746,12 @@ function cancelEdit(){
   selectTrappeTimer(30);
   trappeQuestions=[];
   renderTrappeQuestions();
+  demItems=[];
+  renderDemItems();
+  selectDemTimer(60);
+  document.getElementById('chase-theme-in').value='';
+  document.getElementById('chase-answers-in').value='';
+  document.getElementById('chase-answers-count').textContent='0 réponse(s)';
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -752,6 +826,8 @@ function checkReady(){
   else if(currentType==='sportus') hasContent=true;
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
   else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
+  else if(currentType==='demineur') hasContent=demItems.length>=3&&demItems.filter(i=>i.isMine).length===2&&demItems.every(i=>i.text.trim());
+  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.split('\n').filter(l=>l.trim()).length>=2;
   else hasContent=!!document.getElementById('clue-in').value.trim();
   document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
@@ -903,6 +979,121 @@ function selectSportusTimer(val){
 }
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// ── THE CHASE ──────────────────────────────────────────────────────────────
+let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6;
+
+function buildChaseGrid(containerId, options, currentVal, setter){
+  const g=document.getElementById(containerId);
+  g.innerHTML='';
+  options.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.id=containerId+'-'+s.val;
+    btn.onclick=()=>{
+      setter(s.val);
+      options.forEach(x=>{
+        const b=document.getElementById(containerId+'-'+x.val);
+        if(b){b.style.borderColor=x.val===s.val?'var(--neon)':'rgba(255,255,255,.07)';b.style.background=x.val===s.val?'rgba(212,255,0,.06)':'var(--c2)';}
+      });
+    };
+    g.appendChild(btn);
+    if(s.val===currentVal){btn.style.borderColor='var(--neon)';btn.style.background='rgba(212,255,0,.06)';}
+  });
+}
+
+(function initChaseGrids(){
+  buildChaseGrid('chase-start-grid', [{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],3,v=>{chasePlayerStart=v;});
+  buildChaseGrid('chase-grace-grid', [{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],12,v=>{chaseGrace=v;});
+  buildChaseGrid('chase-speed-grid', [{val:4,label:'4s'},{val:5,label:'5s'},{val:6,label:'6s'},{val:8,label:'8s'}],6,v=>{chaseSpeed=v;});
+})();
+
+document.getElementById('chase-answers-in').addEventListener('input',e=>{
+  const lines=e.target.value.split('\n').filter(l=>l.trim());
+  document.getElementById('chase-answers-count').textContent=lines.length+' réponse(s)';
+  checkReady();
+});
+document.getElementById('chase-theme-in').addEventListener('input',checkReady);
+
+// ── DÉMINEUR ──────────────────────────────────────────────────────────────
+let demItems = []; // [{text, isMine}]
+let demTimerVal = 60;
+const DEM_TIMERS = [{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'},{val:90,label:'90s'}];
+
+(function buildDemTimerGrid(){
+  const g=document.getElementById('dem-timer-grid');
+  DEM_TIMERS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='dtimer-'+s.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.onclick=()=>selectDemTimer(s.val);
+    g.appendChild(btn);
+  });
+  selectDemTimer(60);
+})();
+
+function selectDemTimer(val){
+  demTimerVal=val;
+  DEM_TIMERS.forEach(s=>{
+    const btn=document.getElementById('dtimer-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
+
+document.getElementById('btn-add-dem-item').onclick=()=>{
+  if(demItems.length>=12){alert('Maximum 12 cases !');return;}
+  demItems.push({text:'',isMine:false});
+  renderDemItems();
+  checkReady();
+};
+
+function renderDemItems(){
+  const list=document.getElementById('dem-items-list');
+  list.innerHTML='';
+  const mines=demItems.filter(i=>i.isMine).length;
+  demItems.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:8px;padding:8px 10px;border:2px solid '+(item.isMine?'var(--red)':'rgba(255,255,255,.07)');
+    row.innerHTML=`
+      <input type="text" value="${esc(item.text)}" placeholder="Nom ou proposition…" data-idx="${i}"
+        style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" class="dem-text-in">
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:${item.isMine?'var(--red)':'var(--mute)'};cursor:pointer;flex-shrink:0">
+        <input type="checkbox" ${item.isMine?'checked':''} data-idx="${i}" class="dem-mine-cb" style="cursor:pointer">
+        💣
+      </label>
+      <button onclick="removeDemItem(${i})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0;flex-shrink:0">✕</button>
+    `;
+    list.appendChild(row);
+    row.querySelector('.dem-text-in').addEventListener('input',e=>{
+      demItems[parseInt(e.target.dataset.idx)].text=e.target.value;
+      checkReady();
+    });
+    row.querySelector('.dem-mine-cb').addEventListener('change',e=>{
+      const idx=parseInt(e.target.dataset.idx);
+      const checked=e.target.checked;
+      // Max 2 mines
+      if(checked && demItems.filter(x=>x.isMine).length>=2){
+        e.target.checked=false;
+        alert('Maximum 2 mines !');return;
+      }
+      demItems[idx].isMine=checked;
+      renderDemItems();checkReady();
+    });
+  });
+  document.getElementById('dem-item-count').textContent=
+    `${demItems.length} case(s) · ${mines} mine(s)${mines<2?' ⚠️ (besoin de 2 mines)':''}`;
+  document.getElementById('dem-item-count').style.color=mines===2?'var(--neon)':'var(--orange)';
+}
+
+function removeDemItem(i){
+  demItems.splice(i,1);
+  renderDemItems();checkReady();
+}
 ['trappe-q-in','trappe-a0','trappe-a1','trappe-a2'].forEach(id=>{
   document.getElementById(id).addEventListener('input', checkReady);
 });
@@ -1169,7 +1360,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
   const trappeQuestion = currentType==='trappe'?'La Trappe':'';
   const trappeAnswers  = [];
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':rawAnswer;
+  const chaseTheme   = currentType==='chase'?document.getElementById('chase-theme-in').value.trim():'';
+  const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.split('\n').filter(l=>l.trim()):[];
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -1201,7 +1394,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[]};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

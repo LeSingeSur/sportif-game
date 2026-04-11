@@ -216,7 +216,34 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .v-stat-lbl{font-size:11px;color:var(--mute);margin-top:2px}
 .rank-badge{display:inline-flex;align-items:center;gap:6px;background:var(--c2);border-radius:99px;padding:8px 17px;font-size:14px;color:var(--cyan);font-weight:700;margin-bottom:22px;animation:fu .45s .4s both ease}
 .v-btns{display:flex;flex-direction:column;gap:10px;width:100%;animation:fu .45s .5s both ease}
-/* LA TRAPPE */
+/* THE CHASE */
+#chase-zone{display:none;flex-direction:column;gap:14px}
+.chase-track{position:relative;height:56px;background:var(--c2);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.chase-track-inner{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;padding:0 8px}
+.chase-avatar{font-size:26px;position:absolute;top:50%;transform:translateY(-50%);transition:left .35s cubic-bezier(.34,1.4,.64,1)}
+.chase-finish{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:22px}
+.chase-hunter-glow{position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(to right,rgba(255,0,0,.35),transparent);pointer-events:none;transition:opacity .3s}
+@keyframes chase-red-flash{0%{opacity:.5}100%{opacity:0}}
+.chase-score-big{font-family:var(--fh);font-size:56px;text-align:center;line-height:1;transition:color .3s}
+.chase-score-big.danger{color:var(--red);animation:sc-pulse .3s ease}
+@keyframes sc-pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.chase-theme{font-size:15px;font-weight:700;text-align:center;color:var(--txt);padding:12px;background:var(--c1);border-radius:var(--r);line-height:1.4}
+.chase-found{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
+.chase-tag{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);border-radius:99px;padding:4px 10px;font-size:12px;color:#00e676;animation:fu .2s ease}
+.chase-grace{font-family:var(--fh);font-size:13px;text-align:center;color:var(--orange)}
+#demineur-zone{display:none;flex-direction:column;gap:14px}
+.dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.3;min-height:52px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
+.dem-case:active{transform:scale(.96)}
+.dem-case.safe{background:rgba(0,230,118,.15);border-color:#00e676;color:#00e676;cursor:default}
+.dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default}
+.dem-case.locked{opacity:.45;cursor:default;pointer-events:none}
+@keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+.dem-pot{font-family:var(--fh);font-size:48px;text-align:center;color:var(--neon);transition:all .2s;line-height:1}
+.dem-pot.flash{animation:dem-flash .3s ease}
+@keyframes dem-flash{0%{transform:scale(1)}50%{transform:scale(1.15);color:#fff}100%{transform:scale(1)}}
+.dem-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
+@keyframes dem-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 .trappe-bloc{background:var(--c1);border:2px solid rgba(255,255,255,.08);border-radius:var(--r);padding:8px 6px;display:flex;flex-direction:column;gap:8px;transition:border-color .3s,background .3s}
 .trappe-bloc.correct{border-color:#00e676;background:rgba(0,230,118,.1)}
 .trappe-bloc.wrong{border-color:var(--red);background:rgba(255,63,92,.1);animation:trappe-fall .5s ease forwards}
@@ -413,6 +440,47 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="trappe-fb" style="font-size:13px;text-align:center;color:var(--mute);min-height:18px"></div>
   </div>
 
+  <!-- THE CHASE zone -->
+  <div id="chase-zone">
+    <!-- Piste de course -->
+    <div class="chase-track" id="chase-track">
+      <div class="chase-hunter-glow" id="chase-glow"></div>
+      <div class="chase-avatar" id="chase-hunter" style="left:8px">😈</div>
+      <div class="chase-avatar" id="chase-player" style="left:40%">🏃</div>
+      <div class="chase-finish">🏁</div>
+    </div>
+    <!-- Score -->
+    <div class="chase-score-big" id="chase-score">100</div>
+    <!-- Grace period -->
+    <div class="chase-grace" id="chase-grace-msg"></div>
+    <!-- Thème -->
+    <div class="chase-theme" id="chase-theme">…</div>
+    <!-- Réponses trouvées -->
+    <div class="chase-found" id="chase-found"></div>
+    <!-- Input -->
+    <div class="ans-row">
+      <input type="text" class="ans-in" id="chase-in" placeholder="Tapez une réponse…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
+      <button class="chk-btn" id="chase-chk">✓</button>
+    </div>
+    <div class="fb" id="chase-fb"></div>
+    <button id="chase-securiser" class="btn btn-g" disabled style="font-family:var(--fh);font-size:14px;letter-spacing:1px;opacity:.5">🤝 SÉCURISER (−30 pts)</button>
+  </div>
+
+  <!-- LE DÉMINEUR zone -->
+  <div id="demineur-zone">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="dem-timer-txt" style="font-family:var(--fh);font-size:22px;color:var(--neon)">60s</div>
+      <div style="font-size:12px;color:var(--mute)">Pot temporaire</div>
+    </div>
+    <div id="dem-timer-bar" style="height:5px;background:var(--c2);border-radius:99px;overflow:hidden">
+      <div id="dem-timer-fill" style="height:100%;background:var(--neon);width:100%;border-radius:99px;transition:width 1s linear"></div>
+    </div>
+    <div class="dem-pot" id="dem-pot">0</div>
+    <div class="dem-grid" id="dem-grid"></div>
+    <button id="dem-encaisser" class="btn btn-p dem-encaisser" disabled>💰 ENCAISSER — 0 pts</button>
+    <div id="dem-fb" style="font-size:13px;text-align:center;min-height:18px;color:var(--mute)"></div>
+  </div>
+
   <!-- Shared answer (text + image only) -->
   <div class="ans-area" id="std-ans-area">
     <div class="ans-row">
@@ -528,6 +596,8 @@ async function loadAthlete(){
   document.getElementById('sportus-zone').style.display='none';
   document.getElementById('prix-zone').style.display='none';
   document.getElementById('trappe-zone').style.display='none';
+  document.getElementById('demineur-zone').style.display='none';
+  document.getElementById('chase-zone').style.display='none';
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -566,6 +636,12 @@ async function loadAthlete(){
     } else if(data.type==='trappe'){
       document.getElementById('std-ans-area').style.display='none';
       setupTrappeMode(data);
+    } else if(data.type==='demineur'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupDemineurMode(data);
+    } else if(data.type==='chase'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupChaseMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -898,6 +974,352 @@ function showVictoryFromPrix(finalScore, fullAnswer){
   document.querySelector('#v-wrong').nextElementSibling.textContent = '';
   show('sv'); confetti();
   submitScore(Math.floor(finalScore));
+}
+
+// ── THE CHASE MODE ────────────────────────────────────────────────────────
+const CH = {
+  playerPos:0, hunterPos:0, targetToWin:10,
+  score:100, found:[], done:false,
+  gracePeriod:12, hunterSpeed:6,
+  graceTimeout:null, hunterInterval:null
+};
+
+function setupChaseMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='🏃 The Chase'; badge.className='type-badge';
+  badge.style.color='#ff4444';
+  document.getElementById('game-tip').innerHTML='Trouve les bonnes réponses · Avance avant le Chasseur · <em>Ne te fais pas rattraper !</em>';
+  document.getElementById('img-zone').style.display='none';
+  document.getElementById('clue').style.display='none';
+  document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('sportus-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='none';
+  document.getElementById('trappe-zone').style.display='none';
+  document.getElementById('demineur-zone').style.display='none';
+  document.getElementById('chase-zone').style.display='flex';
+
+  CH.targetToWin = 10; // toujours 10 cases
+  CH.playerPos   = data.chasePlayerStart || 3;
+  CH.hunterPos   = 0;
+  CH.score       = 100;
+  CH.found       = [];
+  CH.done        = false;
+  CH.gracePeriod = data.chaseGrace || 12;
+  CH.hunterSpeed = data.chaseSpeed || 6;
+  if(CH.graceTimeout){clearTimeout(CH.graceTimeout);CH.graceTimeout=null;}
+  if(CH.hunterInterval){clearInterval(CH.hunterInterval);CH.hunterInterval=null;}
+
+  G.score=100; G.max=100; setScore(100,false);
+  document.getElementById('chase-theme').textContent = data.chaseTheme || '';
+  document.getElementById('chase-found').innerHTML = '';
+  document.getElementById('chase-fb').textContent = '';
+  document.getElementById('chase-in').value = '';
+  document.getElementById('chase-in').disabled = false;
+  document.getElementById('chase-chk').disabled = false;
+  document.getElementById('chase-securiser').disabled = true;
+  document.getElementById('chase-securiser').style.opacity = '.5';
+  document.getElementById('chase-securiser').onclick = securiserChase;
+  updateChaseTrack();
+  updateChaseScore(100);
+
+  // Grace period
+  const graceEl = document.getElementById('chase-grace-msg');
+  let graceLeft = CH.gracePeriod;
+  graceEl.textContent = `😴 Le Chasseur dort encore… ${graceLeft}s`;
+  const graceInt = setInterval(()=>{
+    graceLeft--;
+    if(graceLeft<=0){
+      clearInterval(graceInt);
+      graceEl.textContent='😈 Le Chasseur est réveillé !';
+      setTimeout(()=>{graceEl.textContent='';},1500);
+      startHunter();
+    } else {
+      graceEl.textContent=`😴 Le Chasseur dort encore… ${graceLeft}s`;
+    }
+  },1000);
+  CH.graceTimeout = graceInt;
+
+  setTimeout(()=>document.getElementById('chase-in').focus(),80);
+}
+
+function startHunter(){
+  if(CH.done) return;
+  CH.hunterInterval = setInterval(()=>{
+    if(CH.done) return;
+    CH.hunterPos++;
+    CH.score = Math.max(0, CH.score - 10);
+    G.score = CH.score;
+    setScore(CH.score, true);
+    updateChaseScore(CH.score);
+    updateChaseTrack();
+    // Red flash + shake
+    chaseFlash();
+    if(CH.score <= 0){
+      finishChase(false);
+    }
+  }, CH.hunterSpeed * 1000);
+}
+
+function updateChaseTrack(){
+  const track = document.getElementById('chase-track');
+  const w = track.offsetWidth || 340;
+  const pad = 36;
+  const usable = w - pad*2;
+  const total = CH.targetToWin + 1;
+  const pPct  = pad + (CH.playerPos / total) * usable;
+  const hPct  = pad + (CH.hunterPos / total) * usable;
+  document.getElementById('chase-player').style.left = Math.min(pPct, w-40)+'px';
+  document.getElementById('chase-hunter').style.left = Math.max(4, hPct-30)+'px';
+  // Glow intensity
+  const gap = CH.playerPos - CH.hunterPos;
+  const glowOpacity = Math.max(0, 1 - gap*0.15);
+  document.getElementById('chase-glow').style.opacity = glowOpacity;
+}
+
+function updateChaseScore(val){
+  const el = document.getElementById('chase-score');
+  el.textContent = val;
+  el.className = 'chase-score-big' + (val<=30?' danger':'');
+}
+
+function chaseFlash(){
+  const zone = document.getElementById('chase-zone');
+  zone.style.animation='dem-shake .3s ease';
+  const flash = document.createElement('div');
+  flash.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,0,0,.18);pointer-events:none;z-index:999;animation:chase-red-flash .4s ease forwards';
+  document.body.appendChild(flash);
+  setTimeout(()=>{flash.remove();zone.style.animation='';},400);
+}
+
+function securiserChase(){
+  if(CH.done) return;
+  const TAXE = 30;
+  const finalScore = Math.max(0, CH.score - TAXE);
+  if(CH.score <= TAXE){
+    const fb=document.getElementById('chase-fb');
+    fb.textContent=`❌ Cagnotte insuffisante ! Il faut plus de ${TAXE} pts pour sécuriser.`;
+    fb.style.color='var(--red)';
+    setTimeout(()=>{fb.textContent='';fb.style.color='';},1500);
+    return;
+  }
+  finishChase('securise', finalScore);
+}
+document.getElementById('chase-in').addEventListener('keydown', e=>{ if(e.key==='Enter') submitChaseAnswer(); });
+
+async function submitChaseAnswer(){
+  if(CH.done) return;
+  const ans = document.getElementById('chase-in').value.trim();
+  if(!ans) return;
+  document.getElementById('chase-in').value = '';
+  try{
+    const res = await fetch('/api/chase-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({athleteId:G.athleteId, answer:ans, found:CH.found})});
+    const data = await res.json();
+    if(data.fullAnswer) G.athleteName = data.fullAnswer;
+    const fb = document.getElementById('chase-fb');
+    if(data.correct){
+      CH.found.push(ans);
+      CH.playerPos = Math.min(CH.playerPos+1, CH.targetToWin+2);
+      // Add tag
+      const tag = document.createElement('div');
+      tag.className='chase-tag'; tag.textContent='✓ '+ans;
+      document.getElementById('chase-found').appendChild(tag);
+      fb.textContent=''; fb.className='fb';
+      // Enable securiser after first correct answer
+      const sec=document.getElementById('chase-securiser');
+      sec.disabled=false; sec.style.opacity='1';
+      updateChaseTrack();
+      // Win?
+      if(CH.playerPos >= CH.targetToWin){
+        finishChase(true);
+      }
+    } else {
+      // Wrong or already found — reculer
+      if(data.reason==='already'){
+        fb.textContent='Déjà trouvé !'; fb.className='fb pen';
+      } else {
+        CH.playerPos = Math.max(0, CH.playerPos-1);
+        fb.textContent='✗ Recul !'; fb.className='fb pen';
+        updateChaseTrack();
+      }
+      setTimeout(()=>{fb.textContent='';fb.className='fb';},1200);
+    }
+  }catch(e){console.error(e);}
+  setTimeout(()=>document.getElementById('chase-in').focus(),50);
+}
+
+function finishChase(outcome, customScore){
+  CH.done=true; G.active=false;
+  if(CH.hunterInterval){clearInterval(CH.hunterInterval);CH.hunterInterval=null;}
+  if(CH.graceTimeout){clearInterval(CH.graceTimeout);CH.graceTimeout=null;}
+  document.getElementById('chase-in').disabled=true;
+  document.getElementById('chase-chk').disabled=true;
+  document.getElementById('chase-securiser').disabled=true;
+  document.getElementById('chase-grace-msg').textContent='';
+  const won      = outcome===true || outcome==='securise';
+  const securise = outcome==='securise';
+  const finalScore = customScore!==undefined ? customScore : (won ? CH.score : 0);
+  G.score = finalScore;
+  setTimeout(()=>{
+    document.getElementById('v-name').textContent   = G.athleteName||'The Chase';
+    document.getElementById('v-sc').textContent     = finalScore;
+    document.getElementById('v-sub').textContent    = securise
+      ? `🤝 Sécurisé ! ${CH.found.length} réponses · −30 pts de taxe`
+      : won
+        ? `🏁 Échappé ! ${CH.found.length} réponses trouvées`
+        : `😈 Rattrapé ! Le Chasseur a tout pris…`;
+    document.getElementById('v-revealed').textContent    = CH.found.length;
+    document.getElementById('v-revealed-lbl').textContent = 'réponses';
+    document.getElementById('v-wrong').textContent        = CH.hunterPos;
+    document.querySelector('#v-wrong').nextElementSibling.textContent = 'pas du chasseur';
+    show('sv'); confetti();
+    submitScore(finalScore);
+  }, won ? 400 : 1000);
+  if(!won){
+    const overlay = document.createElement('div');
+    overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(200,0,0,.35);pointer-events:none;z-index:998;animation:chase-red-flash .8s ease forwards';
+    document.body.appendChild(overlay);
+    setTimeout(()=>overlay.remove(), 800);
+    document.getElementById('chase-zone').style.animation='dem-shake .5s ease';
+    setTimeout(()=>{document.getElementById('chase-zone').style.animation='';},500);
+  }
+}
+
+// ── LE DÉMINEUR MODE ──────────────────────────────────────────────────────
+const D = {
+  items:[], pot:0, score:0, timer:60,
+  timerInterval:null, done:false, minesLeft:0
+};
+
+function setupDemineurMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='💣 Démineur'; badge.className='type-badge';
+  badge.style.color='#ff9800';
+  document.getElementById('game-tip').innerHTML='Clique les bonnes réponses · Évite les mines · <em>ENCAISSER</em> pour sécuriser';
+  document.getElementById('img-zone').style.display='none';
+  document.getElementById('clue').style.display='none';
+  document.getElementById('buzz-zone').style.display='none';
+  document.getElementById('sportus-zone').style.display='none';
+  document.getElementById('prix-zone').style.display='none';
+  document.getElementById('trappe-zone').style.display='none';
+  document.getElementById('demineur-zone').style.display='flex';
+
+  // Shuffle items
+  D.items    = [...(data.demineurItems||[])].map((it,i)=>({...it,_orig:i})).sort(()=>Math.random()-.5);
+  D.pot      = 0;
+  D.score    = 0;
+  D.timer    = data.demineurTimer || 60;
+  D.done     = false;
+  if(D.timerInterval){clearInterval(D.timerInterval);D.timerInterval=null;}
+
+  G.score=0; G.max=100; setScore(0,false);
+
+  buildDemineurGrid();
+  updateDemineurPot(0);
+  document.getElementById('dem-fb').textContent='';
+  document.getElementById('dem-encaisser').disabled=true;
+  document.getElementById('dem-encaisser').onclick=encaisserDemineur;
+  startDemineurTimer();
+}
+
+function buildDemineurGrid(){
+  const grid=document.getElementById('dem-grid');
+  grid.innerHTML='';
+  D.items.forEach((item,i)=>{
+    const c=document.createElement('div');
+    c.className='dem-case';
+    c.textContent=item.text;
+    c.dataset.idx=i;
+    c.onclick=()=>clickDemCase(i);
+    grid.appendChild(c);
+  });
+}
+
+function updateDemineurPot(val){
+  D.pot=val;
+  const el=document.getElementById('dem-pot');
+  el.textContent=val;
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+  const btn=document.getElementById('dem-encaisser');
+  btn.textContent=`💰 ENCAISSER — ${val} pts`;
+  btn.disabled = val<=0 || D.done;
+}
+
+function startDemineurTimer(){
+  let t=D.timer;
+  document.getElementById('dem-timer-txt').textContent=t+'s';
+  document.getElementById('dem-timer-fill').style.transition='none';
+  document.getElementById('dem-timer-fill').style.width='100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.getElementById('dem-timer-fill').style.transition=`width ${t}s linear`;
+    document.getElementById('dem-timer-fill').style.width='0%';
+  }));
+  D.timerInterval=setInterval(()=>{
+    t--;
+    const el=document.getElementById('dem-timer-txt');
+    if(el){el.textContent=t+'s';el.style.color=t<=10?'var(--red)':t<=20?'var(--orange)':'var(--neon)';}
+    if(t<=0){
+      clearInterval(D.timerInterval);D.timerInterval=null;
+      if(!D.done) finishDemineur(D.pot, '⏰ Temps écoulé — pot encaissé automatiquement !');
+    }
+  },1000);
+}
+
+async function clickDemCase(idx){
+  if(D.done) return;
+  const c=document.querySelector(`.dem-case[data-idx="${idx}"]`);
+  if(!c||c.classList.contains('safe')||c.classList.contains('mine')) return;
+
+  try{
+    const res=await fetch('/api/demineur-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:G.athleteId, index: D.items[idx]._orig})});
+    const data=await res.json();
+    if(data.fullAnswer) G.athleteName=data.fullAnswer;
+
+    if(data.isMine){
+      c.classList.add('mine');
+      c.textContent='💥 '+c.textContent;
+      D.done=true;
+      if(D.timerInterval){clearInterval(D.timerInterval);D.timerInterval=null;}
+      // Lock all other cases
+      document.querySelectorAll('.dem-case:not(.safe):not(.mine)').forEach(el=>el.classList.add('locked'));
+      document.getElementById('dem-encaisser').disabled=true;
+      // Screen shake
+      document.getElementById('sg').style.animation='dem-shake .4s ease';
+      setTimeout(()=>{document.getElementById('sg').style.animation='';},400);
+      document.getElementById('dem-fb').textContent='💥 MINE ! Pot perdu…';
+      document.getElementById('dem-fb').style.color='var(--red)';
+      setTimeout(()=>finishDemineur(0, '💥 Mine ! Pot temporaire perdu…'), 1200);
+    } else {
+      c.classList.add('safe');
+      updateDemineurPot(D.pot+10);
+      G.score=D.pot; setScore(D.pot,true);
+      document.getElementById('dem-fb').textContent='';
+    }
+  }catch(e){console.error(e);}
+}
+
+function encaisserDemineur(){
+  if(D.done||D.pot<=0) return;
+  D.done=true;
+  if(D.timerInterval){clearInterval(D.timerInterval);D.timerInterval=null;}
+  finishDemineur(D.pot, `💰 Encaissé ! ${D.pot} pts sécurisés.`);
+}
+
+function finishDemineur(finalScore, msg){
+  D.done=true; G.active=false;
+  G.score=finalScore;
+  document.getElementById('v-name').textContent   = G.athleteName||'???';
+  document.getElementById('v-sc').textContent     = finalScore;
+  document.getElementById('v-sub').textContent    = msg;
+  document.getElementById('v-revealed').textContent    = document.querySelectorAll('.dem-case.safe').length;
+  document.getElementById('v-revealed-lbl').textContent = 'bonnes réponses';
+  document.getElementById('v-wrong').textContent        = document.querySelectorAll('.dem-case.mine').length;
+  document.querySelector('#v-wrong').nextElementSibling.textContent = 'mine(s) touchée(s)';
+  show('sv'); confetti();
+  submitScore(finalScore);
 }
 
 // ── LA TRAPPE MODE ────────────────────────────────────────────────────────
