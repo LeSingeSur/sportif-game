@@ -391,9 +391,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div class="field">
           <label>Cases de la grille (12 cases, 2 mines)</label>
-          <span class="hint">Ajoute jusqu'à 12 cases. Coche 💣 pour marquer une mine.</span>
-          <div id="dem-items-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
-          <button class="btn btn-s" id="btn-add-dem-item" style="margin-top:8px">➕ Ajouter une case</button>
+          <span class="hint">Colle jusqu'à 12 noms d'un coup (une par ligne) ou ajoute-les un par un. Coche 💣 pour marquer une mine.</span>
+          <textarea id="dem-bulk-in" placeholder="Ex: Messi;Ronaldo;Mbappé;Benzema… (séparés par ; ou une par ligne)" style="min-height:80px;margin-top:6px"></textarea>
+          <button class="btn btn-s" id="btn-dem-bulk" style="margin-top:6px">📋 Importer ces noms</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <div id="dem-items-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-dem-item" style="margin-top:8px">➕ Ajouter une case manuellement</button>
           <div style="font-size:12px;color:var(--mute);margin-top:4px" id="dem-item-count">0 case(s) · 0 mine(s)</div>
         </div>
       </div>
@@ -406,8 +409,9 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <span class="hint">Affiché en grand pendant le jeu.</span>
         </div>
         <div class="field">
-          <label>Réponses acceptées (une par ligne)</label>
-          <textarea id="chase-answers-in" placeholder="Zidane&#10;Henry&#10;Thuram&#10;Vieira&#10;…" style="min-height:120px"></textarea>
+          <label>Réponses acceptées</label>
+          <textarea id="chase-answers-in" placeholder="Une par ligne ou séparées par ; &#10;Ex: Zidane;Henry;Thuram&#10;ou&#10;Zidane&#10;Henry" style="min-height:100px"></textarea>
+          <span class="hint">Accepte le format colonne (une par ligne) ou séparé par point-virgule.</span>
           <div style="font-size:11px;color:var(--mute);margin-top:4px" id="chase-answers-count">0 réponse(s)</div>
         </div>
         <div class="field">
@@ -827,7 +831,7 @@ function checkReady(){
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
   else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
   else if(currentType==='demineur') hasContent=demItems.length>=3&&demItems.filter(i=>i.isMine).length===2&&demItems.every(i=>i.text.trim());
-  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.split('\n').filter(l=>l.trim()).length>=2;
+  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()).length>=2;
   else hasContent=!!document.getElementById('clue-in').value.trim();
   document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
@@ -1011,7 +1015,7 @@ function buildChaseGrid(containerId, options, currentVal, setter){
 })();
 
 document.getElementById('chase-answers-in').addEventListener('input',e=>{
-  const lines=e.target.value.split('\n').filter(l=>l.trim());
+  const lines=e.target.value.replace(/;/g,'\n').split('\n').filter(l=>l.trim());
   document.getElementById('chase-answers-count').textContent=lines.length+' réponse(s)';
   checkReady();
 });
@@ -1044,6 +1048,18 @@ function selectDemTimer(val){
     btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
   });
 }
+
+document.getElementById('btn-dem-bulk').onclick=()=>{
+  const lines=document.getElementById('dem-bulk-in').value.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return;
+  const slots = 12 - demItems.length;
+  if(slots<=0){alert('Grille pleine (12 cases max) !');return;}
+  const toAdd = lines.slice(0, slots);
+  toAdd.forEach(text=>demItems.push({text, isMine:false}));
+  document.getElementById('dem-bulk-in').value='';
+  renderDemItems();
+  checkReady();
+};
 
 document.getElementById('btn-add-dem-item').onclick=()=>{
   if(demItems.length>=12){alert('Maximum 12 cases !');return;}
@@ -1361,7 +1377,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const trappeQuestion = currentType==='trappe'?'La Trappe':'';
   const trappeAnswers  = [];
   const chaseTheme   = currentType==='chase'?document.getElementById('chase-theme-in').value.trim():'';
-  const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.split('\n').filter(l=>l.trim()):[];
+  const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
