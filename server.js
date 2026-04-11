@@ -419,7 +419,7 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'trappe' && (!req.body.trappeQuestions || !req.body.trappeQuestions.length)) return res.status(400).json({ error: 'Au moins une question obligatoire' });
   if (type === 'demineur' && (!req.body.demineurItems || req.body.demineurItems.length < 3)) return res.status(400).json({ error: 'Au moins 3 items obligatoires' });
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const parts         = answer.trim().split(/\s+/);
   const autoAliases   = [answer.trim().toLowerCase()]; // nom complet
