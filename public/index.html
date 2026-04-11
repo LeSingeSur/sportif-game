@@ -1104,7 +1104,9 @@ function securiserChase(){
   }
   finishChase('securise', finalScore);
 }
+document.getElementById('chase-chk').onclick = submitChaseAnswer;
 document.getElementById('chase-in').addEventListener('keydown', e=>{ if(e.key==='Enter') submitChaseAnswer(); });
+document.getElementById('chase-in').addEventListener('keyup', e=>{ if(e.key==='Enter' || e.keyCode===13) submitChaseAnswer(); });
 
 async function submitChaseAnswer(){
   if(CH.done) return;
