@@ -998,10 +998,9 @@ function setupChaseMode(data){
   document.getElementById('demineur-zone').style.display='none';
   document.getElementById('chase-zone').style.display='flex';
 
-  CH.targetToWin = 10; // toujours 10 cases
+  CH.targetToWin = 10;
   CH.playerPos   = data.chasePlayerStart || 3;
   CH.hunterPos   = 0;
-  CH.score       = 100;
   CH.found       = [];
   CH.done        = false;
   CH.gracePeriod = data.chaseGrace || 12;
@@ -1009,7 +1008,8 @@ function setupChaseMode(data){
   if(CH.graceTimeout){clearTimeout(CH.graceTimeout);CH.graceTimeout=null;}
   if(CH.hunterInterval){clearInterval(CH.hunterInterval);CH.hunterInterval=null;}
 
-  G.score=100; G.max=100; setScore(100,false);
+  CH.score = calcChaseScore();
+  G.score=CH.score; G.max=100; setScore(CH.score,false);
   document.getElementById('chase-theme').textContent = data.chaseTheme || '';
   document.getElementById('chase-found').innerHTML = '';
   document.getElementById('chase-fb').textContent = '';
@@ -1020,7 +1020,7 @@ function setupChaseMode(data){
   document.getElementById('chase-securiser').style.opacity = '.5';
   document.getElementById('chase-securiser').onclick = securiserChase;
   updateChaseTrack();
-  updateChaseScore(100);
+  updateChaseScore(CH.score);
 
   // Grace period
   const graceEl = document.getElementById('chase-grace-msg');
@@ -1042,18 +1042,21 @@ function setupChaseMode(data){
   setTimeout(()=>document.getElementById('chase-in').focus(),80);
 }
 
+function calcChaseScore(){
+  return Math.max(0, Math.min(100, (CH.playerPos - CH.hunterPos) * 10));
+}
+
 function startHunter(){
   if(CH.done) return;
   CH.hunterInterval = setInterval(()=>{
     if(CH.done) return;
     CH.hunterPos++;
-    CH.score = Math.max(0, CH.score - 10);
+    CH.score = calcChaseScore();
     G.score = CH.score;
     setScore(CH.score, true);
     updateChaseScore(CH.score);
     updateChaseTrack();
     chaseFlash();
-    // Game over si score 0 OU chasseur rattrape le joueur
     if(CH.score <= 0 || CH.hunterPos >= CH.playerPos){
       finishChase(false);
     }
@@ -1094,8 +1097,9 @@ function chaseFlash(){
 function securiserChase(){
   if(CH.done) return;
   const TAXE = 30;
-  const finalScore = Math.max(0, CH.score - TAXE);
-  if(CH.score <= TAXE){
+  const currentScore = calcChaseScore();
+  const finalScore = Math.max(0, currentScore - TAXE);
+  if(currentScore <= TAXE){
     const fb=document.getElementById('chase-fb');
     fb.textContent=`❌ Cagnotte insuffisante ! Il faut plus de ${TAXE} pts pour sécuriser.`;
     fb.style.color='var(--red)';
@@ -1122,6 +1126,10 @@ async function submitChaseAnswer(){
     if(data.correct){
       CH.found.push(ans);
       CH.playerPos = Math.min(CH.playerPos+1, CH.targetToWin+2);
+      CH.score = calcChaseScore();
+      G.score = CH.score;
+      setScore(CH.score, true);
+      updateChaseScore(CH.score);
       // Add tag
       const tag = document.createElement('div');
       tag.className='chase-tag'; tag.textContent='✓ '+ans;
@@ -1142,6 +1150,10 @@ async function submitChaseAnswer(){
         fb.textContent='Déjà trouvé !'; fb.className='fb pen';
       } else {
         CH.playerPos = Math.max(0, CH.playerPos-1);
+        CH.score = calcChaseScore();
+        G.score = CH.score;
+        setScore(CH.score, true);
+        updateChaseScore(CH.score);
         fb.textContent='✗ Recul !'; fb.className='fb pen';
         updateChaseTrack();
       }
