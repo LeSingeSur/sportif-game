@@ -421,16 +421,17 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
-  const parts         = answer.trim().split(/\s+/);
-  const autoAliases   = [answer.trim().toLowerCase()]; // nom complet
-  if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase()); // nom de famille seulement
+  const safeAnswer     = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':'???');
+  const parts         = safeAnswer.split(/\s+/);
+  const autoAliases   = [safeAnswer.toLowerCase()];
+  if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
   const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
   const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10));
 
   const athleteData = {
-    answer:   answer.trim(),
+    answer:   safeAnswer,
     aliases:  allAliases,
     emoji:    emoji || '🏆',
     type:     type || 'text',
