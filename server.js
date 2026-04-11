@@ -5,7 +5,13 @@ const fetch    = require('node-fetch');
 const app      = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sportif2024';
 const DATA_FILE      = path.join(__dirname, 'data.json');
