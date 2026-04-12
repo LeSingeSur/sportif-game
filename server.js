@@ -112,6 +112,7 @@ app.get('/api/preview', (req, res) => {
     base.chasePlayerStart   = athlete.chasePlayerStart || 3;
     base.chaseGrace         = athlete.chaseGrace || 12;
     base.chaseSpeed         = athlete.chaseSpeed || 6;
+    base.chaseMalus         = athlete.chaseMalus || 30;
     base.maxScore           = 100;
   } else {
     base.clue = athlete.clue;
@@ -218,6 +219,7 @@ app.get('/api/athlete', (req, res) => {
     base.chasePlayerStart = athlete.chasePlayerStart || 3;
     base.chaseGrace       = athlete.chaseGrace || 12;
     base.chaseSpeed       = athlete.chaseSpeed || 6;
+    base.chaseMalus       = athlete.chaseMalus || 30;
     base.maxScore         = 100;
   } else {
     base.clue      = athlete.clue;
@@ -486,6 +488,7 @@ app.post('/api/admin/athlete', (req, res) => {
     chasePlayerStart: type === 'chase' ? (parseInt(req.body.chasePlayerStart)||3) : undefined,
     chaseGrace:       type === 'chase' ? (parseInt(req.body.chaseGrace)||12) : undefined,
     chaseSpeed:       type === 'chase' ? (parseInt(req.body.chaseSpeed)||6) : undefined,
+    chaseMalus:       type === 'chase' ? (parseInt(req.body.chaseMalus)||30) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
