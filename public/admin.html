@@ -429,6 +429,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-grace-grid"></div>
         </div>
         <div class="field">
+          <label>🤝 Malus Sécuriser (pts déduits)</label>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px" id="chase-malus-grid"></div>
+          <span class="hint">Points déduits quand le joueur clique Sécuriser.</span>
+        </div>
+        <div class="field">
           <label>😈 Vitesse du Chasseur (secondes entre chaque pas)</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-speed-grid"></div>
         </div>
@@ -708,7 +713,7 @@ async function startEdit(id){
     document.getElementById('chase-answers-count').textContent=(a.chaseAnswers||[]).length+' réponse(s)';
     buildChaseGrid('chase-start-grid',[{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],a.chasePlayerStart||3,v=>{chasePlayerStart=v;});
     buildChaseGrid('chase-grace-grid',[{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],a.chaseGrace||12,v=>{chaseGrace=v;});
-    buildChaseGrid('chase-speed-grid',[{val:4,label:'4s'},{val:5,label:'5s'},{val:6,label:'6s'},{val:8,label:'8s'}],a.chaseSpeed||6,v=>{chaseSpeed=v;});
+    buildChaseGrid('chase-malus-grid',[{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],a.chaseMalus||30,v=>{chaseMalus=v;});
     checkReady();
   } else {
     document.getElementById('clue-in').value=a.clue||'';
@@ -992,7 +997,7 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── THE CHASE ──────────────────────────────────────────────────────────────
-let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6;
+let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6, chaseMalus=30;
 
 function buildChaseGrid(containerId, options, currentVal, setter){
   const g=document.getElementById(containerId);
@@ -1019,6 +1024,7 @@ function buildChaseGrid(containerId, options, currentVal, setter){
   buildChaseGrid('chase-start-grid', [{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],3,v=>{chasePlayerStart=v;});
   buildChaseGrid('chase-grace-grid', [{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],12,v=>{chaseGrace=v;});
   buildChaseGrid('chase-speed-grid', [{val:4,label:'4s'},{val:5,label:'5s'},{val:6,label:'6s'},{val:8,label:'8s'}],6,v=>{chaseSpeed=v;});
+  buildChaseGrid('chase-malus-grid', [{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],30,v=>{chaseMalus=v;});
 })();
 
 document.getElementById('chase-answers-in').addEventListener('input',e=>{
@@ -1419,7 +1425,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

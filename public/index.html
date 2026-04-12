@@ -999,7 +999,7 @@ function showVictoryFromPrix(finalScore, fullAnswer){
 const CH = {
   playerPos:0, hunterPos:0, targetToWin:10,
   score:100, found:[], done:false,
-  gracePeriod:12, hunterSpeed:6,
+  gracePeriod:12, hunterSpeed:6, malus:30,
   graceTimeout:null, hunterInterval:null
 };
 
@@ -1024,6 +1024,7 @@ function setupChaseMode(data){
   CH.done        = false;
   CH.gracePeriod = data.chaseGrace || 12;
   CH.hunterSpeed = data.chaseSpeed || 6;
+  CH.malus       = data.chaseMalus || 30;
   if(CH.graceTimeout){clearTimeout(CH.graceTimeout);CH.graceTimeout=null;}
   if(CH.hunterInterval){clearInterval(CH.hunterInterval);CH.hunterInterval=null;}
 
@@ -1036,7 +1037,8 @@ function setupChaseMode(data){
   document.getElementById('chase-in').disabled = true;
   document.getElementById('chase-chk').disabled = true;
   document.getElementById('chase-securiser').disabled = true;
-  document.getElementById('chase-securiser').style.opacity = '.5';
+  document.getElementById('chase-securiser').style.cssText='font-family:var(--fh);font-size:16px;letter-spacing:2px;background:rgba(255,200,0,.08);border:2px solid rgba(255,200,0,.2);color:rgba(255,200,0,.4);opacity:1;transition:all .3s';
+  document.getElementById('chase-securiser').textContent=`🤝 SÉCURISER (−${CH.malus} pts)`;
   document.getElementById('chase-securiser').onclick = securiserChase;
   updateChaseTrack();
   updateChaseScore(CH.score);
@@ -1124,7 +1126,7 @@ function chaseFlash(){
 
 function securiserChase(){
   if(CH.done) return;
-  const TAXE = 30;
+  const TAXE = CH.malus;
   const currentScore = calcChaseScore();
   const finalScore = Math.max(0, currentScore - TAXE);
   if(currentScore <= TAXE){
@@ -1163,10 +1165,11 @@ async function submitChaseAnswer(){
       tag.className='chase-tag'; tag.textContent='✓ '+ans;
       document.getElementById('chase-found').appendChild(tag);
       fb.textContent=''; fb.className='fb';
-      // Enable securiser with glow
+      // Enable securiser with glow + pulse
       const sec=document.getElementById('chase-securiser');
       sec.disabled=false;
-      sec.style.cssText='font-family:var(--fh);font-size:16px;letter-spacing:2px;background:rgba(255,200,0,.15);border:2px solid #ffc800;color:#ffc800;animation:securiser-pulse 1.5s infinite;box-shadow:0 0 16px rgba(255,200,0,.4)';
+      sec.textContent=`🤝 SÉCURISER (−${CH.malus} pts)`;
+      sec.style.cssText=`font-family:var(--fh);font-size:16px;letter-spacing:2px;background:rgba(255,200,0,.15);border:2px solid #ffc800;color:#ffc800;animation:securiser-pulse 1.2s infinite;box-shadow:0 0 16px rgba(255,200,0,.4)`;
       updateChaseTrack();
       // Win?
       if(CH.playerPos >= CH.targetToWin){
@@ -1350,6 +1353,19 @@ async function clickDemCase(idx){
       updateDemineurPot(D.pot+10);
       G.score=D.pot; setScore(D.pot,true);
       document.getElementById('dem-fb').textContent='';
+      // Check if all safe cases found (only mines left)
+      const totalCases = D.items.length;
+      const mines = D.items.filter(it=>it.isMine!==false).length; // approximation
+      const safesFound = document.querySelectorAll('.dem-case.safe').length;
+      const remaining = document.querySelectorAll('.dem-case:not(.safe):not(.mine):not(.locked)').length;
+      if(remaining === 0 || safesFound >= totalCases - 2){
+        // All safe found — pulse encaisser
+        const btn=document.getElementById('dem-encaisser');
+        btn.style.animation='securiser-pulse 0.8s infinite';
+        btn.style.boxShadow='0 0 24px rgba(212,255,0,.8)';
+        document.getElementById('dem-fb').textContent='🎉 Toutes les bonnes réponses trouvées ! Encaisse !';
+        document.getElementById('dem-fb').style.color='var(--neon)';
+      }
     }
   }catch(e){console.error(e);}
 }
