@@ -102,8 +102,10 @@ app.get('/api/preview', (req, res) => {
     base.trappeTimer = athlete.trappeTimer || 30; base.maxScore = 100;
     base.themeName = athlete.answer || 'La Trappe';
   } else if (athlete.type === 'demineur') {
-    base.demineurItems = (athlete.demineurItems || []).map(it => ({ text: it.text }));
-    base.demineurTimer = athlete.demineurTimer || 60; base.maxScore = 100;
+    base.demineurItems    = (athlete.demineurItems || []).map(it => ({ text: it.text }));
+    base.demineurTimer    = athlete.demineurTimer || 60;
+    base.demineurQuestion = athlete.demineurQuestion || '';
+    base.maxScore = 100;
   } else if (athlete.type === 'chase') {
     base.chaseTheme         = athlete.chaseTheme || '';
     base.chaseTargetToWin   = athlete.chaseTargetToWin || 10;
@@ -206,9 +208,10 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore       = 100;
     base.themeName      = athlete.answer || 'La Trappe';
   } else if (athlete.type === 'demineur') {
-    base.demineurItems = (athlete.demineurItems || []).map(it => ({ text: it.text }));
-    base.demineurTimer = athlete.demineurTimer || 60;
-    base.maxScore      = 100;
+    base.demineurItems    = (athlete.demineurItems || []).map(it => ({ text: it.text }));
+    base.demineurTimer    = athlete.demineurTimer || 60;
+    base.demineurQuestion = athlete.demineurQuestion || '';
+    base.maxScore         = 100;
   } else if (athlete.type === 'chase') {
     base.chaseTheme       = athlete.chaseTheme || '';
     base.chaseTargetToWin = athlete.chaseTargetToWin || 10;
@@ -474,8 +477,9 @@ app.post('/api/admin/athlete', (req, res) => {
     trappeCorrect:  type === 'trappe' ? 0 : undefined,
     trappeTimer:    type === 'trappe' ? (parseInt(req.body.trappeTimer) || 30) : undefined,
     trappeQuestions:type === 'trappe' ? (req.body.trappeQuestions || []) : undefined,
-    demineurItems:  type === 'demineur' ? (req.body.demineurItems || []) : undefined,
-    demineurTimer:  type === 'demineur' ? (parseInt(req.body.demineurTimer) || 60) : undefined,
+    demineurItems:    type === 'demineur' ? (req.body.demineurItems || []) : undefined,
+    demineurTimer:    type === 'demineur' ? (parseInt(req.body.demineurTimer) || 60) : undefined,
+    demineurQuestion: type === 'demineur' ? (req.body.demineurQuestion||'').trim() : undefined,
     chaseTheme:       type === 'chase' ? (req.body.chaseTheme||'').trim() : undefined,
     chaseAnswers:     type === 'chase' ? (req.body.chaseAnswers||[]).map(s=>s.trim()).filter(Boolean) : undefined,
     chaseTargetToWin: type === 'chase' ? (parseInt(req.body.chaseTargetToWin)||10) : undefined,
