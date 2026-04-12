@@ -503,8 +503,8 @@ app.post('/api/admin/athlete', (req, res) => {
   athletes.push({ id: newId, ...athleteData, createdAt: new Date().toISOString() });
   scores[newId] = [];
   saveData();
-  console.log(`✅ Ajouté (${athleteData.type}): ${answer.trim()}`);
-  res.json({ success: true, edited: false, id: newId, answer: answer.trim(), total: athletes.length });
+  console.log(`✅ Ajouté (${athleteData.type}): ${safeAnswer}`);
+  res.json({ success: true, edited: false, id: newId, answer: safeAnswer, total: athletes.length });
 });
 
 app.delete('/api/admin/athlete/:id', (req, res) => {
