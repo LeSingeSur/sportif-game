@@ -440,6 +440,24 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="trappe-fb" style="font-size:13px;text-align:center;color:var(--mute);min-height:18px"></div>
   </div>
 
+  <!-- CHASE RULES MODAL -->
+  <div id="chase-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:16px;padding:24px;max-width:400px;width:100%;border:1px solid rgba(255,255,255,.1)">
+      <div style="font-size:32px;text-align:center;margin-bottom:8px">🏃😈</div>
+      <div style="font-family:var(--fh);font-size:20px;text-align:center;color:var(--neon);letter-spacing:2px;margin-bottom:16px">THE CHASE</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
+        <div>🎯 <strong>But :</strong> Cite des réponses sur le thème pour avancer jusqu'à la case 10 avant de te faire rattraper.</div>
+        <div>✅ <strong>Bonne réponse</strong> → ton personnage 🏃 avance d'1 case</div>
+        <div>❌ <strong>Mauvaise réponse</strong> → ton personnage recule d'1 case</div>
+        <div>😈 <strong>Le Chasseur</strong> dort au départ puis avance automatiquement. Chaque pas lui dévore 10 pts de ton score.</div>
+        <div>📊 <strong>Score</strong> = (ta position − position chasseur) × 10</div>
+        <div>🤝 <strong>Sécuriser</strong> = encaisser maintenant avec −30 pts de taxe</div>
+        <div>🏁 <strong>Victoire</strong> = atteindre la case 10 · <strong>😈 Défaite</strong> = rattrapé ou score 0</div>
+      </div>
+      <button id="chase-rules-ok" class="btn btn-p" style="margin-top:20px;width:100%;font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
+    </div>
+  </div>
+
   <!-- THE CHASE zone -->
   <div id="chase-zone">
     <!-- Piste de course -->
@@ -468,6 +486,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LE DÉMINEUR zone -->
   <div id="demineur-zone">
+    <div id="dem-question" style="font-size:14px;font-weight:700;text-align:center;padding:10px 12px;background:var(--c1);border-radius:var(--r);color:var(--txt);line-height:1.4;display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div id="dem-timer-txt" style="font-family:var(--fh);font-size:22px;color:var(--neon)">60s</div>
       <div style="font-size:12px;color:var(--mute)">Pot temporaire</div>
@@ -1014,30 +1033,39 @@ function setupChaseMode(data){
   document.getElementById('chase-found').innerHTML = '';
   document.getElementById('chase-fb').textContent = '';
   document.getElementById('chase-in').value = '';
-  document.getElementById('chase-in').disabled = false;
-  document.getElementById('chase-chk').disabled = false;
+  document.getElementById('chase-in').disabled = true;
+  document.getElementById('chase-chk').disabled = true;
   document.getElementById('chase-securiser').disabled = true;
   document.getElementById('chase-securiser').style.opacity = '.5';
   document.getElementById('chase-securiser').onclick = securiserChase;
   updateChaseTrack();
   updateChaseScore(CH.score);
 
-  // Grace period
-  const graceEl = document.getElementById('chase-grace-msg');
-  let graceLeft = CH.gracePeriod;
-  graceEl.textContent = `😴 Le Chasseur dort encore… ${graceLeft}s`;
-  const graceInt = setInterval(()=>{
-    graceLeft--;
-    if(graceLeft<=0){
-      clearInterval(graceInt);
-      graceEl.textContent='😈 Le Chasseur est réveillé !';
-      setTimeout(()=>{graceEl.textContent='';},1500);
-      startHunter();
-    } else {
-      graceEl.textContent=`😴 Le Chasseur dort encore… ${graceLeft}s`;
-    }
-  },1000);
-  CH.graceTimeout = graceInt;
+  // Show rules modal first
+  const modal = document.getElementById('chase-rules-modal');
+  modal.style.display = 'flex';
+  document.getElementById('chase-rules-ok').onclick = ()=>{
+    modal.style.display = 'none';
+    document.getElementById('chase-in').disabled = false;
+    document.getElementById('chase-chk').disabled = false;
+    setTimeout(()=>document.getElementById('chase-in').focus(),80);
+    // Grace period starts on OK
+    const graceEl = document.getElementById('chase-grace-msg');
+    let graceLeft = CH.gracePeriod;
+    graceEl.textContent = `😴 Le Chasseur dort encore… ${graceLeft}s`;
+    const graceInt = setInterval(()=>{
+      graceLeft--;
+      if(graceLeft<=0){
+        clearInterval(graceInt);
+        graceEl.textContent='😈 Le Chasseur est réveillé !';
+        setTimeout(()=>{graceEl.textContent='';},1500);
+        startHunter();
+      } else {
+        graceEl.textContent=`😴 Le Chasseur dort encore… ${graceLeft}s`;
+      }
+    },1000);
+    CH.graceTimeout = graceInt;
+  };
 
   setTimeout(()=>document.getElementById('chase-in').focus(),80);
 }
@@ -1165,6 +1193,7 @@ async function submitChaseAnswer(){
 
 function finishChase(outcome, customScore){
   CH.done=true; G.active=false;
+  document.getElementById('chase-rules-modal').style.display='none';
   if(CH.hunterInterval){clearInterval(CH.hunterInterval);CH.hunterInterval=null;}
   if(CH.graceTimeout){clearInterval(CH.graceTimeout);CH.graceTimeout=null;}
   document.getElementById('chase-in').disabled=true;
@@ -1228,6 +1257,15 @@ function setupDemineurMode(data){
   if(D.timerInterval){clearInterval(D.timerInterval);D.timerInterval=null;}
 
   G.score=0; G.max=100; setScore(0,false);
+
+  // Show question if set
+  const qEl=document.getElementById('dem-question');
+  if(data.demineurQuestion){
+    qEl.textContent=data.demineurQuestion;
+    qEl.style.display='block';
+  } else {
+    qEl.style.display='none';
+  }
 
   buildDemineurGrid();
   updateDemineurPot(0);

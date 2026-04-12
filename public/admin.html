@@ -386,6 +386,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- DÉMINEUR fields -->
       <div id="demineur-fields" style="display:none">
         <div class="field">
+          <label>Question / Thème</label>
+          <input type="text" id="dem-question-in" placeholder="Ex: Quels pays ont gagné la Coupe du Monde ?">
+          <span class="hint">Affichée au joueur pendant la partie.</span>
+        </div>
+        <div class="field">
           <label>⏱ Chronomètre</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="dem-timer-grid"></div>
         </div>
@@ -692,6 +697,7 @@ async function startEdit(id){
     renderTrappeQuestions();
     checkReady();
   } else if(a.type==='demineur'){
+    document.getElementById('dem-question-in').value=a.demineurQuestion||'';
     demItems = a.demineurItems ? a.demineurItems.map(it=>({text:it.text,isMine:!!it.isMine})) : [];
     selectDemTimer(a.demineurTimer||60);
     renderDemItems();
@@ -753,6 +759,7 @@ function cancelEdit(){
   demItems=[];
   renderDemItems();
   selectDemTimer(60);
+  document.getElementById('dem-question-in').value='';
   document.getElementById('chase-theme-in').value='';
   document.getElementById('chase-answers-in').value='';
   document.getElementById('chase-answers-count').textContent='0 réponse(s)';
@@ -1374,7 +1381,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
-  const trappeQuestion = currentType==='trappe'?'La Trappe':'';
+  const demineurQuestion = currentType==='demineur'?document.getElementById('dem-question-in').value.trim():'';
   const trappeAnswers  = [];
   const chaseTheme   = currentType==='chase'?document.getElementById('chase-theme-in').value.trim():'';
   const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
@@ -1410,7 +1417,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
