@@ -108,12 +108,22 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'chase') {
     base.chaseTheme         = athlete.chaseTheme || '';
-    base.chaseTargetToWin   = athlete.chaseTargetToWin || 8;
+    base.chaseTargetToWin   = athlete.chaseTargetToWin || 10;
     base.chasePlayerStart   = athlete.chasePlayerStart || 3;
     base.chaseGrace         = athlete.chaseGrace || 15;
     base.chaseSpeed         = athlete.chaseSpeed || 10;
     base.chaseMalus         = athlete.chaseMalus || 30;
     base.maxScore           = 100;
+  } else if (athlete.type === 'scout') {
+    base.scoutIndices = (athlete.scoutIndices || []).map(i => ({ cost: i.cost, text: i.text, label: i.label }));
+    base.maxScore = 100;
+  } else if (athlete.type === 'replique') {
+    base.repliqueAmorce  = athlete.repliqueAmorce || '';
+    base.repliqueChoices = athlete.repliqueChoices || [];
+    base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
+    base.repliqueCitation = athlete.repliqueCitation || '';
+    base.maxScore = 100;
   } else {
     base.clue = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -221,6 +231,16 @@ app.get('/api/athlete', (req, res) => {
     base.chaseSpeed       = athlete.chaseSpeed || 10;
     base.chaseMalus       = athlete.chaseMalus || 30;
     base.maxScore         = 100;
+  } else if (athlete.type === 'scout') {
+    base.scoutIndices = (athlete.scoutIndices || []).map(i => ({ cost: i.cost, text: i.text, label: i.label }));
+    base.maxScore = 100;
+  } else if (athlete.type === 'replique') {
+    base.repliqueAmorce  = athlete.repliqueAmorce || '';
+    base.repliqueChoices = athlete.repliqueChoices || [];
+    base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
+    base.repliqueCitation = athlete.repliqueCitation || '';
+    base.maxScore = 100;
   } else {
     base.clue      = athlete.clue;
     base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
@@ -433,7 +453,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -441,7 +461,9 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'trappe' && (!req.body.trappeQuestions || !req.body.trappeQuestions.length)) return res.status(400).json({ error: 'Au moins une question obligatoire' });
   if (type === 'demineur' && (!req.body.demineurItems || req.body.demineurItems.length < 3)) return res.status(400).json({ error: 'Au moins 3 items obligatoires' });
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'scout' && (!req.body.scoutIndices || !req.body.scoutIndices.some(i=>i.text))) return res.status(400).json({ error: 'Au moins un indice obligatoire' });
+  if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAnswer)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   const safeAnswer     = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':'???');
   const parts         = safeAnswer.split(/\s+/);
@@ -489,6 +511,14 @@ app.post('/api/admin/athlete', (req, res) => {
     chaseGrace:       type === 'chase' ? (parseInt(req.body.chaseGrace)||15) : undefined,
     chaseSpeed:       type === 'chase' ? (parseInt(req.body.chaseSpeed)||10) : undefined,
     chaseMalus:       type === 'chase' ? (parseInt(req.body.chaseMalus)||30) : undefined,
+    // Scout
+    scoutIndices:     type === 'scout' ? (req.body.scoutIndices||[]) : undefined,
+    // Réplique Culte
+    repliqueCitation: type === 'replique' ? (req.body.repliqueCitation||'').trim() : undefined,
+    repliqueAmorce:   type === 'replique' ? (req.body.repliqueAmorce||'').trim() : undefined,
+    repliqueAnswer:   type === 'replique' ? (req.body.repliqueAnswer||'').trim() : undefined,
+    repliqueChoices:  type === 'replique' ? (req.body.repliqueChoices||[]) : undefined,
+    repliqueAuthorChoices: type === 'replique' ? (req.body.repliqueAuthorChoices||[]) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
