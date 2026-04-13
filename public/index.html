@@ -11,7 +11,7 @@
 html{height:100%;background:#07070f}
 :root{--bg:#07070f;--c1:#111120;--c2:#191928;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--orange:#ff8c00;--txt:#ededf8;--mute:#52526e;--r:14px;--fh:'Bebas Neue',sans-serif;--fb:'Nunito',sans-serif}
 body{font-family:var(--fb);color:var(--txt);min-height:100%;background:var(--bg);background-image:radial-gradient(ellipse 70% 40% at 10% 2%,rgba(212,255,0,.07) 0%,transparent 55%),radial-gradient(ellipse 50% 35% at 90% 98%,rgba(0,229,200,.05) 0%,transparent 55%);display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased}
-.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;padding:28px 18px 52px}
+.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;max-height:100dvh;padding:28px 18px 52px;overflow:hidden}
 .scr.on{display:flex}
 .logo{font-family:var(--fh);font-size:clamp(60px,20vw,92px);line-height:.88;letter-spacing:3px;text-align:center;color:var(--neon);text-shadow:0 0 40px rgba(212,255,0,.5),0 0 90px rgba(212,255,0,.15);margin-bottom:3px}
 .logo-sub{text-align:center;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--mute);margin-bottom:34px}
@@ -116,12 +116,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .buzz-freeze-msg{text-align:center;font-size:13px;color:var(--orange);font-weight:800;min-height:20px}
 
 /* ── SPORTUS (MOTUS) MODE ─────────────────────────────────────────────── */
-#sportus-zone{display:none;flex-direction:column;gap:14px}
-.sportus-clue-box{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--mute);line-height:1.6;text-align:center}
+#sportus-zone{display:none;flex-direction:column;gap:10px}
+.sportus-clue-box{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:11px 14px;font-size:13px;color:var(--mute);line-height:1.5;text-align:center;flex-shrink:0}
 .sportus-clue-box em{color:var(--cyan);font-style:normal;font-weight:800}
-.sportus-grid{display:flex;flex-direction:column;gap:6px}
-.sportus-row{display:flex;gap:5px;justify-content:center}
-.sportus-cell{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:22px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
+.sportus-grid{display:flex;flex-direction:column;gap:5px}
+.sportus-grid-scroll{overflow:hidden;display:flex;flex-direction:column;gap:5px;max-height:160px;justify-content:flex-end}
+.sportus-row{display:flex;gap:4px;justify-content:center}
+.sportus-cell{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:20px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
 .sportus-cell.active{border-color:rgba(255,255,255,.25);background:var(--c1)}
 .sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff}
 .sportus-cell.revealed-lock{background:rgba(212,255,0,.12);border-color:rgba(212,255,0,.4);color:var(--neon);font-weight:900}
@@ -130,17 +131,17 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-cell.flip{animation:scellflip .35s ease forwards}
 @keyframes scellflip{0%{transform:scaleY(1)}50%{transform:scaleY(0)}100%{transform:scaleY(1)}}
 .sportus-input-row{display:flex;gap:8px}
-.sportus-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:14px 16px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;text-transform:uppercase}
+.sportus-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;text-transform:uppercase}
 .sportus-in:focus{border-color:var(--neon)}
 .sportus-in.err{animation:shake .35s ease;border-color:var(--red)}
-.sportus-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:14px 20px;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent}
-.sportus-fb{font-size:13px;text-align:center;min-height:18px;color:var(--mute)}
+.sportus-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:13px 18px;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.sportus-fb{font-size:13px;text-align:center;min-height:16px;color:var(--mute)}
 .sportus-fb.err{color:var(--red);font-weight:800}
 /* Boules */
-.boules-section{display:flex;flex-direction:column;gap:8px}
+.boules-section{display:flex;flex-direction:column;gap:6px}
 .boules-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);text-align:center}
 .boules-row{display:flex;gap:10px;justify-content:center}
-.boule{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;border:3px solid rgba(255,255,255,.12);background:var(--c1);transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;position:relative}
+.boule{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;border:3px solid rgba(255,255,255,.12);background:var(--c1);transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;position:relative}
 .boule:active{transform:scale(.92)}
 .boule.hidden{visibility:hidden;pointer-events:none}
 .boule:not(.revealed):hover{box-shadow:0 0 16px rgba(212,255,0,.25);border-color:rgba(212,255,0,.4)}
@@ -149,8 +150,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .boule-hint{background:var(--c1);border:1px solid rgba(240,192,0,.3);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--txt);line-height:1.5;text-align:center;animation:fu .3s ease}
 .boule-black-msg{background:rgba(20,20,20,.9);border:1px solid #333;border-radius:12px;padding:11px 14px;font-size:13px;color:#888;text-align:center;animation:fu .3s ease}
 /* keyboard hint strip */
-.sportus-kbd{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
-.kbd-key{min-width:26px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:var(--fh);background:var(--c2);color:var(--mute);transition:background .2s,color .2s}
+.sportus-kbd{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
+.kbd-key{min-width:24px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:var(--fh);background:var(--c2);color:var(--mute);transition:background .2s,color .2s}
 .kbd-key.correct{background:#e63030;color:#fff}
 .kbd-key.present{background:#f0c000;color:#07070f}
 .kbd-key.absent{background:#1a1a2a;color:#333}
@@ -181,8 +182,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .prix-chk:disabled{opacity:.3;cursor:not-allowed}
 .prix-fb{font-size:13px;text-align:center;min-height:18px;color:var(--mute);font-weight:700}
 /* Sportus sticky input on mobile */
-.sportus-bottom{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:10px 0 20px;display:flex;flex-direction:column;gap:8px;z-index:10}
-@media(min-width:600px){.sportus-bottom{position:static;padding:0;background:none}}
+.sportus-bottom{position:sticky;bottom:0;background:var(--bg);padding:8px 0 16px;display:flex;flex-direction:column;gap:8px;z-index:10;border-top:1px solid rgba(255,255,255,.06);margin-top:4px}
+@media(min-width:600px){.sportus-bottom{position:static;padding:0;background:none;border-top:none}}
 
 .pf{position:fixed;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
 .pf.show{animation:pflash .4s ease}
@@ -257,7 +258,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .trappe-mise-bar{height:4px;border-radius:99px;background:var(--c2);overflow:hidden}
 .trappe-mise-bar-fill{height:100%;background:var(--neon);border-radius:99px;transition:width .15s}
 @keyframes trappe-fall{0%{transform:translateY(0);opacity:1}60%{transform:translateY(8px);opacity:.6}100%{transform:translateY(0);opacity:.35}}
-#sl{gap:16px;min-height:0}
+#sl{gap:16px;min-height:0;height:100%;display:flex;flex-direction:column}
 .lb-title{font-family:var(--fh);font-size:38px;letter-spacing:2px;color:var(--neon)}
 .lb-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-ms-overflow-style:none;scrollbar-width:none}
 .lb-tabs::-webkit-scrollbar{display:none}
@@ -378,11 +379,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- SPORTUS mode -->
   <div id="sportus-zone">
+    <!-- Question toujours visible en haut -->
     <div class="sportus-clue-box" id="sportus-clue-box"></div>
-    <!-- Indice gratuit -->
-    <div id="sportus-free-hint" style="display:none;background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--cyan);line-height:1.5"></div>
-    <div class="sportus-grid" id="sportus-grid"></div>
-    <!-- Sticky bottom: kbd + input + feedback + boules -->
+    <div id="sportus-free-hint" style="display:none;background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--cyan);line-height:1.5"></div>
+    <!-- Seulement les 2 dernières tentatives + ligne active -->
+    <div class="sportus-grid-scroll" id="sportus-grid"></div>
+    <!-- Clavier + input toujours visibles -->
     <div class="sportus-bottom">
       <div class="sportus-kbd" id="sportus-kbd"></div>
       <div class="sportus-input-row">
@@ -451,7 +453,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div>❌ <strong>Mauvaise réponse</strong> → ton personnage recule d'1 case</div>
         <div>😈 <strong>Le Chasseur</strong> dort au départ puis avance automatiquement. Chaque pas lui dévore 10 pts de ton score.</div>
         <div>📊 <strong>Score</strong> = (ta position − position chasseur) × 10</div>
-        <div>🤝 <strong>Sécuriser</strong> = encaisser maintenant avec −30 pts de taxe</div>
+        <div>🤝 <strong>Sécuriser</strong> = encaisser maintenant en reculant d'1 case (score = écart actuel −1 case)</div>
         <div>🏁 <strong>Victoire</strong> = atteindre la case 10 · <strong>😈 Défaite</strong> = rattrapé ou score 0</div>
       </div>
       <button id="chase-rules-ok" class="btn btn-p" style="margin-top:20px;width:100%;font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
@@ -460,12 +462,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- THE CHASE zone -->
   <div id="chase-zone">
-    <!-- Piste de course -->
+    <!-- Piste de course avec cases -->
     <div class="chase-track" id="chase-track">
       <div class="chase-hunter-glow" id="chase-glow"></div>
+      <div id="chase-track-cases" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;padding:0 8px;pointer-events:none"></div>
       <div class="chase-avatar" id="chase-hunter" style="left:8px">😈</div>
       <div class="chase-avatar" id="chase-player" style="left:40%">🏃</div>
-      <div class="chase-finish">🏁</div>
+      <div class="chase-finish" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:22px">🏁</div>
     </div>
     <!-- Score -->
     <div class="chase-score-big" id="chase-score">100</div>
@@ -997,7 +1000,7 @@ function showVictoryFromPrix(finalScore, fullAnswer){
 
 // ── THE CHASE MODE ────────────────────────────────────────────────────────
 const CH = {
-  playerPos:0, hunterPos:0, targetToWin:10,
+  playerPos:0, hunterPos:0, targetToWin:8,
   score:100, found:[], done:false,
   gracePeriod:12, hunterSpeed:6, malus:30,
   graceTimeout:null, hunterInterval:null
@@ -1017,7 +1020,7 @@ function setupChaseMode(data){
   document.getElementById('demineur-zone').style.display='none';
   document.getElementById('chase-zone').style.display='flex';
 
-  CH.targetToWin = 10;
+  CH.targetToWin = data.chaseTargetToWin || 8;
   CH.playerPos   = data.chasePlayerStart || 3;
   CH.hunterPos   = 0;
   CH.found       = [];
@@ -1038,10 +1041,24 @@ function setupChaseMode(data){
   document.getElementById('chase-chk').disabled = true;
   document.getElementById('chase-securiser').disabled = true;
   document.getElementById('chase-securiser').style.cssText='font-family:var(--fh);font-size:16px;letter-spacing:2px;background:rgba(255,200,0,.08);border:2px solid rgba(255,200,0,.2);color:rgba(255,200,0,.4);opacity:1;transition:all .3s';
-  document.getElementById('chase-securiser').textContent=`🤝 SÉCURISER (−${CH.malus} pts)`;
+  document.getElementById('chase-securiser').textContent=`🤝 SÉCURISER (−1 case)`;
   document.getElementById('chase-securiser').onclick = securiserChase;
   updateChaseTrack();
   updateChaseScore(CH.score);
+
+  // Build case markers on track
+  const trackCases = document.getElementById('chase-track-cases');
+  trackCases.innerHTML = '';
+  const track = document.getElementById('chase-track');
+  const trackW = track.offsetWidth || 340;
+  const pad = 36;
+  const usable = trackW - pad*2;
+  for(let i=0; i<=CH.targetToWin; i++){
+    const dot = document.createElement('div');
+    const pct = pad + (i / (CH.targetToWin+1)) * usable;
+    dot.style.cssText=`position:absolute;left:${pct}px;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);`;
+    trackCases.appendChild(dot);
+  }
 
   // Show rules modal first
   const modal = document.getElementById('chase-rules-modal');
@@ -1126,14 +1143,12 @@ function chaseFlash(){
 
 function securiserChase(){
   if(CH.done) return;
-  const TAXE = CH.malus;
-  const currentScore = calcChaseScore();
-  const finalScore = Math.max(0, currentScore - TAXE);
-  if(currentScore <= TAXE){
-    const fb=document.getElementById('chase-fb');
-    fb.textContent=`❌ Cagnotte insuffisante ! Il faut plus de ${TAXE} pts pour sécuriser.`;
-    fb.style.color='var(--red)';
-    setTimeout(()=>{fb.textContent='';fb.style.color='';},1500);
+  // Sécuriser = recule d'1 case et encaisse
+  CH.playerPos = Math.max(0, CH.playerPos - 1);
+  updateChaseTrack();
+  const finalScore = calcChaseScore();
+  if(finalScore <= 0){
+    finishChase(false);
     return;
   }
   finishChase('securise', finalScore);
@@ -1168,7 +1183,7 @@ async function submitChaseAnswer(){
       // Enable securiser with glow + pulse
       const sec=document.getElementById('chase-securiser');
       sec.disabled=false;
-      sec.textContent=`🤝 SÉCURISER (−${CH.malus} pts)`;
+      sec.textContent=`🤝 SÉCURISER (−1 case)`;
       sec.style.cssText=`font-family:var(--fh);font-size:16px;letter-spacing:2px;background:rgba(255,200,0,.15);border:2px solid #ffc800;color:#ffc800;animation:securiser-pulse 1.2s infinite;box-shadow:0 0 16px rgba(255,200,0,.4)`;
       updateChaseTrack();
       // Win?
@@ -1716,6 +1731,7 @@ function startSportusTimer(){
       if(S.done||!G.active) return;
       // Temps écoulé : essai brûlé, −10 pts
       S.tries++;
+      scrollToActiveSportusRow();
       S.score=Math.max(0,S.score-(S.tries>1?SPORTUS_PENALTY:0));
       G.score=S.score; setScore(S.score,true);
       document.getElementById('bar-f').style.width=(S.tries/SPORTUS_MAX_TRIES*100)+'%';
@@ -1755,11 +1771,26 @@ function buildSportusHints(data){
   ];
 }
 
+function scrollToActiveSportusRow(){
+  const grid=document.getElementById('sportus-grid');
+  const activeRow=document.getElementById('srow-'+S.tries);
+  if(activeRow && grid){
+    // Show last 2 completed + active = keep bottom 3 rows visible
+    const rows=grid.querySelectorAll('.sportus-row');
+    rows.forEach((r,i)=>{
+      // Hide rows more than 2 before current
+      r.style.display = i < S.tries-2 ? 'none' : 'flex';
+    });
+  }
+}
+
 function buildSportusGrid(){
   const grid=document.getElementById('sportus-grid');
   grid.innerHTML='';
   for(let r=0;r<SPORTUS_MAX_TRIES;r++){
     const row=document.createElement('div'); row.className='sportus-row'; row.id='srow-'+r;
+    // Hide all rows except first (active) initially
+    if(r > 0) row.style.display='none';
     for(let c=0;c<S.targetLen;c++){
       const cell=document.createElement('div');
       const revealed = S.revealedLetters.find(rl=>rl.index===c);
@@ -1864,6 +1895,7 @@ async function checkSportus(){
     updateSportusKbd(data.result, guessNorm.toUpperCase());
 
     S.tries++;
+    scrollToActiveSportusRow();
     document.getElementById('sportus-in').value='';
     document.getElementById('bar-f').style.width=(S.tries/SPORTUS_MAX_TRIES*100)+'%';
 

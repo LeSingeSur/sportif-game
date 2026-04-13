@@ -420,13 +420,17 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="font-size:11px;color:var(--mute);margin-top:4px" id="chase-answers-count">0 réponse(s)</div>
         </div>
         <div class="field">
+          <label>🎯 Cases à parcourir pour gagner</label>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px" id="chase-target-grid"></div>
+        </div>
+        <div class="field">
           <label>🏃 Avance de départ du joueur (cases)</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-start-grid"></div>
           <span class="hint">0 = aucune avance. 3 = 3 cases d'avance sur le Chasseur.</span>
         </div>
         <div class="field">
           <label>😴 Période de grâce (secondes avant que le Chasseur se réveille)</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-grace-grid"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="chase-grace-grid"></div>
         </div>
         <div class="field">
           <label>🤝 Malus Sécuriser (pts déduits)</label>
@@ -435,7 +439,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div class="field">
           <label>😈 Vitesse du Chasseur (secondes entre chaque pas)</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-speed-grid"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="chase-speed-grid"></div>
         </div>
       </div>
 
@@ -711,8 +715,10 @@ async function startEdit(id){
     document.getElementById('chase-theme-in').value=a.chaseTheme||'';
     document.getElementById('chase-answers-in').value=(a.chaseAnswers||[]).join('\n');
     document.getElementById('chase-answers-count').textContent=(a.chaseAnswers||[]).length+' réponse(s)';
+    buildChaseGrid('chase-target-grid',[{val:7,label:'7'},{val:8,label:'8'}],a.chaseTargetToWin||8,v=>{chaseTargetToWin=v;});
     buildChaseGrid('chase-start-grid',[{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],a.chasePlayerStart||3,v=>{chasePlayerStart=v;});
-    buildChaseGrid('chase-grace-grid',[{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],a.chaseGrace||12,v=>{chaseGrace=v;});
+    buildChaseGrid('chase-grace-grid',[{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],a.chaseGrace||15,v=>{chaseGrace=v;});
+    buildChaseGrid('chase-speed-grid',[{val:6,label:'6s'},{val:8,label:'8s'},{val:10,label:'10s'}],a.chaseSpeed||10,v=>{chaseSpeed=v;});
     buildChaseGrid('chase-malus-grid',[{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],a.chaseMalus||30,v=>{chaseMalus=v;});
     checkReady();
   } else {
@@ -997,7 +1003,7 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── THE CHASE ──────────────────────────────────────────────────────────────
-let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6, chaseMalus=30;
+let chaseTargetToWin=8, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6, chaseMalus=30;
 
 function buildChaseGrid(containerId, options, currentVal, setter){
   const g=document.getElementById(containerId);
@@ -1021,9 +1027,10 @@ function buildChaseGrid(containerId, options, currentVal, setter){
 }
 
 (function initChaseGrids(){
+  buildChaseGrid('chase-target-grid',[{val:7,label:'7'},{val:8,label:'8'}],8,v=>{chaseTargetToWin=v;});
   buildChaseGrid('chase-start-grid', [{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],3,v=>{chasePlayerStart=v;});
-  buildChaseGrid('chase-grace-grid', [{val:8,label:'8s'},{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],12,v=>{chaseGrace=v;});
-  buildChaseGrid('chase-speed-grid', [{val:4,label:'4s'},{val:5,label:'5s'},{val:6,label:'6s'},{val:8,label:'8s'}],6,v=>{chaseSpeed=v;});
+  buildChaseGrid('chase-grace-grid', [{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],15,v=>{chaseGrace=v;});
+  buildChaseGrid('chase-speed-grid', [{val:6,label:'6s'},{val:8,label:'8s'},{val:10,label:'10s'}],10,v=>{chaseSpeed=v;});
   buildChaseGrid('chase-malus-grid', [{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],30,v=>{chaseMalus=v;});
 })();
 
