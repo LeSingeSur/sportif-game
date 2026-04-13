@@ -364,8 +364,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <span class="flbl">Ton pseudo</span>
         <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
-      <button class="btn btn-p" id="btn-start">🚀&nbsp;&nbsp;C'est parti !</button>
-      <button class="btn btn-g" id="btn-lb-open">🏆&nbsp;&nbsp;Voir le classement</button>
+      <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
+      <div style="text-align:center;margin-top:4px">
+        <button id="btn-lb-open" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:3px">🏆 Voir le classement</button>
+      </div>
     </div>
   </div>
 </section>
@@ -678,8 +680,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
   <div class="mt-auto" style="display:flex;flex-direction:column;gap:10px;padding-top:20px">
-    <button class="btn btn-p" id="btn-lb-play">🚀&nbsp;&nbsp;Jouer</button>
-    <button class="btn btn-g" id="btn-lb-back">← Retour</button>
+    <button class="btn btn-g" id="btn-lb-back">← Retour à l'accueil</button>
   </div>
 </section>
 
@@ -2847,7 +2848,6 @@ async function showTab(tabId,list){
   }catch(e){list.innerHTML='<div class="empty">Erreur.</div>'}
 }
 
-document.getElementById('btn-lb-play').onclick=()=>{if(G.pseudo){show('sg');loadAthlete()}else show('sp')};
 document.getElementById('btn-lb-back').onclick=()=>show('sp');
 document.getElementById('btn-lb-load').onclick=()=>{loadLB();};
 
