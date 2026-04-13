@@ -671,7 +671,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <section class="scr" id="sl">
   <div class="lb-title">🏆 CLASSEMENT</div>
   <div class="lb-tabs" id="lb-tabs"></div>
-  <div class="lb-list" id="lb-list"><div class="spin"><span></span><span></span><span></span></div></div>
+  <div class="lb-list" id="lb-list">
+    <div style="text-align:center;padding:30px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="font-size:40px">🏆</div>
+      <button class="btn btn-p" id="btn-lb-load" style="font-family:var(--fh);letter-spacing:2px">Charger le classement</button>
+    </div>
+  </div>
   <div class="mt-auto" style="display:flex;flex-direction:column;gap:10px;padding-top:20px">
     <button class="btn btn-p" id="btn-lb-play">🚀&nbsp;&nbsp;Jouer</button>
     <button class="btn btn-g" id="btn-lb-back">← Retour</button>
@@ -695,7 +700,7 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
 // PSEUDO
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
-document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
+document.getElementById('btn-lb-open').onclick=()=>{show('sl')};
 
 // Preview mode detection
 const _urlParams = new URLSearchParams(window.location.search);
@@ -2844,6 +2849,7 @@ async function showTab(tabId,list){
 
 document.getElementById('btn-lb-play').onclick=()=>{if(G.pseudo){show('sg');loadAthlete()}else show('sp')};
 document.getElementById('btn-lb-back').onclick=()=>show('sp');
+document.getElementById('btn-lb-load').onclick=()=>{loadLB();};
 
 function confetti(){
   const box=document.getElementById('cft'); box.innerHTML='';
