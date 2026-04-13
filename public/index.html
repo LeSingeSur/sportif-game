@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#07070f">
-<title>SPORTIF ?</title>
+<title>ARENA SPORT</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -13,13 +13,20 @@ html{height:100%;background:#07070f}
 body{font-family:var(--fb);color:var(--txt);min-height:100%;background:var(--bg);background-image:radial-gradient(ellipse 70% 40% at 10% 2%,rgba(212,255,0,.07) 0%,transparent 55%),radial-gradient(ellipse 50% 35% at 90% 98%,rgba(0,229,200,.05) 0%,transparent 55%);display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased}
 .scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;max-height:100dvh;padding:28px 18px 52px;overflow:hidden}
 .scr.on{display:flex}
-.logo{font-family:var(--fh);font-size:clamp(60px,20vw,92px);line-height:.88;letter-spacing:3px;text-align:center;color:var(--neon);text-shadow:0 0 40px rgba(212,255,0,.5),0 0 90px rgba(212,255,0,.15);margin-bottom:3px}
-.logo-sub{text-align:center;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--mute);margin-bottom:34px}
+.logo{font-family:var(--fh);font-size:clamp(48px,15vw,80px);line-height:.9;letter-spacing:2px;text-align:center;color:var(--neon);text-shadow:0 0 40px rgba(212,255,0,.5),0 0 90px rgba(212,255,0,.15);margin-bottom:2px}
+.logo-tag{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:28px}
+.logo-sub{display:none}
+.game-types-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 16px}
+.gt-item{background:var(--c2);border-radius:10px;padding:8px 4px;text-align:center;border:1px solid rgba(255,255,255,.06);transition:border-color .15s}
+.gt-item:hover{border-color:rgba(212,255,0,.3)}
+.gt-ico{font-size:18px;margin-bottom:3px}
+.gt-name{font-size:9px;font-weight:800;color:var(--mute);letter-spacing:.5px;line-height:1.2}
+.pseudo-block{display:flex;flex-direction:column;gap:10px}
+.welcome-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0}
 .card{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:26px 20px;display:flex;flex-direction:column;gap:16px}
 .card h2{font-family:var(--fh);font-size:30px;letter-spacing:1px}
-.how{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.how-item{background:var(--c2);border-radius:12px;padding:12px 13px;font-size:12.5px;color:var(--mute);line-height:1.5}
-.how-item strong{display:block;color:var(--txt);font-size:15px;margin-bottom:1px}
+.how{display:none}
+.how-item{display:none}
 .field{display:flex;flex-direction:column;gap:7px}
 .flbl{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--mute)}
 input[type=text]{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:15px 16px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
@@ -232,6 +239,37 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .chase-found{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
 .chase-tag{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);border-radius:99px;padding:4px 10px;font-size:12px;color:#00e676;animation:fu .2s ease}
 .chase-grace{font-family:var(--fh);font-size:13px;text-align:center;color:var(--orange)}
+/* LE SCOUT */
+#scout-zone{display:none;flex-direction:column;gap:14px}
+.scout-score-big{font-family:var(--fh);font-size:56px;text-align:center;color:var(--neon);line-height:1;transition:color .3s}
+.scout-score-big.penalty{color:var(--red);animation:sc-pulse .3s ease}
+.scout-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scout-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:6px;align-items:center}
+.scout-btn:active{transform:scale(.97)}
+.scout-btn.used{opacity:.4;pointer-events:none}
+.scout-btn-ico{font-size:28px}
+.scout-btn-label{font-size:12px;font-weight:800;color:var(--txt);letter-spacing:1px}
+.scout-btn-cost{font-size:13px;font-weight:800;color:var(--red)}
+.scout-revealed{background:var(--c1);border-radius:var(--r);padding:14px;font-size:13px;color:var(--txt);line-height:1.6;border-left:3px solid var(--neon);animation:fu .3s ease}
+.scout-ans-row{display:flex;gap:8px;margin-top:4px}
+.scout-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:16px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s}
+.scout-in:focus{border-color:var(--neon)}
+/* LA RÉPLIQUE CULTE */
+#replique-zone{display:none;flex-direction:column;gap:14px}
+.replique-amorce{background:var(--c1);border-radius:var(--r);padding:18px;font-size:15px;font-style:italic;color:var(--txt);text-align:center;line-height:1.7;border-left:4px solid var(--neon)}
+.replique-mode-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.replique-mode-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 8px;cursor:pointer;text-align:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.replique-mode-btn:active{transform:scale(.97)}
+.replique-mode-btn .pts{font-family:var(--fh);font-size:20px;color:var(--neon)}
+.replique-mode-btn .lbl{font-size:11px;font-weight:800;color:var(--mute);margin-top:4px;letter-spacing:1px}
+.replique-choices{display:flex;flex-direction:column;gap:8px}
+.replique-choice{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:13px 14px;font-size:13px;cursor:pointer;text-align:left;transition:border-color .2s;-webkit-tap-highlight-color:transparent;line-height:1.4}
+.replique-choice:active{transform:scale(.98)}
+.replique-choice.correct{border-color:#00e676;background:rgba(0,230,118,.1);color:#00e676}
+.replique-choice.wrong{border-color:var(--red);background:rgba(255,63,92,.1);color:var(--red)}
+.replique-full{background:var(--c1);border-radius:var(--r);padding:16px;font-size:14px;font-style:italic;color:var(--txt);text-align:center;line-height:1.7;border-left:4px solid var(--orange)}
+.replique-timer-bar{height:5px;background:var(--c2);border-radius:99px;overflow:hidden}
+.replique-timer-fill{height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 1s linear}
 #demineur-zone{display:none;flex-direction:column;gap:14px}
 .dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.3;min-height:52px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -304,23 +342,31 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
 <!-- PSEUDO -->
 <section class="scr on" id="sp">
-  <div class="logo">SPORTIF&nbsp;?</div>
-  <div class="logo-sub">Le jeu de devinette sport</div>
+  <div class="logo">ARENA<br>SPORT</div>
+  <div class="logo-tag">⚡ 10 jeux · 100 pts à gagner ⚡</div>
   <div class="card">
-    <h2>🏆 Devines-tu qui c'est ?</h2>
-    <div class="how">
-      <div class="how-item"><strong>📝 Texte</strong> tapote les blocs<br>−1 pt par mot révélé</div>
-      <div class="how-item"><strong>🖼 Image</strong> révèle les cases<br>−1 pt par case</div>
-      <div class="how-item"><strong>⚡ Buzz</strong> score qui baisse<br>chaque seconde !</div>
-      <div class="how-item"><strong>🎯 Sportus</strong> Motus sportif<br>10 essais · boules mystère</div>
-      <div class="how-item"><strong>💰 Juste Prix</strong> devine la stat<br>50/50 stratégie</div>
+    <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
+    <div class="game-types-grid">
+      <div class="gt-item"><div class="gt-ico">📝</div><div class="gt-name">Texte</div></div>
+      <div class="gt-item"><div class="gt-ico">🖼️</div><div class="gt-name">Image</div></div>
+      <div class="gt-item"><div class="gt-ico">⚡</div><div class="gt-name">Buzz</div></div>
+      <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Sportus</div></div>
+      <div class="gt-item"><div class="gt-ico">💰</div><div class="gt-name">Juste Prix</div></div>
+      <div class="gt-item"><div class="gt-ico">🕳️</div><div class="gt-name">La Trappe</div></div>
+      <div class="gt-item"><div class="gt-ico">💣</div><div class="gt-name">Démineur</div></div>
+      <div class="gt-item"><div class="gt-ico">🏃</div><div class="gt-name">The Chase</div></div>
+      <div class="gt-item"><div class="gt-ico">🔍</div><div class="gt-name">Le Scout</div></div>
+      <div class="gt-item"><div class="gt-ico">💬</div><div class="gt-name">Réplique</div></div>
     </div>
-    <div class="field">
-      <span class="flbl">Ton pseudo</span>
-      <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="welcome-divider"></div>
+    <div class="pseudo-block" style="margin-top:12px">
+      <div class="field">
+        <span class="flbl">Ton pseudo</span>
+        <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <button class="btn btn-p" id="btn-start">🚀&nbsp;&nbsp;C'est parti !</button>
+      <button class="btn btn-g" id="btn-lb-open">🏆&nbsp;&nbsp;Voir le classement</button>
     </div>
-    <button class="btn btn-p" id="btn-start">🚀&nbsp;&nbsp;Jouer !</button>
-    <button class="btn btn-g" id="btn-lb-open">Voir le classement →</button>
   </div>
 </section>
 
@@ -457,6 +503,84 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div>🏁 <strong>Victoire</strong> = atteindre la case 10 · <strong>😈 Défaite</strong> = rattrapé ou score 0</div>
       </div>
       <button id="chase-rules-ok" class="btn btn-p" style="margin-top:20px;width:100%;font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
+    </div>
+  </div>
+
+  <!-- LE SCOUT zone -->
+  <div id="scout-zone">
+    <div class="scout-score-big" id="scout-score">100</div>
+    <div id="scout-question" style="font-size:13px;color:var(--mute);text-align:center">Qui est ce sportif ?</div>
+    <div class="scout-btns" id="scout-btns">
+      <div class="scout-btn" id="scout-btn-0" onclick="revealScout(0)">
+        <div class="scout-btn-ico">🌍</div>
+        <div class="scout-btn-label">PROFIL & ORIGINES</div>
+        <div class="scout-btn-cost" id="scout-cost-0">−10 pts</div>
+      </div>
+      <div class="scout-btn" id="scout-btn-1" onclick="revealScout(1)">
+        <div class="scout-btn-ico">🏟️</div>
+        <div class="scout-btn-label">LE PARCOURS</div>
+        <div class="scout-btn-cost" id="scout-cost-1">−20 pts</div>
+      </div>
+      <div class="scout-btn" id="scout-btn-2" onclick="revealScout(2)">
+        <div class="scout-btn-ico">🏆</div>
+        <div class="scout-btn-label">ARMOIRE À TROPHÉES</div>
+        <div class="scout-btn-cost" id="scout-cost-2">−40 pts</div>
+      </div>
+      <div class="scout-btn" id="scout-btn-3" onclick="revealScout(3)">
+        <div class="scout-btn-ico">🤫</div>
+        <div class="scout-btn-label">L'ANECDOTE</div>
+        <div class="scout-btn-cost" id="scout-cost-3">−15 pts</div>
+      </div>
+    </div>
+    <div id="scout-revealed-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="scout-ans-row">
+      <input type="text" class="scout-in" id="scout-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+      <button class="chk-btn" id="scout-chk">✓</button>
+    </div>
+    <div class="fb" id="scout-fb"></div>
+  </div>
+
+  <!-- LA RÉPLIQUE CULTE zone -->
+  <div id="replique-zone">
+    <!-- Phase 1 -->
+    <div id="replique-p1">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:8px">PHASE 1 — LA CITATION</div>
+      <div class="replique-amorce" id="replique-amorce-txt"></div>
+      <div id="replique-mode-area">
+        <div style="font-size:12px;color:var(--mute);text-align:center;margin:10px 0 6px">Choisis ton mode :</div>
+        <div class="replique-mode-btns">
+          <div class="replique-mode-btn" onclick="chooseRepliqueMode('cash')">
+            <div style="font-size:20px">🥇</div>
+            <div class="pts">70 pts</div>
+            <div class="lbl">CASH</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:2px">Tape la fin</div>
+          </div>
+          <div class="replique-mode-btn" onclick="chooseRepliqueMode('carre')">
+            <div style="font-size:20px">🥈</div>
+            <div class="pts">40 pts</div>
+            <div class="lbl">CARRÉ</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:2px">4 choix</div>
+          </div>
+          <div class="replique-mode-btn" onclick="chooseRepliqueMode('duo')">
+            <div style="font-size:20px">🥉</div>
+            <div class="pts">20 pts</div>
+            <div class="lbl">DUO</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
+          </div>
+        </div>
+      </div>
+      <div id="replique-answer-area" style="display:none"></div>
+      <div class="fb" id="replique-fb1" style="margin-top:6px"></div>
+    </div>
+    <!-- Phase 2 -->
+    <div id="replique-p2" style="display:none">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:8px">PHASE 2 — L'AUTEUR</div>
+      <div class="replique-full" id="replique-full-txt"></div>
+      <div style="font-size:13px;color:var(--mute);text-align:center;margin:8px 0 4px">Qui a prononcé cette phrase ?</div>
+      <div class="replique-timer-bar"><div class="replique-timer-fill" id="replique-timer-fill"></div></div>
+      <div style="font-family:var(--fh);font-size:20px;text-align:center;color:var(--orange)" id="replique-timer-txt">10s</div>
+      <div class="replique-choices" id="replique-author-choices"></div>
+      <div class="fb" id="replique-fb2" style="margin-top:6px"></div>
     </div>
   </div>
 
@@ -620,6 +744,8 @@ async function loadAthlete(){
   document.getElementById('trappe-zone').style.display='none';
   document.getElementById('demineur-zone').style.display='none';
   document.getElementById('chase-zone').style.display='none';
+  document.getElementById('scout-zone').style.display='none';
+  document.getElementById('replique-zone').style.display='none';
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -664,6 +790,12 @@ async function loadAthlete(){
     } else if(data.type==='chase'){
       document.getElementById('std-ans-area').style.display='none';
       setupChaseMode(data);
+    } else if(data.type==='scout'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupScoutMode(data);
+    } else if(data.type==='replique'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupRepliqueMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -998,6 +1130,257 @@ function showVictoryFromPrix(finalScore, fullAnswer){
   submitScore(Math.floor(finalScore));
 }
 
+// ── LE SCOUT MODE ─────────────────────────────────────────────────────────
+const SC = { score:100, revealed:[], done:false, indicesData:[] };
+const SCOUT_COSTS = [10, 20, 40, 15]; // profil, parcours, trophées, anecdote
+
+function setupScoutMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='🔍 Le Scout'; badge.className='type-badge'; badge.style.color='#00c8ff';
+  document.getElementById('game-tip').innerHTML='Révèle des indices · Devine le sportif · Moins tu dépenses, plus tu gagnes';
+  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','replique-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('scout-zone').style.display='flex';
+
+  SC.score=100; SC.revealed=[]; SC.done=false;
+  SC.indicesData=data.scoutIndices||[];
+  G.score=100; G.max=100; setScore(100,false);
+
+  document.getElementById('scout-score').textContent='100';
+  document.getElementById('scout-score').className='scout-score-big';
+  document.getElementById('scout-revealed-list').innerHTML='';
+  document.getElementById('scout-fb').textContent='';
+  document.getElementById('scout-in').value='';
+  document.getElementById('scout-in').disabled=false;
+  document.getElementById('scout-chk').disabled=false;
+  G.athleteName = data.answer || '???';
+
+  // Setup buttons - use data costs and labels if available
+  const defaultIcos=['🌍','🔄','🏅','💡'];
+  const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
+  [0,1,2,3].forEach(i=>{
+    const btn=document.getElementById('scout-btn-'+i);
+    const ind=SC.indicesData[i];
+    const cost=ind?.cost||SCOUT_COSTS[i];
+    const label=ind?.label||defaultLabels[i];
+    btn.classList.remove('used');
+    btn.querySelector('.scout-btn-label').textContent=label.toUpperCase();
+    document.getElementById('scout-cost-'+i).textContent=`−${cost} pts`;
+    if(!ind||!ind.text) btn.classList.add('used');
+  });
+
+  document.getElementById('scout-chk').onclick=submitScoutAnswer;
+  document.getElementById('scout-in').onkeydown=e=>{if(e.key==='Enter')submitScoutAnswer();};
+  setTimeout(()=>document.getElementById('scout-in').focus(),80);
+}
+
+function revealScout(idx){
+  if(SC.done) return;
+  const ind=SC.indicesData[idx];
+  if(!ind||!ind.text||SC.revealed.includes(idx)) return;
+  const cost=ind.cost||SCOUT_COSTS[idx];
+  SC.score=Math.max(0,SC.score-cost);
+  G.score=SC.score; setScore(SC.score,true);
+  SC.revealed.push(idx);
+  document.getElementById('scout-btn-'+idx).classList.add('used');
+  const scoreEl=document.getElementById('scout-score');
+  scoreEl.className='scout-score-big penalty';
+  scoreEl.textContent=SC.score;
+  setTimeout(()=>scoreEl.className='scout-score-big',400);
+  const item=document.createElement('div');
+  item.className='scout-revealed';
+  const labels=['🌍 Identité','🔄 Carrière','🏅 Palmarès','💡 Indice Mystère'];
+  const label = ind.label ? ind.label : labels[idx];
+  item.innerHTML=`<strong style="font-size:11px;letter-spacing:1px;color:var(--mute)">${label.toUpperCase()}</strong><br>${ind.text}`;
+  document.getElementById('scout-revealed-list').appendChild(item);
+  if(SC.score<=0) finishScout(false);
+}
+
+async function submitScoutAnswer(){
+  if(SC.done) return;
+  const ans=document.getElementById('scout-in').value.trim();
+  if(!ans) return;
+  const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const correct=(data=>data.aliases||[data.answer||''])(window._scoutData||{answer:G.athleteName,aliases:window._scoutAliases||[G.athleteName]});
+  // Check via server
+  const res=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pseudo:G.pseudo,athleteId:G.athleteId,answer:ans})});
+  const data=await res.json();
+  if(data.correct){
+    if(data.answer) G.athleteName=data.answer;
+    finishScout(true);
+  } else {
+    const fb=document.getElementById('scout-fb');
+    fb.textContent='❌ Pas encore… essaie encore !'; fb.className='fb pen';
+    setTimeout(()=>{fb.textContent='';fb.className='fb';},1500);
+    document.getElementById('scout-in').value='';
+    document.getElementById('scout-in').focus();
+  }
+}
+
+function finishScout(won){
+  SC.done=true; G.active=false;
+  document.getElementById('scout-in').disabled=true;
+  document.getElementById('scout-chk').disabled=true;
+  const finalScore=won?SC.score:0;
+  G.score=finalScore;
+  setTimeout(()=>{
+    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-sc').textContent=finalScore;
+    document.getElementById('v-sub').textContent=won
+      ?`🔍 Trouvé avec ${SC.revealed.length} indice(s) révélé(s)`
+      :`❌ Score épuisé — c'était ${G.athleteName||'???'}`;
+    document.getElementById('v-revealed').textContent=SC.revealed.length;
+    document.getElementById('v-revealed-lbl').textContent='indices révélés';
+    document.getElementById('v-wrong').textContent=100-finalScore;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='pts de pénalité';
+    show('sv'); confetti();
+    submitScore(finalScore);
+  },400);
+}
+
+// ── LA RÉPLIQUE CULTE MODE ────────────────────────────────────────────────
+const RQ = { phase:1, mode:null, p1Score:0, p2Score:0, done:false, timerInt:null, data:null };
+
+function setupRepliqueMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='💬 Réplique Culte'; badge.className='type-badge'; badge.style.color='#ff9800';
+  document.getElementById('game-tip').innerHTML='Choisis ton mode · Trouve la fin · Puis l\'auteur';
+  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('replique-zone').style.display='flex';
+
+  RQ.phase=1; RQ.mode=null; RQ.p1Score=0; RQ.p2Score=0; RQ.done=false; RQ.data=data;
+  if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
+  G.athleteName=data.answer||data.repliqueAnswer||'???';
+
+  document.getElementById('replique-amorce-txt').textContent=(data.repliqueAmorce||data.repliqueCitation||'')+'…';
+  document.getElementById('replique-mode-area').style.display='block';
+  document.getElementById('replique-answer-area').style.display='none';
+  document.getElementById('replique-fb1').textContent='';
+  document.getElementById('replique-p1').style.display='flex';
+  document.getElementById('replique-p1').style.flexDirection='column';
+  document.getElementById('replique-p2').style.display='none';
+  G.score=0; G.max=100; setScore(0,false);
+}
+
+function chooseRepliqueMode(mode){
+  RQ.mode=mode;
+  document.getElementById('replique-mode-area').style.display='none';
+  const area=document.getElementById('replique-answer-area');
+  area.style.display='block';
+  area.innerHTML='';
+
+  if(mode==='cash'){
+    area.innerHTML=`<div style="font-size:12px;color:var(--mute);margin-bottom:6px">Tape la fin de la citation :</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="rq-cash-in" class="scout-in" placeholder="Suite de la citation…" autocomplete="off" spellcheck="false" style="flex:1">
+        <button class="chk-btn" onclick="submitRepliqueCash()">✓</button>
+      </div>`;
+    setTimeout(()=>document.getElementById('rq-cash-in')?.focus(),80);
+    document.getElementById('rq-cash-in').onkeydown=e=>{if(e.key==='Enter')submitRepliqueCash();};
+  } else {
+    const choices=RQ.data.repliqueChoices||[];
+    const display=mode==='duo'?choices.slice(0,2):choices.slice(0,4);
+    display.forEach(ch=>{
+      const btn=document.createElement('div');
+      btn.className='replique-choice';
+      btn.textContent=ch;
+      btn.onclick=()=>submitRepliqueChoice(ch);
+      area.appendChild(btn);
+    });
+  }
+}
+
+function normRQ(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();}
+
+function submitRepliqueCash(){
+  const val=document.getElementById('rq-cash-in')?.value.trim()||'';
+  const correct=normRQ(val)===normRQ(RQ.data.repliqueAnswer);
+  RQ.p1Score=correct?70:0;
+  revealRepliqueResult(correct, RQ.data.repliqueAnswer);
+}
+
+function submitRepliqueChoice(choice){
+  const correct=normRQ(choice)===normRQ(RQ.data.repliqueAnswer);
+  RQ.p1Score=correct?(RQ.mode==='carre'?40:20):0;
+  // Mark choices
+  document.querySelectorAll('#replique-answer-area .replique-choice').forEach(btn=>{
+    if(normRQ(btn.textContent)===normRQ(RQ.data.repliqueAnswer)) btn.classList.add('correct');
+    else if(normRQ(btn.textContent)===normRQ(choice)&&!correct) btn.classList.add('wrong');
+    btn.onclick=null;
+  });
+  revealRepliqueResult(correct, RQ.data.repliqueAnswer);
+}
+
+function revealRepliqueResult(correct, correctAnswer){
+  const fb=document.getElementById('replique-fb1');
+  fb.textContent=correct?`✅ +${RQ.p1Score} pts !`:`❌ La bonne réponse : "${correctAnswer}"`;
+  fb.className='fb '+(correct?'':'pen');
+  G.score=RQ.p1Score; setScore(RQ.p1Score,true);
+  setTimeout(()=>startRepliquePhase2(), 1800);
+}
+
+function startRepliquePhase2(){
+  document.getElementById('replique-p1').style.display='none';
+  document.getElementById('replique-p2').style.display='flex';
+  document.getElementById('replique-p2').style.flexDirection='column';
+  document.getElementById('replique-full-txt').textContent='"'+(RQ.data.repliqueCitation||RQ.data.repliqueAmorce||'')+'"';
+  document.getElementById('replique-fb2').textContent='';
+
+  // Free text input instead of QCM
+  const authorArea=document.getElementById('replique-author-choices');
+  authorArea.innerHTML=`
+    <div style="display:flex;gap:8px">
+      <input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">
+      <button class="chk-btn" onclick="submitRepliqueAuthor()">✓</button>
+    </div>`;
+  const inp=document.getElementById('rq-author-input');
+  inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor();};
+  setTimeout(()=>inp?.focus(),80);
+
+  // 10s timer
+  let t=10;
+  document.getElementById('replique-timer-txt').textContent=t+'s';
+  document.getElementById('replique-timer-fill').style.transition='none';
+  document.getElementById('replique-timer-fill').style.width='100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.getElementById('replique-timer-fill').style.transition='width 10s linear';
+    document.getElementById('replique-timer-fill').style.width='0%';
+  }));
+  RQ.timerInt=setInterval(()=>{
+    t--;
+    const el=document.getElementById('replique-timer-txt');
+    if(el) el.textContent=t+'s';
+    if(t<=0){clearInterval(RQ.timerInt);RQ.timerInt=null;submitRepliqueAuthor(true);}
+  },1000);
+}
+
+function submitRepliqueAuthor(timeout){
+  if(RQ.done) return;
+  RQ.done=true;
+  if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
+  const inp=document.getElementById('rq-author-input');
+  if(inp) inp.disabled=true;
+  const val=timeout?'':(inp?.value.trim()||'');
+  const correct=normRQ(val)===normRQ(RQ.data.answer||'');
+  RQ.p2Score=correct?30:0;
+  const fb=document.getElementById('replique-fb2');
+  fb.textContent=correct?'✅ Auteur trouvé ! +30 pts':(timeout?`⏰ Temps écoulé — c'était ${RQ.data.answer||'?'}`:`❌ C'était ${RQ.data.answer||'?'}`);
+  fb.className='fb '+(correct?'':'pen');
+  const total=RQ.p1Score+RQ.p2Score;
+  G.score=total; setScore(total,true);
+  setTimeout(()=>{
+    document.getElementById('v-name').textContent=RQ.data.answer||'???';
+    document.getElementById('v-sc').textContent=total;
+    document.getElementById('v-sub').textContent=`Citation : ${RQ.p1Score} pts · Auteur : ${RQ.p2Score} pts`;
+    document.getElementById('v-revealed').textContent=RQ.p1Score;
+    document.getElementById('v-revealed-lbl').textContent='pts citation';
+    document.getElementById('v-wrong').textContent=RQ.p2Score;
+    document.querySelector('#v-wrong').nextElementSibling.textContent='pts auteur';
+    show('sv'); confetti();
+    submitScore(total);
+  },1600);
+}
+
 // ── THE CHASE MODE ────────────────────────────────────────────────────────
 const CH = {
   playerPos:0, hunterPos:0, targetToWin:8,
@@ -1020,7 +1403,7 @@ function setupChaseMode(data){
   document.getElementById('demineur-zone').style.display='none';
   document.getElementById('chase-zone').style.display='flex';
 
-  CH.targetToWin = data.chaseTargetToWin || 8;
+  CH.targetToWin = 10;
   CH.playerPos   = data.chasePlayerStart || 3;
   CH.hunterPos   = 0;
   CH.found       = [];
