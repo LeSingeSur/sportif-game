@@ -11,7 +11,12 @@
 html{height:100%;background:#07070f}
 :root{--bg:#07070f;--c1:#111120;--c2:#191928;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--orange:#ff8c00;--txt:#ededf8;--mute:#52526e;--r:14px;--fh:'Bebas Neue',sans-serif;--fb:'Nunito',sans-serif}
 body{font-family:var(--fb);color:var(--txt);min-height:100%;background:var(--bg);background-image:radial-gradient(ellipse 70% 40% at 10% 2%,rgba(212,255,0,.07) 0%,transparent 55%),radial-gradient(ellipse 50% 35% at 90% 98%,rgba(0,229,200,.05) 0%,transparent 55%);display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased}
-.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;max-height:100dvh;padding:28px 18px 52px;overflow:hidden}
+.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;padding:28px 18px 52px}
+.scr.on{display:flex}
+#sp,#sg,#sl,#sv,#sd{min-height:100dvh}
+.scr{display:none;flex-direction:column;width:100%;max-width:460px;padding:28px 18px 52px}
+.scr.on{display:flex}
+#sp,#sg,#sl,#sv,#sd{min-height:100dvh}
 .scr.on{display:flex}
 .logo{font-family:var(--fh);font-size:clamp(48px,15vw,80px);line-height:.9;letter-spacing:2px;text-align:center;color:var(--neon);text-shadow:0 0 40px rgba(212,255,0,.5),0 0 90px rgba(212,255,0,.15);margin-bottom:2px}
 .logo-tag{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:28px}
@@ -296,7 +301,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .trappe-mise-bar{height:4px;border-radius:99px;background:var(--c2);overflow:hidden}
 .trappe-mise-bar-fill{height:100%;background:var(--neon);border-radius:99px;transition:width .15s}
 @keyframes trappe-fall{0%{transform:translateY(0);opacity:1}60%{transform:translateY(8px);opacity:.6}100%{transform:translateY(0);opacity:.35}}
-#sl{gap:16px;min-height:0;height:100%;display:flex;flex-direction:column}
+#sl{gap:16px;min-height:0}
 .lb-title{font-family:var(--fh);font-size:38px;letter-spacing:2px;color:var(--neon)}
 .lb-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-ms-overflow-style:none;scrollbar-width:none}
 .lb-tabs::-webkit-scrollbar{display:none}
@@ -673,12 +678,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <section class="scr" id="sl">
   <div class="lb-title">🏆 CLASSEMENT</div>
   <div class="lb-tabs" id="lb-tabs"></div>
-  <div class="lb-list" id="lb-list">
-    <div style="text-align:center;padding:30px 0;display:flex;flex-direction:column;align-items:center;gap:16px">
-      <div style="font-size:40px">🏆</div>
-      <button class="btn btn-p" id="btn-lb-load" style="font-family:var(--fh);letter-spacing:2px">Charger le classement</button>
-    </div>
-  </div>
+  <div class="lb-list" id="lb-list"><div class="spin"><span></span><span></span><span></span></div></div>
   <div class="mt-auto" style="display:flex;flex-direction:column;gap:10px;padding-top:20px">
     <button class="btn btn-g" id="btn-lb-back">← Retour à l'accueil</button>
   </div>
@@ -701,7 +701,7 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
 // PSEUDO
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
-document.getElementById('btn-lb-open').onclick=()=>{show('sl')};
+document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
 
 // Preview mode detection
 const _urlParams = new URLSearchParams(window.location.search);
@@ -2849,7 +2849,6 @@ async function showTab(tabId,list){
 }
 
 document.getElementById('btn-lb-back').onclick=()=>show('sp');
-document.getElementById('btn-lb-load').onclick=()=>{loadLB();};
 
 function confetti(){
   const box=document.getElementById('cft'); box.innerHTML='';
