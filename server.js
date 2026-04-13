@@ -108,10 +108,10 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'chase') {
     base.chaseTheme         = athlete.chaseTheme || '';
-    base.chaseTargetToWin   = athlete.chaseTargetToWin || 10;
+    base.chaseTargetToWin   = athlete.chaseTargetToWin || 8;
     base.chasePlayerStart   = athlete.chasePlayerStart || 3;
-    base.chaseGrace         = athlete.chaseGrace || 12;
-    base.chaseSpeed         = athlete.chaseSpeed || 6;
+    base.chaseGrace         = athlete.chaseGrace || 15;
+    base.chaseSpeed         = athlete.chaseSpeed || 10;
     base.chaseMalus         = athlete.chaseMalus || 30;
     base.maxScore           = 100;
   } else {
@@ -217,8 +217,8 @@ app.get('/api/athlete', (req, res) => {
     base.chaseTheme       = athlete.chaseTheme || '';
     base.chaseTargetToWin = athlete.chaseTargetToWin || 10;
     base.chasePlayerStart = athlete.chasePlayerStart || 3;
-    base.chaseGrace       = athlete.chaseGrace || 12;
-    base.chaseSpeed       = athlete.chaseSpeed || 6;
+    base.chaseGrace       = athlete.chaseGrace || 15;
+    base.chaseSpeed       = athlete.chaseSpeed || 10;
     base.chaseMalus       = athlete.chaseMalus || 30;
     base.maxScore         = 100;
   } else {
@@ -484,10 +484,10 @@ app.post('/api/admin/athlete', (req, res) => {
     demineurQuestion: type === 'demineur' ? (req.body.demineurQuestion||'').trim() : undefined,
     chaseTheme:       type === 'chase' ? (req.body.chaseTheme||'').trim() : undefined,
     chaseAnswers:     type === 'chase' ? (req.body.chaseAnswers||[]).map(s=>s.trim()).filter(Boolean) : undefined,
-    chaseTargetToWin: type === 'chase' ? (parseInt(req.body.chaseTargetToWin)||10) : undefined,
+    chaseTargetToWin: type === 'chase' ? (parseInt(req.body.chaseTargetToWin)||8) : undefined,
     chasePlayerStart: type === 'chase' ? (parseInt(req.body.chasePlayerStart)||3) : undefined,
-    chaseGrace:       type === 'chase' ? (parseInt(req.body.chaseGrace)||12) : undefined,
-    chaseSpeed:       type === 'chase' ? (parseInt(req.body.chaseSpeed)||6) : undefined,
+    chaseGrace:       type === 'chase' ? (parseInt(req.body.chaseGrace)||15) : undefined,
+    chaseSpeed:       type === 'chase' ? (parseInt(req.body.chaseSpeed)||10) : undefined,
     chaseMalus:       type === 'chase' ? (parseInt(req.body.chaseMalus)||30) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
