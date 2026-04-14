@@ -1244,11 +1244,19 @@ async function submitScoutAnswer(){
     if(data.answer) G.athleteName=data.answer;
     finishScout(true);
   } else {
+    // −10 pts par mauvaise réponse
+    SC.score=Math.max(0, SC.score-10);
+    G.score=SC.score; setScore(SC.score,true);
+    const scoreEl=document.getElementById('scout-score');
+    scoreEl.className='scout-score-big penalty';
+    scoreEl.textContent=SC.score;
+    setTimeout(()=>scoreEl.className='scout-score-big',400);
     const fb=document.getElementById('scout-fb');
-    fb.textContent='❌ Pas encore… essaie encore !'; fb.className='fb pen';
+    fb.textContent='❌ Mauvaise réponse ! −10 pts'; fb.className='fb pen';
     setTimeout(()=>{fb.textContent='';fb.className='fb';},1500);
     document.getElementById('scout-in').value='';
     document.getElementById('scout-in').focus();
+    if(SC.score<=0) finishScout(false);
   }
 }
 
