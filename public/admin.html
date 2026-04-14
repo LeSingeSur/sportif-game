@@ -479,7 +479,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <span style="font-size:18px">🌍</span>
             <input type="text" id="scout-label-0" value="Identité" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
             <select id="scout-cost-0-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
-              <option value="5">−5 pts</option><option value="10" selected>−10 pts</option><option value="15">−15 pts</option><option value="20">−20 pts</option>
+              <option value="5">−5 pts</option><option value="10">−10 pts</option><option value="15">−15 pts</option><option value="20" selected>−20 pts</option>
             </select>
           </div>
           <textarea id="scout-0-in" placeholder="Nationalité, époque, âge, particularité physique.&#10;Ex foot: Brésilien, né dans les années 70, gaucher.&#10;Ex tennis: Américain, droitier, actif dans les années 90." style="min-height:70px"></textarea>
@@ -491,7 +491,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <span style="font-size:18px">🔄</span>
             <input type="text" id="scout-label-1" value="Carrière" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
             <select id="scout-cost-1-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
-              <option value="10">−10 pts</option><option value="15">−15 pts</option><option value="20" selected>−20 pts</option><option value="25">−25 pts</option><option value="30">−30 pts</option>
+              <option value="10">−10 pts</option><option value="15">−15 pts</option><option value="20">−20 pts</option><option value="25" selected>−25 pts</option><option value="30">−30 pts</option>
             </select>
           </div>
           <textarea id="scout-1-in" placeholder="Clubs, équipes, écuries, entraîneurs, tournois.&#10;Ex foot: A joué à Santos, Barcelone et au PSG.&#10;Ex F1: A couru pour Ferrari et Mercedes." style="min-height:70px"></textarea>
@@ -503,7 +503,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <span style="font-size:18px">🏅</span>
             <input type="text" id="scout-label-2" value="Palmarès" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
             <select id="scout-cost-2-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
-              <option value="20">−20 pts</option><option value="30">−30 pts</option><option value="40" selected>−40 pts</option><option value="50">−50 pts</option>
+              <option value="20">−20 pts</option><option value="30" selected>−30 pts</option><option value="40">−40 pts</option><option value="50">−50 pts</option>
             </select>
           </div>
           <textarea id="scout-2-in" placeholder="Titres, médailles, records, récompenses.&#10;Ex basket: 4 bagues NBA, 3 fois MVP.&#10;Ex athlé: Champion olympique 100m, record du monde." style="min-height:70px"></textarea>
@@ -1535,9 +1535,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const chaseTheme   = currentType==='chase'?document.getElementById('chase-theme-in').value.trim():'';
   const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const scoutIndices = currentType==='scout'?[
-    {cost:parseInt(document.getElementById('scout-cost-0-sel').value)||10,label:document.getElementById('scout-label-0').value.trim()||'Identité',text:document.getElementById('scout-0-in').value.trim()},
-    {cost:parseInt(document.getElementById('scout-cost-1-sel').value)||20,label:document.getElementById('scout-label-1').value.trim()||'Carrière',text:document.getElementById('scout-1-in').value.trim()},
-    {cost:parseInt(document.getElementById('scout-cost-2-sel').value)||40,label:document.getElementById('scout-label-2').value.trim()||'Palmarès',text:document.getElementById('scout-2-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-0-sel').value)||20,label:document.getElementById('scout-label-0').value.trim()||'Identité',text:document.getElementById('scout-0-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-1-sel').value)||25,label:document.getElementById('scout-label-1').value.trim()||'Carrière',text:document.getElementById('scout-1-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-2-sel').value)||30,label:document.getElementById('scout-label-2').value.trim()||'Palmarès',text:document.getElementById('scout-2-in').value.trim()},
     {cost:parseInt(document.getElementById('scout-cost-3-sel').value)||15,label:document.getElementById('scout-label-3').value.trim()||'Indice Mystère',text:document.getElementById('scout-3-in').value.trim()},
   ]:[];
   const repliqueCitation = currentType==='replique'?document.getElementById('rq-citation-in').value.trim():'';
