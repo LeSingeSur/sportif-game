@@ -794,7 +794,7 @@ async function startEdit(id){
     document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
     document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
     document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
-    selectSportusTimer(a.sportusTimer||45);
+    
     // Rebuild pattern from revealedLetters
     if(a.revealedLetters&&a.revealedLetters.length){
       const lastName=a.answer.trim().split(/\s+/).pop().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -879,7 +879,7 @@ function cancelEdit(){
   document.getElementById('sportus-hint0-in').value='';
   document.getElementById('sportus-hint1-in').value='';
   document.getElementById('sportus-hint2-in').value='';
-  selectSportusTimer(45);
+  
   document.getElementById('sportus-revealed-in').value='';
   document.getElementById('sportus-revealed-preview').innerHTML='';
   document.getElementById('prix-question-in').value='';
@@ -1110,29 +1110,7 @@ function removeTrappeQ(i){
 
 // Sportus timer grid
 let sportusTimerVal = 45;
-const SPORTUS_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'},{val:90,label:'90s'}];
-(function buildSportusTimerGrid(){
-  const g=document.getElementById('sportus-timer-grid');
-  SPORTUS_TIMERS.forEach(s=>{
-    const btn=document.createElement('button');
-    btn.type='button'; btn.id='stimer-'+s.val;
-    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:800;transition:border-color .15s';
-    btn.textContent=s.label;
-    btn.onclick=()=>selectSportusTimer(s.val);
-    g.appendChild(btn);
-  });
-  selectSportusTimer(45);
-})();
-function selectSportusTimer(val){
-  sportusTimerVal=val;
-  SPORTUS_TIMERS.forEach(s=>{
-    const btn=document.getElementById('stimer-'+s.val);
-    if(!btn)return;
-    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
-    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
-  });
-  document.getElementById('sportus-timer-hint').textContent=`${val}s par proposition`;
-}
+// Timer sportus fixé à 45s - plus de grille configurable
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
