@@ -368,10 +368,8 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="sportus-revealed-in" placeholder="Ex: _A_A_ ou N___L" autocomplete="off" autocorrect="off" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-size:18px">
           <div id="sportus-revealed-preview" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap"></div>
         </div>
-        <div class="field">
-          <label>⏱ Timer par proposition (secondes)</label>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px" id="sportus-timer-grid"></div>
-          <span class="hint" id="sportus-timer-hint">45s par défaut</span>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px">
+          ⏱ <strong style="color:var(--txt)">Timer fixe :</strong> 45s par proposition
         </div>
       </div>
 
@@ -466,23 +464,8 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <span class="hint">Accepte le format colonne (une par ligne) ou séparé par point-virgule.</span>
           <div style="font-size:11px;color:var(--mute);margin-top:4px" id="chase-answers-count">0 réponse(s)</div>
         </div>
-        <div class="field">
-          <label>🏃 Avance de départ du joueur (cases)</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="chase-start-grid"></div>
-          <span class="hint">0 = aucune avance. 3 = 3 cases d'avance sur le Chasseur.</span>
-        </div>
-        <div class="field">
-          <label>😴 Période de grâce (secondes avant que le Chasseur se réveille)</label>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="chase-grace-grid"></div>
-        </div>
-        <div class="field">
-          <label>🤝 Malus Sécuriser (pts déduits)</label>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px" id="chase-malus-grid"></div>
-          <span class="hint">Points déduits quand le joueur clique Sécuriser.</span>
-        </div>
-        <div class="field">
-          <label>😈 Vitesse du Chasseur (secondes entre chaque pas)</label>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="chase-speed-grid"></div>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.6">
+          ⚙️ <strong style="color:var(--txt)">Paramètres fixes :</strong> Départ à 2 cases · Grâce 12s · Vitesse 10s/pas · Sécuriser = −1 case
         </div>
       </div>
 
@@ -843,10 +826,7 @@ async function startEdit(id){
     document.getElementById('chase-theme-in').value=a.chaseTheme||'';
     document.getElementById('chase-answers-in').value=(a.chaseAnswers||[]).join('\n');
     document.getElementById('chase-answers-count').textContent=(a.chaseAnswers||[]).length+' réponse(s)';
-    buildChaseGrid('chase-start-grid',[{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],a.chasePlayerStart||3,v=>{chasePlayerStart=v;});
-    buildChaseGrid('chase-grace-grid',[{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],a.chaseGrace||15,v=>{chaseGrace=v;});
-    buildChaseGrid('chase-speed-grid',[{val:6,label:'6s'},{val:8,label:'8s'},{val:10,label:'10s'}],a.chaseSpeed||10,v=>{chaseSpeed=v;});
-    buildChaseGrid('chase-malus-grid',[{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],a.chaseMalus||30,v=>{chaseMalus=v;});
+    // Paramètres chase fixes - pas de grilles à reconstruire
     checkReady();
   } else if(a.type==='scout'){
     const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
@@ -1181,10 +1161,7 @@ function buildChaseGrid(containerId, options, currentVal, setter){
 }
 
 (function initChaseGrids(){
-  buildChaseGrid('chase-start-grid', [{val:0,label:'0'},{val:1,label:'1'},{val:2,label:'2'},{val:3,label:'3'}],3,v=>{chasePlayerStart=v;});
-  buildChaseGrid('chase-grace-grid', [{val:10,label:'10s'},{val:12,label:'12s'},{val:15,label:'15s'}],15,v=>{chaseGrace=v;});
-  buildChaseGrid('chase-speed-grid', [{val:6,label:'6s'},{val:8,label:'8s'},{val:10,label:'10s'}],10,v=>{chaseSpeed=v;});
-  buildChaseGrid('chase-malus-grid', [{val:10,label:'−10'},{val:15,label:'−15'},{val:20,label:'−20'},{val:25,label:'−25'},{val:30,label:'−30'}],30,v=>{chaseMalus=v;});
+  // Paramètres fixes — plus de grilles configurables
 })();
 
 document.getElementById('chase-answers-in').addEventListener('input',e=>{
