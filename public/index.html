@@ -132,7 +132,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-clue-box{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:11px 14px;font-size:13px;color:var(--mute);line-height:1.5;text-align:center;flex-shrink:0}
 .sportus-clue-box em{color:var(--cyan);font-style:normal;font-weight:800}
 .sportus-grid{display:flex;flex-direction:column;gap:5px}
-.sportus-grid-scroll{overflow:hidden;display:flex;flex-direction:column;gap:5px;max-height:160px;justify-content:flex-end}
+.sportus-grid-scroll{overflow-y:auto;display:flex;flex-direction:column;gap:5px;max-height:200px}
 .sportus-row{display:flex;gap:4px;justify-content:center}
 .sportus-cell{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:20px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
 .sportus-cell.active{border-color:rgba(255,255,255,.25);background:var(--c1)}
@@ -2162,15 +2162,15 @@ function buildSportusHints(data){
 
 function scrollToActiveSportusRow(){
   const grid=document.getElementById('sportus-grid');
+  if(!grid) return;
+  // Show all rows up to and including current active
+  const rows=grid.querySelectorAll('.sportus-row');
+  rows.forEach((r,i)=>{
+    r.style.display = i <= S.tries ? 'flex' : 'none';
+  });
+  // Scroll active row into view
   const activeRow=document.getElementById('srow-'+S.tries);
-  if(activeRow && grid){
-    // Show last 2 completed + active = keep bottom 3 rows visible
-    const rows=grid.querySelectorAll('.sportus-row');
-    rows.forEach((r,i)=>{
-      // Hide rows more than 2 before current
-      r.style.display = i < S.tries-2 ? 'none' : 'flex';
-    });
-  }
+  if(activeRow) activeRow.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 
 function buildSportusGrid(){
