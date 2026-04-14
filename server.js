@@ -121,7 +121,6 @@ app.get('/api/preview', (req, res) => {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
-    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
   } else {
@@ -238,7 +237,6 @@ app.get('/api/athlete', (req, res) => {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
-    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
   } else {
@@ -462,10 +460,10 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'demineur' && (!req.body.demineurItems || req.body.demineurItems.length < 3)) return res.status(400).json({ error: 'Au moins 3 items obligatoires' });
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
   if (type === 'scout' && (!req.body.scoutIndices || !req.body.scoutIndices.some(i=>i.text))) return res.status(400).json({ error: 'Au moins un indice obligatoire' });
-  if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAnswer)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
+  if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAuthor)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
-  const safeAnswer     = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':'???');
+  const safeAnswer = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -517,6 +515,7 @@ app.post('/api/admin/athlete', (req, res) => {
     repliqueCitation: type === 'replique' ? (req.body.repliqueCitation||'').trim() : undefined,
     repliqueAmorce:   type === 'replique' ? (req.body.repliqueAmorce||'').trim() : undefined,
     repliqueAnswer:   type === 'replique' ? (req.body.repliqueAnswer||'').trim() : undefined,
+    repliqueAuthor:   type === 'replique' ? (req.body.repliqueAuthor||'').trim() : undefined,
     repliqueChoices:  type === 'replique' ? (req.body.repliqueChoices||[]) : undefined,
     repliqueAuthorChoices: type === 'replique' ? (req.body.repliqueAuthorChoices||[]) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
