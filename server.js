@@ -122,6 +122,8 @@ app.get('/api/preview', (req, res) => {
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
     base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
+    base.rqTime        = athlete.rqTime || 60;
+    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
@@ -244,6 +246,8 @@ app.get('/api/athlete', (req, res) => {
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
     base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
+    base.rqTime        = athlete.rqTime || 60;
+    base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
@@ -533,6 +537,7 @@ app.post('/api/admin/athlete', (req, res) => {
     repliqueChoices:  type === 'replique' ? (req.body.repliqueChoices||[]) : undefined,
     repliqueAuthorChoices: type === 'replique' ? (req.body.repliqueAuthorChoices||[]) : undefined,
     rqTolerance: type === 'replique' ? (parseInt(req.body.rqTolerance)||1) : undefined,
+    rqTime:      type === 'replique' ? (parseInt(req.body.rqTime)||60) : undefined,
     bjTheme:    type === 'blackjack' ? (req.body.bjTheme||'').trim() : undefined,
     bjTarget:   type === 'blackjack' ? (parseInt(req.body.bjTarget)||50) : undefined,
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
