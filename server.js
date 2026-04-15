@@ -125,6 +125,7 @@ app.get('/api/preview', (req, res) => {
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
+    base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
@@ -249,6 +250,7 @@ app.get('/api/athlete', (req, res) => {
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
+    base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
@@ -560,6 +562,18 @@ app.post('/api/admin/athlete', (req, res) => {
   saveData();
   console.log(`✅ Ajouté (${athleteData.type}): ${safeAnswer}`);
   res.json({ success: true, edited: false, id: newId, answer: safeAnswer, total: athletes.length });
+});
+
+app.post('/api/admin/reorder', (req, res) => {
+  const { password, order } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  if (!Array.isArray(order)) return res.status(400).json({ error: 'ordre invalide' });
+  const reordered = order.map(id => athletes.find(a => a.id === id)).filter(Boolean);
+  // Keep any athletes not in order at the end
+  const missing = athletes.filter(a => !order.includes(a.id));
+  athletes = [...reordered, ...missing];
+  saveData();
+  res.json({ success: true });
 });
 
 app.delete('/api/admin/athlete/:id', (req, res) => {
