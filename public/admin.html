@@ -564,7 +564,16 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>Auteur (réponse phase 2)</label>
           <input type="text" id="rq-author-in" placeholder="Ex: Zidane">
-          <span class="hint">Le joueur devra taper ce nom dans un champ libre en 30 secondes.</span>
+          <span class="hint">Accepte prénom seul, nom seul ou prénom+nom.</span>
+        </div>
+        <div class="field">
+          <label>Propositions auteur — QCM (optionnel, séparées par ;)</label>
+          <input type="text" id="rq-author-choices-in" placeholder="Ex: Zidane;Ronaldo;Messi;Henry">
+          <span class="hint">Si rempli → QCM avec boutons. Mauvaise réponse = −15 pts. Sinon → texte libre.</span>
+        </div>
+        <div class="field">
+          <label>⏱ Temps total (chrono global)</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="rq-time-grid"></div>
         </div>
         <div class="field">
           <label>🎯 Tolérance aux fautes (nb de caractères différents acceptés)</label>
@@ -573,7 +582,6 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <span style="font-size:13px;color:var(--txt);flex:1">0 = exact · 1 = "Zidane/Zidanne" · 2 = plus permissif</span>
           </div>
         </div>
-        <input type="hidden" id="rq-author-choices-in" value="">
       </div>
 
       <!-- Coefficient -->
@@ -879,7 +887,9 @@ async function startEdit(id){
     document.getElementById('rq-answer-in').value=a.repliqueAnswer||'';
     document.getElementById('rq-choices-in').value=(a.repliqueChoices||[]).join(';');
     document.getElementById('rq-author-in').value=a.answer||'';
+    document.getElementById('rq-author-choices-in').value=(a.repliqueAuthorChoices||[]).join(';');
     selectRqTolerance(a.rqTolerance!==undefined?a.rqTolerance:1);
+    selectRqTime(a.rqTime||60);
     document.getElementById('rq-author-choices-in').value=(a.repliqueAuthorChoices||[]).join(';');
     checkReady();
   } else {
@@ -944,6 +954,7 @@ function cancelEdit(){
   [0,1,2,3].forEach(i=>{const l=document.getElementById('scout-label-'+i);if(l)l.value=defaultLabels[i];});
   ['rq-citation-in','rq-amorce-in','rq-answer-in','rq-choices-in','rq-author-in','rq-author-choices-in'].forEach(id=>{document.getElementById(id).value='';});
   selectRqTolerance(1);
+  selectRqTime(60);
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -1174,6 +1185,29 @@ document.getElementById('bj-answers-in').addEventListener('input',e=>{
 
 // ── RÉPLIQUE TOLÉRANCE ────────────────────────────────────────────────────
 let rqTolerance = 1;
+let rqTime = 60;
+(function buildRqTimeGrid(){
+  const g=document.getElementById('rq-time-grid');
+  if(!g) return;
+  [{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'1 min'}].forEach(o=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='rqtime-'+o.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--fh);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=o.label;
+    btn.onclick=()=>selectRqTime(o.val);
+    g.appendChild(btn);
+  });
+  selectRqTime(60);
+})();
+function selectRqTime(val){
+  rqTime=val;
+  [30,45,60].forEach(v=>{
+    const b=document.getElementById('rqtime-'+v);
+    if(!b) return;
+    b.style.borderColor=v===val?'var(--neon)':'rgba(255,255,255,.07)';
+    b.style.background=v===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
 document.addEventListener('DOMContentLoaded',()=>{
   const inp=document.getElementById('rq-tolerance-in');
   if(inp) inp.addEventListener('input',()=>{ rqTolerance=parseInt(inp.value)||0; });
@@ -1593,8 +1627,9 @@ document.getElementById('btn-save').onclick=async()=>{
   const repliqueAnswer   = currentType==='replique'?document.getElementById('rq-answer-in').value.trim():'';
   const repliqueChoices  = currentType==='replique'?document.getElementById('rq-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const repliqueAuthor   = currentType==='replique'?document.getElementById('rq-author-in').value.trim():'';
+  const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.split(';').map(s=>s.trim()).filter(Boolean):[];
   const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
-  const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
+  const rqTimeVal        = currentType==='replique'?rqTime:60;
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
@@ -1630,7 +1665,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,bjTheme,bjTarget,bjAnswers};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

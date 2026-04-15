@@ -592,6 +592,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LA RÉPLIQUE CULTE zone -->
   <div id="replique-zone">
+    <!-- Global timer (starts when mode chosen) -->
+    <div id="replique-global-timer-bar" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">TEMPS RESTANT</div>
+        <div style="font-family:var(--fh);font-size:18px;color:var(--orange)" id="replique-global-timer-txt">60s</div>
+      </div>
+      <div class="replique-timer-bar"><div class="replique-timer-fill" id="replique-global-timer-fill" style="background:var(--orange)"></div></div>
+    </div>
     <!-- Phase 1 -->
     <div id="replique-p1">
       <div style="font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:8px">PHASE 1 — LA CITATION</div>
@@ -627,8 +635,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:8px">PHASE 2 — L'AUTEUR</div>
       <div class="replique-full" id="replique-full-txt"></div>
       <div style="font-size:13px;color:var(--mute);text-align:center;margin:8px 0 4px">Qui a prononcé cette phrase ?</div>
-      <div class="replique-timer-bar"><div class="replique-timer-fill" id="replique-timer-fill"></div></div>
-      <div style="font-family:var(--fh);font-size:20px;text-align:center;color:var(--orange)" id="replique-timer-txt">10s</div>
       <div class="replique-choices" id="replique-author-choices"></div>
       <div class="fb" id="replique-fb2" style="margin-top:6px"></div>
     </div>
@@ -1464,11 +1470,14 @@ function setupRepliqueMode(data){
   document.getElementById('replique-zone').style.display='flex';
 
   RQ.phase=1; RQ.mode=null; RQ.p1Score=0; RQ.p2Score=0; RQ.done=false; RQ.data=data;
-  RQ.tolerance = data.rqTolerance !== undefined ? data.rqTolerance : 1;
+  RQ.tolerance=data.rqTolerance!==undefined?data.rqTolerance:1;
+  RQ.totalTime=data.rqTime||60;
+  RQ.timeLeft=RQ.totalTime;
+  RQ.globalTimerStarted=false;
   if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
   if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
-  G.athleteName=data.answer||data.repliqueAnswer||'???';
-
+  if(RQ.globalTimerInt){clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;}
+  G.athleteName=data.answer||'???';
   document.getElementById('replique-amorce-txt').textContent=(data.repliqueAmorce||data.repliqueCitation||'')+'…';
   document.getElementById('replique-mode-area').style.display='block';
   document.getElementById('replique-answer-area').style.display='none';
@@ -1476,65 +1485,63 @@ function setupRepliqueMode(data){
   document.getElementById('replique-p1').style.display='flex';
   document.getElementById('replique-p1').style.flexDirection='column';
   document.getElementById('replique-p2').style.display='none';
+  document.getElementById('replique-global-timer-bar').style.display='none';
   G.score=0; G.max=100; setScore(0,false);
 }
 
-function chooseRepliqueMode(mode){
-  RQ.mode=mode;
-  document.getElementById('replique-mode-area').style.display='none';
-  const area=document.getElementById('replique-answer-area');
-  area.style.display='block';
-  area.innerHTML='';
-
-  // Add a 30s timer bar for phase 1
-  const timerDiv=document.createElement('div');
-  timerDiv.innerHTML=`<div class="replique-timer-bar" style="margin-bottom:8px"><div id="rq-p1-timer-fill" style="height:100%;background:var(--neon);width:100%;border-radius:99px;transition:width 30s linear"></div></div>
-    <div style="font-family:var(--fh);font-size:16px;text-align:center;color:var(--neon);margin-bottom:8px" id="rq-p1-timer-txt">30s</div>`;
-  area.appendChild(timerDiv);
+function startRepliqueGlobalTimer(){
+  if(RQ.globalTimerStarted) return;
+  RQ.globalTimerStarted=true;
+  const bar=document.getElementById('replique-global-timer-bar');
+  bar.style.display='block';
+  const fill=document.getElementById('replique-global-timer-fill');
+  const txt=document.getElementById('replique-global-timer-txt');
+  RQ.timeLeft=RQ.totalTime;
+  txt.textContent=RQ.timeLeft+'s';
+  fill.style.transition='none'; fill.style.width='100%';
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const fill=document.getElementById('rq-p1-timer-fill');
-    if(fill){fill.style.transition='width 30s linear';fill.style.width='0%';}
+    fill.style.transition='width '+RQ.totalTime+'s linear';
+    fill.style.width='0%';
   }));
-  let p1t=30;
-  RQ.p1TimerInt=setInterval(()=>{
-    p1t--;
-    const el=document.getElementById('rq-p1-timer-txt');
-    if(el) el.textContent=p1t+'s';
-    if(p1t<=0){
-      clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;
-      if(mode==='cash') submitRepliqueCash(true);
-      else revealRepliqueResult(false, RQ.data.repliqueAnswer);
+  RQ.globalTimerInt=setInterval(()=>{
+    RQ.timeLeft--;
+    if(txt){txt.textContent=RQ.timeLeft+'s';txt.style.color=RQ.timeLeft<=10?'var(--red)':'var(--orange)';}
+    if(RQ.timeLeft<=0){
+      clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;
+      if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
+      if(!RQ.done){
+        if(RQ.phase===1) revealRepliqueResult(false,RQ.data.repliqueAnswer);
+        else submitRepliqueAuthor('timeout',null);
+      }
     }
   },1000);
+}
 
+function chooseRepliqueMode(mode){
+  RQ.mode=mode; RQ.phase=1;
+  document.getElementById('replique-mode-area').style.display='none';
+  const area=document.getElementById('replique-answer-area');
+  area.style.display='block'; area.innerHTML='';
+  startRepliqueGlobalTimer();
   if(mode==='cash'){
-    const inputDiv=document.createElement('div');
-    inputDiv.innerHTML=`<div style="font-size:12px;color:var(--mute);margin-bottom:6px">Tape la fin de la citation :</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="rq-cash-in" class="scout-in" placeholder="Suite de la citation…" autocomplete="off" spellcheck="false" style="flex:1">
-        <button class="chk-btn" onclick="submitRepliqueCash()">✓</button>
-      </div>`;
-    area.appendChild(inputDiv);
+    const d=document.createElement('div');
+    d.innerHTML='<div style="font-size:12px;color:var(--mute);margin-bottom:6px">Tape la fin de la citation :</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<input type="text" id="rq-cash-in" class="scout-in" placeholder="Suite de la citation…" autocomplete="off" spellcheck="false" style="flex:1">'
+      +'<button class="chk-btn" onclick="submitRepliqueCash()">✓</button></div>';
+    area.appendChild(d);
     setTimeout(()=>document.getElementById('rq-cash-in')?.focus(),80);
     setTimeout(()=>{const i=document.getElementById('rq-cash-in');if(i)i.onkeydown=e=>{if(e.key==='Enter')submitRepliqueCash();};},100);
   } else {
     const allChoices=RQ.data.repliqueChoices||[];
     const correctAns=RQ.data.repliqueAnswer||'';
-    // Ensure correct answer is always included
     let pool=allChoices.filter(c=>normRQ(c)!==normRQ(correctAns));
     const count=mode==='duo'?1:3;
-    const wrongs=pool.slice(0,count);
-    let display=[correctAns,...wrongs];
-    // Shuffle
-    display=display.sort(()=>Math.random()-.5);
+    let display=[correctAns,...pool.slice(0,count)].sort(()=>Math.random()-.5);
     display.forEach(ch=>{
       const btn=document.createElement('div');
-      btn.className='replique-choice';
-      btn.textContent=ch;
-      btn.onclick=()=>{
-        if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
-        submitRepliqueChoice(ch);
-      };
+      btn.className='replique-choice'; btn.textContent=ch;
+      btn.onclick=()=>submitRepliqueChoice(ch);
       area.appendChild(btn);
     });
   }
@@ -1550,19 +1557,18 @@ function levenshtein(a,b){
   return dp[m][n];
 }
 
-function fuzzyMatch(val, ref){
-  const nv=normRQ(val), nr=normRQ(ref);
+function fuzzyMatch(val,ref){
+  const nv=normRQ(val),nr=normRQ(ref);
   if(nv===nr) return true;
-  // Accept if 1 char difference per 4 chars of the reference (max 2)
-  const maxDist=Math.min(2, Math.floor(nr.length/4));
+  const maxDist=Math.min(2,Math.floor(nr.length/4));
   return levenshtein(nv,nr)<=maxDist;
 }
 
-function matchesAuthor(val, answer){
+function matchesAuthor(val,answer){
   if(!val||!answer) return false;
   const tol=RQ.tolerance;
-  const nv=normRQ(val), na=normRQ(answer);
-  if(tol===0) return nv===na || na.split(/\s+/).includes(nv);
+  const nv=normRQ(val),na=normRQ(answer);
+  if(tol===0) return nv===na||na.split(/\s+/).includes(nv);
   if(levenshtein(nv,na)<=tol) return true;
   return na.split(/\s+/).some(p=>levenshtein(nv,p)<=tol);
 }
@@ -1573,90 +1579,104 @@ function submitRepliqueCash(timeout){
   const tol=RQ.tolerance;
   const correct=!timeout&&(tol===0?normRQ(val)===normRQ(RQ.data.repliqueAnswer):levenshtein(normRQ(val),normRQ(RQ.data.repliqueAnswer))<=tol);
   RQ.p1Score=correct?70:0;
-  revealRepliqueResult(correct, RQ.data.repliqueAnswer);
+  revealRepliqueResult(correct,RQ.data.repliqueAnswer);
 }
 
 function submitRepliqueChoice(choice){
   const correct=normRQ(choice)===normRQ(RQ.data.repliqueAnswer);
   RQ.p1Score=correct?(RQ.mode==='carre'?40:20):0;
-  // Mark choices
   document.querySelectorAll('#replique-answer-area .replique-choice').forEach(btn=>{
     if(normRQ(btn.textContent)===normRQ(RQ.data.repliqueAnswer)) btn.classList.add('correct');
     else if(normRQ(btn.textContent)===normRQ(choice)&&!correct) btn.classList.add('wrong');
     btn.onclick=null;
   });
-  revealRepliqueResult(correct, RQ.data.repliqueAnswer);
+  revealRepliqueResult(correct,RQ.data.repliqueAnswer);
 }
 
-function revealRepliqueResult(correct, correctAnswer){
+function revealRepliqueResult(correct,correctAnswer){
   const fb=document.getElementById('replique-fb1');
-  fb.textContent=correct?`✅ +${RQ.p1Score} pts !`:`❌ La bonne réponse : "${correctAnswer}"`;
+  fb.textContent=correct?'✅ +'+RQ.p1Score+' pts !':'❌ La bonne réponse : "'+correctAnswer+'"';
   fb.className='fb '+(correct?'':'pen');
   G.score=RQ.p1Score; setScore(RQ.p1Score,true);
-  setTimeout(()=>startRepliquePhase2(), 1800);
+  setTimeout(()=>startRepliquePhase2(),1800);
 }
 
 function startRepliquePhase2(){
+  RQ.phase=2;
   document.getElementById('replique-p1').style.display='none';
   document.getElementById('replique-p2').style.display='flex';
   document.getElementById('replique-p2').style.flexDirection='column';
   document.getElementById('replique-full-txt').textContent='"'+(RQ.data.repliqueCitation||RQ.data.repliqueAmorce||'')+'"';
   document.getElementById('replique-fb2').textContent='';
-
-  // Free text input instead of QCM
   const authorArea=document.getElementById('replique-author-choices');
-  authorArea.innerHTML=`
-    <div style="display:flex;gap:8px">
-      <input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">
-      <button class="chk-btn" onclick="submitRepliqueAuthor()">✓</button>
-    </div>`;
-  const inp=document.getElementById('rq-author-input');
-  inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor();};
-  setTimeout(()=>inp?.focus(),80);
-
-  // 30s timer
-  let t=30;
-  document.getElementById('replique-timer-txt').textContent=t+'s';
-  document.getElementById('replique-timer-fill').style.transition='none';
-  document.getElementById('replique-timer-fill').style.width='100%';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.getElementById('replique-timer-fill').style.transition='width 30s linear';
-    document.getElementById('replique-timer-fill').style.width='0%';
-  }));
-  RQ.timerInt=setInterval(()=>{
-    t--;
-    const el=document.getElementById('replique-timer-txt');
-    if(el) el.textContent=t+'s';
-    if(t<=0){clearInterval(RQ.timerInt);RQ.timerInt=null;submitRepliqueAuthor(true);}
-  },1000);
+  authorArea.innerHTML='';
+  const authorChoices=RQ.data.repliqueAuthorChoices||[];
+  if(authorChoices.length>=2){
+    const correctAuthor=RQ.data.answer||'';
+    let pool=authorChoices.filter(c=>normRQ(c)!==normRQ(correctAuthor));
+    let display=[correctAuthor,...pool.slice(0,3)].sort(()=>Math.random()-.5);
+    display.forEach(ch=>{
+      const btn=document.createElement('div');
+      btn.className='replique-choice'; btn.textContent=ch;
+      btn.onclick=()=>submitRepliqueAuthor(false,ch);
+      authorArea.appendChild(btn);
+    });
+  } else {
+    authorArea.innerHTML='<div style="display:flex;gap:8px">'
+      +'<input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l\'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">'
+      +'<button class="chk-btn" onclick="submitRepliqueAuthor(false,null)">✓</button></div>';
+    const inp=document.getElementById('rq-author-input');
+    if(inp){inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor(false,null);};setTimeout(()=>inp.focus(),80);}
+  }
 }
 
-function submitRepliqueAuthor(timeout){
+function submitRepliqueAuthor(timeout,choice){
   if(RQ.done) return;
   RQ.done=true;
-  if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
+  if(RQ.globalTimerInt){clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;}
   const inp=document.getElementById('rq-author-input');
+  const val=timeout?'':(choice||(inp?.value.trim()||''));
+  const correct=!timeout&&matchesAuthor(val,RQ.data.answer||'');
+  const isQCM=!!(RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length>=2);
+  if(correct){
+    document.querySelectorAll('#replique-author-choices .replique-choice').forEach(btn=>{
+      if(matchesAuthor(btn.textContent,RQ.data.answer||'')) btn.classList.add('correct');
+      btn.onclick=null;
+    });
+    RQ.p2Score=30;
+  } else if(!timeout&&isQCM&&choice){
+    document.querySelectorAll('#replique-author-choices .replique-choice').forEach(btn=>{
+      if(matchesAuthor(btn.textContent,RQ.data.answer||'')) btn.classList.add('correct');
+      else if(normRQ(btn.textContent)===normRQ(choice)) btn.classList.add('wrong');
+      btn.onclick=null;
+    });
+    RQ.p2Score=-15;
+  } else {
+    RQ.p2Score=0;
+  }
   if(inp) inp.disabled=true;
-  const val=timeout?'':(inp?.value.trim()||'');
-  const correct=matchesAuthor(val, RQ.data.answer||'');
-  RQ.p2Score=correct?30:0;
   const fb=document.getElementById('replique-fb2');
-  fb.textContent=correct?'✅ Auteur trouvé ! +30 pts':(timeout?`⏰ Temps écoulé — c'était ${RQ.data.answer||'?'}`:`❌ C'était ${RQ.data.answer||'?'}`);
+  const total=Math.max(0,RQ.p1Score+RQ.p2Score);
+  G.score=total;
+  if(timeout) fb.textContent='⏰ Temps écoulé — c\'était '+(RQ.data.answer||'?');
+  else if(correct) fb.textContent='✅ Auteur trouvé ! +30 pts';
+  else if(RQ.p2Score===-15) fb.textContent='❌ −15 pts ! C\'était '+(RQ.data.answer||'?');
+  else fb.textContent='❌ C\'était '+(RQ.data.answer||'?');
   fb.className='fb '+(correct?'':'pen');
-  const total=RQ.p1Score+RQ.p2Score;
-  G.score=total; setScore(total,true);
+  setScore(total,true);
   setTimeout(()=>{
     document.getElementById('v-name').textContent=RQ.data.answer||'???';
     document.getElementById('v-sc').textContent=total;
-    document.getElementById('v-sub').textContent=`Citation : ${RQ.p1Score} pts · Auteur : ${RQ.p2Score} pts`;
+    document.getElementById('v-sub').textContent='Citation : '+RQ.p1Score+' pts · Auteur : '+(RQ.p2Score>0?'+':'')+RQ.p2Score+' pts';
     document.getElementById('v-revealed').textContent=RQ.p1Score;
     document.getElementById('v-revealed-lbl').textContent='pts citation';
-    document.getElementById('v-wrong').textContent=RQ.p2Score;
+    document.getElementById('v-wrong').textContent=Math.max(0,RQ.p2Score);
     document.querySelector('#v-wrong').nextElementSibling.textContent='pts auteur';
     show('sv'); confetti();
     submitScore(total);
   },1600);
 }
+
 
 // ── THE CHASE MODE ────────────────────────────────────────────────────────
 const CH = {
