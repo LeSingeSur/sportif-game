@@ -244,7 +244,27 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .chase-found{display:flex;flex-wrap:wrap;gap:6px;min-height:32px}
 .chase-tag{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);border-radius:99px;padding:4px 10px;font-size:12px;color:#00e676;animation:fu .2s ease}
 .chase-grace{font-family:var(--fh);font-size:13px;text-align:center;color:var(--orange)}
-/* LE SCOUT */
+/* LE BLACKJACK */
+#blackjack-zone{display:none;flex-direction:column;gap:12px}
+.bj-theme{font-size:14px;font-weight:700;text-align:center;color:var(--txt);line-height:1.4;background:var(--c1);border-radius:var(--r);padding:12px}
+.bj-counter{text-align:center;margin:2px 0}
+.bj-counter-nums{font-family:var(--fh);font-size:52px;line-height:1;transition:color .3s}
+.bj-counter-nums.safe{color:var(--neon)}
+.bj-counter-nums.warn{color:var(--orange)}
+.bj-counter-nums.danger{color:var(--red)}
+.bj-target-lbl{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);margin-top:4px}
+.bj-bar{height:8px;background:var(--c2);border-radius:99px;overflow:hidden}
+.bj-bar-fill{height:100%;border-radius:99px;transition:width .4s cubic-bezier(.34,1.4,.64,1),background .3s}
+.bj-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.bj-card{background:var(--c2);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.bj-card:active{transform:scale(.97)}
+.bj-card.selected{background:rgba(212,255,0,.1);border-color:var(--neon)}
+.bj-card.used{opacity:.35;pointer-events:none;border-style:dashed}
+.bj-card-name{font-size:13px;font-weight:800;color:var(--txt)}
+.bj-card-val{font-family:var(--fh);font-size:20px;color:var(--neon)}
+.bj-card.selected .bj-card-val{color:var(--neon)}
+.bj-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
+@keyframes bj-bust{0%{transform:scale(1)}20%{transform:scale(1.04)}40%{transform:scale(.97)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
 #scout-zone{display:none;flex-direction:column;gap:14px}
 .scout-score-big{font-family:var(--fh);font-size:56px;text-align:center;color:var(--neon);line-height:1;transition:color .3s}
 .scout-score-big.penalty{color:var(--red);animation:sc-pulse .3s ease}
@@ -352,7 +372,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
-      <div class="gt-item"><div class="gt-ico">📝</div><div class="gt-name">Texte</div></div>
+      <div class="gt-item"><div class="gt-ico">🃏</div><div class="gt-name">Blackjack</div></div>
       <div class="gt-item"><div class="gt-ico">🖼️</div><div class="gt-name">Image</div></div>
       <div class="gt-item"><div class="gt-ico">⚡</div><div class="gt-name">Buzz</div></div>
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Sportus</div></div>
@@ -511,6 +531,20 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <button id="chase-rules-ok" class="btn btn-p" style="margin-top:20px;width:100%;font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
     </div>
+  </div>
+
+  <!-- LE BLACKJACK zone -->
+  <div id="blackjack-zone">
+    <div class="bj-theme" id="bj-theme">…</div>
+    <div class="bj-counter">
+      <div class="bj-counter-nums safe" id="bj-nums">0 <span style="font-size:28px;color:var(--mute)">/ <span id="bj-target-num">50</span></span></div>
+      <div class="bj-target-lbl">Plafond à ne pas dépasser</div>
+    </div>
+    <div class="bj-bar"><div class="bj-bar-fill" id="bj-bar-fill" style="width:0%;background:var(--neon)"></div></div>
+    <!-- Grille de cartes cliquables -->
+    <div class="bj-cards" id="bj-cards"></div>
+    <button id="bj-encaisser" class="btn btn-p bj-encaisser" disabled style="opacity:.4">💰 ENCAISSER</button>
+    <div class="fb" id="bj-fb"></div>
   </div>
 
   <!-- LE SCOUT zone -->
@@ -761,6 +795,7 @@ async function loadAthlete(){
   document.getElementById('chase-zone').style.display='none';
   document.getElementById('scout-zone').style.display='none';
   document.getElementById('replique-zone').style.display='none';
+  document.getElementById('blackjack-zone').style.display='none';
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -811,6 +846,9 @@ async function loadAthlete(){
     } else if(data.type==='replique'){
       document.getElementById('std-ans-area').style.display='none';
       setupRepliqueMode(data);
+    } else if(data.type==='blackjack'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupBlackjackMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1145,6 +1183,139 @@ function showVictoryFromPrix(finalScore, fullAnswer){
   submitScore(Math.floor(finalScore));
 }
 
+// ── LE BLACKJACK MODE ─────────────────────────────────────────────────────
+const BJ = { score:0, target:50, answers:{}, selected:[], done:false };
+
+function normBJ(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'').trim(); }
+
+function setupBlackjackMode(data){
+  const badge=document.getElementById('type-badge');
+  badge.textContent='🃏 Blackjack'; badge.className='type-badge'; badge.style.color='#ffc800';
+  document.getElementById('game-tip').innerHTML='Sélectionne des joueurs · Cumule leurs stats · Ne dépasse pas le plafond';
+  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('blackjack-zone').style.display='flex';
+
+  BJ.score=0; BJ.target=data.bjTarget||50; BJ.selected=[]; BJ.done=false;
+  BJ.answers={};
+  Object.entries(data.bjAnswers||{}).forEach(([k,v])=>{ BJ.answers[normBJ(k)]={name:k,val:+v}; });
+
+  G.score=0; G.max=100; setScore(0,false);
+  G.athleteName=data.answer||'Blackjack';
+  document.getElementById('bj-theme').textContent=data.bjTheme||'';
+  document.getElementById('bj-target-num').textContent=BJ.target;
+  document.getElementById('bj-nums').innerHTML=`0 <span style="font-size:28px;color:var(--mute)">/ ${BJ.target}</span>`;
+  document.getElementById('bj-nums').className='bj-counter-nums safe';
+  document.getElementById('bj-bar-fill').style.width='0%';
+  document.getElementById('bj-bar-fill').style.background='var(--neon)';
+  document.getElementById('bj-fb').textContent='';
+  const enc=document.getElementById('bj-encaisser');
+  enc.disabled=true; enc.style.opacity='.4'; enc.style.animation='none';
+  enc.onclick=encaisserBJ;
+
+  // Build cards
+  const grid=document.getElementById('bj-cards');
+  grid.innerHTML='';
+  Object.entries(BJ.answers).forEach(([key,{name,val}])=>{
+    const card=document.createElement('div');
+    card.className='bj-card';
+    card.dataset.key=key;
+    card.innerHTML=`<span class="bj-card-name">${name}</span><span class="bj-card-val">+${val}</span>`;
+    card.onclick=()=>toggleBJCard(key);
+    grid.appendChild(card);
+  });
+}
+
+function toggleBJCard(key){
+  if(BJ.done) return;
+  const card=document.querySelector(`.bj-card[data-key="${key}"]`);
+  if(!card||card.classList.contains('used')) return;
+
+  const {val}=BJ.answers[key];
+  const wasSelected=card.classList.contains('selected');
+
+  if(wasSelected){
+    // Deselect
+    card.classList.remove('selected');
+    BJ.selected=BJ.selected.filter(k=>k!==key);
+    BJ.score-=val;
+  } else {
+    // Select
+    card.classList.add('selected');
+    BJ.selected.push(key);
+    BJ.score+=val;
+  }
+
+  updateBJDisplay();
+
+  const enc=document.getElementById('bj-encaisser');
+  if(BJ.score>0){
+    enc.disabled=false; enc.style.opacity='1';
+    enc.style.animation='securiser-pulse 1.5s infinite';
+    enc.textContent=`💰 ENCAISSER (${Math.floor((Math.min(BJ.score,BJ.target)/BJ.target)*100)} pts)`;
+  } else {
+    enc.disabled=true; enc.style.opacity='.4'; enc.style.animation='none';
+    enc.textContent='💰 ENCAISSER';
+  }
+
+  const fb=document.getElementById('bj-fb');
+
+  if(BJ.score===BJ.target){
+    // BLACKJACK parfait !
+    fb.textContent='🃏 BLACKJACK PARFAIT ! 100 pts !';
+    fb.style.color='var(--neon)';
+    enc.style.animation='none';
+    setTimeout(()=>finishBJ(100,'🃏 BLACKJACK PARFAIT !'), 1000);
+  } else if(BJ.score>BJ.target){
+    // BUST — désactiver toutes les cartes
+    document.querySelectorAll('.bj-card').forEach(c=>c.style.pointerEvents='none');
+    enc.disabled=true; enc.style.animation='none';
+    document.getElementById('blackjack-zone').style.animation='bj-bust .5s ease';
+    setTimeout(()=>{document.getElementById('blackjack-zone').style.animation='';},500);
+    fb.textContent=`💥 BUST ! ${BJ.score} > ${BJ.target} — 0 pts`;
+    fb.style.color='var(--red)';
+    setTimeout(()=>finishBJ(0,`💥 BUST ! ${BJ.score} dépasse le plafond`), 1500);
+  } else {
+    fb.textContent='';
+    fb.style.color='';
+  }
+}
+
+function updateBJDisplay(){
+  const pct=Math.min(100,(BJ.score/BJ.target)*100);
+  const fill=document.getElementById('bj-bar-fill');
+  fill.style.width=pct+'%';
+  const numsEl=document.getElementById('bj-nums');
+  numsEl.innerHTML=`${BJ.score} <span style="font-size:28px;color:var(--mute)">/ ${BJ.target}</span>`;
+  if(pct>100){ numsEl.className='bj-counter-nums danger'; fill.style.background='var(--red)'; }
+  else if(pct>=80){ numsEl.className='bj-counter-nums warn'; fill.style.background='var(--orange)'; }
+  else { numsEl.className='bj-counter-nums safe'; fill.style.background='var(--neon)'; }
+}
+
+function encaisserBJ(){
+  if(BJ.done||BJ.score<=0) return;
+  const finalScore=Math.min(100,Math.floor((BJ.score/BJ.target)*100));
+  finishBJ(finalScore,`💰 Encaissé ! ${BJ.score}/${BJ.target} = ${finalScore} pts`);
+}
+
+function finishBJ(finalScore, msg){
+  BJ.done=true; G.active=false;
+  document.querySelectorAll('.bj-card').forEach(c=>c.style.pointerEvents='none');
+  const enc=document.getElementById('bj-encaisser');
+  enc.disabled=true; enc.style.animation='none';
+  G.score=finalScore;
+  setTimeout(()=>{
+    document.getElementById('v-name').textContent=G.athleteName||'Blackjack';
+    document.getElementById('v-sc').textContent=finalScore;
+    document.getElementById('v-sub').textContent=msg;
+    document.getElementById('v-revealed').textContent=BJ.selected.length;
+    document.getElementById('v-revealed-lbl').textContent='joueurs sélectionnés';
+    document.getElementById('v-wrong').textContent=BJ.score;
+    document.querySelector('#v-wrong').nextElementSibling.textContent=`/ ${BJ.target} cumulé`;
+    show('sv'); confetti();
+    submitScore(finalScore);
+  },400);
+}
+
 // ── LE SCOUT MODE ─────────────────────────────────────────────────────────
 const SC = { score:100, revealed:[], done:false, indicesData:[], timerInt:null };
 const SCOUT_COSTS = [20, 25, 30, 15]; // identité, carrière, palmarès, mystère
@@ -1283,7 +1454,7 @@ function finishScout(won){
 }
 
 // ── LA RÉPLIQUE CULTE MODE ────────────────────────────────────────────────
-const RQ = { phase:1, mode:null, p1Score:0, p2Score:0, done:false, timerInt:null, p1TimerInt:null, data:null };
+const RQ = { phase:1, mode:null, p1Score:0, p2Score:0, done:false, timerInt:null, p1TimerInt:null, tolerance:1, data:null };
 
 function setupRepliqueMode(data){
   const badge=document.getElementById('type-badge');
@@ -1293,6 +1464,7 @@ function setupRepliqueMode(data){
   document.getElementById('replique-zone').style.display='flex';
 
   RQ.phase=1; RQ.mode=null; RQ.p1Score=0; RQ.p2Score=0; RQ.done=false; RQ.data=data;
+  RQ.tolerance = data.rqTolerance !== undefined ? data.rqTolerance : 1;
   if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
   if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
   G.athleteName=data.answer||data.repliqueAnswer||'???';
@@ -1370,19 +1542,36 @@ function chooseRepliqueMode(mode){
 
 function normRQ(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();}
 
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function fuzzyMatch(val, ref){
+  const nv=normRQ(val), nr=normRQ(ref);
+  if(nv===nr) return true;
+  // Accept if 1 char difference per 4 chars of the reference (max 2)
+  const maxDist=Math.min(2, Math.floor(nr.length/4));
+  return levenshtein(nv,nr)<=maxDist;
+}
+
 function matchesAuthor(val, answer){
   if(!val||!answer) return false;
+  const tol=RQ.tolerance;
   const nv=normRQ(val), na=normRQ(answer);
-  if(nv===na) return true;
-  // Accept first name or last name alone
-  const parts=na.split(/\s+/);
-  return parts.includes(nv);
+  if(tol===0) return nv===na || na.split(/\s+/).includes(nv);
+  if(levenshtein(nv,na)<=tol) return true;
+  return na.split(/\s+/).some(p=>levenshtein(nv,p)<=tol);
 }
 
 function submitRepliqueCash(timeout){
   if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
   const val=timeout?'':(document.getElementById('rq-cash-in')?.value.trim()||'');
-  const correct=!timeout&&normRQ(val)===normRQ(RQ.data.repliqueAnswer);
+  const tol=RQ.tolerance;
+  const correct=!timeout&&(tol===0?normRQ(val)===normRQ(RQ.data.repliqueAnswer):levenshtein(normRQ(val),normRQ(RQ.data.repliqueAnswer))<=tol);
   RQ.p1Score=correct?70:0;
   revealRepliqueResult(correct, RQ.data.repliqueAnswer);
 }

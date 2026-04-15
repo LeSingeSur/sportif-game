@@ -197,10 +197,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div class="field">
         <label>Type de défi</label>
         <div class="type-sel">
-          <div class="type-opt sel" id="type-text" onclick="selectType('text')">
-            <div class="type-ico">📝</div>
-            <div class="type-name">Texte</div>
-            <div class="type-desc">Mots masqués</div>
+          <div class="type-opt sel" id="type-blackjack" onclick="selectType('blackjack')">
+            <div class="type-ico">🃏</div>
+            <div class="type-name">Blackjack</div>
+            <div class="type-desc">Cumule sans dépasser</div>
           </div>
           <div class="type-opt" id="type-image" onclick="selectType('image')">
             <div class="type-ico">🖼</div>
@@ -287,6 +287,25 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <button class="btn btn-s" id="btn-preview-text" style="margin-bottom:4px">👁 Prévisualiser le texte</button>
         <div class="preview-box" id="preview-box-text"></div>
+      </div>
+
+      <!-- BLACKJACK fields -->
+      <div id="blackjack-fields" style="display:block">
+        <div class="field">
+          <label>Thème / Consigne</label>
+          <input type="text" id="bj-theme-in" placeholder="Ex: Cumulez les buts de ces joueurs en Équipe de France">
+        </div>
+        <div class="field">
+          <label>🎯 Plafond à ne pas dépasser</label>
+          <input type="number" id="bj-target-in" placeholder="Ex: 50" min="1" style="max-width:120px">
+          <span class="hint">Le joueur doit s'approcher de ce nombre sans le dépasser.</span>
+        </div>
+        <div class="field">
+          <label>Réponses valides (format : Nom=Valeur, une par ligne ou séparées par ;)</label>
+          <textarea id="bj-answers-in" placeholder="Mbappé=46&#10;Giroud=57&#10;Griezmann=44&#10;Benzema=37" style="min-height:120px"></textarea>
+          <span class="hint">Les noms sont insensibles à la casse et aux accents.</span>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="bj-answers-count">0 entrée(s)</div>
+        </div>
       </div>
 
       <!-- IMAGE fields -->
@@ -547,6 +566,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="rq-author-in" placeholder="Ex: Zidane">
           <span class="hint">Le joueur devra taper ce nom dans un champ libre en 30 secondes.</span>
         </div>
+        <div class="field">
+          <label>🎯 Tolérance aux fautes d'orthographe</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="rq-tolerance-grid"></div>
+          <span class="hint" id="rq-tolerance-hint">Nombre de caractères différents acceptés</span>
+        </div>
         <input type="hidden" id="rq-author-choices-in" value="">
       </div>
 
@@ -595,7 +619,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 </div>
 <script>
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
-let adminPw='', selEmoji='🏆', editId=null, currentType='text';
+let adminPw='', selEmoji='🏆', editId=null, currentType='blackjack';
 let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
 
 // Buzz speed grid — 1/2/3 pts/sec only, default 2
@@ -676,21 +700,21 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 // Type selector
 function selectType(type){
   currentType=type;
-  ['text','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
+  ['blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
-  document.getElementById('text-fields').style.display      = type==='text'?'block':'none';
-  document.getElementById('image-fields').style.display     = type==='image'?'block':'none';
-  document.getElementById('buzz-fields').style.display      = type==='buzz'?'block':'none';
-  document.getElementById('sportus-fields').style.display   = type==='sportus'?'block':'none';
-  document.getElementById('prix-fields').style.display      = type==='prix'?'block':'none';
-  document.getElementById('trappe-fields').style.display    = type==='trappe'?'block':'none';
-  document.getElementById('demineur-fields').style.display  = type==='demineur'?'block':'none';
-  document.getElementById('chase-fields').style.display     = type==='chase'?'block':'none';
-  document.getElementById('scout-fields').style.display     = type==='scout'?'block':'none';
-  document.getElementById('replique-fields').style.display  = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique';
+  document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
+  document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
+  document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
+  document.getElementById('sportus-fields').style.display    = type==='sportus'?'block':'none';
+  document.getElementById('prix-fields').style.display       = type==='prix'?'block':'none';
+  document.getElementById('trappe-fields').style.display     = type==='trappe'?'block':'none';
+  document.getElementById('demineur-fields').style.display   = type==='demineur'?'block':'none';
+  document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
+  document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
+  document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='scout';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -724,8 +748,8 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':'📝 Texte';
-    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':'txt';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
@@ -736,6 +760,7 @@ async function loadAthletes(){
     else if(a.type==='chase') meta=`${(a.chaseAnswers||[]).length} réponses · ×${a.chaseTargetToWin||10} cases · ${a.chaseSpeed||10}s/pas`;
     else if(a.type==='scout') meta=`4 indices · ${(a.scoutIndices||[]).filter(i=>i.text).length} remplis`;
     else if(a.type==='replique') meta=`"${(a.repliqueAmorce||a.repliqueCitation||'').substring(0,30)}…" — ${a.answer||'?'}`;
+    else if(a.type==='blackjack') meta=`Plafond ${a.bjTarget||50} · ${Object.keys(a.bjAnswers||{}).length} joueurs`;
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
     const d=document.createElement('div');d.className='ath-item';
     d.innerHTML=`
@@ -773,8 +798,15 @@ async function startEdit(id){
   editId=id;
   document.getElementById('answer-in').value=a.answer;
   document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
-  selectType(a.type||'text');
-  if(a.type==='image'){
+  selectType(a.type||'blackjack');
+  if(a.type==='blackjack'){
+    document.getElementById('bj-theme-in').value=a.bjTheme||'';
+    document.getElementById('bj-target-in').value=a.bjTarget||50;
+    const entries=Object.entries(a.bjAnswers||{}).map(([k,v])=>`${k}=${v}`).join('\n');
+    document.getElementById('bj-answers-in').value=entries;
+    document.getElementById('bj-answers-count').textContent=Object.keys(a.bjAnswers||{}).length+' entrée(s)';
+    checkReady();
+  } else if(a.type==='image'){
     if(a.imageBase64){
       imgSrc='file'; imgBase64=a.imageBase64;
       selectImgSrc('file');
@@ -845,6 +877,7 @@ async function startEdit(id){
     document.getElementById('rq-answer-in').value=a.repliqueAnswer||'';
     document.getElementById('rq-choices-in').value=(a.repliqueChoices||[]).join(';');
     document.getElementById('rq-author-in').value=a.answer||'';
+    selectRqTolerance(a.rqTolerance!==undefined?a.rqTolerance:1);
     document.getElementById('rq-author-choices-in').value=(a.repliqueAuthorChoices||[]).join(';');
     checkReady();
   } else {
@@ -873,6 +906,10 @@ function cancelEdit(){
   document.getElementById('btn-save').textContent='🚀 Publier ce défi';
   document.getElementById('answer-in').value='';
   document.getElementById('clue-in').value='';
+  document.getElementById('bj-theme-in').value='';
+  document.getElementById('bj-target-in').value='';
+  document.getElementById('bj-answers-in').value='';
+  document.getElementById('bj-answers-count').textContent='0 entrée(s)';
   document.getElementById('img-url-in').value='';
   imgSrc='url'; imgBase64='';
   selectImgSrc('url');
@@ -904,6 +941,7 @@ function cancelEdit(){
   const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
   [0,1,2,3].forEach(i=>{const l=document.getElementById('scout-label-'+i);if(l)l.value=defaultLabels[i];});
   ['rq-citation-in','rq-amorce-in','rq-answer-in','rq-choices-in','rq-author-in','rq-author-choices-in'].forEach(id=>{document.getElementById(id).value='';});
+  selectRqTolerance(1);
   document.getElementById('aliases-in').value='';
   document.getElementById('img-preview').style.display='none';
   document.getElementById('grid-prev').style.display='none';
@@ -971,9 +1009,10 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='blackjack'||currentType==='scout'||currentType==='replique') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
-  if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
+  if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
+  else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
   else if(currentType==='sportus') hasContent=true;
   else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
@@ -983,9 +1022,7 @@ function checkReady(){
   else if(currentType==='scout') hasContent=!![0,1,2,3].some(i=>document.getElementById('scout-'+i+'-in').value.trim());
   else if(currentType==='replique') hasContent=!!document.getElementById('rq-citation-in').value.trim()&&!!document.getElementById('rq-author-in').value.trim();
   else hasContent=!!document.getElementById('clue-in').value.trim();
-  const scoutOrReplique = currentType==='scout'||currentType==='replique';
-  const finalHasAnswer = scoutOrReplique ? true : hasAnswer;
-  document.getElementById('btn-save').disabled=!(finalHasAnswer&&hasContent);
+  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
 }
 
 // Image preview
@@ -1113,6 +1150,54 @@ let sportusTimerVal = 45;
 // Timer sportus fixé à 45s - plus de grille configurable
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// ── BLACKJACK ──────────────────────────────────────────────────────────────
+function parseBJAnswers(){
+  const raw=document.getElementById('bj-answers-in').value;
+  const lines=raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  const obj={};
+  lines.forEach(l=>{
+    const m=l.match(/^(.+?)=(\d+)$/);
+    if(m) obj[m[1].trim()]=parseInt(m[2]);
+  });
+  return {obj, count:Object.keys(obj).length};
+}
+document.getElementById('bj-theme-in').addEventListener('input',checkReady);
+document.getElementById('bj-target-in').addEventListener('input',checkReady);
+document.getElementById('bj-answers-in').addEventListener('input',e=>{
+  const {count}=parseBJAnswers();
+  document.getElementById('bj-answers-count').textContent=count+' entrée(s)';
+  checkReady();
+});
+
+// ── RÉPLIQUE TOLÉRANCE ────────────────────────────────────────────────────
+let rqTolerance = 1;
+(function buildRqToleranceGrid(){
+  const g=document.getElementById('rq-tolerance-grid');
+  if(!g) return;
+  const opts=[{val:0,label:'0 — Exact'},{val:1,label:'1 faute'},{val:2,label:'2 fautes'},{val:3,label:'3 fautes'}];
+  opts.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='rqtol-'+o.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 4px;cursor:pointer;font-family:var(--ff);font-size:12px;font-weight:800;transition:border-color .15s;text-align:center';
+    btn.textContent=o.label;
+    btn.onclick=()=>selectRqTolerance(o.val);
+    g.appendChild(btn);
+  });
+  selectRqTolerance(1);
+})();
+function selectRqTolerance(val){
+  rqTolerance=val;
+  [0,1,2,3].forEach(v=>{
+    const b=document.getElementById('rqtol-'+v);
+    if(!b) return;
+    b.style.borderColor=v===val?'var(--neon)':'rgba(255,255,255,.07)';
+    b.style.background=v===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  const hints=['Réponse exacte (accents ignorés)','1 caractère différent toléré','2 caractères différents tolérés','3 caractères différents tolérés'];
+  const h=document.getElementById('rq-tolerance-hint');
+  if(h) h.textContent=hints[val];
+}
 
 // ── THE CHASE ──────────────────────────────────────────────────────────────
 let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6, chaseMalus=30;
@@ -1524,7 +1609,10 @@ document.getElementById('btn-save').onclick=async()=>{
   const repliqueChoices  = currentType==='replique'?document.getElementById('rq-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const repliqueAuthor   = currentType==='replique'?document.getElementById('rq-author-in').value.trim():'';
   const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):rawAnswer;
+  const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
+  const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
+  const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -1556,7 +1644,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,bjTheme,bjTarget,bjAnswers};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
