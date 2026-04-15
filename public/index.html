@@ -556,6 +556,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="bj-target-lbl">Plafond à ne pas dépasser</div>
     </div>
     <div class="bj-bar"><div class="bj-bar-fill" id="bj-bar-fill" style="width:0%;background:var(--neon)"></div></div>
+    <!-- Timer -->
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="height:4px;flex:1;background:var(--c2);border-radius:99px;overflow:hidden;margin-right:10px">
+        <div id="bj-timer-fill" style="height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 60s linear"></div>
+      </div>
+      <div style="font-family:var(--fh);font-size:16px;color:var(--orange);min-width:32px;text-align:right" id="bj-timer-txt">60s</div>
+    </div>
     <!-- Grille de cartes cliquables -->
     <div class="bj-cards" id="bj-cards"></div>
     <button id="bj-encaisser" class="btn btn-p bj-encaisser" disabled style="opacity:.4">💰 ENCAISSER</button>
@@ -630,13 +637,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
           </div>
           <div class="replique-mode-btn" onclick="chooseRepliqueMode('duo')">
             <div style="font-size:20px">🥈</div>
-            <div class="pts">40 pts</div>
+            <div class="pts">20 pts</div>
             <div class="lbl">DUO</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
           </div>
           <div class="replique-mode-btn" onclick="chooseRepliqueMode('carre')">
             <div style="font-size:20px">🥉</div>
-            <div class="pts">20 pts</div>
+            <div class="pts">40 pts</div>
             <div class="lbl">CARRÉ</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">4 choix</div>
           </div>
@@ -1200,7 +1207,7 @@ function showVictoryFromPrix(finalScore, fullAnswer){
 }
 
 // ── LE BLACKJACK MODE ─────────────────────────────────────────────────────
-const BJ = { score:0, target:50, answers:{}, selected:[], done:false };
+const BJ = { score:0, target:50, answers:{}, selected:[], done:false, timerInt:null };
 
 function normBJ(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'').trim(); }
 
@@ -1216,9 +1223,24 @@ function setupBlackjackMode(data){
   modal.style.display='flex';
   document.getElementById('bj-rules-ok').onclick=()=>{
     modal.style.display='none';
+    // Start 60s timer
+    let bt=60;
+    const fill=document.getElementById('bj-timer-fill');
+    const txt=document.getElementById('bj-timer-txt');
+    fill.style.transition='none'; fill.style.width='100%';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      fill.style.transition='width 60s linear';
+      fill.style.width='0%';
+    }));
+    BJ.timerInt=setInterval(()=>{
+      bt--;
+      if(txt){txt.textContent=bt+'s';txt.style.color=bt<=10?'var(--red)':bt<=20?'var(--orange)':'var(--orange)';}
+      if(bt<=0){clearInterval(BJ.timerInt);BJ.timerInt=null;if(!BJ.done)encaisserBJ();}
+    },1000);
   };
 
   BJ.score=0; BJ.target=data.bjTarget||50; BJ.selected=[]; BJ.done=false;
+  if(BJ.timerInt){clearInterval(BJ.timerInt);BJ.timerInt=null;}
   BJ.answers={};
   Object.entries(data.bjAnswers||{}).forEach(([k,v])=>{ BJ.answers[normBJ(k)]={name:k,val:+v}; });
 
@@ -1242,7 +1264,7 @@ function setupBlackjackMode(data){
     const card=document.createElement('div');
     card.className='bj-card';
     card.dataset.key=key;
-    card.innerHTML=`<span class="bj-card-name">${name}</span><span class="bj-card-val">+${val}</span>`;
+    card.innerHTML=`<span class="bj-card-name">${name}</span><span class="bj-card-val" id="bjval-${key}" style="opacity:0">+${val}</span>`;
     card.onclick=()=>toggleBJCard(key);
     grid.appendChild(card);
   });
@@ -1257,15 +1279,19 @@ function toggleBJCard(key){
   const wasSelected=card.classList.contains('selected');
 
   if(wasSelected){
-    // Deselect
     card.classList.remove('selected');
     BJ.selected=BJ.selected.filter(k=>k!==key);
     BJ.score-=val;
+    // Hide value again
+    const valEl=document.getElementById('bjval-'+key);
+    if(valEl) valEl.style.opacity='0';
   } else {
-    // Select
     card.classList.add('selected');
     BJ.selected.push(key);
     BJ.score+=val;
+    // Reveal value
+    const valEl=document.getElementById('bjval-'+key);
+    if(valEl) valEl.style.opacity='1';
   }
 
   updateBJDisplay();
@@ -1322,6 +1348,7 @@ function encaisserBJ(){
 
 function finishBJ(finalScore, msg){
   BJ.done=true; G.active=false;
+  if(BJ.timerInt){clearInterval(BJ.timerInt);BJ.timerInt=null;}
   document.querySelectorAll('.bj-card').forEach(c=>c.style.pointerEvents='none');
   const enc=document.getElementById('bj-encaisser');
   enc.disabled=true; enc.style.animation='none';
@@ -1603,7 +1630,7 @@ function submitRepliqueCash(timeout){
 
 function submitRepliqueChoice(choice){
   const correct=normRQ(choice)===normRQ(RQ.data.repliqueAnswer);
-  RQ.p1Score=correct?(RQ.mode==='carre'?20:40):0;
+  RQ.p1Score=correct?(RQ.mode==='carre'?40:20):0;
   document.querySelectorAll('#replique-answer-area .replique-choice').forEach(btn=>{
     if(normRQ(btn.textContent)===normRQ(RQ.data.repliqueAnswer)) btn.classList.add('correct');
     else if(normRQ(btn.textContent)===normRQ(choice)&&!correct) btn.classList.add('wrong');
@@ -1633,7 +1660,16 @@ function startRepliquePhase2(){
   if(authorChoices.length>=2){
     const correctAuthor=RQ.data.answer||'';
     let pool=authorChoices.filter(c=>normRQ(c)!==normRQ(correctAuthor));
-    let display=[correctAuthor,...pool.slice(0,3)].sort(()=>Math.random()-.5);
+    // Number of choices = how many were provided (2=duo, 4=carré)
+    const nbChoices=Math.min(authorChoices.length, 4);
+    const nbWrong=nbChoices-1;
+    let display=[correctAuthor,...pool.slice(0,nbWrong)].sort(()=>Math.random()-.5);
+    const modeLabel=nbChoices<=2?'DUO — 2 choix':'CARRÉ — 4 choix';
+    const modePts=nbChoices<=2?40:20;
+    const modeDiv=document.createElement('div');
+    modeDiv.style.cssText='font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:6px';
+    modeDiv.textContent=modeLabel+' · +'+modePts+' pts';
+    authorArea.appendChild(modeDiv);
     display.forEach(ch=>{
       const btn=document.createElement('div');
       btn.className='replique-choice'; btn.textContent=ch;
@@ -1657,12 +1693,13 @@ function submitRepliqueAuthor(timeout,choice){
   const val=timeout?'':(choice||(inp?.value.trim()||''));
   const correct=!timeout&&matchesAuthor(val,RQ.data.answer||'');
   const isQCM=!!(RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length>=2);
+  const authorQCMScore=RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length<=2?40:20;
   if(correct){
     document.querySelectorAll('#replique-author-choices .replique-choice').forEach(btn=>{
       if(matchesAuthor(btn.textContent,RQ.data.answer||'')) btn.classList.add('correct');
       btn.onclick=null;
     });
-    RQ.p2Score=30;
+    RQ.p2Score=authorQCMScore;
   } else if(!timeout&&isQCM&&choice){
     document.querySelectorAll('#replique-author-choices .replique-choice').forEach(btn=>{
       if(matchesAuthor(btn.textContent,RQ.data.answer||'')) btn.classList.add('correct');
@@ -1678,7 +1715,7 @@ function submitRepliqueAuthor(timeout,choice){
   const total=Math.max(0,RQ.p1Score+RQ.p2Score);
   G.score=total;
   if(timeout) fb.textContent='⏰ Temps écoulé — c\'était '+(RQ.data.answer||'?');
-  else if(correct) fb.textContent='✅ Auteur trouvé ! +30 pts';
+  else if(correct) fb.textContent='✅ Auteur trouvé ! +'+authorQCMScore+' pts';
   else if(RQ.p2Score===-15) fb.textContent='❌ −15 pts ! C\'était '+(RQ.data.answer||'?');
   else fb.textContent='❌ C\'était '+(RQ.data.answer||'?');
   fb.className='fb '+(correct?'':'pen');
