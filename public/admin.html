@@ -29,13 +29,13 @@ body{font-family:var(--ff);background:var(--bg);color:var(--txt);min-height:100v
 .login-title{font-size:32px;font-weight:800;color:var(--neon);text-align:center;letter-spacing:2px}
 /* FORM */
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9999bb}
 input[type=text],input[type=number],input[type=password],input[type=url],textarea,select{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
 select{-webkit-appearance:none}
 input:focus,textarea:focus,select:focus{border-color:var(--neon)}
 input::placeholder,textarea::placeholder{color:var(--mute);font-weight:400}
 textarea{resize:vertical;min-height:120px;line-height:1.6}
-.hint{font-size:11px;color:var(--mute);margin-top:3px;line-height:1.4}
+.hint{font-size:12px;color:#8888aa;margin-top:3px;line-height:1.4}
 .wc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:5px}
 .wc-track{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:4px}
 .wc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .3s}
@@ -277,7 +277,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
 
       <!-- TEXT fields -->
-      <div id="text-fields">
+      <div id="text-fields" style="display:none">
         <div class="field">
           <label>Description (~100 mots)</label>
           <textarea id="clue-in" placeholder="Tous les mots seront masqués. ~100 mots = 100 pts max."></textarea>
@@ -567,9 +567,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <span class="hint">Le joueur devra taper ce nom dans un champ libre en 30 secondes.</span>
         </div>
         <div class="field">
-          <label>🎯 Tolérance aux fautes d'orthographe</label>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="rq-tolerance-grid"></div>
-          <span class="hint" id="rq-tolerance-hint">Nombre de caractères différents acceptés</span>
+          <label>🎯 Tolérance aux fautes (nb de caractères différents acceptés)</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="rq-tolerance-in" value="1" min="0" max="5" step="1" style="width:80px;text-align:center;font-size:18px;font-weight:800">
+            <span style="font-size:13px;color:var(--txt);flex:1">0 = exact · 1 = "Zidane/Zidanne" · 2 = plus permissif</span>
+          </div>
         </div>
         <input type="hidden" id="rq-author-choices-in" value="">
       </div>
@@ -1172,31 +1174,14 @@ document.getElementById('bj-answers-in').addEventListener('input',e=>{
 
 // ── RÉPLIQUE TOLÉRANCE ────────────────────────────────────────────────────
 let rqTolerance = 1;
-(function buildRqToleranceGrid(){
-  const g=document.getElementById('rq-tolerance-grid');
-  if(!g) return;
-  const opts=[{val:0,label:'0 — Exact'},{val:1,label:'1 faute'},{val:2,label:'2 fautes'},{val:3,label:'3 fautes'}];
-  opts.forEach(o=>{
-    const btn=document.createElement('button');
-    btn.type='button'; btn.id='rqtol-'+o.val;
-    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 4px;cursor:pointer;font-family:var(--ff);font-size:12px;font-weight:800;transition:border-color .15s;text-align:center';
-    btn.textContent=o.label;
-    btn.onclick=()=>selectRqTolerance(o.val);
-    g.appendChild(btn);
-  });
-  selectRqTolerance(1);
-})();
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('rq-tolerance-in');
+  if(inp) inp.addEventListener('input',()=>{ rqTolerance=parseInt(inp.value)||0; });
+});
 function selectRqTolerance(val){
   rqTolerance=val;
-  [0,1,2,3].forEach(v=>{
-    const b=document.getElementById('rqtol-'+v);
-    if(!b) return;
-    b.style.borderColor=v===val?'var(--neon)':'rgba(255,255,255,.07)';
-    b.style.background=v===val?'rgba(212,255,0,.06)':'var(--c2)';
-  });
-  const hints=['Réponse exacte (accents ignorés)','1 caractère différent toléré','2 caractères différents tolérés','3 caractères différents tolérés'];
-  const h=document.getElementById('rq-tolerance-hint');
-  if(h) h.textContent=hints[val];
+  const inp=document.getElementById('rq-tolerance-in');
+  if(inp) inp.value=val;
 }
 
 // ── THE CHASE ──────────────────────────────────────────────────────────────
@@ -1608,6 +1593,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const repliqueAnswer   = currentType==='replique'?document.getElementById('rq-answer-in').value.trim():'';
   const repliqueChoices  = currentType==='replique'?document.getElementById('rq-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const repliqueAuthor   = currentType==='replique'?document.getElementById('rq-author-in').value.trim():'';
+  const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
   const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
