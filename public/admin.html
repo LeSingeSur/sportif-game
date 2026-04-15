@@ -772,9 +772,10 @@ async function loadAthletes(){
     else if(a.type==='replique') meta=`"${(a.repliqueAmorce||a.repliqueCitation||'').substring(0,30)}…" — ${a.answer||'?'}`;
     else if(a.type==='blackjack') meta=`Plafond ${a.bjTarget||50} · ${Object.keys(a.bjAnswers||{}).length} joueurs`;
     else meta=(a.clue?.split(/\s+/).length||0)+' mots';
-    const d=document.createElement('div');d.className='ath-item';
+    const d=document.createElement('div');d.className='ath-item';d.dataset.id=a.id;d.draggable=true;
     d.innerHTML=`
       <div class="ath-top">
+        <div style="cursor:grab;font-size:18px;padding:0 6px;color:var(--mute);touch-action:none" class="drag-handle">⠿</div>
         <div class="ath-ico">${a.emoji}</div>
         <div class="ath-info">
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
@@ -798,6 +799,43 @@ async function loadAthletes(){
       </div>`;
     list.appendChild(d);
   });
+  initDragDrop(list);
+}
+
+function initDragDrop(list){
+  let dragged=null, dragOverEl=null;
+  list.querySelectorAll('.ath-item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{
+      dragged=item;
+      item.style.opacity='.4';
+      e.dataTransfer.effectAllowed='move';
+    });
+    item.addEventListener('dragend',()=>{
+      item.style.opacity='';
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      if(dragged) dragged=null;
+    });
+    item.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(item===dragged) return;
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      item.style.borderTop='2px solid var(--neon)';
+      dragOverEl=item;
+    });
+    item.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!dragged||dragged===item) return;
+      list.insertBefore(dragged,item);
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      saveOrder(list);
+    });
+  });
+}
+
+async function saveOrder(list){
+  const ids=[...list.querySelectorAll('.ath-item')].map(el=>parseInt(el.dataset.id));
+  await fetch('/api/admin/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,order:ids})});
+  loadAthletes();
 }
 
 // Edit

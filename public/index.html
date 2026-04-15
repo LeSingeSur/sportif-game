@@ -534,6 +534,21 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- LE BLACKJACK zone -->
+  <!-- BLACKJACK rules modal -->
+  <div id="bj-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px">
+      <div style="font-family:var(--fh);font-size:22px;text-align:center;color:var(--neon)">🃏 BLACKJACK</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
+        <div>🎯 <strong>But :</strong> Sélectionne des joueurs pour cumuler leurs stats sans dépasser le plafond affiché.</div>
+        <div>👆 <strong>Clique</strong> sur une carte pour l'ajouter ou la retirer du cumul.</div>
+        <div>💰 <strong>ENCAISSER</strong> → tu marques un % du plafond atteint. Ex : 45/50 = 90 pts.</div>
+        <div>🃏 <strong>Blackjack parfait</strong> → cumul = plafond exact = <strong>100 pts</strong> !</div>
+        <div>💥 <strong>Bust</strong> → cumul dépasse le plafond = <strong>0 pt</strong>. Attention aux grosses valeurs !</div>
+      </div>
+      <button id="bj-rules-ok" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
+    </div>
+  </div>
+
   <div id="blackjack-zone">
     <div class="bj-theme" id="bj-theme">…</div>
     <div class="bj-counter">
@@ -613,17 +628,17 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
             <div class="lbl">CASH</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">Tape la fin</div>
           </div>
-          <div class="replique-mode-btn" onclick="chooseRepliqueMode('carre')">
-            <div style="font-size:20px">🥉</div>
-            <div class="pts">20 pts</div>
-            <div class="lbl">CARRÉ</div>
-            <div style="font-size:10px;color:var(--mute);margin-top:2px">4 choix</div>
-          </div>
           <div class="replique-mode-btn" onclick="chooseRepliqueMode('duo')">
             <div style="font-size:20px">🥈</div>
             <div class="pts">40 pts</div>
             <div class="lbl">DUO</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
+          </div>
+          <div class="replique-mode-btn" onclick="chooseRepliqueMode('carre')">
+            <div style="font-size:20px">🥉</div>
+            <div class="pts">20 pts</div>
+            <div class="lbl">CARRÉ</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:2px">4 choix</div>
           </div>
         </div>
       </div>
@@ -794,14 +809,7 @@ async function loadAthlete(){
   if(_imgz) _imgz.style.display='none';
   if(_buzzz) _buzzz.style.display='none';
   document.getElementById('buzz-sticky').classList.remove('on');
-  document.getElementById('sportus-zone').style.display='none';
-  document.getElementById('prix-zone').style.display='none';
-  document.getElementById('trappe-zone').style.display='none';
-  document.getElementById('demineur-zone').style.display='none';
-  document.getElementById('chase-zone').style.display='none';
-  document.getElementById('scout-zone').style.display='none';
-  document.getElementById('replique-zone').style.display='none';
-  document.getElementById('blackjack-zone').style.display='none';
+  hideAllZones();
   if(_stdans) _stdans.style.display='flex';
   if(_barf) _barf.style.width='0%';
   if(_ansi){_ansi.value='';_ansi.className='ans-in';}
@@ -867,13 +875,18 @@ async function loadAthlete(){
   }
 }
 
+// ── HIDE ALL ZONES ────────────────────────────────────────────────────────
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone'];
+function hideAllZones(){
+  ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+}
+
 // ── TEXT MODE ─────────────────────────────────────────────────────────────
 function setupTextMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='📝 Mode texte'; badge.className='type-badge txt';
   document.getElementById('game-tip').innerHTML='Tapote <em>−1 pt</em> &nbsp;·&nbsp; Mauvaise réponse <span class="ph">−10 pts</span>';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
+  hideAllZones();
   document.getElementById('clue').style.display='block';
   buildClue(data.clue);
 }
@@ -982,10 +995,7 @@ function setupPrixMode(data){
   badge.textContent='💰 Juste Prix'; badge.className='type-badge';
   badge.style.color='#f0c000';
   document.getElementById('game-tip').innerHTML='Estime la stat · <em>PLUS ⬆️</em> ou <em>MOINS ⬇️</em> · 1er essai gratuit';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
-  document.getElementById('sportus-zone').style.display='none';
+  hideAllZones();
   document.getElementById('prix-zone').style.display='flex';
 
   P.question      = data.question;
@@ -1198,8 +1208,15 @@ function setupBlackjackMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='🃏 Blackjack'; badge.className='type-badge'; badge.style.color='#ffc800';
   document.getElementById('game-tip').innerHTML='Sélectionne des joueurs · Cumule leurs stats · Ne dépasse pas le plafond';
-  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  hideAllZones();
   document.getElementById('blackjack-zone').style.display='flex';
+
+  // Show rules modal first
+  const modal=document.getElementById('bj-rules-modal');
+  modal.style.display='flex';
+  document.getElementById('bj-rules-ok').onclick=()=>{
+    modal.style.display='none';
+  };
 
   BJ.score=0; BJ.target=data.bjTarget||50; BJ.selected=[]; BJ.done=false;
   BJ.answers={};
@@ -1330,7 +1347,7 @@ function setupScoutMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='🔍 Le Scout'; badge.className='type-badge'; badge.style.color='#00c8ff';
   document.getElementById('game-tip').innerHTML='Révèle des indices · Devine le sportif · Moins tu dépenses, plus tu gagnes';
-  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','replique-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  hideAllZones();
   document.getElementById('scout-zone').style.display='flex';
 
   SC.score=100; SC.revealed=[]; SC.done=false;
@@ -1466,7 +1483,7 @@ function setupRepliqueMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='💬 Réplique Culte'; badge.className='type-badge'; badge.style.color='#ff9800';
   document.getElementById('game-tip').innerHTML='Choisis ton mode · Trouve la fin · Puis l\'auteur';
-  ['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone'].forEach(id=>document.getElementById(id).style.display='none');
+  hideAllZones();
   document.getElementById('replique-zone').style.display='flex';
 
   RQ.phase=1; RQ.mode=null; RQ.p1Score=0; RQ.p2Score=0; RQ.done=false; RQ.data=data;
@@ -1693,13 +1710,7 @@ function setupChaseMode(data){
   badge.textContent='🏃 The Chase'; badge.className='type-badge';
   badge.style.color='#ff4444';
   document.getElementById('game-tip').innerHTML='Trouve les bonnes réponses · Avance avant le Chasseur · <em>Ne te fais pas rattraper !</em>';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
-  document.getElementById('sportus-zone').style.display='none';
-  document.getElementById('prix-zone').style.display='none';
-  document.getElementById('trappe-zone').style.display='none';
-  document.getElementById('demineur-zone').style.display='none';
+  hideAllZones();
   document.getElementById('chase-zone').style.display='flex';
 
   CH.targetToWin = 10;
@@ -1969,12 +1980,7 @@ function setupDemineurMode(data){
   badge.textContent='💣 Démineur'; badge.className='type-badge';
   badge.style.color='#ff9800';
   document.getElementById('game-tip').innerHTML='Clique les bonnes réponses · Évite les mines · <em>ENCAISSER</em> pour sécuriser';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
-  document.getElementById('sportus-zone').style.display='none';
-  document.getElementById('prix-zone').style.display='none';
-  document.getElementById('trappe-zone').style.display='none';
+  hideAllZones();
   document.getElementById('demineur-zone').style.display='flex';
 
   // Shuffle items
@@ -2128,11 +2134,7 @@ function setupTrappeMode(data){
   badge.textContent='🕳️ La Trappe'; badge.className='type-badge';
   badge.style.color='#ff9800';
   document.getElementById('game-tip').innerHTML='Répartis tous tes points · Score = capital final';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
-  document.getElementById('sportus-zone').style.display='none';
-  document.getElementById('prix-zone').style.display='none';
+  hideAllZones();
   document.getElementById('trappe-zone').style.display='flex';
 
   T.questions = data.trappeQuestions || [];
@@ -2382,10 +2384,7 @@ function setupSportusMode(data){
   badge.textContent='🎯 Sportus'; badge.className='type-badge';
   badge.style.color='#f0c000';
   document.getElementById('game-tip').innerHTML='Devine le <em>nom de famille</em> · 10 essais · <span class="ph">−10 pts</span>/essai (sauf le 1er)';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
-  document.getElementById('buzz-zone').style.display='none';
-  document.getElementById('prix-zone').style.display='none';
+  hideAllZones();
   document.getElementById('sportus-zone').style.display='flex';
 
   S.targetLen        = data.lastNameLength;
@@ -2688,8 +2687,7 @@ function setupBuzzMode(data){
   const badge=document.getElementById('type-badge');
   badge.textContent='⚡ Buzz Chrono'; badge.className='type-badge buzz';
   document.getElementById('game-tip').innerHTML='Appuie sur <em>DÉBUT</em> puis <em>BUZZ</em> dès que tu sais !';
-  document.getElementById('img-zone').style.display='none';
-  document.getElementById('clue').style.display='none';
+  hideAllZones();
   document.getElementById('buzz-zone').style.display='flex';
   document.getElementById('buzz-sticky').classList.add('on');
 
