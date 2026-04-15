@@ -121,11 +121,17 @@ app.get('/api/preview', (req, res) => {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'blackjack') {
+    base.bjTheme   = athlete.bjTheme || '';
+    base.bjTarget  = athlete.bjTarget || 50;
+    base.bjAnswers = athlete.bjAnswers || {};
+    base.maxScore  = 100;
   } else {
-    base.clue = athlete.clue;
-    base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
+    base.clue = athlete.clue || '';
+    base.wordCount = (athlete.clue||'').split(/\s+/).filter(Boolean).length;
   }
   res.json(base);
 });
@@ -237,11 +243,18 @@ app.get('/api/athlete', (req, res) => {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
     base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'blackjack') {
+    base.bjTheme   = athlete.bjTheme || '';
+    base.bjTarget  = athlete.bjTarget || 50;
+    base.bjAnswers = athlete.bjAnswers || {};
+    base.maxScore  = 100;
   } else {
-    base.clue      = athlete.clue;
-    base.wordCount = athlete.clue.split(/\s+/).filter(Boolean).length;
+    // legacy text type
+    base.clue      = athlete.clue || '';
+    base.wordCount = (athlete.clue||'').split(/\s+/).filter(Boolean).length;
   }
   res.json(base);
 });
@@ -451,7 +464,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -461,9 +474,10 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
   if (type === 'scout' && (!req.body.scoutIndices || !req.body.scoutIndices.some(i=>i.text))) return res.status(400).json({ error: 'Au moins un indice obligatoire' });
   if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAuthor)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
-  const safeAnswer = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():'???');
+  const safeAnswer = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -518,6 +532,10 @@ app.post('/api/admin/athlete', (req, res) => {
     repliqueAuthor:   type === 'replique' ? (req.body.repliqueAuthor||'').trim() : undefined,
     repliqueChoices:  type === 'replique' ? (req.body.repliqueChoices||[]) : undefined,
     repliqueAuthorChoices: type === 'replique' ? (req.body.repliqueAuthorChoices||[]) : undefined,
+    rqTolerance: type === 'replique' ? (parseInt(req.body.rqTolerance)||1) : undefined,
+    bjTheme:    type === 'blackjack' ? (req.body.bjTheme||'').trim() : undefined,
+    bjTarget:   type === 'blackjack' ? (parseInt(req.body.bjTarget)||50) : undefined,
+    bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
