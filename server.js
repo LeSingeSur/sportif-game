@@ -198,16 +198,18 @@ app.get('/api/audio-proxy', async (req, res) => {
   if (!url) return res.status(400).send('URL manquante');
   try {
     const response = await fetch(url, {
+      redirect: 'follow',
       headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.google.com/' }
     });
     if (!response.ok) return res.status(response.status).send('Audio inaccessible');
     const ext = url.split('.').pop().toLowerCase().split('?')[0];
     const typeMap = {'mp3':'audio/mpeg','m4a':'audio/mp4','aac':'audio/aac','ogg':'audio/ogg','wav':'audio/wav'};
-    res.set('Content-Type', typeMap[ext] || 'audio/mpeg');
+    res.set('Content-Type', typeMap[ext] || 'audio/mp4');
     res.set('Cache-Control', 'public, max-age=86400');
     res.set('Accept-Ranges', 'bytes');
     response.body.pipe(res);
   } catch(e) {
+    console.error('Audio proxy error:', e.message);
     res.status(500).send('Erreur proxy audio');
   }
 });
