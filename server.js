@@ -24,7 +24,7 @@ function loadData() {
   return { athletes: [], scores: {}, globalScores: [] };
 }
 function saveData() {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores }, null, 2)); }
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig }, null, 2)); }
   catch(e) { console.error('Erreur écriture:', e.message); }
 }
 
@@ -32,6 +32,7 @@ const saved      = loadData();
 let athletes     = saved.athletes     || [];
 let scores       = saved.scores       || {};
 let globalScores = saved.globalScores || [];
+let musicConfig  = saved.musicConfig  || { url: '', title: '' };
 console.log(`📂 ${athletes.length} sportif(s) chargé(s)`);
 
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -177,6 +178,18 @@ app.all('/api/img-proxy', async (req, res) => {
     console.error('Proxy image error:', e.message);
     res.status(500).send('Impossible de charger l\'image');
   }
+});
+
+app.get('/api/music', (req, res) => {
+  res.json(musicConfig);
+});
+
+app.post('/api/admin/music', (req, res) => {
+  const { password, url, title } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  musicConfig = { url: (url||'').trim(), title: (title||'').trim() };
+  saveData();
+  res.json({ success: true });
 });
 
 // ── GAME ──────────────────────────────────────────────────────────────────
@@ -381,14 +394,22 @@ app.post('/api/chase-check', (req, res) => {
   const { athleteId, answer, found } = req.body;
   const athlete = athletes.find(a => a.id === athleteId);
   if (!athlete || athlete.type !== 'chase') return res.status(404).json({ error: 'Défi introuvable' });
-  const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
   const normAns = norm(answer || '');
   if (!normAns) return res.json({ correct: false, reason: 'empty' });
-  // Check if already found
+  // Levenshtein distance
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  // Check if already found (exact)
   const alreadyFound = (found || []).map(norm);
   if (alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
-  // Check against accepted answers
-  const correct = (athlete.chaseAnswers || []).some(a => norm(a) === normAns);
+  // Check against accepted answers with tolerance 1
+  const correct = (athlete.chaseAnswers || []).some(a => lev(norm(a), normAns) <= 1);
   res.json({ correct, fullAnswer: athlete.answer });
 });
 
