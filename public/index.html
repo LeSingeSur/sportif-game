@@ -847,6 +847,7 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
     audio.addEventListener('canplay',()=>{
       document.getElementById('music-bar').style.display='flex';
     });
+    audio.addEventListener('timeupdate',()=>{
       if(!audio.duration) return;
       document.getElementById('music-progress').style.width=(audio.currentTime/audio.duration*100)+'%';
     });
@@ -874,6 +875,7 @@ document.getElementById('pseudo-in').addEventListener('input', e=>{
   const pseudo=e.target.value.trim();
   const msgEl=document.getElementById('welcome-msg');
   const txtEl=document.getElementById('welcome-txt');
+  if(!msgEl||!txtEl) return;
   if(pseudo.length>=2){
     txtEl.textContent='Bienvenue '+pseudo+' ! 👋';
     msgEl.style.display='flex';
