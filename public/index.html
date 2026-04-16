@@ -840,12 +840,10 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
     audio.src=proxyUrl;
     if(typeMap[ext]) audio.type=typeMap[ext];
     if(data.title){document.getElementById('music-title').textContent=data.title;}
+    // Show bar immediately
+    document.getElementById('music-bar').style.display='flex';
     audio.addEventListener('error',()=>{
-      document.getElementById('music-bar').style.display='none';
       console.warn('Audio non supporté ou URL inaccessible');
-    });
-    audio.addEventListener('canplay',()=>{
-      document.getElementById('music-bar').style.display='flex';
     });
     audio.addEventListener('timeupdate',()=>{
       if(!audio.duration) return;
