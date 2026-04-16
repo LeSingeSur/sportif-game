@@ -574,6 +574,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="fb" id="bj-fb"></div>
   </div>
 
+  <!-- SCOUT rules modal -->
+  <div id="scout-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px">
+      <div style="font-family:var(--fh);font-size:22px;text-align:center;color:#00c8ff">🔍 LE SCOUT</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
+        <div>🎯 <strong>But :</strong> Identifie le sportif mystère en achetant des indices. Moins tu dépenses, plus tu gardes de points.</div>
+        <div>👁 <strong>Entrouvrir</strong> → 60% du coût · vois 50% des mots (les mêmes pour tous les joueurs)</div>
+        <div>📂 <strong>Ouvrir</strong> → coût total · révèle tout · <em>obligatoire si déjà entrouvert</em></div>
+        <div>❌ <strong>Mauvaise réponse</strong> → −10 pts · le chrono continue</div>
+        <div>⏱ <strong>60 secondes</strong> pour tout faire. Temps écoulé = 0 pt.</div>
+        <div>✅ <strong>Bonne réponse</strong> = score restant sur 100 pts.</div>
+      </div>
+      <button id="scout-rules-ok" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
+    </div>
+  </div>
+
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -656,17 +672,17 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
             <div class="lbl">CASH</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">Tape la fin</div>
           </div>
-          <div class="replique-mode-btn" onclick="chooseRepliqueMode('duo')">
-            <div style="font-size:20px">🥈</div>
-            <div class="pts">20 pts</div>
-            <div class="lbl">DUO</div>
-            <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
-          </div>
           <div class="replique-mode-btn" onclick="chooseRepliqueMode('carre')">
-            <div style="font-size:20px">🥉</div>
+            <div style="font-size:20px">🥈</div>
             <div class="pts">40 pts</div>
             <div class="lbl">CARRÉ</div>
             <div style="font-size:10px;color:var(--mute);margin-top:2px">4 choix</div>
+          </div>
+          <div class="replique-mode-btn" onclick="chooseRepliqueMode('duo')">
+            <div style="font-size:20px">🥉</div>
+            <div class="pts">20 pts</div>
+            <div class="lbl">DUO</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
           </div>
         </div>
       </div>
@@ -1403,25 +1419,6 @@ function setupScoutMode(data){
   G.score=100; G.max=100; setScore(100,false);
   if(SC.timerInt){clearInterval(SC.timerInt);SC.timerInt=null;}
 
-  // 60s timer
-  let st=60;
-  document.getElementById('scout-timer-txt').textContent=st+'s';
-  document.getElementById('scout-timer-fill').style.transition='none';
-  document.getElementById('scout-timer-fill').style.width='100%';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.getElementById('scout-timer-fill').style.transition='width 60s linear';
-    document.getElementById('scout-timer-fill').style.width='0%';
-  }));
-  SC.timerInt=setInterval(()=>{
-    st--;
-    const el=document.getElementById('scout-timer-txt');
-    if(el){
-      el.textContent=st+'s';
-      el.style.color=st<=10?'var(--red)':st<=20?'var(--orange)':'var(--neon)';
-    }
-    if(st<=0){clearInterval(SC.timerInt);SC.timerInt=null;if(!SC.done)finishScout(false);}
-  },1000);
-
   document.getElementById('scout-score').textContent='100';
   document.getElementById('scout-score').className='scout-score-big';
   document.getElementById('scout-revealed-list').innerHTML='';
@@ -1457,7 +1454,33 @@ function setupScoutMode(data){
 
   document.getElementById('scout-chk').onclick=submitScoutAnswer;
   document.getElementById('scout-in').onkeydown=e=>{if(e.key==='Enter')submitScoutAnswer();};
-  setTimeout(()=>document.getElementById('scout-in').focus(),80);
+
+  // Show rules modal first, start timer on OK
+  const scoutModal=document.getElementById('scout-rules-modal');
+  scoutModal.style.display='flex';
+  document.getElementById('scout-in').disabled=true;
+  document.getElementById('scout-chk').disabled=true;
+  document.getElementById('scout-rules-ok').onclick=()=>{
+    scoutModal.style.display='none';
+    document.getElementById('scout-in').disabled=false;
+    document.getElementById('scout-chk').disabled=false;
+    setTimeout(()=>document.getElementById('scout-in').focus(),80);
+    // Start 60s timer
+    let st=60;
+    document.getElementById('scout-timer-txt').textContent=st+'s';
+    document.getElementById('scout-timer-fill').style.transition='none';
+    document.getElementById('scout-timer-fill').style.width='100%';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      document.getElementById('scout-timer-fill').style.transition='width 60s linear';
+      document.getElementById('scout-timer-fill').style.width='0%';
+    }));
+    SC.timerInt=setInterval(()=>{
+      st--;
+      const el=document.getElementById('scout-timer-txt');
+      if(el){el.textContent=st+'s';el.style.color=st<=10?'var(--red)':st<=20?'var(--orange)':'var(--neon)';}
+      if(st<=0){clearInterval(SC.timerInt);SC.timerInt=null;if(!SC.done)finishScout(false);}
+    },1000);
+  };
 }
 
 function seededRandom(seed){
@@ -1721,11 +1744,10 @@ function fuzzyMatch(val,ref){
 
 function matchesAuthor(val,answer){
   if(!val||!answer) return false;
-  const tol=RQ.tolerance;
+  // Author: no tolerance — exact match (accents/case ignored), first name or last name accepted
   const nv=normRQ(val),na=normRQ(answer);
-  if(tol===0) return nv===na||na.split(/\s+/).includes(nv);
-  if(levenshtein(nv,na)<=tol) return true;
-  return na.split(/\s+/).some(p=>levenshtein(nv,p)<=tol);
+  if(nv===na) return true;
+  return na.split(/\s+/).some(p=>nv===p);
 }
 
 function submitRepliqueCash(timeout){
