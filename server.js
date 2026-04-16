@@ -24,7 +24,7 @@ function loadData() {
   return { athletes: [], scores: {}, globalScores: [] };
 }
 function saveData() {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig }, null, 2)); }
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage }, null, 2)); }
   catch(e) { console.error('Erreur écriture:', e.message); }
 }
 
@@ -33,6 +33,7 @@ let athletes     = saved.athletes     || [];
 let scores       = saved.scores       || {};
 let globalScores = saved.globalScores || [];
 let musicConfig  = saved.musicConfig  || { url: '', title: '' };
+let welcomeImage = saved.welcomeImage || { url: '' };
 console.log(`📂 ${athletes.length} sportif(s) chargé(s)`);
 
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -177,6 +178,37 @@ app.all('/api/img-proxy', async (req, res) => {
   } catch(e) {
     console.error('Proxy image error:', e.message);
     res.status(500).send('Impossible de charger l\'image');
+  }
+});
+
+app.get('/api/welcome-image', (req, res) => {
+  res.json(welcomeImage);
+});
+
+app.post('/api/admin/welcome-image', (req, res) => {
+  const { password, url } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  welcomeImage = { url: (url||'').trim() };
+  saveData();
+  res.json({ success: true });
+});
+
+app.get('/api/audio-proxy', async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).send('URL manquante');
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.google.com/' }
+    });
+    if (!response.ok) return res.status(response.status).send('Audio inaccessible');
+    const ext = url.split('.').pop().toLowerCase().split('?')[0];
+    const typeMap = {'mp3':'audio/mpeg','m4a':'audio/mp4','aac':'audio/aac','ogg':'audio/ogg','wav':'audio/wav'};
+    res.set('Content-Type', typeMap[ext] || 'audio/mpeg');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.set('Accept-Ranges', 'bytes');
+    response.body.pipe(res);
+  } catch(e) {
+    res.status(500).send('Erreur proxy audio');
   }
 });
 
