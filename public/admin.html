@@ -173,6 +173,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showAdminTab('defis')">📋 Défis</button>
     <button class="nav-tab" onclick="showAdminTab('classement')">🏆 Classement</button>
+    <button class="nav-tab" onclick="showAdminTab('musique')">🎵 Musique</button>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -613,6 +614,24 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div id="admin-ath-selector" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
   </div>
+
+  <!-- TAB: MUSIQUE -->
+  <div id="tab-musique" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">🎵 Musique page d'accueil</div>
+      <div class="field">
+        <label>Titre affiché</label>
+        <input type="text" id="music-title-in" placeholder="Ex: Eye of the Tiger — Survivor">
+      </div>
+      <div class="field">
+        <label>URL du fichier audio (MP3 ou M4A)</label>
+        <input type="text" id="music-url-in" placeholder="https://... .mp3 ou .m4a">
+        <span class="hint">Héberge le fichier sur GitHub (raw), Google Drive (lien direct) ou Dropbox.</span>
+      </div>
+      <button class="btn btn-p" id="btn-save-music" onclick="saveMusic()" style="margin-top:8px">💾 Enregistrer</button>
+      <div class="msg" id="music-msg"></div>
+    </div>
+  </div>
 </div>
 
 <!-- SCORES MODAL -->
@@ -736,7 +755,26 @@ function showAdminTab(tab){
   event.target.classList.add('active');
   document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
   document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
+  document.getElementById('tab-musique').style.display=tab==='musique'?'block':'none';
   if(tab==='classement') loadAdminScores();
+  if(tab==='musique') loadMusicConfig();
+}
+
+async function loadMusicConfig(){
+  try{
+    const res=await fetch('/api/music');
+    const data=await res.json();
+    document.getElementById('music-url-in').value=data.url||'';
+    document.getElementById('music-title-in').value=data.title||'';
+  }catch(e){}
+}
+
+async function saveMusic(){
+  const url=document.getElementById('music-url-in').value.trim();
+  const title=document.getElementById('music-title-in').value.trim();
+  const res=await fetch('/api/admin/music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,url,title})});
+  const data=await res.json();
+  showMsg('music-msg', data.success?'ok':'err', data.success?'✅ Musique enregistrée !':'❌ '+(data.error||'Erreur'));
 }
 
 // Login

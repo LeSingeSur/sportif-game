@@ -395,6 +395,20 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
       <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
+
+      <!-- Music player -->
+      <div id="music-bar" style="display:none;align-items:center;gap:10px;background:var(--c2);border-radius:12px;padding:10px 14px;margin-top:8px">
+        <button id="music-play-btn" onclick="toggleMusic()" style="font-size:22px;background:none;border:none;cursor:pointer;padding:0;line-height:1">▶️</button>
+        <div style="flex:1;min-width:0">
+          <div id="music-title" style="font-size:12px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Musique</div>
+          <div style="height:3px;background:var(--c1);border-radius:99px;margin-top:4px;overflow:hidden">
+            <div id="music-progress" style="height:100%;background:var(--neon);width:0%;border-radius:99px;transition:width .5s linear"></div>
+          </div>
+        </div>
+        <span id="music-vol-btn" onclick="toggleMusicMute()" style="font-size:18px;cursor:pointer">🔊</span>
+      </div>
+      <audio id="music-audio" preload="none"></audio>
+
       <div style="text-align:center;margin-top:4px">
         <button id="btn-lb-open" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:3px">🏆 Voir le classement</button>
       </div>
@@ -584,7 +598,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div>📂 <strong>Ouvrir</strong> → coût total · révèle tout le texte</div>
         <div style="background:rgba(255,200,0,.1);border:1px solid rgba(255,200,0,.3);border-radius:8px;padding:8px 10px">⚠️ <strong>Attention :</strong> si tu entrouvres un tiroir, tu dois l'ouvrir complètement <em>avant</em> de pouvoir toucher à un autre.</div>
         <div>❌ <strong>Mauvaise réponse</strong> → −10 pts</div>
-        <div>⏱ <strong>60 secondes</strong> pour tout faire.</div>
         <div>✅ <strong>Bonne réponse</strong> = score restant sur 100 pts.</div>
       </div>
       <button id="scout-rules-ok" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
@@ -593,16 +606,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div class="scout-score-big" id="scout-score" style="font-size:40px">100</div>
-      <div style="text-align:right">
-        <div style="font-family:var(--fh);font-size:28px;color:var(--orange)" id="scout-timer-txt">60s</div>
-        <div style="font-size:10px;color:var(--mute);letter-spacing:1px">TEMPS</div>
-      </div>
-    </div>
-    <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden">
-      <div id="scout-timer-fill" style="height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 60s linear"></div>
-    </div>
+    <div class="scout-score-big" id="scout-score" style="font-size:40px;text-align:center">100</div>
     <div id="scout-question" style="font-size:13px;color:var(--mute);text-align:center">Qui est ce sportif ?</div>
     <div class="scout-btns" id="scout-btns">
       <div class="scout-btn" id="scout-btn-0">
@@ -712,6 +716,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Score -->
     <div class="chase-score-big" id="chase-score">100</div>
+    <!-- Sound toggle -->
+    <div style="text-align:right;margin-bottom:-8px">
+      <button id="chase-sound-toggle" onclick="toggleChaseSound()" style="font-size:11px;background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px 8px;color:var(--mute);cursor:pointer">🔔 Bip actif</button>
+    </div>
     <!-- Grace period -->
     <div class="chase-grace" id="chase-grace-msg"></div>
     <!-- Thème -->
@@ -808,6 +816,38 @@ let lbAthletes=[],lbActiveTab='global';
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');window.scrollTo(0,0)}
 
 // PSEUDO
+// ── MUSIC PLAYER ─────────────────────────────────────────────────────────
+(async function initMusic(){
+  try{
+    const res=await fetch('/api/music');
+    const data=await res.json();
+    if(!data.url) return;
+    const audio=document.getElementById('music-audio');
+    audio.src=data.url;
+    if(data.title){document.getElementById('music-title').textContent=data.title;}
+    document.getElementById('music-bar').style.display='flex';
+    audio.addEventListener('timeupdate',()=>{
+      if(!audio.duration) return;
+      document.getElementById('music-progress').style.width=(audio.currentTime/audio.duration*100)+'%';
+    });
+    audio.addEventListener('ended',()=>{
+      document.getElementById('music-play-btn').textContent='▶️';
+    });
+  }catch(e){}
+})();
+function toggleMusic(){
+  const audio=document.getElementById('music-audio');
+  const btn=document.getElementById('music-play-btn');
+  if(audio.paused){audio.play();btn.textContent='⏸️';}
+  else{audio.pause();btn.textContent='▶️';}
+}
+function toggleMusicMute(){
+  const audio=document.getElementById('music-audio');
+  const btn=document.getElementById('music-vol-btn');
+  audio.muted=!audio.muted;
+  btn.textContent=audio.muted?'🔇':'🔊';
+}
+
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
 document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
@@ -925,6 +965,9 @@ const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trapp
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
+
+const GAME_ICONS={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','text':'📝'};
+function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
 
 // ── TEXT MODE ─────────────────────────────────────────────────────────────
 function setupTextMode(data){
@@ -1399,6 +1442,7 @@ function finishBJ(finalScore, msg){
     document.getElementById('v-revealed-lbl').textContent='joueurs sélectionnés';
     document.getElementById('v-wrong').textContent=BJ.score;
     document.querySelector('#v-wrong').nextElementSibling.textContent=`/ ${BJ.target} cumulé`;
+    setVictoryIcon('blackjack');
     show('sv'); confetti();
     submitScore(finalScore);
   },400);
@@ -1466,21 +1510,6 @@ function setupScoutMode(data){
     document.getElementById('scout-in').disabled=false;
     document.getElementById('scout-chk').disabled=false;
     setTimeout(()=>document.getElementById('scout-in').focus(),80);
-    // Start 60s timer
-    let st=60;
-    document.getElementById('scout-timer-txt').textContent=st+'s';
-    document.getElementById('scout-timer-fill').style.transition='none';
-    document.getElementById('scout-timer-fill').style.width='100%';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      document.getElementById('scout-timer-fill').style.transition='width 60s linear';
-      document.getElementById('scout-timer-fill').style.width='0%';
-    }));
-    SC.timerInt=setInterval(()=>{
-      st--;
-      const el=document.getElementById('scout-timer-txt');
-      if(el){el.textContent=st+'s';el.style.color=st<=10?'var(--red)':st<=20?'var(--orange)':'var(--neon)';}
-      if(st<=0){clearInterval(SC.timerInt);SC.timerInt=null;if(!SC.done)finishScout(false);}
-    },1000);
   };
 }
 
@@ -1660,6 +1689,7 @@ function finishScout(won){
     document.getElementById('v-revealed-lbl').textContent='indices révélés';
     document.getElementById('v-wrong').textContent=100-finalScore;
     document.querySelector('#v-wrong').nextElementSibling.textContent='pts de pénalité';
+    setVictoryIcon('scout');
     show('sv'); confetti();
     submitScore(finalScore);
   },400);
@@ -1911,6 +1941,7 @@ function submitRepliqueAuthor(timeout,choice,mode){
     document.getElementById('v-revealed-lbl').textContent='pts citation';
     document.getElementById('v-wrong').textContent=Math.max(0,RQ.p2Score);
     document.querySelector('#v-wrong').nextElementSibling.textContent='pts auteur';
+    setVictoryIcon('replique');
     show('sv'); confetti();
     submitScore(total);
   },1600);
@@ -1918,6 +1949,26 @@ function submitRepliqueAuthor(timeout,choice,mode){
 
 
 // ── THE CHASE MODE ────────────────────────────────────────────────────────
+let chaseSoundOn = true;
+function toggleChaseSound(){
+  chaseSoundOn=!chaseSoundOn;
+  const btn=document.getElementById('chase-sound-toggle');
+  if(btn) btn.textContent=chaseSoundOn?'🔔 Bip actif':'🔕 Bip désactivé';
+}
+function playChaseBeep(urgent){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value=urgent?880:440;
+    osc.type='sine';
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime+0.15);
+  }catch(e){}
+}
 const CH = {
   playerPos:0, hunterPos:0, targetToWin:8,
   score:100, found:[], done:false,
@@ -2039,6 +2090,7 @@ function startHunter(){
       graceEl.style.color = isUrgent ? 'var(--red)' : 'var(--orange)';
       graceEl.style.fontSize = isUrgent ? '20px' : '13px';
       graceEl.style.fontWeight = isUrgent ? '900' : '700';
+      if(isUrgent && chaseSoundOn) playChaseBeep(countdown===1);
     }
     if(!CH.done) CH.hunterInterval = setTimeout(tick, 1000);
   }
@@ -2176,6 +2228,7 @@ function finishChase(outcome, customScore){
     document.getElementById('v-revealed-lbl').textContent = 'réponses';
     document.getElementById('v-wrong').textContent        = CH.hunterPos;
     document.querySelector('#v-wrong').nextElementSibling.textContent = 'pas du chasseur';
+    setVictoryIcon('chase');
     show('sv'); confetti();
     submitScore(finalScore);
   }, won ? 400 : 1000);
@@ -2339,7 +2392,8 @@ function finishDemineur(finalScore, msg){
   document.getElementById('v-revealed-lbl').textContent = 'bonnes réponses';
   document.getElementById('v-wrong').textContent        = document.querySelectorAll('.dem-case.mine').length;
   document.querySelector('#v-wrong').nextElementSibling.textContent = 'mine(s) touchée(s)';
-  show('sv'); confetti();
+  setVictoryIcon('demineur');
+    show('sv'); confetti();
   submitScore(finalScore);
 }
 
