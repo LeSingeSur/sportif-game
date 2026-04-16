@@ -396,6 +396,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
 
+      <!-- Welcome message shown after pseudo entered -->
+      <div id="welcome-msg" style="display:none;flex-direction:column;align-items:center;gap:10px;margin-top:8px;animation:fu .4s ease">
+        <div id="welcome-sportif-img" style="display:none;width:100%;border-radius:14px;overflow:hidden;max-height:180px">
+          <img id="welcome-img-el" src="" alt="" style="width:100%;object-fit:cover;max-height:180px;border-radius:14px">
+        </div>
+        <div id="welcome-txt" style="font-family:var(--fh);font-size:20px;text-align:center;color:var(--neon)"></div>
+      </div>
+
       <!-- Music player -->
       <div id="music-bar" style="display:none;align-items:center;gap:10px;background:var(--c2);border-radius:12px;padding:10px 14px;margin-top:8px">
         <button id="music-play-btn" onclick="toggleMusic()" style="font-size:22px;background:none;border:none;cursor:pointer;padding:0;line-height:1">▶️</button>
@@ -823,10 +831,22 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
     const data=await res.json();
     if(!data.url) return;
     const audio=document.getElementById('music-audio');
-    audio.src=data.url;
+    // Route through proxy to avoid CORS issues
+    const url=data.url;
+    const isExternal=url.startsWith('http');
+    const proxyUrl=isExternal?`/api/audio-proxy?url=${encodeURIComponent(url)}`:url;
+    const ext=url.split('.').pop().toLowerCase().split('?')[0];
+    const typeMap={'mp3':'audio/mpeg','m4a':'audio/mp4','aac':'audio/aac','ogg':'audio/ogg','wav':'audio/wav'};
+    audio.src=proxyUrl;
+    if(typeMap[ext]) audio.type=typeMap[ext];
     if(data.title){document.getElementById('music-title').textContent=data.title;}
-    document.getElementById('music-bar').style.display='flex';
-    audio.addEventListener('timeupdate',()=>{
+    audio.addEventListener('error',()=>{
+      document.getElementById('music-bar').style.display='none';
+      console.warn('Audio non supporté ou URL inaccessible');
+    });
+    audio.addEventListener('canplay',()=>{
+      document.getElementById('music-bar').style.display='flex';
+    });
       if(!audio.duration) return;
       document.getElementById('music-progress').style.width=(audio.currentTime/audio.duration*100)+'%';
     });
@@ -835,6 +855,32 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
     });
   }catch(e){}
 })();
+
+// ── WELCOME IMAGE ─────────────────────────────────────────────────────────
+let welcomeImageUrl='';
+(async function initWelcomeImage(){
+  try{
+    const res=await fetch('/api/welcome-image');
+    const data=await res.json();
+    if(data.url){
+      welcomeImageUrl=data.url;
+      document.getElementById('welcome-img-el').src=data.url;
+      document.getElementById('welcome-sportif-img').style.display='block';
+    }
+  }catch(e){}
+})();
+
+document.getElementById('pseudo-in').addEventListener('input', e=>{
+  const pseudo=e.target.value.trim();
+  const msgEl=document.getElementById('welcome-msg');
+  const txtEl=document.getElementById('welcome-txt');
+  if(pseudo.length>=2){
+    txtEl.textContent='Bienvenue '+pseudo+' ! 👋';
+    msgEl.style.display='flex';
+  } else {
+    msgEl.style.display='none';
+  }
+});
 function toggleMusic(){
   const audio=document.getElementById('music-audio');
   const btn=document.getElementById('music-play-btn');

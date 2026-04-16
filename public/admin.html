@@ -625,11 +625,24 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
       <div class="field">
         <label>URL du fichier audio (MP3 ou M4A)</label>
-        <input type="text" id="music-url-in" placeholder="https://... .mp3 ou .m4a">
-        <span class="hint">Héberge le fichier sur GitHub (raw), Google Drive (lien direct) ou Dropbox.</span>
+        <input type="text" id="music-url-in" placeholder="https://raw.githubusercontent.com/…/chanson.m4a">
+        <span class="hint">Héberge le fichier sur GitHub (raw), Google Drive ou Dropbox.</span>
       </div>
-      <button class="btn btn-p" id="btn-save-music" onclick="saveMusic()" style="margin-top:8px">💾 Enregistrer</button>
+      <button class="btn btn-p" id="btn-save-music" onclick="saveMusic()" style="margin-top:8px">💾 Enregistrer la musique</button>
       <div class="msg" id="music-msg"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🖼 Image de bienvenue</div>
+      <div class="field">
+        <label>Upload une image (JPG, PNG, GIF — max 5MB)</label>
+        <input type="file" id="welcome-img-file-in" accept="image/*" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px;width:100%;color:var(--txt)">
+        <span class="hint">S'affiche sur la page d'accueil quand le joueur tape son pseudo. Idéalement une image drôle d'un sportif !</span>
+      </div>
+      <div id="welcome-img-preview" style="display:none;margin-top:8px;border-radius:12px;overflow:hidden">
+        <img id="welcome-img-preview-el" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px">
+      </div>
+      <button class="btn btn-p" onclick="saveWelcomeImage()" style="margin-top:8px">💾 Enregistrer l'image</button>
+      <div class="msg" id="welcome-img-msg"></div>
     </div>
   </div>
 </div>
@@ -767,6 +780,37 @@ async function loadMusicConfig(){
     document.getElementById('music-url-in').value=data.url||'';
     document.getElementById('music-title-in').value=data.title||'';
   }catch(e){}
+  try{
+    const res=await fetch('/api/welcome-image');
+    const data=await res.json();
+    if(data.url){
+      document.getElementById('welcome-img-preview-el').src=data.url;
+      document.getElementById('welcome-img-preview').style.display='block';
+    }
+  }catch(e){}
+}
+
+let welcomeImgBase64='';
+document.addEventListener('DOMContentLoaded',()=>{
+  const fi=document.getElementById('welcome-img-file-in');
+  if(fi) fi.addEventListener('change',e=>{
+    const file=e.target.files[0]; if(!file)return;
+    if(file.size>5*1024*1024){alert('Image trop lourde (max 5MB)');e.target.value='';return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      welcomeImgBase64=ev.target.result;
+      document.getElementById('welcome-img-preview-el').src=welcomeImgBase64;
+      document.getElementById('welcome-img-preview').style.display='block';
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+async function saveWelcomeImage(){
+  if(!welcomeImgBase64){showMsg('welcome-img-msg','err','❌ Choisis une image d\'abord');return;}
+  const res=await fetch('/api/admin/welcome-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,url:welcomeImgBase64})});
+  const data=await res.json();
+  showMsg('welcome-img-msg', data.success?'ok':'err', data.success?'✅ Image enregistrée !':'❌ '+(data.error||'Erreur'));
 }
 
 async function saveMusic(){
