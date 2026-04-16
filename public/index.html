@@ -275,6 +275,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-btn-ico{font-size:28px}
 .scout-btn-label{font-size:12px;font-weight:800;color:var(--txt);letter-spacing:1px}
 .scout-btn-cost{font-size:13px;font-weight:800;color:var(--red)}
+.scout-mask{background:rgba(255,255,255,.12);color:rgba(255,255,255,.12);border-radius:3px;user-select:none;transition:all .3s}
 .scout-revealed{background:var(--c1);border-radius:var(--r);padding:14px;font-size:13px;color:var(--txt);line-height:1.6;border-left:3px solid var(--neon);animation:fu .3s ease}
 .scout-ans-row{display:flex;gap:8px;margin-top:4px}
 .scout-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:16px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s}
@@ -1367,7 +1368,7 @@ function finishBJ(finalScore, msg){
 }
 
 // ── LE SCOUT MODE ─────────────────────────────────────────────────────────
-const SC = { score:100, revealed:[], done:false, indicesData:[], timerInt:null };
+const SC = { score:100, revealed:[], fullyRevealed:[], done:false, indicesData:[], timerInt:null };
 const SCOUT_COSTS = [20, 25, 30, 15]; // identité, carrière, palmarès, mystère
 
 function setupScoutMode(data){
@@ -1377,7 +1378,7 @@ function setupScoutMode(data){
   hideAllZones();
   document.getElementById('scout-zone').style.display='flex';
 
-  SC.score=100; SC.revealed=[]; SC.done=false;
+  SC.score=100; SC.revealed=[]; SC.fullyRevealed=[]; SC.done=false;
   SC.indicesData=data.scoutIndices||[];
   G.score=100; G.max=100; setScore(100,false);
   if(SC.timerInt){clearInterval(SC.timerInt);SC.timerInt=null;}
@@ -1429,25 +1430,79 @@ function setupScoutMode(data){
   setTimeout(()=>document.getElementById('scout-in').focus(),80);
 }
 
+function maskWords(text){
+  const words=text.split(/(\s+)/);
+  const wordIndices=[];
+  words.forEach((w,i)=>{ if(w.trim()) wordIndices.push(i); });
+  // Randomly mask ~50% of words
+  const toMask=new Set();
+  const shuffled=[...wordIndices].sort(()=>Math.random()-.5);
+  shuffled.slice(0,Math.ceil(wordIndices.length*0.5)).forEach(i=>toMask.add(i));
+  return words.map((w,i)=>{
+    if(!w.trim()) return w; // keep spaces
+    if(toMask.has(i)) return `<span class="scout-mask">${'█'.repeat(Math.max(2,w.length))}</span>`;
+    return w;
+  }).join('');
+}
+
 function revealScout(idx){
   if(SC.done) return;
   const ind=SC.indicesData[idx];
-  if(!ind||!ind.text||SC.revealed.includes(idx)) return;
-  const cost=ind.cost||SCOUT_COSTS[idx];
-  SC.score=Math.max(0,SC.score-cost);
-  G.score=SC.score; setScore(SC.score,true);
-  SC.revealed.push(idx);
-  document.getElementById('scout-btn-'+idx).classList.add('used');
-  const scoreEl=document.getElementById('scout-score');
-  scoreEl.className='scout-score-big penalty';
-  scoreEl.textContent=SC.score;
-  setTimeout(()=>scoreEl.className='scout-score-big',400);
-  const item=document.createElement('div');
-  item.className='scout-revealed';
+  if(!ind||!ind.text) return;
+  const fullCost=ind.cost||SCOUT_COSTS[idx];
+  const halfCost=Math.ceil(fullCost/2);
+  const btn=document.getElementById('scout-btn-'+idx);
+
   const labels=['🌍 Identité','🔄 Carrière','🏅 Palmarès','💡 Indice Mystère'];
-  const label = ind.label ? ind.label : labels[idx];
-  item.innerHTML=`<strong style="font-size:11px;letter-spacing:1px;color:var(--mute)">${label.toUpperCase()}</strong><br>${ind.text}`;
-  document.getElementById('scout-revealed-list').appendChild(item);
+  const label=ind.label?ind.label:labels[idx];
+
+  if(!SC.revealed.includes(idx)){
+    // FIRST CLICK — show 50% masked, charge half cost
+    SC.score=Math.max(0,SC.score-halfCost);
+    G.score=SC.score; setScore(SC.score,true);
+    SC.revealed.push(idx);
+    const scoreEl=document.getElementById('scout-score');
+    scoreEl.className='scout-score-big penalty';
+    scoreEl.textContent=SC.score;
+    setTimeout(()=>scoreEl.className='scout-score-big',400);
+
+    // Show masked version
+    const item=document.createElement('div');
+    item.className='scout-revealed'; item.id='scout-revealed-'+idx;
+    item.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <strong style="font-size:11px;letter-spacing:1px;color:var(--mute)">${label.toUpperCase()}</strong>
+      <button onclick="revealScout(${idx})" style="font-size:11px;font-weight:800;background:rgba(212,255,0,.1);border:1px solid var(--neon);color:var(--neon);border-radius:8px;padding:3px 8px;cursor:pointer">👁 Tout voir −${halfCost}pts</button>
+    </div>
+    <div id="scout-text-${idx}">${maskWords(ind.text)}</div>`;
+    document.getElementById('scout-revealed-list').appendChild(item);
+
+    // Update button to show it's half-open
+    btn.style.borderColor='var(--orange)';
+    document.getElementById('scout-cost-'+idx).textContent=`👁 −${halfCost} pts restants`;
+
+  } else if(!SC.fullyRevealed.includes(idx)) {
+    // SECOND CLICK — reveal everything, charge remaining half
+    SC.score=Math.max(0,SC.score-halfCost);
+    G.score=SC.score; setScore(SC.score,true);
+    SC.fullyRevealed.push(idx);
+    const scoreEl=document.getElementById('scout-score');
+    scoreEl.className='scout-score-big penalty';
+    scoreEl.textContent=SC.score;
+    setTimeout(()=>scoreEl.className='scout-score-big',400);
+
+    // Replace masked text with full text
+    const textEl=document.getElementById('scout-text-'+idx);
+    if(textEl) textEl.innerHTML=ind.text;
+
+    // Remove "Tout voir" button
+    const revEl=document.getElementById('scout-revealed-'+idx);
+    if(revEl){const b=revEl.querySelector('button');if(b)b.remove();}
+
+    // Mark button fully used
+    btn.classList.add('used');
+    document.getElementById('scout-cost-'+idx).textContent=`✅ Révélé`;
+  }
+
   if(SC.score<=0) finishScout(false);
 }
 
