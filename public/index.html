@@ -1507,12 +1507,23 @@ function revealScout(idx, action){
   if(SC.done) return;
   const ind=SC.indicesData[idx];
   if(!ind||!ind.text) return;
+
+  // Block: if another tiroir is peeked but not fully opened, must complete it first
+  const pendingPeek=SC.revealed.find(i=>!SC.fullyRevealed.includes(i)&&i!==idx);
+  if(pendingPeek!==undefined){
+    const fb=document.getElementById('scout-fb');
+    fb.textContent='⚠️ Ouvre complètement le tiroir entrouvert d\'abord !';
+    fb.className='fb pen';
+    setTimeout(()=>{fb.textContent='';fb.className='fb';},2000);
+    return;
+  }
+
   const fullCost=ind.cost||SCOUT_COSTS[idx];
   const peekCost=Math.round(fullCost*0.6);
-  const openFromPeekCost=Math.round(fullCost*0.6); // remaining 60% when opening after peek
+  const openFromPeekCost=Math.round(fullCost*0.6);
   const labels=['🌍 Identité','🔄 Carrière','🏅 Palmarès','💡 Indice Mystère'];
   const label=ind.label?ind.label:labels[idx];
-  const seed=G.athleteId*100+idx; // deterministic seed = same masks for all players
+  const seed=G.athleteId*100+idx;
 
   const peekBtn=document.getElementById('scout-peek-'+idx);
   const openBtn=document.getElementById('scout-open-'+idx);
@@ -1537,6 +1548,15 @@ function revealScout(idx, action){
       openBtn.onclick=()=>revealScout(idx,'open');
     }
     document.getElementById('scout-cost-'+idx).textContent=`👁 ouvert · ouvrir −${openFromPeekCost}pts`;
+
+    // Visually dim all OTHER tiroir buttons
+    [0,1,2,3].forEach(i=>{
+      if(i===idx) return;
+      const pb=document.getElementById('scout-peek-'+i);
+      const ob=document.getElementById('scout-open-'+i);
+      if(pb) pb.style.opacity='.3';
+      if(ob) ob.style.opacity='.3';
+    });
 
   } else if(action==='open'){
     if(SC.fullyRevealed.includes(idx)) return;
@@ -1571,6 +1591,15 @@ function revealScout(idx, action){
     if(peekBtn){peekBtn.disabled=true;}
     if(openBtn){openBtn.disabled=true;}
     document.getElementById('scout-cost-'+idx).textContent='✅ Révélé';
+
+    // Restore other tiroir buttons
+    [0,1,2,3].forEach(i=>{
+      if(i===idx||SC.fullyRevealed.includes(i)) return;
+      const pb=document.getElementById('scout-peek-'+i);
+      const ob=document.getElementById('scout-open-'+i);
+      if(pb) pb.style.opacity='';
+      if(ob) ob.style.opacity='';
+    });
   }
 
   if(SC.score<=0) finishScout(false);
