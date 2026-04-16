@@ -275,7 +275,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-btn-ico{font-size:28px}
 .scout-btn-label{font-size:12px;font-weight:800;color:var(--txt);letter-spacing:1px}
 .scout-btn-cost{font-size:13px;font-weight:800;color:var(--red)}
-.scout-mask{background:rgba(255,255,255,.12);color:rgba(255,255,255,.12);border-radius:3px;user-select:none;transition:all .3s}
+.scout-action-btn{flex:1;font-size:10px;font-weight:800;padding:5px 4px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);transition:all .15s;font-family:var(--fb)}
+.scout-action-btn:active{transform:scale(.96)}
+.scout-action-btn.peek{border-color:var(--orange);color:var(--orange)}
+.scout-action-btn.open{border-color:var(--neon);color:var(--neon)}
+.scout-action-btn:disabled{opacity:.3;pointer-events:none}
 .scout-revealed{background:var(--c1);border-radius:var(--r);padding:14px;font-size:13px;color:var(--txt);line-height:1.6;border-left:3px solid var(--neon);animation:fu .3s ease}
 .scout-ans-row{display:flex;gap:8px;margin-top:4px}
 .scout-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:16px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s}
@@ -584,24 +588,40 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div id="scout-question" style="font-size:13px;color:var(--mute);text-align:center">Qui est ce sportif ?</div>
     <div class="scout-btns" id="scout-btns">
-      <div class="scout-btn" id="scout-btn-0" onclick="revealScout(0)">
+      <div class="scout-btn" id="scout-btn-0">
         <div class="scout-btn-ico">🌍</div>
-        <div class="scout-btn-label">PROFIL & ORIGINES</div>
+        <div class="scout-btn-label" id="scout-label-display-0">PROFIL & ORIGINES</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="scout-action-btn" id="scout-peek-0" onclick="revealScout(0,'peek')">👁 Entrouvrir</button>
+          <button class="scout-action-btn" id="scout-open-0" onclick="revealScout(0,'open')">📂 Ouvrir</button>
+        </div>
         <div class="scout-btn-cost" id="scout-cost-0">−10 pts</div>
       </div>
-      <div class="scout-btn" id="scout-btn-1" onclick="revealScout(1)">
-        <div class="scout-btn-ico">🏟️</div>
-        <div class="scout-btn-label">LE PARCOURS</div>
+      <div class="scout-btn" id="scout-btn-1">
+        <div class="scout-btn-ico">🔄</div>
+        <div class="scout-btn-label" id="scout-label-display-1">LE PARCOURS</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="scout-action-btn" id="scout-peek-1" onclick="revealScout(1,'peek')">👁 Entrouvrir</button>
+          <button class="scout-action-btn" id="scout-open-1" onclick="revealScout(1,'open')">📂 Ouvrir</button>
+        </div>
         <div class="scout-btn-cost" id="scout-cost-1">−20 pts</div>
       </div>
-      <div class="scout-btn" id="scout-btn-2" onclick="revealScout(2)">
-        <div class="scout-btn-ico">🏆</div>
-        <div class="scout-btn-label">ARMOIRE À TROPHÉES</div>
+      <div class="scout-btn" id="scout-btn-2">
+        <div class="scout-btn-ico">🏅</div>
+        <div class="scout-btn-label" id="scout-label-display-2">PALMARÈS</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="scout-action-btn" id="scout-peek-2" onclick="revealScout(2,'peek')">👁 Entrouvrir</button>
+          <button class="scout-action-btn" id="scout-open-2" onclick="revealScout(2,'open')">📂 Ouvrir</button>
+        </div>
         <div class="scout-btn-cost" id="scout-cost-2">−40 pts</div>
       </div>
-      <div class="scout-btn" id="scout-btn-3" onclick="revealScout(3)">
-        <div class="scout-btn-ico">🤫</div>
-        <div class="scout-btn-label">L'ANECDOTE</div>
+      <div class="scout-btn" id="scout-btn-3">
+        <div class="scout-btn-ico">💡</div>
+        <div class="scout-btn-label" id="scout-label-display-3">INDICE MYSTÈRE</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="scout-action-btn" id="scout-peek-3" onclick="revealScout(3,'peek')">👁 Entrouvrir</button>
+          <button class="scout-action-btn" id="scout-open-3" onclick="revealScout(3,'open')">📂 Ouvrir</button>
+        </div>
         <div class="scout-btn-cost" id="scout-cost-3">−15 pts</div>
       </div>
     </div>
@@ -1411,18 +1431,28 @@ function setupScoutMode(data){
   document.getElementById('scout-chk').disabled=false;
   G.athleteName = data.answer || '???';
 
-  // Setup buttons - use data costs and labels if available
   const defaultIcos=['🌍','🔄','🏅','💡'];
   const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
   [0,1,2,3].forEach(i=>{
     const btn=document.getElementById('scout-btn-'+i);
     const ind=SC.indicesData[i];
     const cost=ind?.cost||SCOUT_COSTS[i];
+    const peekCost=Math.round(cost*0.6);
     const label=ind?.label||defaultLabels[i];
     btn.classList.remove('used');
-    btn.querySelector('.scout-btn-label').textContent=label.toUpperCase();
-    document.getElementById('scout-cost-'+i).textContent=`−${cost} pts`;
-    if(!ind||!ind.text) btn.classList.add('used');
+    const labelEl=document.getElementById('scout-label-display-'+i);
+    if(labelEl) labelEl.textContent=label.toUpperCase();
+    document.getElementById('scout-cost-'+i).textContent=`👁−${peekCost} / 📂−${cost}pts`;
+    const peekBtn=document.getElementById('scout-peek-'+i);
+    const openBtn=document.getElementById('scout-open-'+i);
+    if(!ind||!ind.text){
+      if(peekBtn) peekBtn.disabled=true;
+      if(openBtn) openBtn.disabled=true;
+      btn.classList.add('used');
+    } else {
+      if(peekBtn){peekBtn.disabled=false; peekBtn.className='scout-action-btn';}
+      if(openBtn){openBtn.disabled=false; openBtn.className='scout-action-btn'; openBtn.textContent='📂 Ouvrir';}
+    }
   });
 
   document.getElementById('scout-chk').onclick=submitScoutAnswer;
@@ -1430,80 +1460,104 @@ function setupScoutMode(data){
   setTimeout(()=>document.getElementById('scout-in').focus(),80);
 }
 
-function maskWords(text){
+function seededRandom(seed){
+  let s=seed;
+  return ()=>{ s=(s*9301+49297)%233280; return s/233280; };
+}
+
+function maskWords(text, seed){
+  const rand=seededRandom(seed);
   const words=text.split(/(\s+)/);
   const wordIndices=[];
   words.forEach((w,i)=>{ if(w.trim()) wordIndices.push(i); });
-  // Randomly mask ~50% of words
   const toMask=new Set();
-  const shuffled=[...wordIndices].sort(()=>Math.random()-.5);
+  const shuffled=[...wordIndices].sort(()=>rand()-.5);
   shuffled.slice(0,Math.ceil(wordIndices.length*0.5)).forEach(i=>toMask.add(i));
   return words.map((w,i)=>{
-    if(!w.trim()) return w; // keep spaces
+    if(!w.trim()) return w;
     if(toMask.has(i)) return `<span class="scout-mask">${'█'.repeat(Math.max(2,w.length))}</span>`;
     return w;
   }).join('');
 }
 
-function revealScout(idx){
+function revealScout(idx, action){
   if(SC.done) return;
   const ind=SC.indicesData[idx];
   if(!ind||!ind.text) return;
   const fullCost=ind.cost||SCOUT_COSTS[idx];
-  const halfCost=Math.ceil(fullCost/2);
-  const btn=document.getElementById('scout-btn-'+idx);
-
+  const peekCost=Math.round(fullCost*0.6);
+  const openFromPeekCost=Math.round(fullCost*0.6); // remaining 60% when opening after peek
   const labels=['🌍 Identité','🔄 Carrière','🏅 Palmarès','💡 Indice Mystère'];
   const label=ind.label?ind.label:labels[idx];
+  const seed=G.athleteId*100+idx; // deterministic seed = same masks for all players
 
-  if(!SC.revealed.includes(idx)){
-    // FIRST CLICK — show 50% masked, charge half cost
-    SC.score=Math.max(0,SC.score-halfCost);
+  const peekBtn=document.getElementById('scout-peek-'+idx);
+  const openBtn=document.getElementById('scout-open-'+idx);
+
+  if(action==='peek' && !SC.revealed.includes(idx)){
+    // ENTROUVRIR — 60% du coût, mots masqués
+    SC.score=Math.max(0,SC.score-peekCost);
     G.score=SC.score; setScore(SC.score,true);
     SC.revealed.push(idx);
-    const scoreEl=document.getElementById('scout-score');
-    scoreEl.className='scout-score-big penalty';
-    scoreEl.textContent=SC.score;
-    setTimeout(()=>scoreEl.className='scout-score-big',400);
+    flashScoreEl();
 
-    // Show masked version
     const item=document.createElement('div');
     item.className='scout-revealed'; item.id='scout-revealed-'+idx;
-    item.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <strong style="font-size:11px;letter-spacing:1px;color:var(--mute)">${label.toUpperCase()}</strong>
-      <button onclick="revealScout(${idx})" style="font-size:11px;font-weight:800;background:rgba(212,255,0,.1);border:1px solid var(--neon);color:var(--neon);border-radius:8px;padding:3px 8px;cursor:pointer">👁 Tout voir −${halfCost}pts</button>
-    </div>
-    <div id="scout-text-${idx}">${maskWords(ind.text)}</div>`;
+    item.innerHTML=`<strong style="font-size:11px;letter-spacing:1px;color:var(--orange)">👁 ${label.toUpperCase()} (entrouvert)</strong><br><div id="scout-text-${idx}" style="margin-top:4px">${maskWords(ind.text,seed)}</div>`;
     document.getElementById('scout-revealed-list').appendChild(item);
 
-    // Update button to show it's half-open
-    btn.style.borderColor='var(--orange)';
-    document.getElementById('scout-cost-'+idx).textContent=`👁 −${halfCost} pts restants`;
+    // Update button states — peek disabled, open now active
+    if(peekBtn){peekBtn.disabled=true; peekBtn.classList.add('peek');}
+    if(openBtn){
+      openBtn.classList.add('open');
+      openBtn.textContent=`📂 Ouvrir −${openFromPeekCost}pts`;
+      openBtn.onclick=()=>revealScout(idx,'open');
+    }
+    document.getElementById('scout-cost-'+idx).textContent=`👁 ouvert · ouvrir −${openFromPeekCost}pts`;
 
-  } else if(!SC.fullyRevealed.includes(idx)) {
-    // SECOND CLICK — reveal everything, charge remaining half
-    SC.score=Math.max(0,SC.score-halfCost);
+  } else if(action==='open'){
+    if(SC.fullyRevealed.includes(idx)) return;
+
+    // If peeked → must open from peek (charge remaining 60%)
+    // If not peeked → charge full cost directly
+    const isPeeked=SC.revealed.includes(idx);
+    const charge=isPeeked?openFromPeekCost:fullCost;
+
+    SC.score=Math.max(0,SC.score-charge);
     G.score=SC.score; setScore(SC.score,true);
     SC.fullyRevealed.push(idx);
-    const scoreEl=document.getElementById('scout-score');
-    scoreEl.className='scout-score-big penalty';
-    scoreEl.textContent=SC.score;
-    setTimeout(()=>scoreEl.className='scout-score-big',400);
+    if(!isPeeked) SC.revealed.push(idx);
+    flashScoreEl();
 
-    // Replace masked text with full text
-    const textEl=document.getElementById('scout-text-'+idx);
-    if(textEl) textEl.innerHTML=ind.text;
+    if(isPeeked){
+      // Replace masked with full text
+      const textEl=document.getElementById('scout-text-'+idx);
+      if(textEl) textEl.innerHTML=ind.text;
+      const revEl=document.getElementById('scout-revealed-'+idx);
+      if(revEl){const strong=revEl.querySelector('strong');if(strong)strong.innerHTML=`<span style="color:var(--neon)">✅ ${label.toUpperCase()}</span>`;}
+    } else {
+      // First time opening directly
+      const item=document.createElement('div');
+      item.className='scout-revealed'; item.id='scout-revealed-'+idx;
+      item.innerHTML=`<strong style="font-size:11px;letter-spacing:1px;color:var(--neon)">✅ ${label.toUpperCase()}</strong><br><div style="margin-top:4px">${ind.text}</div>`;
+      document.getElementById('scout-revealed-list').appendChild(item);
+    }
 
-    // Remove "Tout voir" button
-    const revEl=document.getElementById('scout-revealed-'+idx);
-    if(revEl){const b=revEl.querySelector('button');if(b)b.remove();}
-
-    // Mark button fully used
-    btn.classList.add('used');
-    document.getElementById('scout-cost-'+idx).textContent=`✅ Révélé`;
+    // Mark fully used
+    document.getElementById('scout-btn-'+idx).classList.add('used');
+    if(peekBtn){peekBtn.disabled=true;}
+    if(openBtn){openBtn.disabled=true;}
+    document.getElementById('scout-cost-'+idx).textContent='✅ Révélé';
   }
 
   if(SC.score<=0) finishScout(false);
+}
+
+function flashScoreEl(){
+  const scoreEl=document.getElementById('scout-score');
+  scoreEl.className='scout-score-big penalty';
+  scoreEl.textContent=SC.score;
+  setTimeout(()=>scoreEl.className='scout-score-big',400);
 }
 
 async function submitScoutAnswer(){
@@ -1612,7 +1666,7 @@ function startRepliqueGlobalTimer(){
       if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
       if(!RQ.done){
         if(RQ.phase===1) revealRepliqueResult(false,RQ.data.repliqueAnswer);
-        else submitRepliqueAuthor('timeout',null);
+        else submitRepliqueAuthor('timeout',null,null);
       }
     }
   },1000);
@@ -1711,44 +1765,66 @@ function startRepliquePhase2(){
   document.getElementById('replique-fb2').textContent='';
   const authorArea=document.getElementById('replique-author-choices');
   authorArea.innerHTML='';
-  const authorChoices=RQ.data.repliqueAuthorChoices||[];
-  if(authorChoices.length>=2){
-    const correctAuthor=RQ.data.answer||'';
-    let pool=authorChoices.filter(c=>normRQ(c)!==normRQ(correctAuthor));
-    // Number of choices = how many were provided (2=duo, 4=carré)
-    const nbChoices=Math.min(authorChoices.length, 4);
-    const nbWrong=nbChoices-1;
-    let display=[correctAuthor,...pool.slice(0,nbWrong)].sort(()=>Math.random()-.5);
-    const modeLabel=nbChoices<=2?'DUO — 2 choix':'CARRÉ — 4 choix';
-    const modePts=nbChoices<=2?40:20;
-    const modeDiv=document.createElement('div');
-    modeDiv.style.cssText='font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center;margin-bottom:6px';
-    modeDiv.textContent=modeLabel+' · +'+modePts+' pts';
-    authorArea.appendChild(modeDiv);
-    display.forEach(ch=>{
-      const btn=document.createElement('div');
-      btn.className='replique-choice'; btn.textContent=ch;
-      btn.onclick=()=>submitRepliqueAuthor(false,ch);
-      authorArea.appendChild(btn);
-    });
+  const hasQCM=!!(RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length>=1);
+
+  // Show mode choice: Cash or Duo (if QCM available)
+  if(hasQCM){
+    const modeArea=document.createElement('div');
+    modeArea.innerHTML=`<div style="font-size:12px;color:var(--mute);text-align:center;margin:6px 0 8px">Choisis ton mode :</div>
+      <div class="replique-mode-btns">
+        <div class="replique-mode-btn" id="rq-author-cash-btn">
+          <div style="font-size:20px">🥇</div>
+          <div class="pts">30 pts</div>
+          <div class="lbl">CASH</div>
+          <div style="font-size:10px;color:var(--mute);margin-top:2px">Tape le nom</div>
+        </div>
+        <div class="replique-mode-btn" id="rq-author-duo-btn">
+          <div style="font-size:20px">🥈</div>
+          <div class="pts">15 pts</div>
+          <div class="lbl">DUO</div>
+          <div style="font-size:10px;color:var(--mute);margin-top:2px">2 choix</div>
+        </div>
+      </div>`;
+    authorArea.appendChild(modeArea);
+
+    document.getElementById('rq-author-cash-btn').onclick=()=>showAuthorInput(authorArea);
+    document.getElementById('rq-author-duo-btn').onclick=()=>showAuthorDuo(authorArea);
   } else {
-    authorArea.innerHTML='<div style="display:flex;gap:8px">'
-      +'<input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l\'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">'
-      +'<button class="chk-btn" onclick="submitRepliqueAuthor(false,null)">✓</button></div>';
-    const inp=document.getElementById('rq-author-input');
-    if(inp){inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor(false,null);};setTimeout(()=>inp.focus(),80);}
+    showAuthorInput(authorArea);
   }
 }
 
-function submitRepliqueAuthor(timeout,choice){
+function showAuthorInput(authorArea){
+  authorArea.innerHTML='<div style="display:flex;gap:8px">'
+    +'<input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l\'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">'
+    +'<button class="chk-btn" onclick="submitRepliqueAuthor(false,null,\'cash\')">✓</button></div>';
+  const inp=document.getElementById('rq-author-input');
+  if(inp){inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor(false,null,'cash');};setTimeout(()=>inp.focus(),80);}
+}
+
+function showAuthorDuo(authorArea){
+  const correctAuthor=RQ.data.answer||'';
+  const wrongAnswer=(RQ.data.repliqueAuthorChoices||[])[0]||'???';
+  const display=[correctAuthor, wrongAnswer].sort(()=>Math.random()-.5);
+  authorArea.innerHTML='';
+  display.forEach(ch=>{
+    const btn=document.createElement('div');
+    btn.className='replique-choice'; btn.textContent=ch;
+    btn.onclick=()=>submitRepliqueAuthor(false,ch,'duo');
+    authorArea.appendChild(btn);
+  });
+}
+
+function submitRepliqueAuthor(timeout,choice,mode){
   if(RQ.done) return;
   RQ.done=true;
   if(RQ.globalTimerInt){clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;}
   const inp=document.getElementById('rq-author-input');
   const val=timeout?'':(choice||(inp?.value.trim()||''));
   const correct=!timeout&&matchesAuthor(val,RQ.data.answer||'');
-  const isQCM=!!(RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length>=2);
-  const authorQCMScore=RQ.data.repliqueAuthorChoices&&RQ.data.repliqueAuthorChoices.length<=2?40:20;
+  const isQCM=mode==='duo';
+  const authorScore=isQCM?15:30; // cash=30, duo=15
+  const authorQCMScore=authorScore;
   if(correct){
     document.querySelectorAll('#replique-author-choices .replique-choice').forEach(btn=>{
       if(matchesAuthor(btn.textContent,RQ.data.answer||'')) btn.classList.add('correct');

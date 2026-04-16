@@ -567,9 +567,9 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <span class="hint">Accepte prénom seul, nom seul ou prénom+nom.</span>
         </div>
         <div class="field">
-          <label>Propositions auteur — QCM (optionnel, séparées par ;)</label>
-          <input type="text" id="rq-author-choices-in" placeholder="Ex: Zidane;Ronaldo;Messi;Henry">
-          <span class="hint">Si rempli → QCM avec boutons. Mauvaise réponse = −15 pts. Sinon → texte libre.</span>
+          <label>Mauvaise proposition auteur (pour le mode DUO)</label>
+          <input type="text" id="rq-author-choices-in" placeholder="Ex: Ronaldo">
+          <span class="hint">Si rempli → le joueur peut choisir DUO (2 boutons : bonne réponse + ce leurre). Sinon → CASH uniquement.</span>
         </div>
         <div class="field">
           <label>⏱ Temps total (chrono global)</label>
@@ -1665,7 +1665,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const repliqueAnswer   = currentType==='replique'?document.getElementById('rq-answer-in').value.trim():'';
   const repliqueChoices  = currentType==='replique'?document.getElementById('rq-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
   const repliqueAuthor   = currentType==='replique'?document.getElementById('rq-author-in').value.trim():'';
-  const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.split(';').map(s=>s.trim()).filter(Boolean):[];
+  const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.trim().split(';').map(s=>s.trim()).filter(Boolean):[];
   const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
   const rqTimeVal        = currentType==='replique'?rqTime:60;
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
