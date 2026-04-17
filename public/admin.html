@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — ARENA SPORT</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#07070f;--c1:#111120;--c2:#191928;--c3:#1e1e32;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--green:#00c87a;--orange:#ff8c00;--txt:#ededf8;--mute:#52526e;--r:12px;--ff:'Nunito',sans-serif;--fh:'Nunito',sans-serif}
+body{font-family:var(--ff);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;justify-content:center;padding:0 0 80px;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:580px}
+/* ADMIN HEADER */
+.admin-header{padding:20px 16px 0;margin-bottom:20px}
+.admin-logo{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.admin-title{font-size:28px;font-weight:800;color:var(--neon);letter-spacing:1px}
+.admin-sub{font-size:12px;color:var(--mute);margin-top:3px}
+/* NAV TABS */
+.nav-tabs{display:flex;gap:6px;padding:0 16px;margin-bottom:16px}
+.nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:9px 18px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;transition:all .15s;flex:1;text-align:center}
+.nav-tab.active{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.06)}
+.tab-content{padding:0 16px}
+/* CARDS */
+.card{background:var(--c1);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;margin-bottom:12px}
+.card-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;flex-direction:column;gap:16px}
+.login-logo{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--mute);text-align:center}
+.login-title{font-size:32px;font-weight:800;color:var(--neon);text-align:center;letter-spacing:2px}
+/* FORM */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9999bb}
+input[type=text],input[type=number],input[type=password],input[type=url],textarea,select{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 14px;font-size:15px;font-family:var(--ff);font-weight:600;color:var(--txt);width:100%;outline:none;-webkit-appearance:none;transition:border-color .2s}
+select{-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{border-color:var(--neon)}
+input::placeholder,textarea::placeholder{color:var(--mute);font-weight:400}
+textarea{resize:vertical;min-height:120px;line-height:1.6}
+.hint{font-size:12px;color:#8888aa;margin-top:3px;line-height:1.4}
+.wc-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:5px}
+.wc-track{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:4px}
+.wc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .3s}
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 16px;font-size:14px;font-weight:800;font-family:var(--ff);border:none;border-radius:var(--r);cursor:pointer;transition:transform .1s,opacity .1s;width:100%;margin-bottom:7px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--neon);color:#07070f}
+.btn-s{background:var(--c2);color:var(--txt);border:1px solid rgba(255,255,255,.09)}
+.btn-g{background:var(--c3);color:var(--mute);border:1px solid rgba(255,255,255,.07)}
+.btn-sm{padding:6px 11px;font-size:12px;width:auto;margin-bottom:0;border-radius:8px}
+.btn-del{background:rgba(255,63,92,.12);color:var(--red);border:1px solid rgba(255,63,92,.25)}
+.btn-edit{background:rgba(0,229,200,.1);color:var(--cyan);border:1px solid rgba(0,229,200,.2)}
+.btn-reset{background:rgba(212,255,0,.08);color:var(--neon);border:1px solid rgba(212,255,0,.18)}
+.btn-cancel{background:rgba(255,255,255,.05);color:var(--mute);border:1px solid rgba(255,255,255,.08)}
+.btn-scores{background:rgba(255,140,0,.1);color:var(--orange);border:1px solid rgba(255,140,0,.22)}
+.btn-publish{background:rgba(0,230,118,.1);color:#00e676;border:1px solid rgba(0,230,118,.25)}
+.btn-unpublish{background:rgba(255,140,0,.1);color:var(--orange);border:1px solid rgba(255,140,0,.25)}
+.msg{text-align:center;font-size:13px;font-weight:700;padding:10px;border-radius:var(--r);margin-top:8px;display:none}
+.msg.ok{background:rgba(0,200,122,.15);color:var(--green);display:block}
+.msg.err{background:rgba(255,63,92,.15);color:var(--red);display:block}
+/* ATHLETE CARDS */
+.ath-card{background:var(--c2);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:8px;transition:border-color .15s}
+.ath-card:hover{border-color:rgba(255,255,255,.12)}
+.ath-head{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.ath-emoji{font-size:28px;flex-shrink:0}
+.ath-info{flex:1;min-width:0}
+.ath-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ath-meta{font-size:11px;color:var(--mute);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.ath-actions{display:flex;gap:6px;flex-wrap:wrap}
+/* SCREENS */
+#login-screen,#admin-screen{display:none}
+#login-screen.on,#admin-screen.on{display:block}
+/* TYPE SELECTOR */
+.type-sel{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.type-opt{background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 6px;cursor:pointer;text-align:center;transition:border-color .15s;flex:0 0 calc(20% - 6px);min-width:60px}
+.type-opt .type-ico{font-size:22px;margin-bottom:3px}
+.type-opt:hover{border-color:rgba(255,255,255,.2)}
+.type-opt.sel{border-color:var(--neon);background:rgba(212,255,0,.06)}
+.type-opt .type-ico{font-size:18px;margin-bottom:3px}
+.type-opt .type-name{font-size:10px;font-weight:800;color:var(--txt)}
+.type-opt .type-desc{font-size:9px;color:var(--mute);margin-top:1px;line-height:1.2}
+.type-opt .type-name{font-size:12px;font-weight:800;color:var(--txt)}
+.type-opt .type-desc{font-size:10px;color:var(--mute);margin-top:2px;line-height:1.3}
+/* IMAGE PREVIEW */
+.img-preview{width:100%;border-radius:12px;margin-top:8px;display:none;max-height:200px;object-fit:cover}
+/* ALIASES */
+.aliases-box{background:var(--c2);border-radius:10px;padding:10px 12px;margin-top:6px;display:none}
+.aliases-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.aliases-list{display:flex;flex-wrap:wrap;gap:5px}
+.alias-tag{background:rgba(212,255,0,.12);border:1px solid rgba(212,255,0,.2);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--neon)}
+/* EMOJI */
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:5px 0}
+.emoji-btn{background:var(--c2);border:2px solid transparent;border-radius:8px;padding:5px;font-size:19px;cursor:pointer;text-align:center;transition:border-color .15s}
+.emoji-btn:hover,.emoji-btn.sel{border-color:var(--neon)}
+/* ATHLETE LIST */
+.ath-list{display:flex;flex-direction:column;gap:8px}
+.ath-item{background:var(--c2);border-radius:12px;padding:12px 14px}
+.ath-top{display:flex;align-items:center;gap:10px}
+.ath-ico{font-size:24px;flex-shrink:0}
+.ath-info{flex:1;min-width:0}
+.ath-name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ath-meta{font-size:11px;color:var(--mute);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.ath-type{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+.ath-type.img{background:rgba(0,229,200,.12);color:var(--cyan)}
+.ath-type.txt{background:rgba(212,255,0,.1);color:var(--neon)}
+.ath-type.buzz{background:rgba(255,63,92,.12);color:var(--red)}
+.ath-type.sportus{background:rgba(240,192,0,.12);color:#f0c000}
+.ath-type.prix{background:rgba(0,200,122,.12);color:var(--green)}
+.ath-actions{display:flex;gap:5px;flex-shrink:0}
+/* EDIT BANNER */
+.edit-banner{background:rgba(0,229,200,.08);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--cyan);display:none;align-items:center;gap:8px}
+.edit-banner.on{display:flex}
+/* PREVIEW */
+.preview-box{background:var(--c2);border-radius:10px;padding:12px;margin-top:8px;display:none;line-height:2.3;font-size:13px}
+.wb-prev{display:inline-block;background:#181830;border-radius:5px;padding:3px 7px;margin:2px;cursor:pointer;font-size:13px;color:transparent;user-select:none}
+.wb-prev:hover{background:#222240}
+.grid-prev{display:none;margin-top:8px}
+.grid-prev-inner{position:relative;width:100%;border-radius:10px;overflow:hidden;background:#000}
+.grid-prev-inner img{display:block;width:100%}
+.grid-prev-overlay{position:absolute;inset:0;display:grid}
+.tile-prev{background:rgba(10,10,20,.9);border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:opacity .15s}
+.tile-prev:hover{background:rgba(40,40,80,.7)}
+/* BUZZ CLUES */
+.buzz-clues-list{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.buzz-clue-item{display:flex;align-items:flex-start;gap:8px;background:var(--c2);border-radius:10px;padding:10px}
+.buzz-clue-num{font-size:11px;font-weight:800;color:var(--orange);min-width:22px;padding-top:3px}
+.buzz-clue-text{flex:1;font-size:13px;color:var(--txt);line-height:1.5;word-break:break-word}
+.buzz-clue-del{background:rgba(255,63,92,.15);color:var(--red);border:1px solid rgba(255,63,92,.3);border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer;flex-shrink:0}
+/* SCORES MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.on{display:flex}
+.modal{background:var(--c1);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;gap:12px}
+.modal-title{font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:var(--c2);border:none;color:var(--mute);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:var(--ff);font-weight:700}
+.modal-close:hover{color:var(--txt)}
+.modal-body{overflow-y:auto;flex:1}
+.score-item{display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.score-rank{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.score-info{flex:1;min-width:0}
+.score-pseudo{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-date{font-size:11px;color:var(--mute);margin-top:1px}
+.score-pts{font-weight:900;font-size:22px;color:var(--neon);flex-shrink:0}
+/* NAV TABS */
+.nav-tabs{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;transition:border-color .15s,color .15s}
+.nav-tab.active{border-color:var(--neon);color:var(--neon)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="login-screen" class="on">
+  <div class="login-wrap">
+    <div class="login-logo">⚡ Arena Sport</div>
+    <div class="login-title">ADMIN</div>
+    <div style="width:100%;max-width:360px">
+      <div class="card">
+        <div class="field"><label>Mot de passe</label><input type="password" id="pw-in" placeholder="••••••••"></div>
+        <button class="btn btn-p" id="btn-login" style="font-size:15px;letter-spacing:2px">Connexion →</button>
+        <div class="msg" id="login-msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <div class="admin-header">
+    <div class="admin-logo">⚡ Arena Sport</div>
+    <div class="admin-title">ADMIN</div>
+    <div class="admin-sub">Les défis s'affichent du plus ancien au plus récent</div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showAdminTab('defis')">📋 Défis</button>
+    <button class="nav-tab" onclick="showAdminTab('classement')">🏆 Classement</button>
+    <button class="nav-tab" onclick="showAdminTab('musique')">🎵 Musique</button>
+  </div>
+
+  <!-- TAB: DÉFIS -->
+  <div id="tab-defis" class="tab-content">
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Défis actifs</span>
+        <button class="btn btn-sm btn-reset" id="btn-reset-global">🔄 Reset classement global</button>
+      </div>
+      <div class="ath-list" id="ath-list"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="form-title">➕ Ajouter un défi</div>
+
+      <div class="edit-banner" id="edit-banner">
+        ✏️ <span id="edit-banner-name">Modification</span>
+        <button class="btn btn-sm btn-cancel" id="btn-cancel-edit" style="margin-left:auto">✕ Annuler</button>
+      </div>
+
+      <!-- Type selector -->
+      <div class="field">
+        <label>Type de défi</label>
+        <div class="type-sel">
+          <div class="type-opt sel" id="type-blackjack" onclick="selectType('blackjack')">
+            <div class="type-ico">🃏</div>
+            <div class="type-name">Blackjack</div>
+            <div class="type-desc">Cumule sans dépasser</div>
+          </div>
+          <div class="type-opt" id="type-image" onclick="selectType('image')">
+            <div class="type-ico">🖼</div>
+            <div class="type-name">Image</div>
+            <div class="type-desc">Photo masquée</div>
+          </div>
+          <div class="type-opt" id="type-buzz" onclick="selectType('buzz')">
+            <div class="type-ico">⚡</div>
+            <div class="type-name">Buzz</div>
+            <div class="type-desc">Chrono dégressif</div>
+          </div>
+          <div class="type-opt" id="type-sportus" onclick="selectType('sportus')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Sportus</div>
+            <div class="type-desc">Motus sportif</div>
+          </div>
+          <div class="type-opt" id="type-prix" onclick="selectType('prix')">
+            <div class="type-ico">💰</div>
+            <div class="type-name">Juste Prix</div>
+            <div class="type-desc">Devine la stat</div>
+          </div>
+          <div class="type-opt" id="type-trappe" onclick="selectType('trappe')">
+            <div class="type-ico">🕳️</div>
+            <div class="type-name">La Trappe</div>
+            <div class="type-desc">Mise sur les réponses</div>
+          </div>
+          <div class="type-opt" id="type-demineur" onclick="selectType('demineur')">
+            <div class="type-ico">💣</div>
+            <div class="type-name">Démineur</div>
+            <div class="type-desc">Évite les mines</div>
+          </div>
+          <div class="type-opt" id="type-chase" onclick="selectType('chase')">
+            <div class="type-ico">🏃</div>
+            <div class="type-name">The Chase</div>
+            <div class="type-desc">Fuis le chasseur</div>
+          </div>
+          <div class="type-opt" id="type-scout" onclick="selectType('scout')">
+            <div class="type-ico">🔍</div>
+            <div class="type-name">Le Scout</div>
+            <div class="type-desc">4 indices à acheter</div>
+          </div>
+          <div class="type-opt" id="type-replique" onclick="selectType('replique')">
+            <div class="type-ico">💬</div>
+            <div class="type-name">Réplique Culte</div>
+            <div class="type-desc">Citation sportive</div>
+          </div>
+          <div class="type-opt" id="type-grimpe" onclick="selectType('grimpe')">
+            <div class="type-ico">🚴</div>
+            <div class="type-name">La Grimpée</div>
+            <div class="type-desc">Cyclisme physique</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emoji -->
+      <div class="field">
+        <label>Emoji sport</label>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <input type="text" id="emoji-in" placeholder="Ou tape un emoji…" maxlength="4" style="margin-top:5px">
+      </div>
+
+      <!-- Name -->
+      <div class="field" id="field-answer">
+        <label>Nom complet du sportif</label>
+        <input type="text" id="answer-in" placeholder="Ex: Corentin Moutet" autocomplete="off">
+      </div>
+
+      <!-- Aliases -->
+      <div id="field-aliases">
+        <div class="field">
+          <label>Alias supplémentaires (optionnel)</label>
+          <input type="text" id="aliases-in" placeholder="Ex: moutet, corentin">
+          <span class="hint">Prénom et nom de famille sont ajoutés automatiquement</span>
+        </div>
+        <div class="aliases-box" id="aliases-box">
+          <div class="aliases-title">Réponses acceptées</div>
+          <div class="aliases-list" id="aliases-preview"></div>
+        </div>
+      </div>
+
+      <!-- TEXT fields -->
+      <div id="text-fields" style="display:none">
+        <div class="field">
+          <label>Description (~100 mots)</label>
+          <textarea id="clue-in" placeholder="Tous les mots seront masqués. ~100 mots = 100 pts max."></textarea>
+          <div class="wc-row"><span>Difficulté :</span><span id="diff-label">—</span></div>
+          <div class="wc-track"><div class="wc-fill" id="wc-fill" style="width:0%"></div></div>
+          <div class="wc-row"><span id="word-count">0 mots</span><span style="color:var(--cyan)">100 mots ≈ 100 pts max</span></div>
+        </div>
+        <button class="btn btn-s" id="btn-preview-text" style="margin-bottom:4px">👁 Prévisualiser le texte</button>
+        <div class="preview-box" id="preview-box-text"></div>
+      </div>
+
+      <!-- GRIMPE fields -->
+      <div id="grimpe-fields" style="display:none">
+        <div class="field">
+          <label>Thème du col</label>
+          <input type="text" id="grimpe-theme-in" placeholder="Ex: Alpe d'Huez — Identifie ces coureurs !">
+        </div>
+        <div class="field">
+          <label>Réponses acceptées (une par ligne ou séparées par ;)</label>
+          <textarea id="grimpe-answers-in" placeholder="Vingegaard;Jonas Vingegaard&#10;Pogacar&#10;Merckx;Eddy Merckx" style="min-height:120px"></textarea>
+          <span class="hint">Le joueur doit trouver un maximum de réponses. Une réponse = avance sur la montée.</span>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
+        </div>
+        <div class="field">
+          <label>⚡ Paramètres de puissance (watts)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="300" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="290" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse rapide &lt;8s (+W)</div><input type="number" id="grimpe-fast-bonus" value="30" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse moyenne 8-15s (+W)</div><input type="number" id="grimpe-mid-bonus" value="15" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>💥 Paramètres de pénalité</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pas de réponse (−W)</div><input type="number" id="grimpe-noanswer-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono sans réponse (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (−W)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée malus mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale (−W)</div><input type="number" id="grimpe-fringale-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée fringale (s)</div><input type="number" id="grimpe-fringale-dur" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>🚀 Bonus</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🌬️ Aspiration (+W)</div><input type="number" id="grimpe-aspiration-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée aspiration (s)</div><input type="number" id="grimpe-aspiration-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍬 Gel (+W)</div><input type="number" id="grimpe-gel-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.7">
+          🚴 <strong style="color:var(--txt)">Physique :</strong> 10km · Pente 1→10% · Score = écart de temps avec Pogacar
+        </div>
+      </div>
+
+      <!-- BLACKJACK fields -->
+      <div id="blackjack-fields" style="display:block">
+        <div class="field">
+          <label>Thème / Consigne</label>
+          <input type="text" id="bj-theme-in" placeholder="Ex: Cumulez les buts de ces joueurs en Équipe de France">
+        </div>
+        <div class="field">
+          <label>🎯 Plafond à ne pas dépasser</label>
+          <input type="number" id="bj-target-in" placeholder="Ex: 50" min="1" style="max-width:120px">
+          <span class="hint">Le joueur doit s'approcher de ce nombre sans le dépasser.</span>
+        </div>
+        <div class="field">
+          <label>Réponses valides (format : Nom=Valeur, une par ligne ou séparées par ;)</label>
+          <textarea id="bj-answers-in" placeholder="Mbappé=46&#10;Giroud=57&#10;Griezmann=44&#10;Benzema=37" style="min-height:120px"></textarea>
+          <span class="hint">Les noms sont insensibles à la casse et aux accents.</span>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="bj-answers-count">0 entrée(s)</div>
+        </div>
+      </div>
+
+      <!-- IMAGE fields -->
+      <div id="image-fields" style="display:none">
+        <div class="field">
+          <label>Source de l'image</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div id="img-src-url" onclick="selectImgSrc('url')" style="background:rgba(212,255,0,.06);border:2px solid var(--neon);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">🔗 URL</div>
+            <div id="img-src-file" onclick="selectImgSrc('file')" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:800">📁 Fichier</div>
+          </div>
+          <!-- URL input -->
+          <div id="img-url-zone">
+            <input type="url" id="img-url-in" placeholder="https://…/photo-sportif.jpg">
+            <span class="hint">💡 <strong>Wikipédia</strong> : fonctionne toujours — clic droit sur la photo → Copier l'adresse de l'image</span>
+          </div>
+          <!-- File upload -->
+          <div id="img-file-zone" style="display:none">
+            <input type="file" id="img-file-in" accept="image/*" style="background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px;width:100%;color:var(--txt)">
+            <span class="hint">💡 Max 2MB recommandé. L'image est stockée directement dans la base.</span>
+          </div>
+        </div>
+        <img class="img-preview" id="img-preview" alt="Prévisualisation">
+        <div class="grid-prev" id="grid-prev">
+          <div style="font-size:12px;color:var(--mute);margin-bottom:4px">Prévisualisation grille (clique pour tester)</div>
+          <div class="grid-prev-inner">
+            <img id="grid-prev-img" src="" alt="">
+            <div class="grid-prev-overlay" id="grid-prev-overlay"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUZZ fields -->
+      <div id="buzz-fields" style="display:none">
+        <div class="field">
+          <label>Vitesse de décrément du score</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:4px 0 2px" id="buzz-speed-grid"></div>
+          <span class="hint" id="buzz-speed-hint">−2 pts/sec → ~50 secondes pour tomber à 0</span>
+        </div>
+        <div class="field">
+          <label>⏱ Gel du bouton Buzz après mauvaise réponse</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 2px" id="buzz-freeze-grid"></div>
+          <span class="hint" id="buzz-freeze-hint">3s de gel par défaut</span>
+        </div>
+        <div class="field">
+          <label>Indices (du plus difficile au plus facile)</label>
+          <span class="hint">💡 Ajoute 3 à 6 indices progressifs.</span>
+          <textarea id="buzz-new-clue" placeholder="Colle ton texte ici…" style="min-height:80px;margin-top:8px"></textarea>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+            <span id="buzz-word-count" style="color:var(--mute)">0 mots</span>
+            <span id="buzz-word-guide" style="color:var(--cyan)">idéal : ~113 mots pour −2/s</span>
+          </div>
+          <button class="btn btn-s" id="btn-add-buzz-clue" style="margin-top:6px;margin-bottom:0">➕ Ajouter cet indice</button>
+        </div>
+        <div class="buzz-clues-list" id="buzz-clues-list"></div>
+        <div style="font-size:12px;color:var(--mute);margin-top:8px" id="buzz-clue-count">0 indice(s) ajouté(s)</div>
+      </div>
+
+      <!-- SPORTUS fields -->
+      <div id="sportus-fields" style="display:none">
+        <div class="field">
+          <label>💬 Indice gratuit (affiché dès le début)</label>
+          <input type="text" id="sportus-hint0-in" placeholder="Ex: Il est considéré comme le meilleur tennisman de tous les temps.">
+          <span class="hint">Visible dès le début, sans coût. Laisser vide si aucun.</span>
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #1 (−20 pts)</label>
+          <input type="text" id="sportus-hint1-in" placeholder="Ex: Ce sportif a remporté 14 fois Roland-Garros.">
+        </div>
+        <div class="field">
+          <label>💡 Indice Boule Dorée #2 (−20 pts)</label>
+          <input type="text" id="sportus-hint2-in" placeholder="Ex: Il est né en Espagne en 1986.">
+        </div>
+        <div style="background:rgba(30,30,30,.6);border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
+          ⚫ La <strong>Boule Noire</strong> est tirée aléatoirement — elle retire 20 pts sans donner d'indice.
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label>Lettres pré-révélées (optionnel)</label>
+          <span class="hint">Saisis le nom de famille avec des <strong>_</strong> pour les lettres masquées.<br>Ex: pour NADAL → <code>_A_A_</code> révèle les A dès le départ.</span>
+          <input type="text" id="sportus-revealed-in" placeholder="Ex: _A_A_ ou N___L" autocomplete="off" autocorrect="off" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-size:18px">
+          <div id="sportus-revealed-preview" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px">
+          ⏱ <strong style="color:var(--txt)">Timer fixe :</strong> 45s par proposition
+        </div>
+      </div>
+
+      <!-- PRIX fields -->
+      <div id="prix-fields" style="display:none">
+        <div class="field">
+          <label>Question posée au joueur</label>
+          <input type="text" id="prix-question-in" placeholder="Ex: Combien de Grands Chelems a-t-il remportés ?">
+          <span class="hint">Affichée pendant le jeu à la place de l'indice.</span>
+        </div>
+        <div class="field">
+          <label>Valeur exacte à deviner</label>
+          <input type="number" id="prix-target-in" placeholder="Ex: 22" min="0" step="any">
+          <span class="hint">Le chiffre exact que le joueur doit trouver.</span>
+        </div>
+        <div class="field">
+          <label>Unité (optionnel)</label>
+          <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
+        </div>
+        <div class="field">
+          <label>🌡️ Échelle de chaleur — seuils personnalisables</label>
+          <div id="chaleur-config" style="margin:8px 0;display:flex;flex-direction:column;gap:6px"></div>
+          <div id="chaleur-preview" style="background:var(--c2);border-radius:12px;padding:12px;margin-top:6px;text-align:center;font-size:22px;transition:background .3s">
+            <span id="chaleur-prev-ico">🌡️</span> <span id="chaleur-prev-label" style="font-family:var(--fh);font-size:16px">CHAUD</span>
+          </div>
+          <input type="range" id="chaleur-test-slider" min="0" max="100" value="75"
+            style="width:100%;accent-color:var(--neon);margin-top:8px;cursor:pointer">
+          <span class="hint">Glisse le curseur du bas pour tester l'échelle en temps réel.</span>
+        </div>
+        <div class="field">
+          <label>Tolérance ±</label>
+          <input type="number" id="prix-tolerance-in" placeholder="0" min="0" step="any" value="0">
+          <span class="hint">Ex: ±10 → réponses entre cible−10 et cible+10 acceptées. 0 = valeur exacte uniquement.</span>
+        </div>
+      </div>
+
+      <!-- TRAPPE fields -->
+      <div id="trappe-fields" style="display:none">
+        <div class="field">
+          <label>⏱ Durée de mise par question (secondes)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="trappe-timer-grid"></div>
+        </div>
+        <div class="field">
+          <label>Ajouter une question</label>
+          <input type="text" id="trappe-q-in" placeholder="Question…" style="margin-bottom:6px">
+          <input type="text" id="trappe-a0" placeholder="Réponse A" style="margin-bottom:4px">
+          <input type="text" id="trappe-a1" placeholder="Réponse B" style="margin-bottom:4px">
+          <input type="text" id="trappe-a2" placeholder="Réponse C" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:13px;color:var(--mute)">Bonne réponse :</span>
+            <div style="display:flex;gap:6px" id="trappe-correct-grid"></div>
+          </div>
+          <button class="btn btn-s" id="btn-add-trappe-q" style="margin-top:4px">➕ Ajouter cette question</button>
+        </div>
+        <div id="trappe-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="font-size:12px;color:var(--mute);margin-top:4px" id="trappe-q-count">0 question(s)</div>
+      </div>
+
+      <!-- DÉMINEUR fields -->
+      <div id="demineur-fields" style="display:none">
+        <div class="field">
+          <label>Question / Thème</label>
+          <input type="text" id="dem-question-in" placeholder="Ex: Quels pays ont gagné la Coupe du Monde ?">
+          <span class="hint">Affichée au joueur pendant la partie.</span>
+        </div>
+        <div class="field">
+          <label>⏱ Chronomètre</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px" id="dem-timer-grid"></div>
+        </div>
+        <div class="field">
+          <label>Cases de la grille (12 cases, 2 mines)</label>
+          <span class="hint">Colle jusqu'à 12 noms d'un coup (une par ligne) ou ajoute-les un par un. Coche 💣 pour marquer une mine.</span>
+          <textarea id="dem-bulk-in" placeholder="Ex: Messi;Ronaldo;Mbappé;Benzema… (séparés par ; ou une par ligne)" style="min-height:80px;margin-top:6px"></textarea>
+          <button class="btn btn-s" id="btn-dem-bulk" style="margin-top:6px">📋 Importer ces noms</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <div id="dem-items-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-dem-item" style="margin-top:8px">➕ Ajouter une case manuellement</button>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px" id="dem-item-count">0 case(s) · 0 mine(s)</div>
+        </div>
+      </div>
+
+      <!-- THE CHASE fields -->
+      <div id="chase-fields" style="display:none">
+        <div class="field">
+          <label>Thème / Consigne</label>
+          <input type="text" id="chase-theme-in" placeholder="Ex: Citez 10 joueurs français ayant joué en Ligue des Champions">
+          <span class="hint">Affiché en grand pendant le jeu.</span>
+        </div>
+        <div class="field">
+          <label>Réponses acceptées</label>
+          <textarea id="chase-answers-in" placeholder="Une par ligne ou séparées par ; &#10;Ex: Zidane;Henry;Thuram&#10;ou&#10;Zidane&#10;Henry" style="min-height:100px"></textarea>
+          <span class="hint">Accepte le format colonne (une par ligne) ou séparé par point-virgule.</span>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="chase-answers-count">0 réponse(s)</div>
+        </div>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.6">
+          ⚙️ <strong style="color:var(--txt)">Paramètres fixes :</strong> Départ à 2 cases · Grâce 12s · Vitesse 10s/pas · Sécuriser = −1 case
+        </div>
+      </div>
+
+      <!-- LE SCOUT fields -->
+      <div id="scout-fields" style="display:none">
+        <span class="hint" style="display:block;margin-bottom:12px">Les tiroirs vides ne s'affichent pas en jeu. Personnalise les labels selon le sport.</span>
+
+        <!-- Tiroir 0 : Identité -->
+        <div class="field" style="border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:18px">🌍</span>
+            <input type="text" id="scout-label-0" value="Identité" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
+            <select id="scout-cost-0-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
+              <option value="5">−5 pts</option><option value="10">−10 pts</option><option value="15">−15 pts</option><option value="20" selected>−20 pts</option>
+            </select>
+          </div>
+          <textarea id="scout-0-in" placeholder="Nationalité, époque, âge, particularité physique.&#10;Ex foot: Brésilien, né dans les années 70, gaucher.&#10;Ex tennis: Américain, droitier, actif dans les années 90." style="min-height:70px"></textarea>
+        </div>
+
+        <!-- Tiroir 1 : Carrière -->
+        <div class="field" style="border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:18px">🔄</span>
+            <input type="text" id="scout-label-1" value="Carrière" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
+            <select id="scout-cost-1-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
+              <option value="10">−10 pts</option><option value="15">−15 pts</option><option value="20">−20 pts</option><option value="25" selected>−25 pts</option><option value="30">−30 pts</option>
+            </select>
+          </div>
+          <textarea id="scout-1-in" placeholder="Clubs, équipes, écuries, entraîneurs, tournois.&#10;Ex foot: A joué à Santos, Barcelone et au PSG.&#10;Ex F1: A couru pour Ferrari et Mercedes." style="min-height:70px"></textarea>
+        </div>
+
+        <!-- Tiroir 2 : Palmarès -->
+        <div class="field" style="border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:18px">🏅</span>
+            <input type="text" id="scout-label-2" value="Palmarès" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
+            <select id="scout-cost-2-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
+              <option value="20">−20 pts</option><option value="30" selected>−30 pts</option><option value="40">−40 pts</option><option value="50">−50 pts</option>
+            </select>
+          </div>
+          <textarea id="scout-2-in" placeholder="Titres, médailles, records, récompenses.&#10;Ex basket: 4 bagues NBA, 3 fois MVP.&#10;Ex athlé: Champion olympique 100m, record du monde." style="min-height:70px"></textarea>
+        </div>
+
+        <!-- Tiroir 3 : Indice Mystère -->
+        <div class="field" style="border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:18px">💡</span>
+            <input type="text" id="scout-label-3" value="Indice Mystère" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px;font-weight:700;flex:1;min-width:100px">
+            <select id="scout-cost-3-sel" style="background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:13px">
+              <option value="5">−5 pts</option><option value="10">−10 pts</option><option value="15" selected>−15 pts</option><option value="20">−20 pts</option><option value="25">−25 pts</option>
+            </select>
+          </div>
+          <textarea id="scout-3-in" placeholder="Surnom, anecdote, fait insolite, citation célèbre.&#10;Ex boxe: A arraché l'oreille de son adversaire avec les dents.&#10;Ex foot: Surnommé 'La Pulga', a failli devenir nageur." style="min-height:70px"></textarea>
+        </div>
+      </div>
+
+      <!-- LA RÉPLIQUE CULTE fields -->
+      <div id="replique-fields" style="display:none">
+        <div class="field">
+          <label>Citation complète</label>
+          <textarea id="rq-citation-in" placeholder="Ex: Je crois qu'après avoir vu ça, on ne peut plus jamais regarder le foot de la même façon." style="min-height:70px"></textarea>
+        </div>
+        <div class="field">
+          <label>Amorce (début affiché au joueur)</label>
+          <input type="text" id="rq-amorce-in" placeholder="Ex: Je crois qu'après avoir vu ça…">
+          <span class="hint">Affiché suivi de "…" — le joueur doit trouver la suite.</span>
+        </div>
+        <div class="field">
+          <label>Bonne fin de citation (réponse)</label>
+          <input type="text" id="rq-answer-in" placeholder="Ex: on ne peut plus jamais regarder le foot de la même façon">
+        </div>
+        <div class="field">
+          <label>4 propositions de fin (séparées par ;)</label>
+          <textarea id="rq-choices-in" placeholder="bonne réponse;fausse 1;fausse 2;fausse 3" style="min-height:60px"></textarea>
+          <span class="hint">La bonne réponse doit être l'une des 4. Mode DUO = 2 premières.</span>
+        </div>
+        <div class="field">
+          <label>Auteur (réponse phase 2)</label>
+          <input type="text" id="rq-author-in" placeholder="Ex: Zidane">
+          <span class="hint">Accepte prénom seul, nom seul ou prénom+nom.</span>
+        </div>
+        <div class="field">
+          <label>Mauvaise proposition auteur (pour le mode DUO)</label>
+          <input type="text" id="rq-author-choices-in" placeholder="Ex: Ronaldo">
+          <span class="hint">Si rempli → le joueur peut choisir DUO (2 boutons : bonne réponse + ce leurre). Sinon → CASH uniquement.</span>
+        </div>
+        <div class="field">
+          <label>⏱ Temps total (chrono global)</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px" id="rq-time-grid"></div>
+        </div>
+        <div class="field">
+          <label>🎯 Tolérance aux fautes (nb de caractères différents acceptés)</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="rq-tolerance-in" value="1" min="0" max="5" step="1" style="width:80px;text-align:center;font-size:18px;font-weight:800">
+            <span style="font-size:13px;color:var(--txt);flex:1">0 = exact · 1 = "Zidane/Zidanne" · 2 = plus permissif</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coefficient -->
+      <div class="field" style="margin-top:12px">
+        <label>⚖️ Coefficient score total</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" id="coeff-in" value="1" min="0.1" max="5" step="0.1" style="width:100px;text-align:center;font-size:18px;font-weight:800">
+          <span style="font-size:13px;color:var(--mute);flex:1">Score × coeff dans le classement global.<br>Ex: ×2 = défi vaut le double.</span>
+        </div>
+        <div id="coeff-preview" style="font-size:12px;color:var(--cyan);margin-top:4px">Score de 80 pts → 80 pts au classement</div>
+      </div>
+
+      <button class="btn btn-p" id="btn-save" disabled style="margin-top:12px">🚀 Publier ce défi</button>
+      <div class="msg" id="save-msg"></div>
+    </div>
+
+    <button class="btn btn-s" id="btn-game">← Voir le jeu</button>
+  </div>
+
+  <!-- TAB: CLASSEMENT -->
+  <div id="tab-classement" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">🌍 Classement Global</div>
+      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Scores par défi</div>
+      <div style="margin-bottom:10px;font-size:13px;color:var(--mute)">Clique sur un défi pour voir ses scores</div>
+      <div id="admin-ath-selector" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- TAB: MUSIQUE -->
+  <div id="tab-musique" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">🎵 Musique page d'accueil</div>
+      <div class="field">
+        <label>Titre affiché</label>
+        <input type="text" id="music-title-in" placeholder="Ex: Eye of the Tiger — Survivor">
+      </div>
+      <div class="field">
+        <label>URL du fichier audio (MP3 ou M4A)</label>
+        <input type="text" id="music-url-in" placeholder="https://raw.githubusercontent.com/…/chanson.m4a">
+        <span class="hint">Héberge le fichier sur GitHub (raw), Google Drive ou Dropbox.</span>
+      </div>
+      <button class="btn btn-p" id="btn-save-music" onclick="saveMusic()" style="margin-top:8px">💾 Enregistrer la musique</button>
+      <div class="msg" id="music-msg"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🖼 Image de bienvenue</div>
+      <div class="field">
+        <label>URL de l'image (GitHub raw, JPG/PNG/GIF)</label>
+        <input type="text" id="welcome-img-url-in" placeholder="https://raw.githubusercontent.com/LeSingeSur/sportif-game/main/image.jpg">
+        <span class="hint">Upload l'image sur GitHub puis colle l'URL raw. Idéalement une image drôle d'un sportif !</span>
+      </div>
+      <div id="welcome-img-preview" style="display:none;margin-top:8px;border-radius:12px;overflow:hidden">
+        <img id="welcome-img-preview-el" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px">
+      </div>
+      <button class="btn btn-p" onclick="saveWelcomeImage()" style="margin-top:8px">💾 Enregistrer l'image</button>
+      <div class="msg" id="welcome-img-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORES MODAL -->
+<div class="modal-overlay" id="scores-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">Scores</span>
+      <button class="modal-close" id="modal-close-btn">✕ Fermer</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+</div>
+<script>
+const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
+let adminPw='', selEmoji='🏆', editId=null, currentType='blackjack';
+let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
+
+// Buzz speed grid — 1/2/3 pts/sec only, default 2
+const BUZZ_SPEEDS=[
+  {val:2,  label:'−2/s',  desc:'~50s'},
+  {val:2.5,label:'−2.5/s',desc:'~40s'},
+  {val:3,  label:'−3/s',  desc:'~33s'},
+];
+(function buildSpeedGrid(){
+  const grid=document.getElementById('buzz-speed-grid');
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div><div style="font-size:10px;color:var(--mute);margin-top:2px">${s.desc}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzSpeed(s.val);
+    btn.id='bspeed-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzSpeed(2);
+})();
+
+// Buzz freeze duration grid — 1/2/3/5s
+const BUZZ_FREEZES=[
+  {val:1,label:'1s'},{val:2,label:'2s'},{val:3,label:'3s'},{val:5,label:'5s'},
+];
+(function buildFreezeGrid(){
+  const grid=document.getElementById('buzz-freeze-grid');
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:border-color .15s;font-family:var(--ff)';
+    btn.innerHTML=`<div style="font-size:14px;font-weight:800;color:var(--txt)">${s.label}</div>`;
+    btn.dataset.val=s.val;
+    btn.onclick=()=>selectBuzzFreeze(s.val);
+    btn.id='bfreeze-'+s.val;
+    grid.appendChild(btn);
+  });
+  selectBuzzFreeze(3);
+})();
+
+function selectBuzzSpeed(val){
+  buzzDecrement=val;
+  BUZZ_SPEEDS.forEach(s=>{
+    const btn=document.getElementById('bspeed-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  const secs=Math.round(100/val);
+  const maxWords=Math.round(secs/0.22);
+  const idealWords=Math.round(maxWords*0.5);
+  document.getElementById('buzz-speed-hint').textContent=`−${val} pts/sec → ~${secs}s avant d'arriver à 0`;
+  if(document.getElementById('buzz-word-count')) updateBuzzWordCount();
+}
+
+function selectBuzzFreeze(val){
+  buzzFreezeDuration=val;
+  BUZZ_FREEZES.forEach(s=>{
+    const btn=document.getElementById('bfreeze-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+  document.getElementById('buzz-freeze-hint').textContent=`${val}s de gel après une mauvaise réponse`;
+}
+
+// Emoji grid
+const grid=document.getElementById('emoji-grid');
+EMOJIS.forEach(e=>{
+  const btn=document.createElement('button');btn.className='emoji-btn';btn.textContent=e;
+  btn.onclick=()=>{document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selEmoji=e;document.getElementById('emoji-in').value=e};
+  grid.appendChild(btn);
+});
+document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.target.value||'🏆'});
+
+// Type selector
+function selectType(type){
+  currentType=type;
+  ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
+    const el=document.getElementById('type-'+t);
+    if(el) el.classList.toggle('sel',t===type);
+  });
+  document.getElementById('grimpe-fields').style.display    = type==='grimpe'?'block':'none';
+  document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
+  document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
+  document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
+  document.getElementById('sportus-fields').style.display    = type==='sportus'?'block':'none';
+  document.getElementById('prix-fields').style.display       = type==='prix'?'block':'none';
+  document.getElementById('trappe-fields').style.display     = type==='trappe'?'block':'none';
+  document.getElementById('demineur-fields').style.display   = type==='demineur'?'block':'none';
+  document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
+  document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
+  document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe';
+  document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
+  document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
+  checkReady();
+}
+
+// Admin tab nav
+function showAdminTab(tab){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
+  document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
+  document.getElementById('tab-musique').style.display=tab==='musique'?'block':'none';
+  if(tab==='classement') loadAdminScores();
+  if(tab==='musique') loadMusicConfig();
+}
+
+async function loadMusicConfig(){
+  try{
+    const res=await fetch('/api/music');
+    const data=await res.json();
+    document.getElementById('music-url-in').value=data.url||'';
+    document.getElementById('music-title-in').value=data.title||'';
+  }catch(e){}
+  try{
+    const res=await fetch('/api/welcome-image');
+    const data=await res.json();
+    if(data.url){
+      document.getElementById('welcome-img-url-in').value=data.url;
+      document.getElementById('welcome-img-preview-el').src=data.url;
+      document.getElementById('welcome-img-preview').style.display='block';
+    }
+  }catch(e){}
+}
+
+async function saveWelcomeImage(){
+  const url=document.getElementById('welcome-img-url-in').value.trim();
+  if(!url){showMsg('welcome-img-msg','err','❌ Entre une URL d\'image');return;}
+  document.getElementById('welcome-img-preview-el').src=url;
+  document.getElementById('welcome-img-preview').style.display='block';
+  const res=await fetch('/api/admin/welcome-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,url})});
+  const data=await res.json();
+  showMsg('welcome-img-msg', data.success?'ok':'err', data.success?'✅ Image enregistrée !':'❌ '+(data.error||'Erreur'));
+}
+
+async function saveMusic(){
+  const url=document.getElementById('music-url-in').value.trim();
+  const title=document.getElementById('music-title-in').value.trim();
+  const res=await fetch('/api/admin/music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,url,title})});
+  const data=await res.json();
+  showMsg('music-msg', data.success?'ok':'err', data.success?'✅ Musique enregistrée !':'❌ '+(data.error||'Erreur'));
+}
+
+// Login
+document.getElementById('pw-in').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+document.getElementById('btn-login').onclick=login;
+async function login(){
+  const pw=document.getElementById('pw-in').value.trim();if(!pw)return;
+  const res=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const data=await res.json();
+  if(data.success){adminPw=pw;document.getElementById('login-screen').classList.remove('on');document.getElementById('admin-screen').classList.add('on');loadAthletes()}
+  else showMsg('login-msg','err','❌ '+data.message);
+}
+
+// Load list
+async function loadAthletes(){
+  const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  const athletes=await res.json();
+  const list=document.getElementById('ath-list');
+  if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
+  list.innerHTML='';
+  athletes.forEach((a,i)=>{
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?'🚴 Grimpée':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
+    let meta='';
+    if(a.type==='image') meta='10×10 · 100 cases';
+    else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
+    else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
+    else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
+    else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'3 trappes';
+    else if(a.type==='demineur') meta=`${(a.demineurItems||[]).length} cases · ${(a.demineurItems||[]).filter(i=>i.isMine).length} mine(s) · ${a.demineurTimer||60}s`;
+    else if(a.type==='chase') meta=`${(a.chaseAnswers||[]).length} réponses · ×${a.chaseTargetToWin||10} cases · ${a.chaseSpeed||10}s/pas`;
+    else if(a.type==='scout') meta=`4 indices · ${(a.scoutIndices||[]).filter(i=>i.text).length} remplis`;
+    else if(a.type==='replique') meta=`"${(a.repliqueAmorce||a.repliqueCitation||'').substring(0,30)}…" — ${a.answer||'?'}`;
+    else if(a.type==='blackjack') meta=`Plafond ${a.bjTarget||50} · ${Object.keys(a.bjAnswers||{}).length} joueurs`;
+    else meta=(a.clue?.split(/\s+/).length||0)+' mots';
+    const d=document.createElement('div');d.className='ath-item';d.dataset.id=a.id;d.draggable=true;
+    d.innerHTML=`
+      <div class="ath-top">
+        <div style="cursor:grab;font-size:18px;padding:0 6px;color:var(--mute);touch-action:none" class="drag-handle">⠿</div>
+        <div class="ath-ico">${a.emoji}</div>
+        <div class="ath-info">
+          <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
+          <div class="ath-meta">
+            <span class="ath-type ${typeClass}">${typeLabel}</span>
+            <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;${a.published?'background:rgba(0,230,118,.15);color:#00e676':'background:rgba(255,200,0,.12);color:#ffc800'}">${a.published?'✅ PUBLIÉ':'⏳ BROUILLON'}</span>
+            <span>${meta}</span>
+            <span>${a.playerCount} joueur${a.playerCount!==1?'s':''}</span>
+            <span>top: ${a.topScore??'—'}</span>
+            <span style="color:var(--cyan)">×${a.coefficient??1}</span>
+          </div>
+        </div>
+        <div class="ath-actions">
+          <button class="btn btn-sm btn-scores" onclick="showAthleteScores(${a.id})" data-name="${esc(a.answer)}">📊</button>
+          <button class="btn btn-sm btn-edit" onclick="startEdit(${a.id})">✏️</button>
+          <button class="btn btn-sm btn-reset" onclick="resetAthlete(${a.id})">🔄</button>
+          <button class="btn btn-sm" style="background:rgba(0,200,255,.15);color:#00c8ff;border:1px solid rgba(0,200,255,.3)" onclick="previewAthlete(${a.id})">▶ Tester</button>
+          <button class="btn btn-sm ${a.published?'btn-unpublish':'btn-publish'}" onclick="togglePublish(${a.id},${a.published?'false':'true'})">${a.published?'⬇️ Dépublier':'✅ Publier'}</button>
+          <button class="btn btn-sm btn-del" onclick="deleteAthlete(${a.id})" data-name="${esc(a.answer)}">🗑</button>
+        </div>
+      </div>`;
+    list.appendChild(d);
+  });
+  initDragDrop(list);
+}
+
+function initDragDrop(list){
+  let dragged=null, dragOverEl=null;
+  list.querySelectorAll('.ath-item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{
+      dragged=item;
+      item.style.opacity='.4';
+      e.dataTransfer.effectAllowed='move';
+    });
+    item.addEventListener('dragend',()=>{
+      item.style.opacity='';
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      if(dragged) dragged=null;
+    });
+    item.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(item===dragged) return;
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      item.style.borderTop='2px solid var(--neon)';
+      dragOverEl=item;
+    });
+    item.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!dragged||dragged===item) return;
+      list.insertBefore(dragged,item);
+      list.querySelectorAll('.ath-item').forEach(i=>i.style.borderTop='');
+      saveOrder(list);
+    });
+  });
+}
+
+async function saveOrder(list){
+  const ids=[...list.querySelectorAll('.ath-item')].map(el=>parseInt(el.dataset.id));
+  await fetch('/api/admin/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,order:ids})});
+  loadAthletes();
+}
+
+// Edit
+async function startEdit(id){
+  const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  const athletes=await res.json();
+  const a=athletes.find(x=>x.id===id);if(!a)return;
+  editId=id;
+  document.getElementById('answer-in').value=a.answer;
+  document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
+  selectType(a.type||'blackjack');
+  if(a.type==='grimpe'){
+    document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
+    document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
+    document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
+    const p=a.grimpeParams||{};
+    ['start-w','pogi-w','fast-bonus','mid-bonus','noanswer-w','timer','wrong-w','wrong-dur','fringale-w','fringale-dur','aspiration-w','aspiration-dur','gel-w'].forEach(k=>{
+      const el=document.getElementById('grimpe-'+k);
+      const pk=k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+      if(el&&p[pk]!==undefined) el.value=p[pk];
+    });
+    checkReady();
+  } else if(a.type==='blackjack'){
+    document.getElementById('bj-theme-in').value=a.bjTheme||'';
+    document.getElementById('bj-target-in').value=a.bjTarget||50;
+    const entries=Object.entries(a.bjAnswers||{}).map(([k,v])=>`${k}=${v}`).join('\n');
+    document.getElementById('bj-answers-in').value=entries;
+    document.getElementById('bj-answers-count').textContent=Object.keys(a.bjAnswers||{}).length+' entrée(s)';
+    checkReady();
+  } else if(a.type==='image'){
+    if(a.imageBase64){
+      imgSrc='file'; imgBase64=a.imageBase64;
+      selectImgSrc('file');
+      previewImageSrc(a.imageBase64);
+    } else {
+      imgSrc='url'; imgBase64='';
+      selectImgSrc('url');
+      document.getElementById('img-url-in').value=a.imageUrl||'';
+      previewImage(a.imageUrl||'');
+    }
+  } else if(a.type==='buzz'){
+    buzzClues=a.clues||[];
+    selectBuzzSpeed(a.buzzDecrement||2);
+    selectBuzzFreeze(a.buzzFreezeDuration||3);
+    renderBuzzClues();
+  } else if(a.type==='sportus'){
+    document.getElementById('sportus-hint0-in').value=a.sportusHint0||'';
+    document.getElementById('sportus-hint1-in').value=a.sportusHint1||'';
+    document.getElementById('sportus-hint2-in').value=a.sportusHint2||'';
+    
+    // Rebuild pattern from revealedLetters
+    if(a.revealedLetters&&a.revealedLetters.length){
+      const lastName=a.answer.trim().split(/\s+/).pop().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+      const pat=lastName.split('').map((ch,i)=>a.revealedLetters.find(r=>r.index===i)?ch:'_').join('');
+      document.getElementById('sportus-revealed-in').value=pat;
+      document.getElementById('sportus-revealed-in').dispatchEvent(new Event('input'));
+    } else {
+      document.getElementById('sportus-revealed-in').value='';
+      document.getElementById('sportus-revealed-preview').innerHTML='';
+    }
+  } else if(a.type==='prix'){
+    document.getElementById('prix-question-in').value=a.question||'';
+    document.getElementById('prix-target-in').value=a.targetValue!==undefined?a.targetValue:'';
+    document.getElementById('prix-unit-in').value=a.unit||'';
+    document.getElementById('prix-tolerance-in').value=a.prixTolerance||0;
+    selectPrixSensib(a.prixSensibilite||[0,10,40,70,90]);
+  } else if(a.type==='trappe'){
+    trappeQuestions = a.trappeQuestions || (a.trappeQuestion ? [{question:a.trappeQuestion, answers:a.trappeAnswers||[], correct:a.trappeCorrect||0}] : []);
+    selectTrappeTimer(a.trappeTimer||30);
+    renderTrappeQuestions();
+    checkReady();
+  } else if(a.type==='demineur'){
+    document.getElementById('dem-question-in').value=a.demineurQuestion||'';
+    demItems = a.demineurItems ? a.demineurItems.map(it=>({text:it.text,isMine:!!it.isMine})) : [];
+    selectDemTimer(a.demineurTimer||60);
+    renderDemItems();
+    checkReady();
+  } else if(a.type==='chase'){
+    document.getElementById('chase-theme-in').value=a.chaseTheme||'';
+    document.getElementById('chase-answers-in').value=(a.chaseAnswers||[]).join('\n');
+    document.getElementById('chase-answers-count').textContent=(a.chaseAnswers||[]).length+' réponse(s)';
+    // Paramètres chase fixes - pas de grilles à reconstruire
+    checkReady();
+  } else if(a.type==='scout'){
+    const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
+    [0,1,2,3].forEach(i=>{
+      const ind=a.scoutIndices&&a.scoutIndices[i];
+      document.getElementById('scout-'+i+'-in').value=ind?ind.text||'':'';
+      const sel=document.getElementById('scout-cost-'+i+'-sel');
+      if(sel&&ind?.cost) sel.value=ind.cost;
+      const lbl=document.getElementById('scout-label-'+i);
+      if(lbl) lbl.value=ind?.label||defaultLabels[i];
+    });
+    checkReady();
+  } else if(a.type==='replique'){
+    document.getElementById('rq-citation-in').value=a.repliqueCitation||'';
+    document.getElementById('rq-amorce-in').value=a.repliqueAmorce||'';
+    document.getElementById('rq-answer-in').value=a.repliqueAnswer||'';
+    document.getElementById('rq-choices-in').value=(a.repliqueChoices||[]).join(';');
+    document.getElementById('rq-author-in').value=a.answer||'';
+    document.getElementById('rq-author-choices-in').value=(a.repliqueAuthorChoices||[]).join(';');
+    selectRqTolerance(a.rqTolerance!==undefined?a.rqTolerance:1);
+    selectRqTime(a.rqTime||60);
+    document.getElementById('rq-author-choices-in').value=(a.repliqueAuthorChoices||[]).join(';');
+    checkReady();
+  } else {
+    document.getElementById('clue-in').value=a.clue||'';
+  }
+  const parts=a.answer.toLowerCase().split(/\s+/);
+  const manual=(a.aliases||[]).filter(x=>x!==a.answer.toLowerCase()&&!parts.includes(x)).join(', ');
+  document.getElementById('aliases-in').value=manual;
+  document.getElementById('edit-banner').classList.add('on');
+  document.getElementById('edit-banner-name').textContent='Modification : '+a.answer;
+  document.getElementById('form-title').textContent='✏️ Modifier le défi';
+  document.getElementById('coeff-in').value = a.coefficient ?? 1;
+  document.getElementById('coeff-in').dispatchEvent(new Event('input'));
+  document.getElementById('btn-save').textContent='💾 Enregistrer';
+  document.getElementById('btn-save').disabled=false;
+  updateWC();updateAliases();
+  document.getElementById('btn-save').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editId=null; buzzClues=[];
+  document.getElementById('coeff-in').value = 1;
+  document.getElementById('coeff-preview').textContent = 'Score de 80 pts → 80 pts au classement';
+  document.getElementById('edit-banner').classList.remove('on');
+  document.getElementById('form-title').textContent='➕ Ajouter un défi';
+  document.getElementById('btn-save').textContent='🚀 Publier ce défi';
+  document.getElementById('answer-in').value='';
+  document.getElementById('clue-in').value='';
+  document.getElementById('bj-theme-in').value='';
+  document.getElementById('bj-target-in').value='';
+  document.getElementById('bj-answers-in').value='';
+  document.getElementById('bj-answers-count').textContent='0 entrée(s)';
+  document.getElementById('grimpe-theme-in').value='';
+  document.getElementById('grimpe-answers-in').value='';
+  document.getElementById('grimpe-count').textContent='0 réponse(s)';
+  document.getElementById('img-url-in').value='';
+  imgSrc='url'; imgBase64='';
+  selectImgSrc('url');
+  document.getElementById('sportus-hint0-in').value='';
+  document.getElementById('sportus-hint1-in').value='';
+  document.getElementById('sportus-hint2-in').value='';
+  
+  document.getElementById('sportus-revealed-in').value='';
+  document.getElementById('sportus-revealed-preview').innerHTML='';
+  document.getElementById('prix-question-in').value='';
+  document.getElementById('prix-target-in').value='';
+  document.getElementById('prix-unit-in').value='';
+  document.getElementById('prix-tolerance-in').value='0';
+  selectPrixSensib([0,10,40,70,90]);
+  document.getElementById('trappe-q-in').value='';
+  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
+  selectTrappeCorrect(0);
+  selectTrappeTimer(30);
+  trappeQuestions=[];
+  renderTrappeQuestions();
+  demItems=[];
+  renderDemItems();
+  selectDemTimer(60);
+  document.getElementById('dem-question-in').value='';
+  document.getElementById('chase-theme-in').value='';
+  document.getElementById('chase-answers-in').value='';
+  document.getElementById('chase-answers-count').textContent='0 réponse(s)';
+  [0,1,2,3].forEach(i=>{document.getElementById('scout-'+i+'-in').value='';});
+  const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
+  [0,1,2,3].forEach(i=>{const l=document.getElementById('scout-label-'+i);if(l)l.value=defaultLabels[i];});
+  ['rq-citation-in','rq-amorce-in','rq-answer-in','rq-choices-in','rq-author-in','rq-author-choices-in'].forEach(id=>{document.getElementById(id).value='';});
+  selectRqTolerance(1);
+  selectRqTime(60);
+  document.getElementById('aliases-in').value='';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  document.getElementById('aliases-box').style.display='none';
+  document.getElementById('preview-box-text').style.display='none';
+  renderBuzzClues();
+  selectBuzzSpeed(2);
+  selectBuzzFreeze(3);
+  selectType('text');updateWC();checkReady();
+}
+document.getElementById('btn-cancel-edit').onclick=cancelEdit;
+
+// Delete / Reset
+async function togglePublish(id, publish){
+  const res=await fetch('/api/admin/publish/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,published:publish})});
+  const data=await res.json();
+  if(data.success) loadAthletes();
+}
+
+function previewAthlete(id){
+  const url=`/?preview=1&previewId=${id}&previewPw=${encodeURIComponent(adminPw)}`;
+  window.open(url,'_blank');
+}
+
+async function deleteAthlete(id){
+  const btn=document.querySelector(`.btn-del[onclick="deleteAthlete(${id})"]`);
+  const name=btn?btn.dataset.name:'ce défi';
+  if(!confirm('Supprimer "'+name+'" ?'))return;
+  await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadAthletes();
+}
+async function resetAthlete(id){
+  if(!confirm('Remettre à zéro le classement de ce défi ?'))return;
+  const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
+}
+document.getElementById('btn-reset-global').onclick=async()=>{
+  if(!confirm('Remettre à zéro le classement global ?'))return;
+  const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
+};
+
+// Word count
+document.getElementById('clue-in').addEventListener('input',updateWC);
+document.getElementById('answer-in').addEventListener('input',updateAliases);
+document.getElementById('aliases-in').addEventListener('input',updateAliases);
+
+function updateWC(){
+  const words=document.getElementById('clue-in').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('word-count').textContent=words+' mot'+(words!==1?'s':'');
+  document.getElementById('wc-fill').style.width=Math.min(100,(words/100)*100)+'%';
+  document.getElementById('diff-label').textContent=words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait';
+  checkReady();
+}
+function updateAliases(){
+  const answer=document.getElementById('answer-in').value.trim();
+  if(!answer){document.getElementById('aliases-box').style.display='none';checkReady();return}
+  const parts=answer.split(/\s+/);
+  const auto=[answer.toLowerCase()];
+  if(parts.length>1) auto.push(parts[parts.length-1].toLowerCase());
+  const manual=document.getElementById('aliases-in').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const all=[...new Set([...auto,...manual])];
+  document.getElementById('aliases-box').style.display='block';
+  document.getElementById('aliases-preview').innerHTML=all.map(a=>'<span class="alias-tag">'+a+'</span>').join('');
+  checkReady();
+}
+function checkReady(){
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe') ? true : !!document.getElementById('answer-in').value.trim();
+  let hasContent=false;
+  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&parseGrimpeAnswers().length>=1;
+  else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
+  else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
+  else if(currentType==='buzz') hasContent=buzzClues.length>0;
+  else if(currentType==='sportus') hasContent=true;
+  else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
+  else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
+  else if(currentType==='demineur') hasContent=demItems.length>=3&&demItems.filter(i=>i.isMine).length===2&&demItems.every(i=>i.text.trim());
+  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()).length>=2;
+  else if(currentType==='scout') hasContent=!![0,1,2,3].some(i=>document.getElementById('scout-'+i+'-in').value.trim());
+  else if(currentType==='replique') hasContent=!!document.getElementById('rq-citation-in').value.trim()&&!!document.getElementById('rq-author-in').value.trim();
+  else hasContent=!!document.getElementById('clue-in').value.trim();
+  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
+}
+
+// Image preview
+document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e.target.value.trim()));
+document.getElementById('img-url-in').addEventListener('input',checkReady);
+
+let imgSrc='url', imgBase64='';
+
+function selectImgSrc(src){
+  imgSrc=src; imgBase64='';
+  document.getElementById('img-src-url').style.background=src==='url'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-url').style.borderColor=src==='url'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-src-file').style.background=src==='file'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-file').style.borderColor=src==='file'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-url-zone').style.display=src==='url'?'block':'none';
+  document.getElementById('img-file-zone').style.display=src==='file'?'block':'none';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  checkReady();
+}
+
+document.getElementById('img-file-in').addEventListener('change', e=>{
+  const file=e.target.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){alert('Image trop lourde (max 5MB)');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    imgBase64=ev.target.result;
+    previewImageSrc(imgBase64);
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+});
+// TRAPPE — multi-questions
+let trappeCorrect = 0;
+let trappeTimer   = 30;
+let trappeQuestions = []; // [{question, answers:[a,b,c,d], correct:0}]
+const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'}];
+
+(function buildTrappeGrids(){
+  const cg = document.getElementById('trappe-correct-grid');
+  ['A','B','C'].forEach((l,i)=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='tcorrect-'+i;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:var(--fh);font-size:16px;transition:border-color .15s';
+    btn.textContent=l;
+    btn.onclick=()=>selectTrappeCorrect(i);
+    cg.appendChild(btn);
+  });
+  const tg = document.getElementById('trappe-timer-grid');
+  TRAPPE_TIMERS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='ttimer-'+s.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.onclick=()=>selectTrappeTimer(s.val);
+    tg.appendChild(btn);
+  });
+  selectTrappeCorrect(0);
+  selectTrappeTimer(30);
+})();
+
+function selectTrappeCorrect(idx){
+  trappeCorrect=idx;
+  ['A','B','C'].forEach((_,i)=>{
+    const btn=document.getElementById('tcorrect-'+i);
+    if(!btn)return;
+    btn.style.borderColor=i===idx?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=i===idx?'rgba(212,255,0,.06)':'var(--c2)';
+    btn.style.color=i===idx?'var(--neon)':'var(--txt)';
+  });
+}
+
+function selectTrappeTimer(val){
+  trappeTimer=val;
+  TRAPPE_TIMERS.forEach(s=>{
+    const btn=document.getElementById('ttimer-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
+
+document.getElementById('btn-add-trappe-q').onclick=()=>{
+  const q=document.getElementById('trappe-q-in').value.trim();
+  const answers=['trappe-a0','trappe-a1','trappe-a2'].map(id=>document.getElementById(id).value.trim());
+  if(!q || answers.some(a=>!a)){
+    alert('Remplis la question et les 4 réponses !');return;
+  }
+  trappeQuestions.push({question:q, answers, correct:trappeCorrect});
+  // Clear inputs
+  document.getElementById('trappe-q-in').value='';
+  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
+  selectTrappeCorrect(0);
+  renderTrappeQuestions();
+  checkReady();
+};
+
+function renderTrappeQuestions(){
+  const list=document.getElementById('trappe-q-list');
+  list.innerHTML='';
+  trappeQuestions.forEach((q,i)=>{
+    const item=document.createElement('div');
+    item.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px';
+    const correct=['A','B','C'][q.correct];
+    item.innerHTML=`
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px">${i+1}. ${q.question}</div>
+        <div style="font-size:11px;color:var(--mute)">${q.answers.map((a,j)=>`<span style="color:${j===q.correct?'var(--neon)':'inherit'}">${['A','B','C'][j]}:${a}</span>`).join(' · ')}</div>
+      </div>
+      <button onclick="removeTrappeQ(${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
+    `;
+    list.appendChild(item);
+  });
+  document.getElementById('trappe-q-count').textContent=trappeQuestions.length+' question'+(trappeQuestions.length>1?'s':'');
+}
+
+function removeTrappeQ(i){
+  trappeQuestions.splice(i,1);
+  renderTrappeQuestions();
+  checkReady();
+}
+
+// Sportus timer grid
+let sportusTimerVal = 45;
+// Timer sportus fixé à 45s - plus de grille configurable
+document.getElementById('prix-question-in').addEventListener('input',checkReady);
+document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// ── GRIMPE ────────────────────────────────────────────────────────────────
+function parseGrimpeAnswers(){
+  const raw=document.getElementById('grimpe-answers-in').value;
+  return raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+}
+function grimpeParam(id,def){ const v=parseInt(document.getElementById(id)?.value); return isNaN(v)?def:v; }
+document.getElementById('grimpe-theme-in').addEventListener('input',checkReady);
+document.getElementById('grimpe-answers-in').addEventListener('input',e=>{
+  const arr=parseGrimpeAnswers();
+  document.getElementById('grimpe-count').textContent=arr.length+' réponse(s)';
+  checkReady();
+});
+
+// ── BLACKJACK ──────────────────────────────────────────────────────────────
+function parseBJAnswers(){
+  const raw=document.getElementById('bj-answers-in').value;
+  const lines=raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  const obj={};
+  lines.forEach(l=>{
+    const m=l.match(/^(.+?)=(\d+)$/);
+    if(m) obj[m[1].trim()]=parseInt(m[2]);
+  });
+  return {obj, count:Object.keys(obj).length};
+}
+document.getElementById('bj-theme-in').addEventListener('input',checkReady);
+document.getElementById('bj-target-in').addEventListener('input',checkReady);
+document.getElementById('bj-answers-in').addEventListener('input',e=>{
+  const {count}=parseBJAnswers();
+  document.getElementById('bj-answers-count').textContent=count+' entrée(s)';
+  checkReady();
+});
+
+// ── RÉPLIQUE TOLÉRANCE ────────────────────────────────────────────────────
+let rqTolerance = 1;
+let rqTime = 60;
+(function buildRqTimeGrid(){
+  const g=document.getElementById('rq-time-grid');
+  if(!g) return;
+  [{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'1 min'}].forEach(o=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='rqtime-'+o.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--fh);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=o.label;
+    btn.onclick=()=>selectRqTime(o.val);
+    g.appendChild(btn);
+  });
+  selectRqTime(60);
+})();
+function selectRqTime(val){
+  rqTime=val;
+  [30,45,60].forEach(v=>{
+    const b=document.getElementById('rqtime-'+v);
+    if(!b) return;
+    b.style.borderColor=v===val?'var(--neon)':'rgba(255,255,255,.07)';
+    b.style.background=v===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('rq-tolerance-in');
+  if(inp) inp.addEventListener('input',()=>{ rqTolerance=parseInt(inp.value)||0; });
+});
+function selectRqTolerance(val){
+  rqTolerance=val;
+  const inp=document.getElementById('rq-tolerance-in');
+  if(inp) inp.value=val;
+}
+
+// ── THE CHASE ──────────────────────────────────────────────────────────────
+let chaseTargetToWin=10, chasePlayerStart=3, chaseGrace=12, chaseSpeed=6, chaseMalus=30;
+
+function buildChaseGrid(containerId, options, currentVal, setter){
+  const g=document.getElementById(containerId);
+  g.innerHTML='';
+  options.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.id=containerId+'-'+s.val;
+    btn.onclick=()=>{
+      setter(s.val);
+      options.forEach(x=>{
+        const b=document.getElementById(containerId+'-'+x.val);
+        if(b){b.style.borderColor=x.val===s.val?'var(--neon)':'rgba(255,255,255,.07)';b.style.background=x.val===s.val?'rgba(212,255,0,.06)':'var(--c2)';}
+      });
+    };
+    g.appendChild(btn);
+    if(s.val===currentVal){btn.style.borderColor='var(--neon)';btn.style.background='rgba(212,255,0,.06)';}
+  });
+}
+
+(function initChaseGrids(){
+  // Paramètres fixes — plus de grilles configurables
+})();
+
+document.getElementById('chase-answers-in').addEventListener('input',e=>{
+  const lines=e.target.value.replace(/;/g,'\n').split('\n').filter(l=>l.trim());
+  document.getElementById('chase-answers-count').textContent=lines.length+' réponse(s)';
+  checkReady();
+});
+document.getElementById('chase-theme-in').addEventListener('input',checkReady);
+// Scout listeners
+[0,1,2,3].forEach(i=>document.getElementById('scout-'+i+'-in').addEventListener('input',checkReady));
+// Réplique listeners
+['rq-citation-in','rq-amorce-in','rq-answer-in','rq-choices-in','rq-author-in','rq-author-choices-in'].forEach(id=>document.getElementById(id).addEventListener('input',checkReady));
+
+// ── DÉMINEUR ──────────────────────────────────────────────────────────────
+let demItems = []; // [{text, isMine}]
+let demTimerVal = 60;
+const DEM_TIMERS = [{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'},{val:90,label:'90s'}];
+
+(function buildDemTimerGrid(){
+  const g=document.getElementById('dem-timer-grid');
+  DEM_TIMERS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='dtimer-'+s.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.onclick=()=>selectDemTimer(s.val);
+    g.appendChild(btn);
+  });
+  selectDemTimer(60);
+})();
+
+function selectDemTimer(val){
+  demTimerVal=val;
+  DEM_TIMERS.forEach(s=>{
+    const btn=document.getElementById('dtimer-'+s.val);
+    if(!btn)return;
+    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
+    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
+  });
+}
+
+document.getElementById('btn-dem-bulk').onclick=()=>{
+  const lines=document.getElementById('dem-bulk-in').value.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return;
+  const slots = 12 - demItems.length;
+  if(slots<=0){alert('Grille pleine (12 cases max) !');return;}
+  const toAdd = lines.slice(0, slots);
+  toAdd.forEach(text=>demItems.push({text, isMine:false}));
+  document.getElementById('dem-bulk-in').value='';
+  renderDemItems();
+  checkReady();
+};
+
+document.getElementById('btn-add-dem-item').onclick=()=>{
+  if(demItems.length>=12){alert('Maximum 12 cases !');return;}
+  demItems.push({text:'',isMine:false});
+  renderDemItems();
+  checkReady();
+};
+
+function renderDemItems(){
+  const list=document.getElementById('dem-items-list');
+  list.innerHTML='';
+  const mines=demItems.filter(i=>i.isMine).length;
+  demItems.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:8px;padding:8px 10px;border:2px solid '+(item.isMine?'var(--red)':'rgba(255,255,255,.07)');
+    row.innerHTML=`
+      <input type="text" value="${esc(item.text)}" placeholder="Nom ou proposition…" data-idx="${i}"
+        style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" class="dem-text-in">
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:${item.isMine?'var(--red)':'var(--mute)'};cursor:pointer;flex-shrink:0">
+        <input type="checkbox" ${item.isMine?'checked':''} data-idx="${i}" class="dem-mine-cb" style="cursor:pointer">
+        💣
+      </label>
+      <button onclick="removeDemItem(${i})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0;flex-shrink:0">✕</button>
+    `;
+    list.appendChild(row);
+    row.querySelector('.dem-text-in').addEventListener('input',e=>{
+      demItems[parseInt(e.target.dataset.idx)].text=e.target.value;
+      checkReady();
+    });
+    row.querySelector('.dem-mine-cb').addEventListener('change',e=>{
+      const idx=parseInt(e.target.dataset.idx);
+      const checked=e.target.checked;
+      // Max 2 mines
+      if(checked && demItems.filter(x=>x.isMine).length>=2){
+        e.target.checked=false;
+        alert('Maximum 2 mines !');return;
+      }
+      demItems[idx].isMine=checked;
+      renderDemItems();checkReady();
+    });
+  });
+  document.getElementById('dem-item-count').textContent=
+    `${demItems.length} case(s) · ${mines} mine(s)${mines<2?' ⚠️ (besoin de 2 mines)':''}`;
+  document.getElementById('dem-item-count').style.color=mines===2?'var(--neon)':'var(--orange)';
+}
+
+function removeDemItem(i){
+  demItems.splice(i,1);
+  renderDemItems();checkReady();
+}
+['trappe-q-in','trappe-a0','trappe-a1','trappe-a2'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', checkReady);
+});
+
+// Chaleur configurator — seuils des 5 niveaux (affichage uniquement, pas le score)
+// chaleurSeuils[i] = seuil min du niveau i (le joueur voit ce niveau si displayPrecision >= seuil)
+let chaleurSeuils = [0, 10, 40, 70, 90]; // GLACIAL, FROID, TIÈDE, CHAUD, BRÛLANT
+const CHALEUR_DEF = [
+  {ico:'⛄', label:'GLACIAL',  color:'#1565c0'},
+  {ico:'🧊', label:'FROID',    color:'#4fc3f7'},
+  {ico:'🌤️', label:'TIÈDE',    color:'#fff176'},
+  {ico:'🌡️', label:'CHAUD',    color:'#ff9800'},
+  {ico:'🔥', label:'BRÛLANT',  color:'#ff4020'},
+];
+
+function getChaleurTarget(){
+  const t=parseFloat(document.getElementById('prix-target-in').value);
+  return isNaN(t)||t<=0 ? null : t;
+}
+
+function seuilToDisplay(seuil, target){
+  // seuil = min/max ratio * 100 (ex: 90 = guess/target = 0.9)
+  // En valeur brute : guess = target * seuil/100 ou target * 100/seuil
+  if(!target) return (100-seuil).toFixed(0)+'% d\'écart';
+  // La valeur brute qui donne ce ratio : target * seuil/100 (en dessous) ou target * 100/seuil (au dessus)
+  // On affiche l'écart brut : target - target*seuil/100 = target*(1-seuil/100)
+  const ecartBrut = Math.round(target * (1 - seuil/100));
+  const unit = document.getElementById('prix-unit-in').value.trim();
+  return '±' + ecartBrut + (unit?' '+unit:'');
+}
+
+function seuilFromRawEcart(ecartBrut, target){
+  // Inverse : ratio = 1 - ecartBrut/target → seuil = (1 - ecartBrut/target)*100
+  return Math.round((1 - ecartBrut/target)*100);
+}
+
+function buildChaleurConfig(){
+  const target = getChaleurTarget();
+  const container=document.getElementById('chaleur-config');
+  container.innerHTML='';
+  chaleurSeuils.forEach((seuil,i)=>{
+    const def=CHALEUR_DEF[i];
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px';
+    const maxVal = i===4 ? 99 : (chaleurSeuils[i+1]-1);
+    const minVal = i===0 ? 0 : (chaleurSeuils[i-1]+1);
+    const displayVal = i===0 ? (target?'> ±'+Math.round(target*(1-chaleurSeuils[1]/100)):'loin') : seuilToDisplay(seuil, target);
+    row.innerHTML=`
+      <span style="font-size:18px;width:28px;text-align:center">${def.ico}</span>
+      <span style="font-family:var(--fh);font-size:11px;color:${def.color};width:56px">${def.label}</span>
+      <input type="range" min="${minVal}" max="${maxVal}" value="${seuil}" data-idx="${i}"
+        style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
+        ${i===0?'disabled':''}
+      >
+      <input type="number" id="cseuil-val-${i}" data-idx="${i}"
+        value="${target ? Math.round(target*(seuil/100)) : seuil}"
+        min="0" step="1"
+        style="width:52px;background:var(--c2);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 6px;font-size:11px;color:${i===0?'var(--mute)':'var(--txt)'};text-align:center"
+        ${i===0?'disabled':''}
+        class="chaleur-seuil-num"
+      >
+    `;
+    container.appendChild(row);
+    if(i>0){
+      row.querySelector('.chaleur-seuil-range').addEventListener('input', e=>{
+        const idx=parseInt(e.target.dataset.idx);
+        const val=parseInt(e.target.value);
+        chaleurSeuils[idx]=val;
+        // Only push the NEXT (higher) level up to avoid collision — never push down
+        if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
+        buildChaleurConfig();
+        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+      });
+      row.querySelector('.chaleur-seuil-num').addEventListener('change', e=>{
+        const idx=parseInt(e.target.dataset.idx);
+        const target2=getChaleurTarget();
+        let newSeuil;
+        if(target2){
+          // User typed a raw value — convert back to seuil %
+          const rawVal=parseFloat(e.target.value)||0;
+          newSeuil=Math.round((rawVal/target2)*100);
+        } else {
+          newSeuil=parseInt(e.target.value)||0;
+        }
+        newSeuil=Math.max(chaleurSeuils[idx-1]+1, Math.min(idx<4?chaleurSeuils[idx+1]-1:99, newSeuil));
+        chaleurSeuils[idx]=newSeuil;
+        buildChaleurConfig();
+        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+      });
+    }
+  });
+}
+
+function updateChaleurPreview(pct){
+  const target = getChaleurTarget();
+  let lvl=CHALEUR_DEF[0];
+  chaleurSeuils.forEach((s,i)=>{if(pct>=s)lvl=CHALEUR_DEF[i];});
+  const prev=document.getElementById('chaleur-preview');
+  prev.style.background=lvl.color+'22';
+  prev.style.border='1px solid '+lvl.color+'55';
+  document.getElementById('chaleur-prev-ico').textContent=lvl.ico;
+  document.getElementById('chaleur-prev-label').style.color=lvl.color;
+  const unit = document.getElementById('prix-unit-in').value.trim();
+  if(target){
+    const ecartBrut = Math.round(target*(1-pct/100));
+    const guessEx   = Math.round(target*(pct/100));
+    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — écart ±${ecartBrut}${unit?' '+unit:''} (ex: ${guessEx})`;
+  } else {
+    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — ${(100-pct)}% d'écart`;
+  }
+}
+
+// Rebuild when target or unit changes
+document.getElementById('prix-target-in').addEventListener('input',()=>{
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+});
+document.getElementById('prix-unit-in').addEventListener('input',()=>{
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+});
+
+document.getElementById('chaleur-test-slider').addEventListener('input',e=>{
+  updateChaleurPreview(parseInt(e.target.value));
+});
+
+function selectPrixSensib(seuilsArr){
+  if(Array.isArray(seuilsArr)) chaleurSeuils=[...seuilsArr];
+  buildChaleurConfig();
+  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
+}
+buildChaleurConfig();
+updateChaleurPreview(75);
+
+// Coefficient preview
+document.getElementById('coeff-in').addEventListener('input', e=>{
+  const v = parseFloat(e.target.value)||1;
+  const example = Math.round(80 * v);
+  document.getElementById('coeff-preview').textContent = `Score de 80 pts → ${example} pts au classement`;
+});
+document.getElementById('sportus-hint1-in').addEventListener('input',checkReady);
+document.getElementById('sportus-hint2-in').addEventListener('input',checkReady);
+
+// Revealed letters preview
+document.getElementById('sportus-revealed-in').addEventListener('input', e=>{
+  const val = e.target.value.toUpperCase().replace(/[^A-Z_]/g,'');
+  e.target.value = val;
+  const prev = document.getElementById('sportus-revealed-preview');
+  prev.innerHTML = '';
+  val.split('').forEach((ch,i)=>{
+    const span = document.createElement('span');
+    span.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;font-family:monospace;font-size:16px;font-weight:800;border:2px solid ${ch==='_'?'rgba(255,255,255,.1)':'rgba(212,255,0,.5)'};background:${ch==='_'?'var(--c2)':'rgba(212,255,0,.1)'};color:${ch==='_'?'var(--mute)':'var(--neon)'}`;
+    span.textContent = ch === '_' ? '?' : ch;
+    prev.appendChild(span);
+  });
+});
+
+function previewImage(url){
+  if(!url){
+    document.getElementById('img-preview').style.display='none';
+    document.getElementById('grid-prev').style.display='none';
+    return;
+  }
+  previewImageSrc('/api/img-proxy?url='+encodeURIComponent(url));
+}
+
+function previewImageSrc(src){
+  if(!src){document.getElementById('img-preview').style.display='none';document.getElementById('grid-prev').style.display='none';return;}
+  const img=document.getElementById('img-preview');
+  img.src=src; img.style.display='block';
+  img.onload=()=>{
+    document.getElementById('grid-prev').style.display='block';
+    document.getElementById('grid-prev-img').src=src;
+    const overlay=document.getElementById('grid-prev-overlay');
+    overlay.innerHTML='';
+    const gs=10;
+    overlay.style.gridTemplateColumns=`repeat(${gs},1fr)`;
+    overlay.style.gridTemplateRows=`repeat(${gs},1fr)`;
+    for(let i=0;i<gs*gs;i++){
+      const t=document.createElement('div');t.className='tile-prev';
+      t.onclick=()=>{t.style.opacity='0';t.style.pointerEvents='none'};
+      overlay.appendChild(t);
+    }
+  };
+  img.onerror=()=>{img.style.display='none';document.getElementById('grid-prev').style.display='none'};
+}
+
+// Text preview
+document.getElementById('btn-preview-text').onclick=()=>{
+  const clue=document.getElementById('clue-in').value.trim();const box=document.getElementById('preview-box-text');
+  if(!clue)return;box.style.display='block';box.innerHTML='';
+  clue.match(/\S+|\s+/g).forEach(tok=>{
+    if(/^\s+$/.test(tok)){box.appendChild(document.createTextNode(' '));return}
+    const s=document.createElement('span');s.className='wb-prev';s.textContent=tok;
+    s.onclick=()=>{s.style.color='var(--txt)';s.style.background='transparent'};
+    box.appendChild(s);box.appendChild(document.createTextNode(' '));
+  });
+  box.scrollIntoView({behavior:'smooth'});
+};
+
+// BUZZ clues management
+document.getElementById('buzz-new-clue').addEventListener('input', updateBuzzWordCount);
+
+function updateBuzzWordCount(){
+  const words = document.getElementById('buzz-new-clue').value.trim().split(/\s+/).filter(Boolean).length;
+  const secs  = Math.round(100 / buzzDecrement);
+  const ideal = Math.round(secs / 0.22 * 0.5);
+  const max   = Math.round(secs / 0.22);
+  const wc    = document.getElementById('buzz-word-count');
+  const wg    = document.getElementById('buzz-word-guide');
+  wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  if(words === 0){
+    wc.style.color = 'var(--mute)';
+    wg.textContent = `Idéal ~${ideal} mots · max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--cyan)';
+  } else if(words > max){
+    wc.style.color = 'var(--red)';
+    wg.textContent = `⚠️ Trop long ! Max ~${max} mots pour −${buzzDecrement}/s`;
+    wg.style.color = 'var(--red)';
+  } else if(words >= ideal){
+    wc.style.color = 'var(--neon)';
+    wg.textContent = `✅ Parfait pour −${buzzDecrement}/s (idéal ~${ideal} mots)`;
+    wg.style.color = 'var(--neon)';
+  } else {
+    wc.style.color = 'var(--orange)';
+    wg.textContent = `Encore ${ideal - words} mots pour atteindre l'idéal (~${ideal} mots)`;
+    wg.style.color = 'var(--orange)';
+  }
+}
+
+document.getElementById('btn-add-buzz-clue').onclick=()=>{
+  const txt=document.getElementById('buzz-new-clue').value.trim();
+  if(!txt)return;
+  buzzClues.push(txt);
+  document.getElementById('buzz-new-clue').value='';
+  renderBuzzClues();
+  checkReady();
+};
+function renderBuzzClues(){
+  const list=document.getElementById('buzz-clues-list');
+  list.innerHTML='';
+  buzzClues.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='buzz-clue-item';
+    d.innerHTML=`<div class="buzz-clue-num">#${i+1}</div><div class="buzz-clue-text">${esc(c)}</div><button class="buzz-clue-del" onclick="removeBuzzClue(${i})">✕</button>`;
+    list.appendChild(d);
+  });
+  document.getElementById('buzz-clue-count').textContent=buzzClues.length+' indice(s) ajouté(s)';
+}
+function removeBuzzClue(i){
+  buzzClues.splice(i,1);renderBuzzClues();checkReady();
+}
+
+// Save
+document.getElementById('btn-save').onclick=async()=>{
+  const btn=document.getElementById('btn-save');
+  const rawAnswer=document.getElementById('answer-in').value.trim();
+  const aliases=document.getElementById('aliases-in').value;
+  const clue=currentType==='text'?document.getElementById('clue-in').value.trim():'';
+  const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
+  const sportusHint2=currentType==='sportus'?document.getElementById('sportus-hint2-in').value.trim():'';
+  const imageUrl=currentType==='image'&&imgSrc==='url'?document.getElementById('img-url-in').value.trim():'';
+  const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
+  const gridSize=10;
+  const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
+  const demineurQuestion = currentType==='demineur'?document.getElementById('dem-question-in').value.trim():'';
+  const trappeQuestion = currentType==='trappe'?'La Trappe':'';
+  const trappeAnswers  = [];
+  const trappeCorrect  = 0;
+  const chaseTheme   = currentType==='chase'?document.getElementById('chase-theme-in').value.trim():'';
+  const chaseAnswers = currentType==='chase'?document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
+  const scoutIndices = currentType==='scout'?[
+    {cost:parseInt(document.getElementById('scout-cost-0-sel').value)||20,label:document.getElementById('scout-label-0').value.trim()||'Identité',text:document.getElementById('scout-0-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-1-sel').value)||25,label:document.getElementById('scout-label-1').value.trim()||'Carrière',text:document.getElementById('scout-1-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-2-sel').value)||30,label:document.getElementById('scout-label-2').value.trim()||'Palmarès',text:document.getElementById('scout-2-in').value.trim()},
+    {cost:parseInt(document.getElementById('scout-cost-3-sel').value)||15,label:document.getElementById('scout-label-3').value.trim()||'Indice Mystère',text:document.getElementById('scout-3-in').value.trim()},
+  ]:[];
+  const repliqueCitation = currentType==='replique'?document.getElementById('rq-citation-in').value.trim():'';
+  const repliqueAmorce   = currentType==='replique'?document.getElementById('rq-amorce-in').value.trim():'';
+  const repliqueAnswer   = currentType==='replique'?document.getElementById('rq-answer-in').value.trim():'';
+  const repliqueChoices  = currentType==='replique'?document.getElementById('rq-choices-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()):[];
+  const repliqueAuthor   = currentType==='replique'?document.getElementById('rq-author-in').value.trim():'';
+  const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.trim().split(';').map(s=>s.trim()).filter(Boolean):[];
+  const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
+  const rqTimeVal        = currentType==='replique'?rqTime:60;
+  const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
+  const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
+  const grimpeParams = currentType==='grimpe'?{
+    startW:grimpeParam('grimpe-start-w',300), pogiW:grimpeParam('grimpe-pogi-w',290),
+    fastBonus:grimpeParam('grimpe-fast-bonus',30), midBonus:grimpeParam('grimpe-mid-bonus',15),
+    noAnswerW:grimpeParam('grimpe-noanswer-w',50), timer:grimpeParam('grimpe-timer',25),
+    wrongW:grimpeParam('grimpe-wrong-w',100), wrongDur:grimpeParam('grimpe-wrong-dur',10),
+    fringaleW:grimpeParam('grimpe-fringale-w',100), fringaleDur:grimpeParam('grimpe-fringale-dur',30),
+    aspirationW:grimpeParam('grimpe-aspiration-w',50), aspirationDur:grimpeParam('grimpe-aspiration-dur',10),
+    gelW:grimpeParam('grimpe-gel-w',50)
+  }:{};
+  const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
+  const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
+  const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||'La Grimpée'):rawAnswer;
+  const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
+  const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
+  const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
+  const prixSensib=currentType==='prix'?chaleurSeuils:[0,10,40,70,90];
+  btn.disabled=true;
+
+  // Validate image via proxy only for URL mode
+  if(currentType==='image' && imgSrc==='url' && imageUrl){
+    btn.textContent='🔍 Vérification de l\'image…';
+    try{
+      const testRes=await fetch('/api/img-proxy?url='+encodeURIComponent(imageUrl));
+      if(!testRes.ok){
+        showMsg('save-msg','err','❌ Image inaccessible ('+testRes.status+'). Essaie une URL Wikipédia.');
+        btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+        return;
+      }
+    }catch(e){
+      showMsg('save-msg','err','❌ Impossible de vérifier l\'image. Vérifie l\'URL.');
+      btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+      return;
+    }
+  }
+
+  btn.textContent='⏳…';
+  const coefficient = parseFloat(document.getElementById('coeff-in').value) || 1;
+  // Build revealedLetters array from pattern for sportus
+  let revealedLetters = [];
+  if(currentType==='sportus'){
+    const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
+    pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
+  }
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeParams};
+  if(editId)body.editId=editId;
+  try{
+    const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.success){
+      showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
+      cancelEdit();loadAthletes();
+    } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
+  }catch(e){console.error('Save error:',e);showMsg('save-msg','err','❌ Erreur : '+e.message)}
+  btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
+};
+
+// ── SCORES ADMIN ──────────────────────────────────────────────────────────
+async function loadAdminScores(){
+  // Global
+  const gEl=document.getElementById('admin-global-scores');
+  gEl.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement…</div>';
+  try{
+    const res=await fetch('/api/admin/scores?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    if(!data.length){gEl.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun score pour l\'instant.</div>';} 
+    else {
+      gEl.innerHTML='';
+      data.forEach((e,i)=>{
+        const medals=['🥇','🥈','🥉'];
+        const d=document.createElement('div');d.className='score-item';
+        d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${e.count} défi${e.count>1?'s':''} · ${new Date(e.date).toLocaleDateString('fr-FR')}</div></div><div class="score-pts">${e.score}</div>`;
+        gEl.appendChild(d);
+      });
+    }
+  }catch(err){gEl.innerHTML='<div style="color:var(--red);font-size:13px">Erreur de chargement</div>';}
+
+  // Per-athlete selector
+  const sel=document.getElementById('admin-ath-selector');
+  sel.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement…</div>';
+  try{
+    const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+    const athletes=await res.json();
+    sel.innerHTML='';
+    athletes.forEach((a,i)=>{
+      const typeLabel=a.type==='image'?'🖼':a.type==='buzz'?'⚡':'📝';
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;cursor:pointer';
+      d.innerHTML=`<div style="font-size:20px">${a.emoji}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)} ${typeLabel}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
+      d.onclick=()=>showAthleteScores(a.id, a.answer);
+      sel.appendChild(d);
+    });
+    if(!athletes.length) sel.innerHTML='<div style="color:var(--mute);font-size:13px">Aucun défi.</div>';
+  }catch(err){sel.innerHTML='<div style="color:var(--red);font-size:13px">Erreur.</div>';}
+}
+
+async function showAthleteScores(id){
+  const btn=document.querySelector(`.btn-scores[onclick="showAthleteScores(${id})"]`);
+  const name=btn?btn.dataset.name:'Défi';
+  document.getElementById('modal-title-text').textContent='📊 '+name;
+  document.getElementById('modal-body').innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Chargement…</div>';
+  document.getElementById('scores-modal').classList.add('on');
+  try{
+    const res=await fetch('/api/admin/scores/'+id+'?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    const body=document.getElementById('modal-body');
+    if(!data.scores||!data.scores.length){
+      body.innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Aucun score pour ce défi.</div>';
+      return;
+    }
+    body.innerHTML='';
+    data.scores.forEach((e,i)=>{
+      const medals=['🥇','🥈','🥉'];
+      const d=document.createElement('div');d.className='score-item';
+      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${new Date(e.date).toLocaleDateString('fr-FR')} ${new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div><div class="score-pts">${e.score}</div>`;
+      body.appendChild(d);
+    });
+  }catch(err){document.getElementById('modal-body').innerHTML='<div style="color:var(--red);text-align:center;padding:20px">Erreur.</div>';}
+}
+
+document.getElementById('modal-close-btn').onclick=()=>document.getElementById('scores-modal').classList.remove('on');
+document.getElementById('scores-modal').onclick=(e)=>{if(e.target===document.getElementById('scores-modal'))document.getElementById('scores-modal').classList.remove('on')};
+
+document.getElementById('btn-game').onclick=()=>window.location.href='/';
+function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+</script>
+</body>
+</html>
