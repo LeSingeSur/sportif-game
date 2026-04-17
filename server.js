@@ -129,6 +129,11 @@ app.get('/api/preview', (req, res) => {
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'grimpe') {
+    base.grimpeTheme   = athlete.grimpeTheme || '';
+    base.grimpeAnswers = (athlete.grimpeAnswers || []).length; // just send count to client
+    base.grimpeParams  = athlete.grimpeParams || {};
+    base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
     base.bjTarget  = athlete.bjTarget || 50;
@@ -191,6 +196,27 @@ app.post('/api/admin/welcome-image', (req, res) => {
   welcomeImage = { url: (url||'').trim() };
   saveData();
   res.json({ success: true });
+});
+
+// ── LA GRIMPÉE ────────────────────────────────────────────────────────────
+app.post('/api/grimpe-check', (req, res) => {
+  const { athleteId, answer, found } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'grimpe') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const normAns = norm(answer);
+  if(!normAns) return res.json({ correct: false, reason: 'empty' });
+  const alreadyFound = (found||[]).map(norm);
+  if(alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
+  const correct = (athlete.grimpeAnswers||[]).some(a => lev(norm(a), normAns) <= 1);
+  res.json({ correct, total: (athlete.grimpeAnswers||[]).length });
 });
 
 app.get('/api/audio-proxy', async (req, res) => {
@@ -316,7 +342,7 @@ app.get('/api/athletes/list', (req, res) => {
   const pseudo = (req.query.pseudo || '').trim();
   res.json(athletes.map((a, i) => ({
     id: a.id, emoji: a.emoji, index: i + 1,
-    type: a.type || 'text',
+    type: a.type || 'blackjack',
     played: pseudo ? hasPlayed(pseudo, a.id) : false,
   })));
 });
@@ -525,7 +551,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -535,10 +561,11 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'chase' && (!req.body.chaseTheme || !req.body.chaseAnswers || req.body.chaseAnswers.length < 2)) return res.status(400).json({ error: 'Thème et au moins 2 réponses obligatoires' });
   if (type === 'scout' && (!req.body.scoutIndices || !req.body.scoutIndices.some(i=>i.text))) return res.status(400).json({ error: 'Au moins un indice obligatoire' });
   if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAuthor)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
+  if (type === 'grimpe' && (!req.body.grimpeTheme || !req.body.grimpeAnswers || req.body.grimpeAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
-  const safeAnswer = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():'???');
+  const safeAnswer = (answer||'').trim() || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||'La Grimpée').trim():'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -598,6 +625,9 @@ app.post('/api/admin/athlete', (req, res) => {
     bjTheme:    type === 'blackjack' ? (req.body.bjTheme||'').trim() : undefined,
     bjTarget:   type === 'blackjack' ? (parseInt(req.body.bjTarget)||50) : undefined,
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
+    grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
+    grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    grimpeParams:  type === 'grimpe' ? (req.body.grimpeParams||{}) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
   };
