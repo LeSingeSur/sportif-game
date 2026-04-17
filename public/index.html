@@ -1550,7 +1550,7 @@ function finishBJ(finalScore, msg){
 
 // ── LA GRIMPÉE MODE ───────────────────────────────────────────────────────
 const GP = {
-  watts:300, pogiWatts:290, params:{},
+  watts:0, startWatts:300, pogiWatts:290, params:{},
   dist:0, pogiDist:0, totalAnswers:10,
   totalDist:10000,
   done:false, wrongTotal:0, wrongStreak:0, goodStreak:0,
@@ -1572,16 +1572,27 @@ function grimpeGrade(dist){ // dist en mètres
 // Formule simplifiée : v = W / (m*g*sin(θ) + Crr*m*g + 0.5*Cd*A*ρ*v²)
 // On itère 1 fois pour approximer
 function grimpeSpeed(watts, gradePct){
+  // Physics: P = (F_grav + F_roll + F_aero) * v
+  // F_grav = m*g*sin(θ) ≈ m*g*grade
+  // F_roll = Crr*m*g*cos(θ) ≈ Crr*m*g
+  // F_aero = 0.5*CdA*rho*v²
+  // P = (m*g*grade + Crr*m*g + 0.5*CdA*rho*v²) * v
+  // Solve iteratively
   const m=75, g=9.81, Crr=0.004, CdA=0.35, rho=1.2;
   const grade=gradePct/100;
-  // Première approx sans aéro
-  const F_grav = m*g*grade;
-  const F_roll = Crr*m*g;
-  let v = Math.max(0, (watts - 0) / (F_grav + F_roll));
-  // Correction aéro
-  const F_aero = 0.5*CdA*rho*v*v;
-  v = Math.max(0, watts / (F_grav + F_roll + F_aero));
-  return v; // m/s
+  const F_const = m*g*grade + Crr*m*g; // constant forces
+  if(watts<=0) return 0;
+  // Newton-Raphson iteration: f(v) = (F_const + 0.5*CdA*rho*v²)*v - P = 0
+  let v = Math.pow(watts / (0.5*CdA*rho), 1/3); // initial guess (aero dominated)
+  for(let i=0;i<20;i++){
+    const F_aero = 0.5*CdA*rho*v*v;
+    const fv = (F_const + F_aero)*v - watts;
+    const dfv = F_const + 3*0.5*CdA*rho*v*v;
+    const dv = fv/dfv;
+    v = Math.max(0, v - dv);
+    if(Math.abs(dv) < 0.001) break;
+  }
+  return Math.max(0, v); // m/s
 }
 
 // Draw mountain profile on canvas
@@ -1648,7 +1659,7 @@ function grimpeUpdateDisplay(){
 
   // Watts display
   const wEl = document.getElementById('grimpe-watts');
-  wEl.textContent = effectiveWatts + 'W';
+  wEl.textContent = effectiveWatts > 0 ? effectiveWatts + 'W' : '0W — Réponds pour démarrer !';
   wEl.className = 'grimpe-watts' + (effectiveWatts < 100 ? ' danger' : effectiveWatts < 200 ? ' warn' : '');
 
   document.getElementById('grimpe-kmh').textContent = spdKmh;
@@ -1677,7 +1688,8 @@ function setupGrimpeMode(data){
   document.getElementById('grimpe-zone').style.display='flex';
 
   const p=data.grimpeParams||{};
-  GP.watts     = p.startW||300;
+  GP.watts     = 0; // départ arrêté — première réponse lance à startW
+  GP.startWatts = p.startW||300;
   GP.pogiWatts = p.pogiW||290;
   GP.params    = {fastBonus:p.fastBonus||30,midBonus:p.midBonus||15,
     noAnswerW:p.noAnswerW||50,timer:p.timer||25,
@@ -1724,13 +1736,15 @@ function setupGrimpeMode(data){
 
 function grimpeSimulatePogiTime(nAnswers, pogiW, fastBonus){
   pogiW=pogiW||290; fastBonus=fastBonus||30;
-  let w=pogiW, dist=0, t=0;
+  let w=0, dist=0, t=0; // starts at 0 like player
   const dt=0.5; let ans=0;
   while(dist<10000 && t<3600){
     const grade=grimpeGrade(dist);
     const spd=grimpeSpeed(Math.min(w,500),grade);
     dist+=spd*dt; t+=dt;
-    if(Math.round(t*2)%(10)==0 && ans<nAnswers){ w=Math.min(w+fastBonus,500); ans++; }
+    // Pogi first answer at 5s → startW, then every 8s fast answer
+    if(ans===0 && t>=5){ w=pogiW; ans++; }
+    else if(ans>0 && Math.round(t*2)%(16)===0 && ans<nAnswers){ w=Math.min(w+fastBonus,500); ans++; }
   }
   return t;
 }
@@ -1816,6 +1830,9 @@ async function submitGrimpeAnswer(){
     GP.noAnswerMalus=false;
     GP.wrongStreak=0; GP.goodStreak++;
     GP.found.push(ans);
+
+    // First answer: launch to startWatts, then add time bonus
+    if(GP.found.length===1) GP.watts=GP.startWatts;
 
     let bonus=0;
     if(elapsed<=8) bonus=pr.fastBonus||30;
