@@ -198,7 +198,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div class="field">
         <label>Type de défi</label>
         <div class="type-sel">
-          <div class="type-opt sel" id="type-blackjack" onclick="selectType('blackjack')">
+          <div class="type-opt" id="type-grimpe" onclick="selectType('grimpe')">
+            <div class="type-ico">🚴</div>
+            <div class="type-name">La Grimpée</div>
+            <div class="type-desc">Cyclisme + physique</div>
+          </div>
             <div class="type-ico">🃏</div>
             <div class="type-name">Blackjack</div>
             <div class="type-desc">Cumule sans dépasser</div>
@@ -288,6 +292,51 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <button class="btn btn-s" id="btn-preview-text" style="margin-bottom:4px">👁 Prévisualiser le texte</button>
         <div class="preview-box" id="preview-box-text"></div>
+      </div>
+
+      <!-- GRIMPE fields -->
+      <div id="grimpe-fields" style="display:none">
+        <div class="field">
+          <label>Thème du col</label>
+          <input type="text" id="grimpe-theme-in" placeholder="Ex: Alpe d'Huez — Identifie ces coureurs !">
+        </div>
+        <div class="field">
+          <label>Réponses acceptées (une par ligne ou séparées par ;)</label>
+          <textarea id="grimpe-answers-in" placeholder="Vingegaard;Jonas Vingegaard&#10;Pogacar&#10;Merckx;Eddy Merckx" style="min-height:120px"></textarea>
+          <span class="hint">Le joueur doit trouver un maximum de réponses. Une réponse = avance sur la montée.</span>
+          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
+        </div>
+        <div class="field">
+          <label>⚡ Paramètres de puissance (watts)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="300" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="290" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse rapide &lt;8s (+W)</div><input type="number" id="grimpe-fast-bonus" value="30" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse moyenne 8-15s (+W)</div><input type="number" id="grimpe-mid-bonus" value="15" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>💥 Paramètres de pénalité</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pas de réponse (−W)</div><input type="number" id="grimpe-noanswer-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono sans réponse (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (−W)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée malus mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale (−W)</div><input type="number" id="grimpe-fringale-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée fringale (s)</div><input type="number" id="grimpe-fringale-dur" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>🚀 Bonus</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🌬️ Aspiration (+W)</div><input type="number" id="grimpe-aspiration-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée aspiration (s)</div><input type="number" id="grimpe-aspiration-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍬 Gel (+W)</div><input type="number" id="grimpe-gel-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.7">
+          🚴 <strong style="color:var(--txt)">Physique :</strong> 10km · Pente 1→10% · Score = écart de temps avec Pogacar
+        </div>
       </div>
 
       <!-- BLACKJACK fields -->
@@ -742,10 +791,11 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 // Type selector
 function selectType(type){
   currentType=type;
-  ['blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
+  ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
+  document.getElementById('grimpe-fields').style.display    = type==='grimpe'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -756,7 +806,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -828,7 +878,7 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':'📝 Texte';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?'🚴 Grimpée':'📝 Texte';
     const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
@@ -917,7 +967,18 @@ async function startEdit(id){
   document.getElementById('answer-in').value=a.answer;
   document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
   selectType(a.type||'blackjack');
-  if(a.type==='blackjack'){
+  if(a.type==='grimpe'){
+    document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
+    document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
+    document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
+    const p=a.grimpeParams||{};
+    ['start-w','pogi-w','fast-bonus','mid-bonus','noanswer-w','timer','wrong-w','wrong-dur','fringale-w','fringale-dur','aspiration-w','aspiration-dur','gel-w'].forEach(k=>{
+      const el=document.getElementById('grimpe-'+k);
+      const pk=k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+      if(el&&p[pk]!==undefined) el.value=p[pk];
+    });
+    checkReady();
+  } else if(a.type==='blackjack'){
     document.getElementById('bj-theme-in').value=a.bjTheme||'';
     document.getElementById('bj-target-in').value=a.bjTarget||50;
     const entries=Object.entries(a.bjAnswers||{}).map(([k,v])=>`${k}=${v}`).join('\n');
@@ -1030,6 +1091,9 @@ function cancelEdit(){
   document.getElementById('bj-target-in').value='';
   document.getElementById('bj-answers-in').value='';
   document.getElementById('bj-answers-count').textContent='0 entrée(s)';
+  document.getElementById('grimpe-theme-in').value='';
+  document.getElementById('grimpe-answers-in').value='';
+  document.getElementById('grimpe-count').textContent='0 réponse(s)';
   document.getElementById('img-url-in').value='';
   imgSrc='url'; imgBase64='';
   selectImgSrc('url');
@@ -1130,9 +1194,10 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
-  if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
+  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&parseGrimpeAnswers().length>=1;
+  else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
   else if(currentType==='sportus') hasContent=true;
@@ -1271,6 +1336,19 @@ let sportusTimerVal = 45;
 // Timer sportus fixé à 45s - plus de grille configurable
 document.getElementById('prix-question-in').addEventListener('input',checkReady);
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
+
+// ── GRIMPE ────────────────────────────────────────────────────────────────
+function parseGrimpeAnswers(){
+  const raw=document.getElementById('grimpe-answers-in').value;
+  return raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+}
+function grimpeParam(id,def){ const v=parseInt(document.getElementById(id)?.value); return isNaN(v)?def:v; }
+document.getElementById('grimpe-theme-in').addEventListener('input',checkReady);
+document.getElementById('grimpe-answers-in').addEventListener('input',e=>{
+  const arr=parseGrimpeAnswers();
+  document.getElementById('grimpe-count').textContent=arr.length+' réponse(s)';
+  checkReady();
+});
 
 // ── BLACKJACK ──────────────────────────────────────────────────────────────
 function parseBJAnswers(){
@@ -1738,10 +1816,21 @@ document.getElementById('btn-save').onclick=async()=>{
   const repliqueAuthorChoices = currentType==='replique'?document.getElementById('rq-author-choices-in').value.trim().split(';').map(s=>s.trim()).filter(Boolean):[];
   const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
   const rqTimeVal        = currentType==='replique'?rqTime:60;
+  const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
+  const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
+  const grimpeParams = currentType==='grimpe'?{
+    startW:grimpeParam('grimpe-start-w',300), pogiW:grimpeParam('grimpe-pogi-w',290),
+    fastBonus:grimpeParam('grimpe-fast-bonus',30), midBonus:grimpeParam('grimpe-mid-bonus',15),
+    noAnswerW:grimpeParam('grimpe-noanswer-w',50), timer:grimpeParam('grimpe-timer',25),
+    wrongW:grimpeParam('grimpe-wrong-w',100), wrongDur:grimpeParam('grimpe-wrong-dur',10),
+    fringaleW:grimpeParam('grimpe-fringale-w',100), fringaleDur:grimpeParam('grimpe-fringale-dur',30),
+    aspirationW:grimpeParam('grimpe-aspiration-w',50), aspirationDur:grimpeParam('grimpe-aspiration-dur',10),
+    gelW:grimpeParam('grimpe-gel-w',50)
+  }:{};
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||'La Grimpée'):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -1773,7 +1862,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeParams};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
