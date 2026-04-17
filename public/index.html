@@ -908,6 +908,9 @@ if(PREVIEW_MODE){
 function startGame(){
   const p=document.getElementById('pseudo-in').value.trim();
   if(!p){shake('pseudo-in');return}
+  // Stop music
+  const audio=document.getElementById('music-audio');
+  if(audio){audio.pause();audio.currentTime=0;}
   G.pseudo=p; document.getElementById('ptag').textContent=p;
   show('sg'); loadAthlete();
 }
