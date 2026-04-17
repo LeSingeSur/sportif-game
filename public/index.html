@@ -3441,7 +3441,8 @@ async function loadLB(){
     lbAthletes=await resA.json();
     tabs.appendChild(makeTab('🌍 Global','global'));
     lbAthletes.forEach((a,i)=>{
-      const icon=a.type==='image'?'🖼':a.type==='buzz'?'⚡':a.type==='sportus'?'🎯':a.type==='prix'?'💰':'📝';
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','text':'📝'};
+      const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(a.emoji+' #'+(i+1)+' '+icon, a.id));
     });
     showTab(lbActiveTab,list);
