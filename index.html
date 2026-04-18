@@ -269,6 +269,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-score-big{font-family:var(--fh);font-size:56px;text-align:center;color:var(--neon);line-height:1;transition:color .3s}
 .scout-score-big.penalty{color:var(--red);animation:sc-pulse .3s ease}
 .scout-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* LA GRIMPÉE */
+#grimpe-zone{display:none;flex-direction:column;gap:6px}
+.grimpe-profile{position:relative;height:110px;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-radius:12px;overflow:hidden;margin:4px 0}
+.grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
+.grimpe-timer-bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden}
+.grimpe-timer-fill{height:100%;background:var(--neon);border-radius:99px;transition:width 1s linear}
+.grimpe-info{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.grimpe-streak{text-align:center;font-size:12px;color:var(--mute);min-height:16px}
+
 .scout-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:6px;align-items:center}
 .scout-btn:active{transform:scale(.97)}
 .scout-btn.used{opacity:.4;pointer-events:none}
@@ -384,9 +393,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">💰</div><div class="gt-name">Juste Prix</div></div>
       <div class="gt-item"><div class="gt-ico">🕳️</div><div class="gt-name">La Trappe</div></div>
       <div class="gt-item"><div class="gt-ico">💣</div><div class="gt-name">Démineur</div></div>
-      <div class="gt-item"><div class="gt-ico">🏃</div><div class="gt-name">The Chase</div></div>
+      <div class="gt-item" style="display:none"><div class="gt-ico">🏃</div><div class="gt-name">The Chase</div></div>
       <div class="gt-item"><div class="gt-ico">🔍</div><div class="gt-name">Le Scout</div></div>
       <div class="gt-item"><div class="gt-ico">💬</div><div class="gt-name">Réplique</div></div>
+      <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">L'Alpe d'Huez</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -405,17 +415,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
 
       <!-- Music player -->
-      <div id="music-bar" style="display:none;align-items:center;gap:10px;background:var(--c2);border-radius:12px;padding:10px 14px;margin-top:8px">
-        <button id="music-play-btn" onclick="toggleMusic()" style="font-size:22px;background:none;border:none;cursor:pointer;padding:0;line-height:1">▶️</button>
-        <div style="flex:1;min-width:0">
-          <div id="music-title" style="font-size:12px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Musique</div>
-          <div style="height:3px;background:var(--c1);border-radius:99px;margin-top:4px;overflow:hidden">
-            <div id="music-progress" style="height:100%;background:var(--neon);width:0%;border-radius:99px;transition:width .5s linear"></div>
-          </div>
+      <div id="music-bar" style="display:none;flex-direction:column;gap:6px;background:var(--c2);border-radius:12px;padding:10px 14px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">🎵</span>
+          <div id="music-title" style="font-size:12px;font-weight:800;color:var(--txt);flex:1">Musique</div>
         </div>
-        <span id="music-vol-btn" onclick="toggleMusicMute()" style="font-size:18px;cursor:pointer">🔊</span>
+        <audio id="music-audio" preload="none" controls style="width:100%;height:36px;border-radius:8px;outline:none"></audio>
       </div>
-      <audio id="music-audio" preload="none"></audio>
 
       <div style="text-align:center;margin-top:4px">
         <button id="btn-lb-open" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:3px">🏆 Voir le classement</button>
@@ -612,6 +618,52 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
 
+  <!-- LA GRIMPÉE zone -->
+  <div id="grimpe-zone">
+    <!-- Vitesse en grand, watts en petit -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
+      <div>
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">VITESSE</div>
+        <div id="grimpe-kmh" style="font-family:var(--fh);font-size:52px;line-height:1;color:var(--neon)">0</div>
+        <div style="font-size:13px;color:var(--mute);margin-top:-2px">km/h</div>
+      </div>
+      <div style="text-align:center;flex:1;padding:0 8px">
+        <div class="grimpe-status" id="grimpe-status"></div>
+        <div class="grimpe-streak" id="grimpe-streak"></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">PUISSANCE</div>
+        <div id="grimpe-watts" style="font-family:var(--fh);font-size:22px;line-height:1;color:var(--txt);transition:color .3s">0W</div>
+        <div id="grimpe-pente-txt" style="font-size:11px;color:var(--mute);margin-top:2px">Pente 1%</div>
+      </div>
+    </div>
+    <!-- Profil de montée -->
+    <div class="grimpe-profile" id="grimpe-profile">
+      <canvas id="grimpe-canvas" style="position:absolute;bottom:0;left:0;width:100%;height:100%"></canvas>
+      <div id="grimpe-pogi" style="position:absolute;font-size:28px;transition:left .8s linear,bottom .8s ease;z-index:2;transform:scaleX(-1)">🚵</div>
+      <div id="grimpe-rider" style="position:absolute;font-size:32px;transition:left .8s cubic-bezier(.34,1,.64,1),bottom .8s ease;z-index:3;transform:scaleX(-1)">🚴</div>
+      <div style="position:absolute;right:6px;bottom:4px;font-size:24px;z-index:4">🏁</div>
+    </div>
+    <!-- Info km + gap -->
+    <div class="grimpe-info">
+      <span id="grimpe-km-txt">Km 0 / 10</span>
+      <span id="grimpe-pogi-gap">Pogacar : —</span>
+    </div>
+    <!-- Timer -->
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+      <div class="grimpe-timer-bar" style="flex:1"><div class="grimpe-timer-fill" id="grimpe-timer-fill"></div></div>
+      <div id="grimpe-timer-txt" style="font-family:var(--fh);font-size:14px;min-width:24px;text-align:right;color:var(--neon)"></div>
+    </div>
+    <!-- Bonus preview -->
+    <div id="grimpe-bonus-preview" style="font-size:11px;color:var(--mute);text-align:center;min-height:14px"></div>
+    <!-- Question + input -->
+    <div class="bj-theme" id="grimpe-theme" style="margin-top:4px">…</div>
+    <div class="ans-row">
+      <input type="text" class="ans-in" id="grimpe-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
+      <button class="chk-btn" id="grimpe-chk">✓</button>
+    </div>
+    <div class="fb" id="grimpe-fb"></div>
+  </div>
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
     <div class="scout-score-big" id="scout-score" style="font-size:40px;text-align:center">100</div>
@@ -834,26 +886,10 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
     const url=data.url;
     const ext=url.split('.').pop().toLowerCase().split('?')[0];
     const typeMap={'mp3':'audio/mpeg','m4a':'audio/mp4','aac':'audio/aac','ogg':'audio/ogg','wav':'audio/wav'};
-    // Direct URL — GitHub raw works without proxy on all browsers including iOS
     audio.src=url;
     if(typeMap[ext]) audio.type=typeMap[ext];
-    if(data.title){document.getElementById('music-title').textContent=data.title;}
-    // Show bar immediately — always start with play button
+    if(data.title) document.getElementById('music-title').textContent=data.title;
     document.getElementById('music-bar').style.display='flex';
-    document.getElementById('music-play-btn').textContent='▶️';
-    audio.addEventListener('timeupdate',()=>{
-      if(!audio.duration) return;
-      document.getElementById('music-progress').style.width=(audio.currentTime/audio.duration*100)+'%';
-    });
-    audio.addEventListener('ended',()=>{
-      document.getElementById('music-play-btn').textContent='▶️';
-    });
-    audio.addEventListener('play',()=>{
-      document.getElementById('music-play-btn').textContent='⏸️';
-    });
-    audio.addEventListener('pause',()=>{
-      document.getElementById('music-play-btn').textContent='▶️';
-    });
   }catch(e){}
 })();
 
@@ -928,6 +964,9 @@ if(PREVIEW_MODE){
 function startGame(){
   const p=document.getElementById('pseudo-in').value.trim();
   if(!p){shake('pseudo-in');return}
+  // Stop music
+  const audio=document.getElementById('music-audio');
+  if(audio){audio.pause();audio.currentTime=0;}
   G.pseudo=p; document.getElementById('ptag').textContent=p;
   show('sg'); loadAthlete();
 }
@@ -1002,6 +1041,9 @@ async function loadAthlete(){
     } else if(data.type==='blackjack'){
       document.getElementById('std-ans-area').style.display='none';
       setupBlackjackMode(data);
+    } else if(data.type==='grimpe'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupGrimpeMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1015,12 +1057,12 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
 
-const GAME_ICONS={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','text':'📝'};
+const GAME_ICONS={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝'};
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
 
 // ── TEXT MODE ─────────────────────────────────────────────────────────────
@@ -1500,6 +1542,339 @@ function finishBJ(finalScore, msg){
     show('sv'); confetti();
     submitScore(finalScore);
   },400);
+}
+
+// ── LA GRIMPÉE MODE ───────────────────────────────────────────────────────
+const GP = {
+  cases:0, pogiCases:0,
+  done:false, wrongTotal:0, wrongStreak:0, goodStreak:0,
+  fatigue:false, errPenalty:false, blockedUntil:0, lastAnswerT:0,
+  gelActive:false, gelEnd:0,
+  found:[], timerInt:null, physicsInt:null,
+  startTime:0, questionStart:null, theme:'', totalAnswers:10,
+  params:{},
+};
+
+function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
+function grimpeSlopeFactor(c){ return 1 - grimpeSection(c)/20; }
+
+function grimpeDrawProfile(){
+  const cv=document.getElementById('grimpe-canvas');
+  if(!cv)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#1a2a1a'); grad.addColorStop(1,'#0a0a0a');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  for(let s=1;s<=10;s++){
+    const x=(s-1)/10*W;
+    if(s%2===0){ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(x,0,W/10,H);}
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px monospace';ctx.fillText(s+'%',x+2,H-4);
+  }
+  // Ligne montée
+  ctx.beginPath();ctx.strokeStyle='#334';ctx.lineWidth=1;
+  ctx.moveTo(0,H-10);ctx.lineTo(W,10);ctx.stroke();
+  // Ligne joueur
+  const px=GP.cases/100*W;
+  ctx.strokeStyle='#00ff88';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H);ctx.stroke();
+  ctx.setLineDash([]);
+  // Ligne pogi
+  const ppx=GP.pogiCases/100*W;
+  ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(ppx,0);ctx.lineTo(ppx,H);ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function grimpeUpdateRiders(){
+  const cv=document.getElementById('grimpe-canvas');
+  if(!cv)return;
+  const W=cv.width,H=cv.height;
+  const riderEl=document.getElementById('grimpe-rider');
+  const pogiEl=document.getElementById('grimpe-pogi');
+  if(riderEl){riderEl.style.left=Math.min(GP.cases/100*(W-24),W-30)+'px';riderEl.style.bottom=(10+GP.cases/100*(H-20))+'px';}
+  if(pogiEl){pogiEl.style.left=Math.min(GP.pogiCases/100*(W-24),W-30)+'px';pogiEl.style.bottom=(10+GP.pogiCases/100*(H-20))+'px';}
+}
+
+function grimpeUpdateDisplay(){
+  const pr=GP.params;
+  const sf=grimpeSlopeFactor(GP.cases);
+  const s=grimpeSection(GP.cases);
+  const X=pr.casesPerAnswer||6;
+  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
+  const gelBonus=gelOn?(pr.gelSpeed||2):0;
+  const inertia=(GP.cases/100)*(pr.inertie||0.4)*sf+gelBonus;
+  const nextGain=GP.fatigue?1:Math.max(1,Math.round(X*sf+GP.goodStreak+(GP.errPenalty?-2:0)));
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){
+    statusEl.textContent=gelOn?'🍬 GEL ACTIF !':GP.fatigue?'😮 Fatigué':'🚴 En course';
+    statusEl.style.color=gelOn?'#ffdd00':GP.fatigue?'var(--orange)':'var(--neon)';
+  }
+  const kmEl=document.getElementById('grimpe-km-txt');
+  if(kmEl)kmEl.textContent='Section '+s+'/10 — Pente '+s+'%';
+  const wEl=document.getElementById('grimpe-watts');
+  if(wEl){wEl.textContent=Math.round(GP.cases)+' cases';wEl.style.color=GP.cases>70?'var(--neon)':GP.cases>40?'var(--orange)':'var(--txt)';}
+  const kmhEl=document.getElementById('grimpe-kmh');
+  if(kmhEl){kmhEl.textContent=(inertia*10).toFixed(1)+' c/s';kmhEl.style.color=inertia>0.3?'var(--neon)':'var(--mute)';}
+  const gapEl=document.getElementById('grimpe-pogi-gap');
+  if(gapEl){
+    const gap=GP.pogiCases-GP.cases;
+    gapEl.textContent=gap>0?'Pogi +'+gap.toFixed(0)+' cases':gap<0?'Tu mènes +'+Math.abs(gap).toFixed(0):'Roue dans roue';
+    gapEl.style.color=gap>20?'var(--red)':gap>0?'var(--orange)':'var(--neon)';
+  }
+  const previewEl=document.getElementById('grimpe-bonus-preview');
+  if(previewEl&&GP.questionStart)previewEl.textContent='Prochaine bonne reponse: +'+nextGain+' cases'+(GP.goodStreak>1?' asp+'+GP.goodStreak:'');
+  grimpeDrawProfile();
+  grimpeUpdateRiders();
+}
+
+function setupGrimpeMode(data){
+  const p=data.grimpeParams||{};
+  GP.params={
+    casesPerAnswer: p.casesPerAnswer||6,
+    inertie:        p.inertie||0.4,
+    pogiSpeed:      p.pogiSpeed||(100/90),
+    timerSec:       p.timer||25,
+    fatigueThresh:  p.fatigueThresh||30,
+    gelSpeed:       p.gelSpeed||2,
+    gelDur:         p.gelDur||10,
+    crevaison_block:p.crevaison_block||13,
+    crevaison_loss: p.crevaison_loss||5,
+    fringale_block: p.fringale_block||10,
+  };
+  GP.cases=0; GP.pogiCases=0;
+  GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
+  GP.fatigue=false; GP.errPenalty=false; GP.blockedUntil=0; GP.lastAnswerT=0;
+  GP.gelActive=false; GP.gelEnd=0;
+  GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
+  GP.epoCount=0; GP.epoUsed=false;
+  GP.startTime=Date.now(); GP.questionStart=null;
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
+  const badge=document.getElementById('type-badge');
+  if(badge)badge.textContent="L'Alpe d’Huez";
+  document.getElementById('grimpe-in').disabled=false;
+  document.getElementById('grimpe-chk').disabled=false;
+  document.getElementById('grimpe-pogi').textContent='🚵';
+  document.getElementById('grimpe-rider').textContent='🚴';
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){statusEl.textContent='🚴 En course';statusEl.style.color='var(--neon)';}
+  document.getElementById('grimpe-streak').textContent='';
+  document.getElementById('grimpe-fb').textContent='';
+  setTimeout(()=>grimpeDrawProfile(),50);
+  document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
+  document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
+  document.getElementById('grimpe-in').oninput=e=>{if(!GP.questionStart&&e.target.value.length>0)GP.questionStart=Date.now();};
+  GP.physicsInt=setInterval(grimpePhysicsTick,100);
+  grimpeStartQuestionTimer();
+}
+
+function grimpePhysicsTick(){
+  if(GP.done)return;
+  const dt=0.1;
+  const pr=GP.params;
+  const sf=grimpeSlopeFactor(GP.cases);
+  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
+  const gelBonus=gelOn?(pr.gelSpeed||2)*dt:0;
+  GP.cases=Math.min(100,GP.cases+(GP.cases/100)*(pr.inertie||0.4)*sf*dt+gelBonus);
+  GP.pogiCases=Math.min(100,GP.pogiCases+(pr.pogiSpeed||(100/90))*dt);
+  grimpeUpdateDisplay();
+  grimpeGelPoll();
+  if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
+  if(GP.pogiCases>=100&&!GP.done){grimpeFinish();}
+}
+
+// Poll gel every 2s
+let _grimpeGelPollT=0;
+function grimpeGelPoll(){
+  if(GP.done||!G.athleteId)return;
+  const now=Date.now();
+  if(now-_grimpeGelPollT<2000)return;
+  _grimpeGelPollT=now;
+  fetch('/api/grimpe-gel?athleteId='+G.athleteId).then(r=>r.json()).then(d=>{
+    if(d.active&&!GP.gelActive){grimpeActivateGel();}
+  }).catch(()=>{});
+}
+
+function grimpeStartQuestionTimer(){
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  const timerSec=GP.params.timerSec||25;
+  let t=timerSec;
+  const fill=document.getElementById('grimpe-timer-fill');
+  if(fill){fill.style.transition='none';fill.style.width='100%';}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    if(fill)fill.style.transition='width '+timerSec+'s linear';
+    setTimeout(()=>{if(fill)fill.style.width='0%';},50);
+  }));
+  GP.timerInt=setInterval(()=>{
+    t--;
+    if(t<=0){
+      clearInterval(GP.timerInt);GP.timerInt=null;
+      GP.goodStreak=0; GP.questionStart=null;
+      const elapsed=(Date.now()-GP.startTime)/1000-GP.lastAnswerT;
+      if(GP.lastAnswerT>0&&elapsed>=(GP.params.fatigueThresh||30)){
+        GP.fatigue=true;
+        const fb=document.getElementById('grimpe-fb');
+        fb.textContent='😮 Fatigue ! Prochaine = 1 case';fb.style.color='var(--orange)';
+        setTimeout(()=>{fb.textContent='';},2000);
+      }
+      grimpeStartQuestionTimer();
+    }
+  },1000);
+}
+
+async function submitGrimpeAnswer(){
+  if(GP.done)return;
+  const now=Date.now();
+  if(now<GP.blockedUntil)return;
+  const inp=document.getElementById('grimpe-in');
+  const ans=inp.value.trim();
+  if(!ans)return;
+
+  // EPO / Transfusion
+  const ansUp=ans.toUpperCase();
+  if(ansUp==='EPO'||ansUp==='TRANSFUSION'){
+    inp.value=''; GP.questionStart=null;
+    const fb=document.getElementById('grimpe-fb');
+    if(GP.epoCount>=2){ fb.textContent='🚫 Déjà au max de produits !'; fb.style.color='var(--red)'; setTimeout(()=>{fb.textContent='';},1500); grimpeStartQuestionTimer(); return; }
+    GP.epoCount++;
+    GP.cases=Math.min(100, GP.cases+10);
+    const risk=GP.epoCount===1?50:80;
+    const name=GP.epoCount===1?'💉 EPO':'🩸 Transfusion';
+    fb.textContent=name+' +10 cases ! Risque contrôle: '+risk+'%'; fb.style.color='#ff4444';
+    document.getElementById('grimpe-streak').textContent='🧪 Produit pris ×'+GP.epoCount+' — Risque '+risk+'%';
+    setTimeout(()=>{fb.textContent='';},2500);
+    grimpeStartQuestionTimer();
+    return;
+  }
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  const fb=document.getElementById('grimpe-fb');
+  inp.value=''; GP.questionStart=null;
+  const res=await fetch('/api/grimpe-check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({athleteId:G.athleteId,answer:ans,found:GP.found})});
+  const data=await res.json();
+  const pr=GP.params;
+  if(data.correct){
+    GP.found.push(data.answer||ans);
+    const sf=grimpeSlopeFactor(GP.cases);
+    const X=pr.casesPerAnswer||6;
+    let gained;
+    if(GP.fatigue){gained=1;GP.fatigue=false;}
+    else{const base=X*sf;gained=Math.max(1,Math.round(base+GP.goodStreak+(GP.errPenalty?-2:0)));}
+    GP.cases=Math.min(100,GP.cases+gained);
+    GP.goodStreak++;GP.errPenalty=false;GP.wrongStreak=0;
+    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
+    const aspTxt=GP.goodStreak>1?' 🌬️x'+GP.goodStreak:'';
+    fb.textContent='✅ +'+gained+' cases !'+aspTxt;fb.style.color='var(--neon)';
+    document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Serie x'+GP.goodStreak:'';
+    setTimeout(()=>{fb.textContent='';},1000);
+    if(GP.found.length>=GP.totalAnswers){
+      inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
+      fb.textContent='🏁 Toutes les reponses trouvees !';fb.style.color='var(--neon)';
+      return;
+    }
+    grimpeStartQuestionTimer();
+  } else if(data.reason==='already'){
+    fb.textContent='Deja trouve !';fb.style.color='var(--orange)';
+    setTimeout(()=>{fb.textContent='';},1000);
+    grimpeStartQuestionTimer();
+  } else {
+    GP.wrongTotal++;GP.wrongStreak++;GP.goodStreak=0;
+    document.getElementById('grimpe-streak').textContent='';
+    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
+    if(GP.wrongTotal>=3){
+      fb.textContent='💥 CHUTE ! 0 points.';fb.style.color='var(--red)';
+      setTimeout(()=>grimpeFinish('chute'),1500);
+      return;
+    }
+    if(GP.wrongStreak>=2){
+      const loss=pr.crevaison_loss||5;const block=pr.crevaison_block||20;
+      GP.cases=Math.max(0,GP.cases-loss);
+      GP.blockedUntil=Date.now()+block*1000;
+      GP.wrongStreak=0;GP.errPenalty=false;
+      fb.textContent='🔧 CREVAISON ! -'+loss+' cases, bloque '+block+'s !';fb.style.color='var(--red)';
+      document.getElementById('grimpe-streak').textContent='🔧 Bloque '+block+'s...';
+      setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
+      return;
+    }
+    if(GP.wrongTotal===2){
+      const block=pr.fringale_block||10;
+      GP.blockedUntil=Date.now()+block*1000;GP.errPenalty=true;
+      fb.textContent='🍌 FRINGALE ! Bloque '+block+'s + prochaine -2 cases !';fb.style.color='var(--orange)';
+      document.getElementById('grimpe-streak').textContent='🍌 Fringale — bloque '+block+'s';
+      setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
+      return;
+    }
+    GP.errPenalty=true;
+    fb.textContent='❌ Prochaine bonne reponse : -2 cases';fb.style.color='var(--red)';
+    setTimeout(()=>{fb.textContent='';},1500);
+    grimpeStartQuestionTimer();
+  }
+}
+
+function grimpeActivateGel(){
+  if(GP.done)return;
+  const pr=GP.params;
+  GP.gelActive=true;GP.gelEnd=Date.now()+(pr.gelDur||10)*1000;
+  document.getElementById('grimpe-streak').textContent='🍬 GEL ACTIF ! Boost inertie !';
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){statusEl.textContent='🍬 GEL ACTIF !';statusEl.style.color='#ffdd00';}
+  setTimeout(()=>{GP.gelActive=false;document.getElementById('grimpe-streak').textContent='';}, (pr.gelDur||10)*1000);
+}
+
+function grimpeFinish(reason){
+  if(GP.done)return;
+  GP.done=true;
+  if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  G.active=false;
+  document.getElementById('grimpe-in').disabled=true;
+  document.getElementById('grimpe-chk').disabled=true;
+  const statusEl=document.getElementById('grimpe-status');
+
+  if(reason==='chute'){
+    if(statusEl){statusEl.textContent='💥 CHUTE !';statusEl.style.color='var(--red)';}
+    G.score=0;setScore(0,true);setVictoryIcon('grimpe');
+    setTimeout(()=>{
+      document.getElementById('v-name').textContent="L'Alpe d’Huez";
+      document.getElementById('v-sc').textContent=0;
+      document.getElementById('v-sub').textContent='💥 3 erreurs — tu as chuté !';
+      show('sv');submitScore(0);
+    },1000);
+    return;
+  }
+
+  const rawScore=Math.min(100,Math.round(GP.cases));
+  const isWin=GP.cases>=100;
+  const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+rawScore+'/100 cases';
+
+  if(GP.epoCount>0){
+    if(statusEl){statusEl.textContent='🧪 Contrôle antidopage...';statusEl.style.color='#ffdd00';}
+    setTimeout(()=>{
+      const risk=GP.epoCount===1?50:80;
+      const positive=Math.random()*100<risk;
+      const finalScore=positive?Math.floor(rawScore/2):rawScore;
+      const dopeTxt=positive?'🔴 POSITIF ! Score ÷2 ('+rawScore+'→'+finalScore+')':'🟢 Contrôle négatif — tu passes !';
+      if(statusEl){statusEl.textContent=positive?'🔴 Contrôle POSITIF !':isWin?'🏆 Victoire !':'🏁 Pogacar est arrivé !';statusEl.style.color=positive?'var(--red)':isWin?'var(--neon)':'var(--orange)';}
+      G.score=finalScore;setScore(finalScore,true);setVictoryIcon('grimpe');
+      setTimeout(()=>{
+        document.getElementById('v-name').textContent="L'Alpe d’Huez";
+        document.getElementById('v-sc').textContent=finalScore;
+        document.getElementById('v-sub').textContent=distTxt+' · '+dopeTxt;
+        show('sv');if(finalScore>0)confetti();submitScore(finalScore);
+      },1000);
+    },2500);
+    return;
+  }
+
+  if(statusEl){statusEl.textContent=isWin?'🏆 Victoire !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':'var(--orange)';}
+  G.score=rawScore;setScore(rawScore,true);setVictoryIcon('grimpe');
+  setTimeout(()=>{
+    document.getElementById('v-name').textContent="L'Alpe d’Huez";
+    document.getElementById('v-sc').textContent=rawScore;
+    document.getElementById('v-sub').textContent=distTxt;
+    show('sv');if(rawScore>0)confetti();submitScore(rawScore);
+  },1000);
 }
 
 // ── LE SCOUT MODE ─────────────────────────────────────────────────────────
@@ -2027,7 +2402,7 @@ const CH = {
   playerPos:0, hunterPos:0, targetToWin:8,
   score:100, found:[], done:false,
   gracePeriod:12, hunterSpeed:6, malus:30,
-  graceTimeout:null, hunterInterval:null
+  graceTimeout:null, hunterInterval:null, addBonus:null
 };
 
 function setupChaseMode(data){
@@ -2116,11 +2491,15 @@ function startHunter(){
   const graceEl = document.getElementById('chase-grace-msg');
   let countdown = CH.hunterSpeed;
 
+  // Expose countdown so correct answers can add bonus
+  CH.addBonus = (secs) => {
+    countdown = Math.min(countdown + secs, CH.hunterSpeed + 6); // cap at speed+6s max
+  };
+
   function tick(){
     if(CH.done) return;
     countdown--;
     if(countdown <= 0){
-      // Hunter moves
       CH.hunterPos++;
       CH.score = calcChaseScore();
       G.score = CH.score;
@@ -2134,11 +2513,9 @@ function startHunter(){
         finishChase(false);
         return;
       }
-      // Reset countdown
       countdown = CH.hunterSpeed;
       setTimeout(()=>{ graceEl.style.color='var(--orange)'; }, 500);
     } else {
-      // Show countdown
       const isUrgent = countdown <= 3;
       graceEl.textContent = isUrgent ? `😈 ${countdown}…` : `😈 Prochain pas dans ${countdown}s`;
       graceEl.style.color = isUrgent ? 'var(--red)' : 'var(--orange)';
@@ -2219,6 +2596,16 @@ async function submitChaseAnswer(){
     if(data.correct){
       CH.found.push(ans);
       CH.playerPos = Math.min(CH.playerPos+1, CH.targetToWin+2);
+      // +3s bonus on the hunter countdown
+      if(CH.addBonus) {
+        CH.addBonus(3);
+        const graceEl=document.getElementById('chase-grace-msg');
+        const prev=graceEl.textContent;
+        graceEl.style.color='var(--neon)';
+        graceEl.style.fontSize='14px';
+        // Flash +3s then restore
+        setTimeout(()=>{ graceEl.style.color='var(--orange)'; },600);
+      }
       CH.score = calcChaseScore();
       G.score = CH.score;
       setScore(CH.score, true);
@@ -3458,8 +3845,9 @@ async function loadLB(){
     lbAthletes=await resA.json();
     tabs.appendChild(makeTab('🌍 Global','global'));
     lbAthletes.forEach((a,i)=>{
-      const icon=a.type==='image'?'🖼':a.type==='buzz'?'⚡':a.type==='sportus'?'🎯':a.type==='prix'?'💰':'📝';
-      tabs.appendChild(makeTab(a.emoji+' #'+(i+1)+' '+icon, a.id));
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','text':'🃏'};
+      const icon=icons[a.type]||'🎮';
+      tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
     showTab(lbActiveTab,list);
   }catch(e){list.innerHTML='<div class="empty">Impossible de charger.</div>'}
