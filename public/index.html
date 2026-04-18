@@ -270,21 +270,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-score-big.penalty{color:var(--red);animation:sc-pulse .3s ease}
 .scout-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* LA GRIMPÉE */
-#grimpe-zone{display:none;flex-direction:column;gap:10px}
-.grimpe-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.grimpe-watts{font-family:var(--fh);font-size:36px;color:var(--neon);line-height:1;transition:color .3s}
-.grimpe-watts.warn{color:var(--orange)}
-.grimpe-watts.danger{color:var(--red)}
-.grimpe-speed{font-size:13px;color:var(--mute);text-align:right}
-.grimpe-speed span{font-family:var(--fh);font-size:20px;color:var(--txt)}
-.grimpe-profile{position:relative;height:90px;background:var(--c2);border-radius:12px;overflow:hidden;margin:4px 0}
-.grimpe-rider{position:absolute;font-size:20px;transition:left .8s cubic-bezier(.34,1,.64,1),bottom .8s ease;z-index:3;transform:scaleX(-1)}
-.grimpe-pogi{position:absolute;font-size:18px;opacity:.6;transition:left .8s linear,bottom .8s ease;z-index:2;transform:scaleX(-1)}
-.grimpe-finish-flag{position:absolute;right:8px;bottom:4px;font-size:22px;z-index:4}
-.grimpe-status{min-height:32px;font-family:var(--fh);font-size:15px;text-align:center;letter-spacing:1px}
+#grimpe-zone{display:none;flex-direction:column;gap:6px}
+.grimpe-profile{position:relative;height:110px;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-radius:12px;overflow:hidden;margin:4px 0}
+.grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
 .grimpe-timer-bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden}
 .grimpe-timer-fill{height:100%;background:var(--neon);border-radius:99px;transition:width 1s linear}
-.grimpe-info{display:flex;justify-content:space-between;font-size:12px;color:var(--mute)}
+.grimpe-info{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
 .grimpe-streak{text-align:center;font-size:12px;color:var(--mute);min-height:16px}
 
 .scout-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -405,7 +396,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🏃</div><div class="gt-name">The Chase</div></div>
       <div class="gt-item"><div class="gt-ico">🔍</div><div class="gt-name">Le Scout</div></div>
       <div class="gt-item"><div class="gt-ico">💬</div><div class="gt-name">Réplique</div></div>
-      <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">La Grimpée</div></div>
+      <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">Alpe d'Huez</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -629,45 +620,50 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LA GRIMPÉE zone -->
   <div id="grimpe-zone">
-    <!-- Header: watts + vitesse -->
-    <div class="grimpe-header">
+    <!-- Vitesse en grand, watts en petit -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
       <div>
-        <div class="grimpe-watts" id="grimpe-watts">300W</div>
-        <div style="font-size:11px;color:var(--mute);letter-spacing:1px">PUISSANCE</div>
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">VITESSE</div>
+        <div id="grimpe-kmh" style="font-family:var(--fh);font-size:52px;line-height:1;color:var(--neon)">0</div>
+        <div style="font-size:13px;color:var(--mute);margin-top:-2px">km/h</div>
       </div>
-      <div style="text-align:center">
+      <div style="text-align:center;flex:1;padding:0 8px">
         <div class="grimpe-status" id="grimpe-status"></div>
         <div class="grimpe-streak" id="grimpe-streak"></div>
       </div>
-      <div class="grimpe-speed">
-        <span id="grimpe-kmh">0</span>
-        <div style="font-size:11px;color:var(--mute)">km/h</div>
+      <div style="text-align:right">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">PUISSANCE</div>
+        <div id="grimpe-watts" style="font-family:var(--fh);font-size:22px;line-height:1;color:var(--txt);transition:color .3s">0W</div>
+        <div id="grimpe-pente-txt" style="font-size:11px;color:var(--mute);margin-top:2px">Pente 1%</div>
       </div>
     </div>
     <!-- Profil de montée -->
     <div class="grimpe-profile" id="grimpe-profile">
       <canvas id="grimpe-canvas" style="position:absolute;bottom:0;left:0;width:100%;height:100%"></canvas>
-      <div class="grimpe-pogi" id="grimpe-pogi">👻</div>
-      <div class="grimpe-rider" id="grimpe-rider">🚴</div>
-      <div class="grimpe-finish-flag">🏁</div>
+      <div id="grimpe-pogi" style="position:absolute;font-size:28px;transition:left .8s linear,bottom .8s ease;z-index:2;transform:scaleX(-1)">👻</div>
+      <div id="grimpe-rider" style="position:absolute;font-size:32px;transition:left .8s cubic-bezier(.34,1,.64,1),bottom .8s ease;z-index:3;transform:scaleX(-1)">🚴</div>
+      <div style="position:absolute;right:6px;bottom:4px;font-size:24px;z-index:4">🏁</div>
     </div>
-    <!-- Info km + pente -->
+    <!-- Info km + gap -->
     <div class="grimpe-info">
       <span id="grimpe-km-txt">Km 0 / 10</span>
-      <span id="grimpe-pente-txt">Pente : 1%</span>
       <span id="grimpe-pogi-gap">Pogacar : —</span>
     </div>
-    <!-- Timer question -->
-    <div class="grimpe-timer-bar"><div class="grimpe-timer-fill" id="grimpe-timer-fill"></div></div>
+    <!-- Timer -->
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+      <div class="grimpe-timer-bar" style="flex:1"><div class="grimpe-timer-fill" id="grimpe-timer-fill"></div></div>
+      <div id="grimpe-timer-txt" style="font-family:var(--fh);font-size:14px;min-width:24px;text-align:right;color:var(--neon)"></div>
+    </div>
+    <!-- Bonus preview -->
+    <div id="grimpe-bonus-preview" style="font-size:11px;color:var(--mute);text-align:center;min-height:14px"></div>
     <!-- Question + input -->
-    <div class="bj-theme" id="grimpe-theme">…</div>
+    <div class="bj-theme" id="grimpe-theme" style="margin-top:4px">…</div>
     <div class="ans-row">
       <input type="text" class="ans-in" id="grimpe-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
       <button class="chk-btn" id="grimpe-chk">✓</button>
     </div>
     <div class="fb" id="grimpe-fb"></div>
   </div>
-
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
     <div class="scout-score-big" id="scout-score" style="font-size:40px;text-align:center">100</div>
@@ -1653,18 +1649,22 @@ function grimpeUpdateRiders(){
 
 function grimpeUpdateDisplay(){
   const grade = grimpeGrade(GP.dist);
-  const effectiveWatts = Math.max(0, GP.watts + (GP.malus||0) + (GP.noAnswerMalus?-(GP.params.noAnswerW||50):0) + (GP.aspiration?(GP.params.aspirationW||50):0));
+  const effectiveWatts = Math.max(0, GP.watts + (GP.malus||0) + (GP.aspiration?(GP.params.aspirationW||50):0));
   const spd = grimpeSpeed(effectiveWatts, grade);
   const spdKmh = (spd * 3.6).toFixed(1);
 
-  // Watts display
-  const wEl = document.getElementById('grimpe-watts');
-  wEl.textContent = effectiveWatts > 0 ? effectiveWatts + 'W' : '0W — Réponds pour démarrer !';
-  wEl.className = 'grimpe-watts' + (effectiveWatts < 100 ? ' danger' : effectiveWatts < 200 ? ' warn' : '');
+  // Speed BIG
+  const kmhEl = document.getElementById('grimpe-kmh');
+  kmhEl.textContent = spdKmh;
+  kmhEl.style.color = effectiveWatts < 100 ? 'var(--red)' : effectiveWatts < 200 ? 'var(--orange)' : 'var(--neon)';
 
-  document.getElementById('grimpe-kmh').textContent = spdKmh;
+  // Watts small
+  const wEl = document.getElementById('grimpe-watts');
+  wEl.textContent = effectiveWatts + 'W';
+  wEl.style.color = effectiveWatts < 100 ? 'var(--red)' : effectiveWatts < 200 ? 'var(--orange)' : 'var(--txt)';
+
   document.getElementById('grimpe-km-txt').textContent = `Km ${(GP.dist/1000).toFixed(1)} / 10`;
-  document.getElementById('grimpe-pente-txt').textContent = `Pente : ${grade}%`;
+  document.getElementById('grimpe-pente-txt').textContent = `${grade}%`;
 
   // Gap with Pogi
   const gap = GP.pogiDist - GP.dist;
@@ -1672,30 +1672,41 @@ function grimpeUpdateDisplay(){
   if(GP.dist >= GP.totalDist){
     gapEl.textContent='';
   } else if(gap > 0){
-    gapEl.textContent = `Pogacar +${(gap/1000).toFixed(2)}km`;
+    gapEl.textContent = `Pogi +${(gap/1000).toFixed(2)}km`;
     gapEl.style.color='var(--red)';
   } else {
-    gapEl.textContent = `Tu mènes +${(Math.abs(gap)/1000).toFixed(2)}km`;
+    gapEl.textContent = `Tu menes +${(Math.abs(gap)/1000).toFixed(2)}km`;
     gapEl.style.color='var(--neon)';
+  }
+
+  // Live bonus preview based on elapsed time
+  if(GP.questionStart && !GP.done && GP.found.length > 0){
+    const elapsed=(Date.now()-GP.questionStart)/1000;
+    const X=GP.params.fastBonus||30, Y=GP.params.bonusDecay||1;
+    const Z=GP.params.fastBonusTime||5, P=GP.params.bonusFloor||10;
+    const bonus=Math.max(P, Math.round(X - Y*Math.max(0,elapsed-Z)));
+    const previewEl=document.getElementById('grimpe-bonus-preview');
+    if(previewEl) previewEl.textContent=`+${bonus}W si tu reponds maintenant`;
   }
 }
 
 function setupGrimpeMode(data){
   const badge=document.getElementById('type-badge');
-  badge.textContent='🚴 La Grimpée'; badge.className='type-badge'; badge.style.color='#d4ff00';
-  document.getElementById('game-tip').innerHTML='Réponds vite · Maintiens ta puissance · Arrive avant Pogacar';
+  badge.textContent="🚴 Alpe d'Huez"; badge.className='type-badge'; badge.style.color='#d4ff00';
+  document.getElementById('game-tip').innerHTML='Reponds vite · Maintiens ta puissance · Bats Pogacar !';
   hideAllZones();
   document.getElementById('grimpe-zone').style.display='flex';
 
   const p=data.grimpeParams||{};
-  GP.watts     = 0; // départ arrêté — première réponse lance à startW
-  GP.startWatts = p.startW||300;
-  GP.pogiWatts = p.pogiW||290;
-  GP.params    = {fastBonus:p.fastBonus||30,midBonus:p.midBonus||15,
-    noAnswerW:p.noAnswerW||50,timer:p.timer||25,
-    wrongW:p.wrongW||100,wrongDur:p.wrongDur||10,
-    fringaleW:p.fringaleW||100,fringaleDur:p.fringaleDur||30,
-    aspirationW:p.aspirationW||50,aspirationDur:p.aspirationDur||10,gelW:p.gelW||50};
+  GP.watts      = 0;
+  GP.startWatts = p.startW||200;
+  GP.pogiWatts  = p.pogiW||180;
+  GP.params    = {fastBonus:p.fastBonus||45, fastBonusTime:p.fastBonusTime||5,
+    bonusDecay:p.bonusDecay||4, bonusFloor:p.bonusFloor||5,
+    wrongW:p.wrongW||100, wrongDur:p.wrongDur||10,
+    fringaleW:p.fringaleW||100, fringaleDur:p.fringaleDur||30,
+    aspirationW:p.aspirationW||50, aspirationDur:p.aspirationDur||10,
+    aspirationStreak:p.aspirationStreak||4, gelW:p.gelW||50, timeScale:p.timeScale||22};
   GP.totalAnswers=data.grimpeAnswers||10;
   GP.dist=0; GP.pogiDist=0;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
@@ -1703,7 +1714,7 @@ function setupGrimpeMode(data){
   GP.hadFringale=false; GP.hadCrevaison=false; GP.found=[];
   GP.theme=data.grimpeTheme||'';
   GP.startTime=Date.now(); GP.pogiFinishTime=null;
-  GP.pogiRefTime=grimpeSimulatePogiTime(GP.totalAnswers,GP.pogiWatts,GP.params.fastBonus);
+  GP.pogiRefTime=grimpeSimulatePogiTime(GP.totalAnswers,GP.pogiWatts,GP.params.fastBonus,GP.params.timeScale||22);
 
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
@@ -1734,31 +1745,32 @@ function setupGrimpeMode(data){
   setTimeout(()=>document.getElementById('grimpe-in').focus(),80);
 }
 
-function grimpeSimulatePogiTime(nAnswers, pogiW, fastBonus){
-  pogiW=pogiW||290; fastBonus=fastBonus||30;
-  let w=0, dist=0, t=0; // starts at 0 like player
-  const dt=0.5; let ans=0;
-  while(dist<10000 && t<3600){
+function grimpeSimulatePogiTime(nAnswers, pogiW, fastBonus, timeScale){
+  pogiW=pogiW||290; fastBonus=fastBonus||30; timeScale=timeScale||20;
+  const dt=0.5*timeScale;
+  let w=0,dist=0,realT=0,ans=0;
+  while(dist<10000 && realT<300){
     const grade=grimpeGrade(dist);
     const spd=grimpeSpeed(Math.min(w,500),grade);
-    dist+=spd*dt; t+=dt;
-    // Pogi first answer at 5s → startW, then every 8s fast answer
-    if(ans===0 && t>=5){ w=pogiW; ans++; }
-    else if(ans>0 && Math.round(t*2)%(16)===0 && ans<nAnswers){ w=Math.min(w+fastBonus,500); ans++; }
+    dist+=spd*dt; realT+=0.5;
+    // Pogi: first answer at real 3s, then every 8s fast answer
+    if(ans===0 && realT>=3){ w=pogiW; ans++; }
+    else if(ans>0 && realT>0 && Math.round(realT*2)%(16)===0 && ans<nAnswers){ w=Math.min(w+fastBonus,500); ans++; }
   }
-  return t;
+  return realT;
 }
 
 function grimpePhysicsTick(){
   if(GP.done) return;
-  const dt=0.5;
+  const TIME_SCALE = GP.params.timeScale||20;
+  const dt = 0.5 * TIME_SCALE;
   const grade=grimpeGrade(GP.dist);
-  const effectiveWatts=Math.max(0, GP.watts + (GP.malus||0) + (GP.noAnswerMalus?-(GP.params.noAnswerW||50):0) + (GP.aspiration?(GP.params.aspirationW||50):0));
+  const effectiveWatts=Math.max(0, GP.watts + (GP.malus||0) + (GP.aspiration?(GP.params.aspirationW||50):0));
   const spd=grimpeSpeed(effectiveWatts, grade);
 
   GP.dist = Math.min(GP.dist + spd*dt, GP.totalDist);
 
-  // Pogi physics
+  // Pogi physics — same time scale
   const pogiEff=Math.min(GP.pogiWatts, 500);
   const pogiSpd=grimpeSpeed(pogiEff, grimpeGrade(GP.pogiDist));
   GP.pogiDist = Math.min(GP.pogiDist + pogiSpd*dt, GP.totalDist);
@@ -1766,14 +1778,9 @@ function grimpePhysicsTick(){
   grimpeUpdateDisplay();
   grimpeUpdateRiders();
 
-  // Check finish
-  if(GP.dist >= GP.totalDist){
-    grimpeFinish(true);
-    return;
-  }
-  if(GP.pogiDist >= GP.totalDist && !GP.done){
-    // Pogi finished — keep going but note the time
-    if(!GP.pogiFinishTime) GP.pogiFinishTime = (Date.now()-GP.startTime)/1000;
+  if(GP.dist >= GP.totalDist){ grimpeFinish(true); return; }
+  if(GP.pogiDist >= GP.totalDist && !GP.pogiFinishTime){
+    GP.pogiFinishTime = (Date.now()-GP.startTime)/1000;
   }
 }
 
@@ -1791,12 +1798,7 @@ function grimpeStartQuestionTimer(){
     t--;
     if(t<=0){
       clearInterval(GP.timerInt);GP.timerInt=null;
-      GP.noAnswerMalus=true;
       GP.goodStreak=0;
-      const fb=document.getElementById('grimpe-fb');
-      fb.textContent='⏰ Pas de réponse ! -'+(GP.params.noAnswerW||50)+'W';
-      fb.style.color='var(--red)';
-      setTimeout(()=>{fb.textContent='';},1000);
       grimpeStartQuestionTimer();
     }
   },1000);
@@ -1827,20 +1829,29 @@ async function submitGrimpeAnswer(){
   const pr=GP.params;
 
   if(data.correct){
-    GP.noAnswerMalus=false;
     GP.wrongStreak=0; GP.goodStreak++;
     GP.found.push(ans);
 
-    // First answer: launch to startWatts, then add time bonus
-    if(GP.found.length===1) GP.watts=GP.startWatts;
+    // First answer: launch to startWatts, NO time bonus
+    if(GP.found.length===1){
+      GP.watts=GP.startWatts;
+      fb.textContent='🚴 C\'est parti ! '+GP.startWatts+'W'; fb.style.color='var(--neon)';
+      setTimeout(()=>{fb.textContent='';},1000);
+      grimpeStartQuestionTimer();
+      return;
+    }
 
-    let bonus=0;
-    if(elapsed<=8) bonus=pr.fastBonus||30;
-    else if(elapsed<=15) bonus=pr.midBonus||15;
+    // Bonus = X - Y*(t-Z), plancher P
+    const X = pr.fastBonus||30;
+    const Y = pr.bonusDecay||1;
+    const Z = pr.fastBonusTime||5;
+    const P = pr.bonusFloor||10;
+    let bonus = Math.max(P, Math.round(X - Y * Math.max(0, elapsed - Z)));
     GP.watts=Math.min(GP.watts+bonus,500);
 
-    // Aspiration: 3 bonnes d'affilée
-    if(GP.goodStreak>=3 && !GP.aspiration){
+    // Aspiration: N bonnes d'affilée (paramétrable, défaut 4)
+    const aspirationThreshold = GP.params.aspirationStreak||4;
+    if(GP.goodStreak>=aspirationThreshold && !GP.aspiration){
       GP.aspiration=true;
       document.getElementById('grimpe-streak').textContent='🌬️ ASPIRATION ! +'+(pr.aspirationW||50)+'W pendant '+(pr.aspirationDur||10)+'s';
       if(GP.aspirationTimer) clearTimeout(GP.aspirationTimer);
@@ -1935,14 +1946,10 @@ function grimpeFinish(completed, reason){
 
   // Calculate score based on time vs Pogi
   const myTime=(Date.now()-GP.startTime)/1000;
-  const pogiTime=GP.pogiRefTime||120;
+  const pogiTime=GP.pogiRefTime||62;
   const diff=myTime-pogiTime;
-  let finalScore;
-  if(diff<=0){
-    finalScore=100; // arrived before pogi
-  } else {
-    finalScore=Math.max(0, Math.round(100 - diff*0.8));
-  }
+  // Score relatif: 100 - (retard/pogiRefTime)*100 → scalable 10/12/15 réponses
+  const finalScore=Math.min(100, Math.max(0, Math.round(100-(diff/pogiTime)*100)));
 
   const diffTxt=diff<=0?`🏆 ${Math.abs(diff).toFixed(0)}s avant Pogacar !`:`${diff.toFixed(0)}s de retard sur Pogacar`;
   document.getElementById('grimpe-status').textContent='🏁 Arrivée !';
