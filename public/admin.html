@@ -311,16 +311,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>⚡ Paramètres de puissance (watts)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="300" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="290" min="100" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse rapide &lt;8s (+W)</div><input type="number" id="grimpe-fast-bonus" value="30" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Réponse moyenne 8-15s (+W)</div><input type="number" id="grimpe-mid-bonus" value="15" min="0" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="200" min="50" max="400" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="180" min="50" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">X — Bonus max (W)</div><input type="number" id="grimpe-fast-bonus" value="45" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Z — Seuil (s) avant dégressif</div><input type="number" id="grimpe-fast-bonus-time" value="5" min="1" max="25" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Y — Perte /seconde (W)</div><input type="number" id="grimpe-bonus-decay" value="4" min="0" max="10" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">P — Plancher min (W)</div><input type="number" id="grimpe-bonus-floor" value="5" min="0" max="50" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">⚡ Facteur vitesse (×)</div><input type="number" id="grimpe-time-scale" value="22" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div style="font-size:10px;color:var(--mute);display:flex;align-items:center;line-height:1.4">×20 ≈ 1min · ×10 ≈ 2min · ×30 ≈ 45s</div>
           </div>
         </div>
         <div class="field">
           <label>💥 Paramètres de pénalité</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pas de réponse (−W)</div><input type="number" id="grimpe-noanswer-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono sans réponse (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (−W)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée malus mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
@@ -333,6 +336,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🌬️ Aspiration (+W)</div><input type="number" id="grimpe-aspiration-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée aspiration (s)</div><input type="number" id="grimpe-aspiration-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Bonnes d'affilée pour aspiration</div><input type="number" id="grimpe-aspiration-streak" value="4" min="2" max="10" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍬 Gel (+W)</div><input type="number" id="grimpe-gel-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
         </div>
@@ -880,7 +884,7 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?'🚴 Grimpée':'📝 Texte';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?"🚴 Alpe d'Huez":'📝 Texte';
     const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
@@ -974,7 +978,7 @@ async function startEdit(id){
     document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
     document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
     const p=a.grimpeParams||{};
-    ['start-w','pogi-w','fast-bonus','mid-bonus','noanswer-w','timer','wrong-w','wrong-dur','fringale-w','fringale-dur','aspiration-w','aspiration-dur','gel-w'].forEach(k=>{
+    ['start-w','pogi-w','fast-bonus','fast-bonus-time','bonus-decay','bonus-floor','time-scale','timer','wrong-w','wrong-dur','fringale-w','fringale-dur','aspiration-w','aspiration-dur','aspiration-streak','gel-w'].forEach(k=>{
       const el=document.getElementById('grimpe-'+k);
       const pk=k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
       if(el&&p[pk]!==undefined) el.value=p[pk];
@@ -1822,12 +1826,14 @@ document.getElementById('btn-save').onclick=async()=>{
   const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
   const grimpeParams = currentType==='grimpe'?{
     startW:grimpeParam('grimpe-start-w',300), pogiW:grimpeParam('grimpe-pogi-w',290),
-    fastBonus:grimpeParam('grimpe-fast-bonus',30), midBonus:grimpeParam('grimpe-mid-bonus',15),
-    noAnswerW:grimpeParam('grimpe-noanswer-w',50), timer:grimpeParam('grimpe-timer',25),
+    fastBonus:grimpeParam('grimpe-fast-bonus',30), fastBonusTime:grimpeParam('grimpe-fast-bonus-time',5),
+    bonusDecay:grimpeParam('grimpe-bonus-decay',1), bonusFloor:grimpeParam('grimpe-bonus-floor',10),
+    timeScale:grimpeParam('grimpe-time-scale',20),
+    timer:grimpeParam('grimpe-timer',25),
     wrongW:grimpeParam('grimpe-wrong-w',100), wrongDur:grimpeParam('grimpe-wrong-dur',10),
     fringaleW:grimpeParam('grimpe-fringale-w',100), fringaleDur:grimpeParam('grimpe-fringale-dur',30),
     aspirationW:grimpeParam('grimpe-aspiration-w',50), aspirationDur:grimpeParam('grimpe-aspiration-dur',10),
-    gelW:grimpeParam('grimpe-gel-w',50)
+    aspirationStreak:grimpeParam('grimpe-aspiration-streak',4), gelW:grimpeParam('grimpe-gel-w',50)
   }:{};
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
