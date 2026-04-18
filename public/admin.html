@@ -234,7 +234,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Démineur</div>
             <div class="type-desc">Évite les mines</div>
           </div>
-          <div class="type-opt" id="type-chase" onclick="selectType('chase')">
+          <div class="type-opt" id="type-chase" onclick="selectType('chase')" style="display:none">
             <div class="type-ico">🏃</div>
             <div class="type-name">The Chase</div>
             <div class="type-desc">Fuis le chasseur</div>
@@ -311,12 +311,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>⚡ Paramètres de puissance (watts)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="200" min="50" max="400" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="180" min="50" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">X — Bonus max (W)</div><input type="number" id="grimpe-fast-bonus" value="45" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Z — Seuil (s) avant dégressif</div><input type="number" id="grimpe-fast-bonus-time" value="5" min="1" max="25" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Y — Perte /seconde (W)</div><input type="number" id="grimpe-bonus-decay" value="4" min="0" max="10" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">P — Plancher min (W)</div><input type="number" id="grimpe-bonus-floor" value="5" min="0" max="50" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="80" min="50" max="400" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="310" min="50" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Bonus par bonne réponse (W)</div><input type="number" id="grimpe-fast-bonus" value="35" min="10" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div style="font-size:11px;color:var(--mute);display:flex;align-items:center;line-height:1.4;padding:8px 0">Fixe — seul le temps de réflexion pénalise</div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">⚡ Facteur vitesse (×)</div><input type="number" id="grimpe-time-scale" value="22" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div style="font-size:10px;color:var(--mute);display:flex;align-items:center;line-height:1.4">×20 ≈ 1min · ×10 ≈ 2min · ×30 ≈ 45s</div>
           </div>
@@ -325,8 +323,8 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <label>💥 Paramètres de pénalité</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono sans réponse (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (−W)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée malus mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (reset watts départ)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800;display:none"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée reset mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale (−W)</div><input type="number" id="grimpe-fringale-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée fringale (s)</div><input type="number" id="grimpe-fringale-dur" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
@@ -1826,8 +1824,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
   const grimpeParams = currentType==='grimpe'?{
     startW:grimpeParam('grimpe-start-w',300), pogiW:grimpeParam('grimpe-pogi-w',290),
-    fastBonus:grimpeParam('grimpe-fast-bonus',30), fastBonusTime:grimpeParam('grimpe-fast-bonus-time',5),
-    bonusDecay:grimpeParam('grimpe-bonus-decay',1), bonusFloor:grimpeParam('grimpe-bonus-floor',10),
+    fastBonus:grimpeParam('grimpe-fast-bonus',35),
     timeScale:grimpeParam('grimpe-time-scale',20),
     timer:grimpeParam('grimpe-timer',25),
     wrongW:grimpeParam('grimpe-wrong-w',100), wrongDur:grimpeParam('grimpe-wrong-dur',10),
