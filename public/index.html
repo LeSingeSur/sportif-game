@@ -396,7 +396,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item" style="display:none"><div class="gt-ico">🏃</div><div class="gt-name">The Chase</div></div>
       <div class="gt-item"><div class="gt-ico">🔍</div><div class="gt-name">Le Scout</div></div>
       <div class="gt-item"><div class="gt-ico">💬</div><div class="gt-name">Réplique</div></div>
-      <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">Alpe d'Huez</div></div>
+      <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">L'Alpe d'Huez</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -1695,12 +1695,12 @@ function setupGrimpeMode(data){
 
   const p=data.grimpeParams||{};
   GP.watts      = 0;
-  GP.startWatts = p.startW||80;
+  GP.startWatts = p.startW||60;
   GP.pogiWatts  = p.pogiW||310;
-  GP.params    = {fastBonus:p.fastBonus||35,
+  GP.params    = {fastBonus:p.fastBonus||25,
     wrongW:p.wrongW||100, wrongDur:p.wrongDur||10,
     fringaleW:p.fringaleW||100, fringaleDur:p.fringaleDur||30,
-    aspirationW:p.aspirationW||50, aspirationDur:p.aspirationDur||10,
+    aspirationW:p.aspirationW||0.5, aspirationDur:p.aspirationDur||10,
     aspirationStreak:p.aspirationStreak||4, gelW:p.gelW||50, timeScale:p.timeScale||22};
   GP.totalAnswers=data.grimpeAnswers||10;
   GP.dist=0; GP.pogiDist=0;
@@ -1717,7 +1717,7 @@ function setupGrimpeMode(data){
   if(GP.aspirationTimer){clearTimeout(GP.aspirationTimer);GP.aspirationTimer=null;}
 
   G.score=0; G.max=100; setScore(0,false);
-  G.athleteName='La Grimpée';
+  G.athleteName="L'Alpe d'Huez";
 
   document.getElementById('grimpe-theme').textContent=GP.theme;
   document.getElementById('grimpe-status').textContent='';
@@ -1761,25 +1761,35 @@ function grimpeSimulatePogiTime(nAnswers, pogiW, fastBonus, timeScale){
 
 function grimpePhysicsTick(){
   if(GP.done) return;
-  const TIME_SCALE = GP.params.timeScale||20;
+  const TIME_SCALE = GP.params.timeScale||22;
   const dt = 0.5 * TIME_SCALE;
   const grade=grimpeGrade(GP.dist);
-  const effectiveWatts=Math.max(0, GP.watts + (GP.malus||0) + (GP.aspiration?(GP.params.aspirationW||50):0));
-  const spd=grimpeSpeed(effectiveWatts, grade);
-
-  GP.dist = Math.min(GP.dist + spd*dt, GP.totalDist);
-
-  // Pogi physics — same time scale
   const pogiEff=Math.min(GP.pogiWatts, 500);
   const pogiSpd=grimpeSpeed(pogiEff, grimpeGrade(GP.pogiDist));
+  const effectiveWatts=Math.max(0, GP.watts + (GP.malus||0));
+  // Fatigue: -5W/s après 10s sans réponse (plancher startWatts)
+  const fatigueSecs=GP.params.fatigueSecs||10;
+  const fatigueW=GP.params.fatigueW||5;
+  let fatigueMalus=0;
+  if(GP.lastAnswerTime && GP.found.length>0){
+    const silence=(Date.now()-GP.lastAnswerTime)/1000;
+    if(silence>fatigueSecs){
+      fatigueMalus=Math.min(effectiveWatts-GP.startWatts, fatigueW*(silence-fatigueSecs));
+    }
+  }
+  const finalWatts=Math.max(GP.startWatts, effectiveWatts-fatigueMalus);
+  const spd=grimpeSpeed(Math.min(finalWatts,500), grade);
+
+  GP.dist = Math.min(GP.dist + spd*dt, GP.totalDist);
   GP.pogiDist = Math.min(GP.pogiDist + pogiSpd*dt, GP.totalDist);
 
   grimpeUpdateDisplay();
   grimpeUpdateRiders();
 
-  if(GP.dist >= GP.totalDist){ grimpeFinish(true); return; }
-  if(GP.pogiDist >= GP.totalDist && !GP.pogiFinishTime){
-    GP.pogiFinishTime = (Date.now()-GP.startTime)/1000;
+  if(GP.dist >= GP.totalDist && !GP.done){ grimpeFinish(true); return; }
+  if(GP.pogiDist >= GP.totalDist && !GP.done){
+    // Pogi finished — game ends now, score based on player distance
+    grimpeFinish(true);
   }
 }
 
@@ -1798,6 +1808,13 @@ function grimpeStartQuestionTimer(){
     if(t<=0){
       clearInterval(GP.timerInt);GP.timerInt=null;
       GP.goodStreak=0;
+      // Fatigue: -30W permanent si pas de réponse
+      if(GP.found.length>0){ // pas sur la 1ère question
+        GP.watts=Math.max(GP.startWatts, GP.watts-30);
+        const fb=document.getElementById('grimpe-fb');
+        fb.textContent='😮‍💨 Fatigué ! −30W définitifs'; fb.style.color='var(--orange)';
+        setTimeout(()=>{fb.textContent='';},1500);
+      }
       grimpeStartQuestionTimer();
     }
   },1000);
@@ -1845,27 +1862,18 @@ async function submitGrimpeAnswer(){
       return;
     }
 
-    // Bonus = X - Y*(t-Z), plancher P
-    const fixedBonus = pr.fastBonus||35;
-    let bonus = fixedBonus; // Fixe — seul le temps perdu pénalise
-    GP.watts=Math.min(GP.watts+bonus,500);
-
-    const aspirationThreshold = GP.params.aspirationStreak||4;
-    if(GP.goodStreak>=aspirationThreshold){
-      // Reset timer whether already active or not — non cumulable
-      if(GP.aspirationTimer) clearTimeout(GP.aspirationTimer);
-      if(!GP.aspiration){
-        GP.aspiration=true;
-        document.getElementById('grimpe-streak').textContent='🌬️ ASPIRATION ! +'+(pr.aspirationW||50)+'W pendant '+(pr.aspirationDur||10)+'s';
-      } else {
-        document.getElementById('grimpe-streak').textContent='🌬️ ASPIRATION renouvelée ! +'+(pr.aspirationW||50)+'W';
-      }
-      GP.goodStreak=0; // repart à 0
-      GP.aspirationTimer=setTimeout(()=>{
-        GP.aspiration=false;
-        document.getElementById('grimpe-streak').textContent='';
-      },(pr.aspirationDur||10)*1000);
+    const fixedBonus = pr.fastBonus||25;
+    const aspPerStreak = pr.aspirationW||10; // +10W par réponse consécutive
+    const aspCap = pr.aspirationCap||50;    // cap à +50W max
+    const aspBonus = Math.min(GP.goodStreak * aspPerStreak, aspCap);
+    const bonus = fixedBonus + aspBonus;
+    GP.lastAnswerTime = Date.now();
+    if(aspBonus>0){
+      document.getElementById('grimpe-streak').textContent=`🌬️ Série ×${GP.goodStreak} +${aspBonus}W`;
+    } else {
+      document.getElementById('grimpe-streak').textContent='';
     }
+    GP.watts=Math.min(GP.watts+bonus,500);
 
     // Gel après fringale/crevaison
     if((GP.hadFringale||GP.hadCrevaison)&&GP.goodStreak>=2){
@@ -1892,35 +1900,38 @@ async function submitGrimpeAnswer(){
     grimpeStartQuestionTimer();
   } else {
     GP.wrongTotal++; GP.wrongStreak++; GP.goodStreak=0;
+    document.getElementById('grimpe-in').value='';
 
-    if(GP.wrongTotal>=3){ grimpeFinish(false,'chute'); return; }
+    // 💥 3 mauvaises → Chute → 0W pour le reste du jeu
+    if(GP.wrongTotal>=3){
+      GP.watts=0; GP.malus=0;
+      fb.textContent='💥 CHUTE ! Tu finis à pied...'; fb.style.color='var(--red)';
+      document.getElementById('grimpe-streak').textContent='💥 Chute — 0W jusqu\'à la fin';
+      setTimeout(()=>{fb.textContent='';},2000);
+      grimpeStartQuestionTimer(); return;
+    }
 
+    // 🔧 2 mauvaises d'affilée → Crevaison → retour à sw (perte de tout l'élan)
     if(GP.wrongStreak>=2){
-      GP.hadCrevaison=true; GP.watts=0; GP.wrongStreak=0;
-      fb.textContent='🔧 CREVAISON ! Retour à 0W !'; fb.style.color='var(--red)';
-      document.getElementById('grimpe-streak').textContent='🔧 Crevaison — 2 bonnes réponses pour le gel !';
-      setTimeout(()=>{fb.textContent='';},2000);
+      GP.watts=GP.startWatts; GP.malus=0; GP.wrongStreak=0;
+      fb.textContent='🔧 CREVAISON ! Retour à '+GP.startWatts+'W !'; fb.style.color='var(--red)';
+      document.getElementById('grimpe-streak').textContent='🔧 Crevaison — élan perdu';
+      setTimeout(()=>{fb.textContent='';document.getElementById('grimpe-streak').textContent='';},2500);
       grimpeStartQuestionTimer(); return;
     }
 
-    if(GP.wrongTotal===2 && GP.wrongStreak<2){
-      GP.hadFringale=true; GP.wrongStreak=0;
-      const fw=pr.fringaleW||100; const fd=pr.fringaleDur||30;
-      fb.textContent='🍌 FRINGALE ! -'+fw+'W pendant '+fd+'s !'; fb.style.color='var(--orange)';
-      document.getElementById('grimpe-streak').textContent='🍌 Fringale — 2 bonnes réponses pour le gel !';
-      GP.malus=-fw;
-      if(GP.fringaleTimer) clearTimeout(GP.fringaleTimer);
-      GP.fringaleTimer=setTimeout(()=>{GP.malus=0;document.getElementById('grimpe-streak').textContent='';},fd*1000);
-      setTimeout(()=>{fb.textContent='';},2000);
+    // 🍌 2 mauvaises dans le jeu (pas d'affilée) → Fringale −100W permanent
+    if(GP.wrongTotal===2){
+      GP.watts=Math.max(GP.startWatts, GP.watts-100);
+      fb.textContent='🍌 FRINGALE ! −100W définitifs !'; fb.style.color='var(--orange)';
+      document.getElementById('grimpe-streak').textContent='🍌 Fringale — −100W permanents';
+      setTimeout(()=>{fb.textContent='';document.getElementById('grimpe-streak').textContent='';},2500);
       grimpeStartQuestionTimer(); return;
     }
 
-    const ww=pr.wrongW||100; const wd=pr.wrongDur||10;
-    fb.textContent='❌ Retour à '+GP.startWatts+'W pendant '+wd+'s !'; fb.style.color='var(--red)';
-    // Reset watts to startW (lose accumulated power)
-    const prevWatts=GP.watts;
-    GP.watts=GP.startWatts;
-    setTimeout(()=>{ if(GP.watts===GP.startWatts) GP.watts=prevWatts; },wd*1000);
+    // 1 mauvaise → −50W permanent
+    GP.watts=Math.max(GP.startWatts, GP.watts-50);
+    fb.textContent='❌ −50W définitifs !'; fb.style.color='var(--red)';
     setTimeout(()=>{fb.textContent='';},1500);
     grimpeStartQuestionTimer();
   }
@@ -1938,49 +1949,29 @@ function grimpeFinish(completed, reason){
   document.getElementById('grimpe-chk').disabled=true;
 
   if(reason==='chute'){
-    document.getElementById('grimpe-status').textContent='💥 CHUTE — Game Over !';
-    document.getElementById('grimpe-status').style.color='var(--red)';
-    setVictoryIcon('grimpe');
-    setTimeout(()=>{
-      document.getElementById('v-name').textContent='La Grimpée';
-      document.getElementById('v-sc').textContent=0;
-      document.getElementById('v-sub').textContent='💥 3 erreurs — tu as chuté !';
-      document.getElementById('v-revealed').textContent=GP.answerIdx;
-      document.getElementById('v-revealed-lbl').textContent='réponses données';
-      document.getElementById('v-wrong').textContent=GP.wrongTotal;
-      document.querySelector('#v-wrong').nextElementSibling.textContent='erreurs';
-      show('sv');
-      submitScore(0);
-    },1500);
-    return;
+    // Géré inline — ne devrait plus arriver ici
   }
 
-  // Calculate score based on time vs Pogi
-  const myTime=(Date.now()-GP.startTime)/1000;
-  const pogiTime=GP.pogiRefTime||81;
-  const diff=myTime-pogiTime;
-  const finalScore = Math.min(100, Math.max(0, Math.round(100-(diff/pogiTime)*100)));
-  const diffTxt = diff<=0
-    ? `🏆 ${Math.abs(diff).toFixed(0)}s avant Pogacar !`
-    : finalScore===0
-      ? `⏱ Hors délai — ${diff.toFixed(0)}s de retard`
-      : `${diff.toFixed(0)}s de retard sur Pogacar`;
+  // Score = distance parcourue quand Pogi arrive / 10km * 100
+  const distM=Math.min(GP.dist, GP.totalDist);
+  const finalScore = GP.dist>=GP.totalDist ? 100 : Math.round((distM/GP.totalDist)*100);
+  const km=(distM/1000).toFixed(2);
+  const diffTxt = GP.dist>=GP.totalDist
+    ? '🏆 Arrivé avant Pogacar !'
+    : `📍 ${km} km parcourus sur 10`;
 
-  document.getElementById('grimpe-status').textContent='🏁 Arrivée !';
-  document.getElementById('grimpe-status').style.color='var(--neon)';
+  document.getElementById('grimpe-status').textContent=GP.dist>=GP.totalDist?'🏆 Victoire !':'🏁 Pogacar est arrivé !';
+  document.getElementById('grimpe-status').style.color=GP.dist>=GP.totalDist?'var(--neon)':'var(--orange)';
 
   G.score=finalScore;
   setScore(finalScore,true);
   setVictoryIcon('grimpe');
   setTimeout(()=>{
-    document.getElementById('v-name').textContent='La Grimpée';
+    document.getElementById('v-name').textContent="L'Alpe d'Huez";
     document.getElementById('v-sc').textContent=finalScore;
     document.getElementById('v-sub').textContent=diffTxt;
-    document.getElementById('v-revealed').textContent=GP.answerIdx;
-    document.getElementById('v-revealed-lbl').textContent='réponses données';
-    document.getElementById('v-wrong').textContent=GP.wrongTotal;
-    document.querySelector('#v-wrong').nextElementSibling.textContent='erreurs';
-    show('sv'); confetti();
+    show('sv');
+    if(finalScore>0) confetti();
     submitScore(finalScore);
   },1000);
 }
