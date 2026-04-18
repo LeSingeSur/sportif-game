@@ -309,37 +309,36 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="font-size:11px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
         </div>
         <div class="field">
-          <label>⚡ Paramètres de puissance (watts)</label>
+          <label>⚡ Paramètres jeu (cases)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Départ joueur (W)</div><input type="number" id="grimpe-start-w" value="80" min="50" max="400" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Pogacar (W)</div><input type="number" id="grimpe-pogi-w" value="310" min="50" max="500" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Bonus par bonne réponse (W)</div><input type="number" id="grimpe-fast-bonus" value="35" min="10" max="100" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div style="font-size:11px;color:var(--mute);display:flex;align-items:center;line-height:1.4;padding:8px 0">Fixe — seul le temps de réflexion pénalise</div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">⚡ Facteur vitesse (×)</div><input type="number" id="grimpe-time-scale" value="22" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div style="font-size:10px;color:var(--mute);display:flex;align-items:center;line-height:1.4">×20 ≈ 1min · ×10 ≈ 2min · ×30 ≈ 45s</div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Cases/réponse (X)</div><input type="number" id="grimpe-cases-per-answer" value="6" min="1" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Vitesse Pogi (cases/s)</div><input type="number" id="grimpe-pogi-speed" value="1.11" min="0.5" max="3" step="0.01" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Inertie (cases/s max)</div><input type="number" id="grimpe-inertie" value="0.4" min="0" max="2" step="0.05" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono question (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
         </div>
         <div class="field">
-          <label>💥 Paramètres de pénalité</label>
+          <label>💥 Pénalités</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono sans réponse (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Mauvaise réponse 🔴 (reset watts départ)</div><input type="number" id="grimpe-wrong-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800;display:none"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée reset mauvaise (s)</div><input type="number" id="grimpe-wrong-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale (−W)</div><input type="number" id="grimpe-fringale-w" value="100" min="0" max="300" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée fringale (s)</div><input type="number" id="grimpe-fringale-dur" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">😮 Fatigue après (s)</div><input type="number" id="grimpe-fatigue-thresh" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale blocage (s)</div><input type="number" id="grimpe-fringale-block" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison blocage (s)</div><input type="number" id="grimpe-crevaison-block" value="13" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison perte (cases)</div><input type="number" id="grimpe-crevaison-loss" value="5" min="0" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
         </div>
         <div class="field">
-          <label>🚀 Bonus</label>
+          <label>🍬 Gel (boost inertie GM)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🌬️ Aspiration (+W)</div><input type="number" id="grimpe-aspiration-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée aspiration (s)</div><input type="number" id="grimpe-aspiration-dur" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Bonnes d'affilée pour aspiration</div><input type="number" id="grimpe-aspiration-streak" value="4" min="2" max="10" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍬 Gel (+W)</div><input type="number" id="grimpe-gel-w" value="50" min="0" max="200" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Boost gel (cases/s)</div><input type="number" id="grimpe-gel-speed" value="2" min="0.5" max="10" step="0.5" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée gel (s)</div><input type="number" id="grimpe-gel-dur" value="10" min="3" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+          </div>
+          <div style="margin-top:8px">
+            <input type="text" id="grimpe-gel-athlete-id" placeholder="ID joueur (copier depuis classement)" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--c3);background:var(--c2);color:var(--txt);font-size:13px;margin-bottom:6px">
+            <button onclick="const aid=document.getElementById('grimpe-gel-athlete-id').value.trim();if(!aid){alert('Entrez un ID joueur');return;}fetch('/api/grimpe-gel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId:aid,password:adminPw})}).then(r=>r.json()).then(d=>alert(d.ok?'Gel activé !':'Erreur: '+JSON.stringify(d)))" style="width:100%;padding:10px;background:#ffdd00;color:#000;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-size:14px">🍬 Activer GEL maintenant</button>
           </div>
         </div>
         <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.7">
-          🚴 <strong style="color:var(--txt)">Physique :</strong> 10km · Pente 1→10% · Score = écart de temps avec Pogacar
+          🚴 <strong style="color:var(--txt)">Mécanique :</strong> 100 cases · Pente 1→10% · X×(1-pente/20) cases/réponse · Aspiration +1/streak · Pogi=1.11 cases/s (90s) · Score = cases parcourues
         </div>
       </div>
 
@@ -1823,14 +1822,16 @@ document.getElementById('btn-save').onclick=async()=>{
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
   const grimpeParams = currentType==='grimpe'?{
-    startW:grimpeParam('grimpe-start-w',300), pogiW:grimpeParam('grimpe-pogi-w',290),
-    fastBonus:grimpeParam('grimpe-fast-bonus',35),
-    timeScale:grimpeParam('grimpe-time-scale',20),
-    timer:grimpeParam('grimpe-timer',25),
-    wrongW:grimpeParam('grimpe-wrong-w',100), wrongDur:grimpeParam('grimpe-wrong-dur',10),
-    fringaleW:grimpeParam('grimpe-fringale-w',100), fringaleDur:grimpeParam('grimpe-fringale-dur',30),
-    aspirationW:grimpeParam('grimpe-aspiration-w',50), aspirationDur:grimpeParam('grimpe-aspiration-dur',10),
-    aspirationStreak:grimpeParam('grimpe-aspiration-streak',4), gelW:grimpeParam('grimpe-gel-w',50)
+    casesPerAnswer: parseFloat(document.getElementById('grimpe-cases-per-answer')?.value)||6,
+    pogiSpeed:      parseFloat(document.getElementById('grimpe-pogi-speed')?.value)||1.11,
+    inertie:        parseFloat(document.getElementById('grimpe-inertie')?.value)||0.4,
+    timer:          grimpeParam('grimpe-timer',25),
+    fatigueThresh:  grimpeParam('grimpe-fatigue-thresh',30),
+    fringale_block: grimpeParam('grimpe-fringale-block',10),
+    crevaison_block:grimpeParam('grimpe-crevaison-block',20),
+    crevaison_loss: grimpeParam('grimpe-crevaison-loss',5),
+    gelSpeed:       parseFloat(document.getElementById('grimpe-gel-speed')?.value)||2,
+    gelDur:         grimpeParam('grimpe-gel-dur',10),
   }:{};
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;

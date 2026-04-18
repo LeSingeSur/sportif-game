@@ -1546,433 +1546,334 @@ function finishBJ(finalScore, msg){
 
 // ── LA GRIMPÉE MODE ───────────────────────────────────────────────────────
 const GP = {
-  watts:0, startWatts:300, pogiWatts:290, params:{},
-  dist:0, pogiDist:0, totalAnswers:10,
-  totalDist:10000,
+  cases:0, pogiCases:0,
   done:false, wrongTotal:0, wrongStreak:0, goodStreak:0,
-  malus:0, noAnswerMalus:false, aspiration:false,
-  fringale:false, hadFringale:false, hadCrevaison:false,
-  found:[], fringaleTimer:null, aspirationTimer:null,
-  timerInt:null, physicsInt:null,
-  questionStart:0, startTime:0, pogiRefTime:120, pogiFinishTime:null,
-  theme:'',
+  fatigue:false, errPenalty:false, blockedUntil:0, lastAnswerT:0,
+  gelActive:false, gelEnd:0,
+  found:[], timerInt:null, physicsInt:null,
+  startTime:0, questionStart:null, theme:'', totalAnswers:10,
+  params:{},
 };
 
-// Pente par km (1% à 10%)
-function grimpeGrade(dist){ // dist en mètres
-  const km = Math.floor(dist/1000);
-  return Math.min(km+1, 10); // pente = numéro du km (1%..10%)
-}
+function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
+function grimpeSlopeFactor(c){ return 1 - grimpeSection(c)/20; }
 
-// Vitesse réelle (m/s) depuis watts et pente
-// Formule simplifiée : v = W / (m*g*sin(θ) + Crr*m*g + 0.5*Cd*A*ρ*v²)
-// On itère 1 fois pour approximer
-function grimpeSpeed(watts, gradePct){
-  // Physics: P = (F_grav + F_roll + F_aero) * v
-  // F_grav = m*g*sin(θ) ≈ m*g*grade
-  // F_roll = Crr*m*g*cos(θ) ≈ Crr*m*g
-  // F_aero = 0.5*CdA*rho*v²
-  // P = (m*g*grade + Crr*m*g + 0.5*CdA*rho*v²) * v
-  // Solve iteratively
-  const m=75, g=9.81, Crr=0.004, CdA=0.35, rho=1.2;
-  const grade=gradePct/100;
-  const F_const = m*g*grade + Crr*m*g; // constant forces
-  if(watts<=0) return 0;
-  // Newton-Raphson iteration: f(v) = (F_const + 0.5*CdA*rho*v²)*v - P = 0
-  let v = Math.pow(watts / (0.5*CdA*rho), 1/3); // initial guess (aero dominated)
-  for(let i=0;i<20;i++){
-    const F_aero = 0.5*CdA*rho*v*v;
-    const fv = (F_const + F_aero)*v - watts;
-    const dfv = F_const + 3*0.5*CdA*rho*v*v;
-    const dv = fv/dfv;
-    v = Math.max(0, v - dv);
-    if(Math.abs(dv) < 0.001) break;
-  }
-  return Math.max(0, v); // m/s
-}
-
-// Draw mountain profile on canvas
 function grimpeDrawProfile(){
-  const canvas = document.getElementById('grimpe-canvas');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth; const H = canvas.offsetHeight;
-  canvas.width = W; canvas.height = H;
+  const cv=document.getElementById('grimpe-profile');
+  if(!cv)return;
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  // Draw gradient mountain
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  let x=0;
-  for(let km=0;km<=10;km++){
-    const px = (km/10)*W;
-    // Height increases with km (more pente = higher)
-    const totalHeight = Array.from({length:km},(_,i)=>i+1).reduce((a,b)=>a+b,0)/55; // normalized 0-1
-    const py = H - totalHeight * H * 0.85;
-    if(km===0) ctx.moveTo(px,H);
-    ctx.lineTo(px, py);
+  const grad=ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#1a2a1a'); grad.addColorStop(1,'#0a0a0a');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  for(let s=1;s<=10;s++){
+    const x=(s-1)/10*W;
+    if(s%2===0){ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(x,0,W/10,H);}
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px monospace';ctx.fillText(s+'%',x+2,H-4);
   }
-  ctx.lineTo(W, H);
-  ctx.closePath();
-  const grad = ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'rgba(212,255,0,.25)');
-  grad.addColorStop(1,'rgba(212,255,0,.05)');
-  ctx.fillStyle=grad;
-  ctx.fill();
-  ctx.strokeStyle='rgba(212,255,0,.4)';
-  ctx.lineWidth=2;
-  ctx.stroke();
-}
-
-// Get Y position on profile for a given distance
-function grimpeProfileY(dist, canvasH){
-  const km = dist/1000;
-  const totalHeight = Array.from({length:Math.floor(km)},(_,i)=>i+1).reduce((a,b)=>a+b,0)/55;
-  const frac = (km - Math.floor(km));
-  const nextH = Array.from({length:Math.ceil(km)},(_,i)=>i+1).reduce((a,b)=>a+b,0)/55;
-  const h = totalHeight + (nextH-totalHeight)*frac;
-  return canvasH - h * canvasH * 0.85 - 22;
+  // Ligne montée
+  ctx.beginPath();ctx.strokeStyle='#334';ctx.lineWidth=1;
+  ctx.moveTo(0,H-10);ctx.lineTo(W,10);ctx.stroke();
+  // Ligne joueur
+  const px=GP.cases/100*W;
+  ctx.strokeStyle='#00ff88';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H);ctx.stroke();
+  ctx.setLineDash([]);
+  // Ligne pogi
+  const ppx=GP.pogiCases/100*W;
+  ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(ppx,0);ctx.lineTo(ppx,H);ctx.stroke();
+  ctx.setLineDash([]);
 }
 
 function grimpeUpdateRiders(){
-  const profile = document.getElementById('grimpe-profile');
-  if(!profile) return;
-  const W = profile.offsetWidth; const H = profile.offsetHeight;
-  const riderX = Math.min((GP.dist/GP.totalDist)*W - 12, W-30);
-  const pogiX  = Math.min((GP.pogiDist/GP.totalDist)*W - 12, W-30);
-  const riderY = grimpeProfileY(GP.dist, H);
-  const pogiY  = grimpeProfileY(GP.pogiDist, H);
-  document.getElementById('grimpe-rider').style.left = Math.max(4, riderX)+'px';
-  document.getElementById('grimpe-rider').style.bottom = Math.max(4, H - riderY - H*0.1)+'px';
-  document.getElementById('grimpe-pogi').style.left = Math.max(4, pogiX-4)+'px';
-  document.getElementById('grimpe-pogi').style.bottom = Math.max(4, H - pogiY - H*0.1)+'px';
+  const cv=document.getElementById('grimpe-profile');
+  if(!cv)return;
+  const W=cv.width,H=cv.height;
+  const riderEl=document.getElementById('grimpe-rider');
+  const pogiEl=document.getElementById('grimpe-pogi');
+  if(riderEl){riderEl.style.left=Math.min(GP.cases/100*(W-24),W-30)+'px';riderEl.style.bottom=(10+GP.cases/100*(H-20))+'px';}
+  if(pogiEl){pogiEl.style.left=Math.min(GP.pogiCases/100*(W-24),W-30)+'px';pogiEl.style.bottom=(10+GP.pogiCases/100*(H-20))+'px';}
 }
 
 function grimpeUpdateDisplay(){
-  const grade = grimpeGrade(GP.dist);
-  const effectiveWatts = Math.max(0, GP.watts + (GP.malus||0) + (GP.aspiration?(GP.params.aspirationW||50):0));
-  const spd = grimpeSpeed(effectiveWatts, grade);
-  const spdKmh = (spd * 3.6).toFixed(1);
-
-  // Speed BIG
-  const kmhEl = document.getElementById('grimpe-kmh');
-  kmhEl.textContent = spdKmh;
-  kmhEl.style.color = effectiveWatts < 100 ? 'var(--red)' : effectiveWatts < 200 ? 'var(--orange)' : 'var(--neon)';
-
-  // Watts small
-  const wEl = document.getElementById('grimpe-watts');
-  wEl.textContent = effectiveWatts + 'W';
-  wEl.style.color = effectiveWatts < 100 ? 'var(--red)' : effectiveWatts < 200 ? 'var(--orange)' : 'var(--txt)';
-
-  document.getElementById('grimpe-km-txt').textContent = `Km ${(GP.dist/1000).toFixed(1)} / 10`;
-  document.getElementById('grimpe-pente-txt').textContent = `${grade}%`;
-
-  // Gap with Pogi
-  const gap = GP.pogiDist - GP.dist;
-  const gapEl = document.getElementById('grimpe-pogi-gap');
-  if(GP.dist >= GP.totalDist){
-    gapEl.textContent='';
-  } else if(gap > 0){
-    gapEl.textContent = `Pogi +${(gap/1000).toFixed(2)}km`;
-    gapEl.style.color='var(--red)';
-  } else {
-    gapEl.textContent = `Tu menes +${(Math.abs(gap)/1000).toFixed(2)}km`;
-    gapEl.style.color='var(--neon)';
+  const pr=GP.params;
+  const sf=grimpeSlopeFactor(GP.cases);
+  const s=grimpeSection(GP.cases);
+  const X=pr.casesPerAnswer||6;
+  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
+  const gelBonus=gelOn?(pr.gelSpeed||2):0;
+  const inertia=(GP.cases/100)*(pr.inertie||0.4)*sf+gelBonus;
+  const nextGain=GP.fatigue?1:Math.max(1,Math.round(X*sf+GP.goodStreak+(GP.errPenalty?-2:0)));
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){
+    statusEl.textContent=gelOn?'🍬 GEL ACTIF !':GP.fatigue?'😮 Fatigué':'🚴 En course';
+    statusEl.style.color=gelOn?'#ffdd00':GP.fatigue?'var(--orange)':'var(--neon)';
   }
-
-  // Live bonus preview based on elapsed time
-  if(GP.questionStart && !GP.done && GP.found.length > 0){
-    const previewEl=document.getElementById('grimpe-bonus-preview');
-    if(previewEl) previewEl.textContent=`+${GP.params.fastBonus||35}W si tu reponds maintenant`;
+  const kmEl=document.getElementById('grimpe-km-txt');
+  if(kmEl)kmEl.textContent='Section '+s+'/10 — Pente '+s+'%';
+  const wEl=document.getElementById('grimpe-w');
+  if(wEl){wEl.textContent=Math.round(GP.cases)+' cases';wEl.style.color=GP.cases>70?'var(--neon)':GP.cases>40?'var(--orange)':'var(--txt)';}
+  const kmhEl=document.getElementById('grimpe-kmh');
+  if(kmhEl){kmhEl.textContent=(inertia*10).toFixed(1)+' c/s';kmhEl.style.color=inertia>0.3?'var(--neon)':'var(--mute)';}
+  const gapEl=document.getElementById('grimpe-gap');
+  if(gapEl){
+    const gap=GP.pogiCases-GP.cases;
+    gapEl.textContent=gap>0?'Pogi +'+gap.toFixed(0)+' cases':gap<0?'Tu mènes +'+Math.abs(gap).toFixed(0):'Roue dans roue';
+    gapEl.style.color=gap>20?'var(--red)':gap>0?'var(--orange)':'var(--neon)';
   }
+  const previewEl=document.getElementById('grimpe-bonus-preview');
+  if(previewEl&&GP.questionStart)previewEl.textContent='Prochaine bonne reponse: +'+nextGain+' cases'+(GP.goodStreak>1?' asp+'+GP.goodStreak:'');
+  grimpeDrawProfile();
+  grimpeUpdateRiders();
 }
 
 function setupGrimpeMode(data){
-  const badge=document.getElementById('type-badge');
-  badge.textContent="🚴 Alpe d'Huez"; badge.className='type-badge'; badge.style.color='#d4ff00';
-  document.getElementById('game-tip').innerHTML='Reponds vite · Maintiens ta puissance · Bats Pogacar !';
-  hideAllZones();
-  document.getElementById('grimpe-zone').style.display='flex';
-
   const p=data.grimpeParams||{};
-  GP.watts      = 0;
-  GP.startWatts = p.startW||60;
-  GP.pogiWatts  = p.pogiW||310;
-  GP.params    = {fastBonus:p.fastBonus||25,
-    wrongW:p.wrongW||100, wrongDur:p.wrongDur||10,
-    fringaleW:p.fringaleW||100, fringaleDur:p.fringaleDur||30,
-    aspirationW:p.aspirationW||0.5, aspirationDur:p.aspirationDur||10,
-    aspirationStreak:p.aspirationStreak||4, gelW:p.gelW||50, timeScale:p.timeScale||22};
-  GP.totalAnswers=data.grimpeAnswers||10;
-  GP.dist=0; GP.pogiDist=0;
+  GP.params={
+    casesPerAnswer: p.casesPerAnswer||6,
+    inertie:        p.inertie||0.4,
+    pogiSpeed:      p.pogiSpeed||(100/90),
+    timerSec:       p.timer||25,
+    fatigueThresh:  p.fatigueThresh||30,
+    gelSpeed:       p.gelSpeed||2,
+    gelDur:         p.gelDur||10,
+    crevaison_block:p.crevaison_block||13,
+    crevaison_loss: p.crevaison_loss||5,
+    fringale_block: p.fringale_block||10,
+  };
+  GP.cases=0; GP.pogiCases=0;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
-  GP.malus=0; GP.noAnswerMalus=false; GP.aspiration=false;
-  GP.hadFringale=false; GP.hadCrevaison=false; GP.found=[];
-  GP.theme=data.grimpeTheme||'';
-  GP.startTime=Date.now(); GP.pogiFinishTime=null;
-  GP.pogiRefTime=grimpeSimulatePogiTime(GP.totalAnswers,GP.pogiWatts,GP.params.fastBonus,GP.params.timeScale||22);
-
+  GP.fatigue=false; GP.errPenalty=false; GP.blockedUntil=0; GP.lastAnswerT=0;
+  GP.gelActive=false; GP.gelEnd=0;
+  GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
+  GP.epoCount=0; GP.epoUsed=false;
+  GP.startTime=Date.now(); GP.questionStart=null;
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
-  if(GP.fringaleTimer){clearTimeout(GP.fringaleTimer);GP.fringaleTimer=null;}
-  if(GP.aspirationTimer){clearTimeout(GP.aspirationTimer);GP.aspirationTimer=null;}
-
-  G.score=0; G.max=100; setScore(0,false);
-  G.athleteName="L'Alpe d'Huez";
-
-  document.getElementById('grimpe-theme').textContent=GP.theme;
-  document.getElementById('grimpe-status').textContent='';
-  document.getElementById('grimpe-streak').textContent='';
-  document.getElementById('grimpe-fb').textContent='';
-  document.getElementById('grimpe-in').value='';
+  const badge=document.getElementById('type-badge');
+  if(badge)badge.textContent="L'Alpe d’Huez";
   document.getElementById('grimpe-in').disabled=false;
   document.getElementById('grimpe-chk').disabled=false;
   document.getElementById('grimpe-pogi').textContent='🚵';
-  document.getElementById('grimpe-rider').textContent='\uD83D\uDEB4';
-
+  document.getElementById('grimpe-rider').textContent='🚴';
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){statusEl.textContent='🚴 En course';statusEl.style.color='var(--neon)';}
+  document.getElementById('grimpe-streak').textContent='';
+  document.getElementById('grimpe-fb').textContent='';
   setTimeout(()=>grimpeDrawProfile(),50);
-  setTimeout(()=>grimpeUpdateRiders(),100);
-
   document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
   document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
-  // Start question timer on first keystroke
-  document.getElementById('grimpe-in').oninput=e=>{
-    const inp=e.target;
-    if(!inp._typingStarted && inp.value.length>0){
-      inp._typingStarted=true;
-      GP.questionStart=Date.now();
-    }
-  };
-
-  GP.physicsInt=setInterval(grimpePhysicsTick,500);
+  document.getElementById('grimpe-in').oninput=e=>{if(!GP.questionStart&&e.target.value.length>0)GP.questionStart=Date.now();};
+  GP.physicsInt=setInterval(grimpePhysicsTick,100);
   grimpeStartQuestionTimer();
-  setTimeout(()=>document.getElementById('grimpe-in').focus(),80);
-}
-
-function grimpeSimulatePogiTime(nAnswers, pogiW, fastBonus, timeScale){
-  pogiW=pogiW||180; timeScale=timeScale||22;
-  const dt=0.5*timeScale;
-  let w=0,dist=0,realT=0;
-  while(dist<10000 && realT<300){
-    dist+=grimpeSpeed(Math.min(w,500),grimpeGrade(dist))*dt; realT+=0.5;
-    if(w===0 && realT>=3) w=pogiW; // Pogi démarre à 3s, watts fixes, pas de bonus
-  }
-  return realT;
 }
 
 function grimpePhysicsTick(){
-  if(GP.done) return;
-  const TIME_SCALE = GP.params.timeScale||22;
-  const dt = 0.5 * TIME_SCALE;
-  const grade=grimpeGrade(GP.dist);
-  const pogiEff=Math.min(GP.pogiWatts, 500);
-  const pogiSpd=grimpeSpeed(pogiEff, grimpeGrade(GP.pogiDist));
-  const effectiveWatts=Math.max(0, GP.watts + (GP.malus||0));
-  // Fatigue: -5W/s après 10s sans réponse (plancher startWatts)
-  const fatigueSecs=GP.params.fatigueSecs||10;
-  const fatigueW=GP.params.fatigueW||5;
-  let fatigueMalus=0;
-  if(GP.lastAnswerTime && GP.found.length>0){
-    const silence=(Date.now()-GP.lastAnswerTime)/1000;
-    if(silence>fatigueSecs){
-      fatigueMalus=Math.min(effectiveWatts-GP.startWatts, fatigueW*(silence-fatigueSecs));
-    }
-  }
-  const finalWatts=Math.max(GP.startWatts, effectiveWatts-fatigueMalus);
-  const spd=grimpeSpeed(Math.min(finalWatts,500), grade);
-
-  GP.dist = Math.min(GP.dist + spd*dt, GP.totalDist);
-  GP.pogiDist = Math.min(GP.pogiDist + pogiSpd*dt, GP.totalDist);
-
+  if(GP.done)return;
+  const dt=0.1;
+  const pr=GP.params;
+  const sf=grimpeSlopeFactor(GP.cases);
+  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
+  const gelBonus=gelOn?(pr.gelSpeed||2)*dt:0;
+  GP.cases=Math.min(100,GP.cases+(GP.cases/100)*(pr.inertie||0.4)*sf*dt+gelBonus);
+  GP.pogiCases=Math.min(100,GP.pogiCases+(pr.pogiSpeed||(100/90))*dt);
   grimpeUpdateDisplay();
-  grimpeUpdateRiders();
+  grimpeGelPoll();
+  if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
+  if(GP.pogiCases>=100&&!GP.done){grimpeFinish();}
+}
 
-  if(GP.dist >= GP.totalDist && !GP.done){ grimpeFinish(true); return; }
-  if(GP.pogiDist >= GP.totalDist && !GP.done){
-    // Pogi finished — game ends now, score based on player distance
-    grimpeFinish(true);
-  }
+// Poll gel every 2s
+let _grimpeGelPollT=0;
+function grimpeGelPoll(){
+  if(GP.done||!G.athleteId)return;
+  const now=Date.now();
+  if(now-_grimpeGelPollT<2000)return;
+  _grimpeGelPollT=now;
+  fetch('/api/grimpe-gel?athleteId='+G.athleteId).then(r=>r.json()).then(d=>{
+    if(d.active&&!GP.gelActive){grimpeActivateGel();}
+  }).catch(()=>{});
 }
 
 function grimpeStartQuestionTimer(){
-  const timerSec=GP.params&&GP.params.timer?GP.params.timer:25;
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  const timerSec=GP.params.timerSec||25;
   let t=timerSec;
   const fill=document.getElementById('grimpe-timer-fill');
-  fill.style.transition='none'; fill.style.width='100%';
+  if(fill){fill.style.transition='none';fill.style.width='100%';}
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    fill.style.transition='width '+timerSec+'s linear';
-    fill.style.width='0%';
+    if(fill)fill.style.transition='width '+timerSec+'s linear';
+    setTimeout(()=>{if(fill)fill.style.width='0%';},50);
   }));
-  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   GP.timerInt=setInterval(()=>{
     t--;
     if(t<=0){
       clearInterval(GP.timerInt);GP.timerInt=null;
-      GP.goodStreak=0;
-      // Fatigue: -30W permanent si pas de réponse
-      if(GP.found.length>0){ // pas sur la 1ère question
-        GP.watts=Math.max(GP.startWatts, GP.watts-30);
+      GP.goodStreak=0; GP.questionStart=null;
+      const elapsed=(Date.now()-GP.startTime)/1000-GP.lastAnswerT;
+      if(GP.lastAnswerT>0&&elapsed>=(GP.params.fatigueThresh||30)){
+        GP.fatigue=true;
         const fb=document.getElementById('grimpe-fb');
-        fb.textContent='😮‍💨 Fatigué ! −30W définitifs'; fb.style.color='var(--orange)';
-        setTimeout(()=>{fb.textContent='';},1500);
+        fb.textContent='😮 Fatigue ! Prochaine = 1 case';fb.style.color='var(--orange)';
+        setTimeout(()=>{fb.textContent='';},2000);
       }
       grimpeStartQuestionTimer();
     }
   },1000);
-  GP.questionStart=null; // will be set on first keystroke
-}
-
-function grimpeNextQuestion(){
-  if(GP.done) return;
-  const inp=document.getElementById('grimpe-in');
-  inp.value='';
-  inp.disabled=false;
-  document.getElementById('grimpe-chk').disabled=false;
-  document.getElementById('grimpe-bonus-preview').textContent='+'+( GP.params.fastBonus||40)+'W si tu reponds maintenant';
-  // Reset keystroke listener
-  inp._typingStarted=false;
-  setTimeout(()=>inp.focus(),50);
-  grimpeStartQuestionTimer();
 }
 
 async function submitGrimpeAnswer(){
-  if(GP.done) return;
-  const ans=document.getElementById('grimpe-in').value.trim();
-  if(!ans) return;
-  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
-  // elapsed depuis premier keystroke (pas depuis affichage question)
-  const elapsed = GP.questionStart ? (Date.now()-GP.questionStart)/1000 : 999;
-  const fb=document.getElementById('grimpe-fb');
-  document.getElementById('grimpe-in').value='';
+  if(GP.done)return;
+  const now=Date.now();
+  if(now<GP.blockedUntil)return;
+  const inp=document.getElementById('grimpe-in');
+  const ans=inp.value.trim();
+  if(!ans)return;
 
+  // EPO / Transfusion
+  const ansUp=ans.toUpperCase();
+  if(ansUp==='EPO'||ansUp==='TRANSFUSION'){
+    inp.value=''; GP.questionStart=null;
+    const fb=document.getElementById('grimpe-fb');
+    if(GP.epoCount>=2){ fb.textContent='🚫 Déjà au max de produits !'; fb.style.color='var(--red)'; setTimeout(()=>{fb.textContent='';},1500); grimpeStartQuestionTimer(); return; }
+    GP.epoCount++;
+    GP.cases=Math.min(100, GP.cases+10);
+    const risk=GP.epoCount===1?50:80;
+    const name=GP.epoCount===1?'💉 EPO':'🩸 Transfusion';
+    fb.textContent=name+' +10 cases ! Risque contrôle: '+risk+'%'; fb.style.color='#ff4444';
+    document.getElementById('grimpe-streak').textContent='🧪 Produit pris ×'+GP.epoCount+' — Risque '+risk+'%';
+    setTimeout(()=>{fb.textContent='';},2500);
+    grimpeStartQuestionTimer();
+    return;
+  }
+  if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+  const fb=document.getElementById('grimpe-fb');
+  inp.value=''; GP.questionStart=null;
   const res=await fetch('/api/grimpe-check',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({athleteId:G.athleteId,answer:ans,found:GP.found})});
   const data=await res.json();
   const pr=GP.params;
-
   if(data.correct){
-    GP.wrongStreak=0; GP.goodStreak++;
-    GP.found.push(ans);
-
-    // First answer: launch to startWatts, NO time bonus
-    if(GP.found.length===1){
-      GP.watts=GP.startWatts;
-      fb.textContent='🚴 C\'est parti ! '+GP.startWatts+'W'; fb.style.color='var(--neon)';
-      setTimeout(()=>{fb.textContent='';},1000);
-      grimpeStartQuestionTimer();
-      return;
-    }
-
-    const fixedBonus = pr.fastBonus||25;
-    const aspPerStreak = pr.aspirationW||10; // +10W par réponse consécutive
-    const aspCap = pr.aspirationCap||50;    // cap à +50W max
-    const aspBonus = Math.min(GP.goodStreak * aspPerStreak, aspCap);
-    const bonus = fixedBonus + aspBonus;
-    GP.lastAnswerTime = Date.now();
-    if(aspBonus>0){
-      document.getElementById('grimpe-streak').textContent=`🌬️ Série ×${GP.goodStreak} +${aspBonus}W`;
-    } else {
-      document.getElementById('grimpe-streak').textContent='';
-    }
-    GP.watts=Math.min(GP.watts+bonus,500);
-
-    // Gel après fringale/crevaison
-    if((GP.hadFringale||GP.hadCrevaison)&&GP.goodStreak>=2){
-      GP.watts=Math.min(GP.watts+(pr.gelW||50),500);
-      GP.hadFringale=false; GP.hadCrevaison=false;
-      fb.textContent='🍬 GEL +'+(pr.gelW||50)+'W !'+(bonus>0?' +'+bonus+'W':''); fb.style.color='var(--neon)';
-    } else {
-      fb.textContent=bonus>0?'✅ +'+bonus+'W !':'✅ Bonne réponse'; fb.style.color='var(--neon)';
-    }
+    GP.found.push(data.answer||ans);
+    const sf=grimpeSlopeFactor(GP.cases);
+    const X=pr.casesPerAnswer||6;
+    let gained;
+    if(GP.fatigue){gained=1;GP.fatigue=false;}
+    else{const base=X*sf;gained=Math.max(1,Math.round(base+GP.goodStreak+(GP.errPenalty?-2:0)));}
+    GP.cases=Math.min(100,GP.cases+gained);
+    GP.goodStreak++;GP.errPenalty=false;GP.wrongStreak=0;
+    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
+    const aspTxt=GP.goodStreak>1?' 🌬️x'+GP.goodStreak:'';
+    fb.textContent='✅ +'+gained+' cases !'+aspTxt;fb.style.color='var(--neon)';
+    document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Serie x'+GP.goodStreak:'';
     setTimeout(()=>{fb.textContent='';},1000);
-
-    // All answers found?
     if(GP.found.length>=GP.totalAnswers){
-      document.getElementById('grimpe-in').disabled=true;
-      document.getElementById('grimpe-chk').disabled=true;
-      fb.textContent='🏁 Toutes les réponses trouvées !'; fb.style.color='var(--neon)';
+      inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
+      fb.textContent='🏁 Toutes les reponses trouvees !';fb.style.color='var(--neon)';
       return;
     }
     grimpeStartQuestionTimer();
-
   } else if(data.reason==='already'){
-    fb.textContent='Déjà trouvé !'; fb.style.color='var(--orange)';
+    fb.textContent='Deja trouve !';fb.style.color='var(--orange)';
     setTimeout(()=>{fb.textContent='';},1000);
     grimpeStartQuestionTimer();
   } else {
-    GP.wrongTotal++; GP.wrongStreak++; GP.goodStreak=0;
-    document.getElementById('grimpe-in').value='';
-
-    // 💥 3 mauvaises → Chute → 0W pour le reste du jeu
+    GP.wrongTotal++;GP.wrongStreak++;GP.goodStreak=0;
+    document.getElementById('grimpe-streak').textContent='';
+    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
     if(GP.wrongTotal>=3){
-      GP.watts=0; GP.malus=0;
-      fb.textContent='💥 CHUTE ! Tu finis à pied...'; fb.style.color='var(--red)';
-      document.getElementById('grimpe-streak').textContent='💥 Chute — 0W jusqu\'à la fin';
-      setTimeout(()=>{fb.textContent='';},2000);
-      grimpeStartQuestionTimer(); return;
+      fb.textContent='💥 CHUTE ! 0 points.';fb.style.color='var(--red)';
+      setTimeout(()=>grimpeFinish('chute'),1500);
+      return;
     }
-
-    // 🔧 2 mauvaises d'affilée → Crevaison → retour à sw (perte de tout l'élan)
     if(GP.wrongStreak>=2){
-      GP.watts=GP.startWatts; GP.malus=0; GP.wrongStreak=0;
-      fb.textContent='🔧 CREVAISON ! Retour à '+GP.startWatts+'W !'; fb.style.color='var(--red)';
-      document.getElementById('grimpe-streak').textContent='🔧 Crevaison — élan perdu';
-      setTimeout(()=>{fb.textContent='';document.getElementById('grimpe-streak').textContent='';},2500);
-      grimpeStartQuestionTimer(); return;
+      const loss=pr.crevaison_loss||5;const block=pr.crevaison_block||20;
+      GP.cases=Math.max(0,GP.cases-loss);
+      GP.blockedUntil=Date.now()+block*1000;
+      GP.wrongStreak=0;GP.errPenalty=false;
+      fb.textContent='🔧 CREVAISON ! -'+loss+' cases, bloque '+block+'s !';fb.style.color='var(--red)';
+      document.getElementById('grimpe-streak').textContent='🔧 Bloque '+block+'s...';
+      setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
+      return;
     }
-
-    // 🍌 2 mauvaises dans le jeu (pas d'affilée) → Fringale −100W permanent
     if(GP.wrongTotal===2){
-      GP.watts=Math.max(GP.startWatts, GP.watts-100);
-      fb.textContent='🍌 FRINGALE ! −100W définitifs !'; fb.style.color='var(--orange)';
-      document.getElementById('grimpe-streak').textContent='🍌 Fringale — −100W permanents';
-      setTimeout(()=>{fb.textContent='';document.getElementById('grimpe-streak').textContent='';},2500);
-      grimpeStartQuestionTimer(); return;
+      const block=pr.fringale_block||10;
+      GP.blockedUntil=Date.now()+block*1000;GP.errPenalty=true;
+      fb.textContent='🍌 FRINGALE ! Bloque '+block+'s + prochaine -2 cases !';fb.style.color='var(--orange)';
+      document.getElementById('grimpe-streak').textContent='🍌 Fringale — bloque '+block+'s';
+      setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
+      return;
     }
-
-    // 1 mauvaise → −50W permanent
-    GP.watts=Math.max(GP.startWatts, GP.watts-50);
-    fb.textContent='❌ −50W définitifs !'; fb.style.color='var(--red)';
+    GP.errPenalty=true;
+    fb.textContent='❌ Prochaine bonne reponse : -2 cases';fb.style.color='var(--red)';
     setTimeout(()=>{fb.textContent='';},1500);
     grimpeStartQuestionTimer();
   }
 }
 
-function grimpeFinish(completed, reason){
-  if(GP.done) return;
+function grimpeActivateGel(){
+  if(GP.done)return;
+  const pr=GP.params;
+  GP.gelActive=true;GP.gelEnd=Date.now()+(pr.gelDur||10)*1000;
+  document.getElementById('grimpe-streak').textContent='🍬 GEL ACTIF ! Boost inertie !';
+  const statusEl=document.getElementById('grimpe-status');
+  if(statusEl){statusEl.textContent='🍬 GEL ACTIF !';statusEl.style.color='#ffdd00';}
+  setTimeout(()=>{GP.gelActive=false;document.getElementById('grimpe-streak').textContent='';}, (pr.gelDur||10)*1000);
+}
+
+function grimpeFinish(reason){
+  if(GP.done)return;
   GP.done=true;
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
-  if(GP.fringaleTimer){clearTimeout(GP.fringaleTimer);GP.fringaleTimer=null;}
-  if(GP.aspirationTimer){clearTimeout(GP.aspirationTimer);GP.aspirationTimer=null;}
   G.active=false;
   document.getElementById('grimpe-in').disabled=true;
   document.getElementById('grimpe-chk').disabled=true;
+  const statusEl=document.getElementById('grimpe-status');
 
   if(reason==='chute'){
-    // Géré inline — ne devrait plus arriver ici
+    if(statusEl){statusEl.textContent='💥 CHUTE !';statusEl.style.color='var(--red)';}
+    G.score=0;setScore(0,true);setVictoryIcon('grimpe');
+    setTimeout(()=>{
+      document.getElementById('v-name').textContent="L'Alpe d’Huez";
+      document.getElementById('v-sc').textContent=0;
+      document.getElementById('v-sub').textContent='💥 3 erreurs — tu as chuté !';
+      show('sv');submitScore(0);
+    },1000);
+    return;
   }
 
-  // Score = distance parcourue quand Pogi arrive / 10km * 100
-  const distM=Math.min(GP.dist, GP.totalDist);
-  const finalScore = GP.dist>=GP.totalDist ? 100 : Math.round((distM/GP.totalDist)*100);
-  const km=(distM/1000).toFixed(2);
-  const diffTxt = GP.dist>=GP.totalDist
-    ? '🏆 Arrivé avant Pogacar !'
-    : `📍 ${km} km parcourus sur 10`;
+  const rawScore=Math.min(100,Math.round(GP.cases));
+  const isWin=GP.cases>=100;
+  const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+rawScore+'/100 cases';
 
-  document.getElementById('grimpe-status').textContent=GP.dist>=GP.totalDist?'🏆 Victoire !':'🏁 Pogacar est arrivé !';
-  document.getElementById('grimpe-status').style.color=GP.dist>=GP.totalDist?'var(--neon)':'var(--orange)';
+  if(GP.epoCount>0){
+    if(statusEl){statusEl.textContent='🧪 Contrôle antidopage...';statusEl.style.color='#ffdd00';}
+    setTimeout(()=>{
+      const risk=GP.epoCount===1?50:80;
+      const positive=Math.random()*100<risk;
+      const finalScore=positive?Math.floor(rawScore/2):rawScore;
+      const dopeTxt=positive?'🔴 POSITIF ! Score ÷2 ('+rawScore+'→'+finalScore+')':'🟢 Contrôle négatif — tu passes !';
+      if(statusEl){statusEl.textContent=positive?'🔴 Contrôle POSITIF !':isWin?'🏆 Victoire !':'🏁 Pogacar est arrivé !';statusEl.style.color=positive?'var(--red)':isWin?'var(--neon)':'var(--orange)';}
+      G.score=finalScore;setScore(finalScore,true);setVictoryIcon('grimpe');
+      setTimeout(()=>{
+        document.getElementById('v-name').textContent="L'Alpe d’Huez";
+        document.getElementById('v-sc').textContent=finalScore;
+        document.getElementById('v-sub').textContent=distTxt+' · '+dopeTxt;
+        show('sv');if(finalScore>0)confetti();submitScore(finalScore);
+      },1000);
+    },2500);
+    return;
+  }
 
-  G.score=finalScore;
-  setScore(finalScore,true);
-  setVictoryIcon('grimpe');
+  if(statusEl){statusEl.textContent=isWin?'🏆 Victoire !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':'var(--orange)';}
+  G.score=rawScore;setScore(rawScore,true);setVictoryIcon('grimpe');
   setTimeout(()=>{
-    document.getElementById('v-name').textContent="L'Alpe d'Huez";
-    document.getElementById('v-sc').textContent=finalScore;
-    document.getElementById('v-sub').textContent=diffTxt;
-    show('sv');
-    if(finalScore>0) confetti();
-    submitScore(finalScore);
+    document.getElementById('v-name').textContent="L'Alpe d’Huez";
+    document.getElementById('v-sc').textContent=rawScore;
+    document.getElementById('v-sub').textContent=distTxt;
+    show('sv');if(rawScore>0)confetti();submitScore(rawScore);
   },1000);
 }
 
