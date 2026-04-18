@@ -1653,6 +1653,11 @@ function setupGrimpeMode(data){
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
   const badge=document.getElementById('type-badge');
   if(badge)badge.textContent="L'Alpe d’Huez";
+  hideAllZones();
+  document.getElementById('grimpe-zone').style.display='flex';
+  const themeEl=document.getElementById('grimpe-theme');
+  if(themeEl)themeEl.textContent=GP.theme||'Identifie ces coureurs cyclistes !';
+  const cv=document.getElementById('grimpe-canvas');
   document.getElementById('grimpe-in').disabled=false;
   document.getElementById('grimpe-chk').disabled=false;
   document.getElementById('grimpe-pogi').textContent='🚵';
@@ -1661,7 +1666,7 @@ function setupGrimpeMode(data){
   if(statusEl){statusEl.textContent='🚴 En course';statusEl.style.color='var(--neon)';}
   document.getElementById('grimpe-streak').textContent='';
   document.getElementById('grimpe-fb').textContent='';
-  setTimeout(()=>grimpeDrawProfile(),50);
+  setTimeout(()=>{if(cv){cv.width=cv.offsetWidth||340;cv.height=cv.offsetHeight||110;}grimpeDrawProfile();},100);
   document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
   document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
   document.getElementById('grimpe-in').oninput=e=>{if(!GP.questionStart&&e.target.value.length>0)GP.questionStart=Date.now();};

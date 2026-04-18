@@ -327,14 +327,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           </div>
         </div>
         <div class="field">
-          <label>🍬 Gel (boost inertie GM)</label>
+          <label>🍬 Gel (boost inertie)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Boost gel (cases/s)</div><input type="number" id="grimpe-gel-speed" value="2" min="0.5" max="10" step="0.5" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée gel (s)</div><input type="number" id="grimpe-gel-dur" value="10" min="3" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-          </div>
-          <div style="margin-top:8px">
-            <input type="text" id="grimpe-gel-athlete-id" placeholder="ID joueur (copier depuis classement)" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--c3);background:var(--c2);color:var(--txt);font-size:13px;margin-bottom:6px">
-            <button onclick="const aid=document.getElementById('grimpe-gel-athlete-id').value.trim();if(!aid){alert('Entrez un ID joueur');return;}fetch('/api/grimpe-gel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId:aid,password:adminPw})}).then(r=>r.json()).then(d=>alert(d.ok?'Gel activé !':'Erreur: '+JSON.stringify(d)))" style="width:100%;padding:10px;background:#ffdd00;color:#000;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-size:14px">🍬 Activer GEL maintenant</button>
           </div>
         </div>
         <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.7">
