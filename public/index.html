@@ -663,6 +663,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="chk-btn" id="grimpe-chk">✓</button>
     </div>
     <div class="fb" id="grimpe-fb"></div>
+    <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:100%;padding:12px;background:var(--neon);color:#000;font-family:var(--fh);font-size:15px;font-weight:900;border:none;border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px">🏁 Sprint final — voir mon score</button>
   </div>
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
@@ -1604,7 +1605,7 @@ function grimpeUpdateDisplay(){
   const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
   const gelBonus=gelOn?(pr.gelSpeed||2):0;
   const inertia=(GP.cases/100)*(pr.inertie||0.4)*sf+gelBonus;
-  const nextGain=GP.fatigue?1:Math.max(1,Math.round(X*sf+GP.goodStreak+(GP.errPenalty?-2:0)));
+  const nextGain=GP.fatigue?1:Math.max(1,Math.round(X*sf+GP.goodStreak));
   const statusEl=document.getElementById('grimpe-status');
   if(statusEl){
     statusEl.textContent=gelOn?'🍬 GEL ACTIF !':GP.fatigue?'😮 Fatigué':'🚴 En course';
@@ -1631,7 +1632,7 @@ function grimpeUpdateDisplay(){
 function setupGrimpeMode(data){
   const p=data.grimpeParams||{};
   GP.params={
-    casesPerAnswer: p.casesPerAnswer||6,
+    casesPerAnswer: p.casesPerAnswer||7,
     inertie:        p.inertie||0.4,
     pogiSpeed:      p.pogiSpeed||(100/90),
     timerSec:       p.timer||25,
@@ -1639,13 +1640,14 @@ function setupGrimpeMode(data){
     gelSpeed:       p.gelSpeed||2,
     gelDur:         p.gelDur||10,
     crevaison_block:p.crevaison_block||13,
-    crevaison_loss: p.crevaison_loss||5,
+    crevaison_loss: p.crevaison_loss||0,
     fringale_block: p.fringale_block||10,
   };
   GP.cases=0; GP.pogiCases=0;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
-  GP.fatigue=false; GP.errPenalty=false; GP.blockedUntil=0; GP.lastAnswerT=0;
+  GP.fatigue=false;  GP.blockedUntil=0; GP.lastAnswerT=0;
   GP.gelActive=false; GP.gelEnd=0;
+  GP.inertiaSlowUntil=0;
   GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
   GP.epoCount=0; GP.epoUsed=false;
   GP.startTime=Date.now(); GP.questionStart=null;
@@ -1666,6 +1668,8 @@ function setupGrimpeMode(data){
   if(statusEl){statusEl.textContent='🚴 En course';statusEl.style.color='var(--neon)';}
   document.getElementById('grimpe-streak').textContent='';
   document.getElementById('grimpe-fb').textContent='';
+  const sprintBtn=document.getElementById('grimpe-sprint-btn');
+  if(sprintBtn)sprintBtn.style.display='none';
   setTimeout(()=>{if(cv){cv.width=cv.offsetWidth||340;cv.height=cv.offsetHeight||110;}grimpeDrawProfile();},100);
   document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
   document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
@@ -1681,7 +1685,8 @@ function grimpePhysicsTick(){
   const sf=grimpeSlopeFactor(GP.cases);
   const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
   const gelBonus=gelOn?(pr.gelSpeed||2)*dt:0;
-  GP.cases=Math.min(100,GP.cases+(GP.cases/100)*(pr.inertie||0.4)*sf*dt+gelBonus);
+  const slowDown=GP.inertiaSlowUntil&&Date.now()<GP.inertiaSlowUntil?0.3:1;
+  GP.cases=Math.min(100,GP.cases+(GP.cases/100)*(pr.inertie||0.4)*sf*slowDown*dt+gelBonus);
   GP.pogiCases=Math.min(100,GP.pogiCases+(pr.pogiSpeed||(100/90))*dt);
   grimpeUpdateDisplay();
   grimpeGelPoll();
@@ -1765,9 +1770,9 @@ async function submitGrimpeAnswer(){
     const X=pr.casesPerAnswer||6;
     let gained;
     if(GP.fatigue){gained=1;GP.fatigue=false;}
-    else{const base=X*sf;gained=Math.max(1,Math.round(base+GP.goodStreak+(GP.errPenalty?-2:0)));}
+    else{const base=X*sf;gained=Math.max(1,Math.round(base+GP.goodStreak));}
     GP.cases=Math.min(100,GP.cases+gained);
-    GP.goodStreak++;GP.errPenalty=false;GP.wrongStreak=0;
+    GP.goodStreak++;GP.wrongStreak=0;
     GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
     const aspTxt=GP.goodStreak>1?' 🌬️x'+GP.goodStreak:'';
     fb.textContent='✅ +'+gained+' cases !'+aspTxt;fb.style.color='var(--neon)';
@@ -1776,6 +1781,7 @@ async function submitGrimpeAnswer(){
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
       fb.textContent='🏁 Toutes les reponses trouvees !';fb.style.color='var(--neon)';
+      document.getElementById('grimpe-sprint-btn').style.display='block';
       return;
     }
     grimpeStartQuestionTimer();
@@ -1785,33 +1791,45 @@ async function submitGrimpeAnswer(){
     grimpeStartQuestionTimer();
   } else {
     GP.wrongTotal++;GP.wrongStreak++;GP.goodStreak=0;
+     // reset ancien système
+    GP.inertiaSlowUntil=0;
     document.getElementById('grimpe-streak').textContent='';
     GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
+
+    // 💥 3 erreurs → Chute
     if(GP.wrongTotal>=3){
+      GP.cases=Math.max(0,GP.cases-2);
       fb.textContent='💥 CHUTE ! 0 points.';fb.style.color='var(--red)';
       setTimeout(()=>grimpeFinish('chute'),1500);
       return;
     }
+
+    // 🔧 2 affilée → Crevaison −10 cases + bloqué
     if(GP.wrongStreak>=2){
-      const loss=pr.crevaison_loss||5;const block=pr.crevaison_block||20;
-      GP.cases=Math.max(0,GP.cases-loss);
+      const block=pr.crevaison_block||13;
+      GP.cases=Math.max(0,GP.cases-10);
       GP.blockedUntil=Date.now()+block*1000;
-      GP.wrongStreak=0;GP.errPenalty=false;
-      fb.textContent='🔧 CREVAISON ! -'+loss+' cases, bloque '+block+'s !';fb.style.color='var(--red)';
-      document.getElementById('grimpe-streak').textContent='🔧 Bloque '+block+'s...';
+      GP.wrongStreak=0;
+      fb.textContent='🔧 CREVAISON ! −10 cases, bloqué '+block+'s !';fb.style.color='var(--red)';
+      document.getElementById('grimpe-streak').textContent='🔧 Bloqué '+block+'s...';
       setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
       return;
     }
+
+    // 🍌 2e erreur dans le jeu → Fringale −5 cases + bloqué
     if(GP.wrongTotal===2){
       const block=pr.fringale_block||10;
-      GP.blockedUntil=Date.now()+block*1000;GP.errPenalty=true;
-      fb.textContent='🍌 FRINGALE ! Bloque '+block+'s + prochaine -2 cases !';fb.style.color='var(--orange)';
-      document.getElementById('grimpe-streak').textContent='🍌 Fringale — bloque '+block+'s';
+      GP.cases=Math.max(0,GP.cases-5);
+      GP.blockedUntil=Date.now()+block*1000;
+      fb.textContent='🍌 FRINGALE ! −5 cases, bloqué '+block+'s !';fb.style.color='var(--orange)';
+      document.getElementById('grimpe-streak').textContent='🍌 Fringale — bloqué '+block+'s';
       setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
       return;
     }
-    GP.errPenalty=true;
-    fb.textContent='❌ Prochaine bonne reponse : -2 cases';fb.style.color='var(--red)';
+
+    // ❌ 1ère erreur → −2 cases
+    GP.cases=Math.max(0,GP.cases-2);
+    fb.textContent='❌ −2 cases !';fb.style.color='var(--red)';
     setTimeout(()=>{fb.textContent='';},1500);
     grimpeStartQuestionTimer();
   }
@@ -1825,6 +1843,13 @@ function grimpeActivateGel(){
   const statusEl=document.getElementById('grimpe-status');
   if(statusEl){statusEl.textContent='🍬 GEL ACTIF !';statusEl.style.color='#ffdd00';}
   setTimeout(()=>{GP.gelActive=false;document.getElementById('grimpe-streak').textContent='';}, (pr.gelDur||10)*1000);
+}
+
+function grimpeSprintFinish(){
+  // Accélère Pogi ×10 pour voir l'arrivée rapidement
+  document.getElementById('grimpe-sprint-btn').style.display='none';
+  GP.params._sprintMode=true;
+  GP.params.pogiSpeed=(GP.params.pogiSpeed||(100/90))*10;
 }
 
 function grimpeFinish(reason){
