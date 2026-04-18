@@ -1559,7 +1559,7 @@ function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
 function grimpeSlopeFactor(c){ return 1 - grimpeSection(c)/20; }
 
 function grimpeDrawProfile(){
-  const cv=document.getElementById('grimpe-profile');
+  const cv=document.getElementById('grimpe-canvas');
   if(!cv)return;
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
@@ -1587,7 +1587,7 @@ function grimpeDrawProfile(){
 }
 
 function grimpeUpdateRiders(){
-  const cv=document.getElementById('grimpe-profile');
+  const cv=document.getElementById('grimpe-canvas');
   if(!cv)return;
   const W=cv.width,H=cv.height;
   const riderEl=document.getElementById('grimpe-rider');
@@ -1612,11 +1612,11 @@ function grimpeUpdateDisplay(){
   }
   const kmEl=document.getElementById('grimpe-km-txt');
   if(kmEl)kmEl.textContent='Section '+s+'/10 — Pente '+s+'%';
-  const wEl=document.getElementById('grimpe-w');
+  const wEl=document.getElementById('grimpe-watts');
   if(wEl){wEl.textContent=Math.round(GP.cases)+' cases';wEl.style.color=GP.cases>70?'var(--neon)':GP.cases>40?'var(--orange)':'var(--txt)';}
   const kmhEl=document.getElementById('grimpe-kmh');
   if(kmhEl){kmhEl.textContent=(inertia*10).toFixed(1)+' c/s';kmhEl.style.color=inertia>0.3?'var(--neon)':'var(--mute)';}
-  const gapEl=document.getElementById('grimpe-gap');
+  const gapEl=document.getElementById('grimpe-pogi-gap');
   if(gapEl){
     const gap=GP.pogiCases-GP.cases;
     gapEl.textContent=gap>0?'Pogi +'+gap.toFixed(0)+' cases':gap<0?'Tu mènes +'+Math.abs(gap).toFixed(0):'Roue dans roue';

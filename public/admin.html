@@ -975,11 +975,17 @@ async function startEdit(id){
     document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
     document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
     const p=a.grimpeParams||{};
-    ['start-w','pogi-w','fast-bonus','fast-bonus-time','bonus-decay','bonus-floor','time-scale','timer','wrong-w','wrong-dur','fringale-w','fringale-dur','aspiration-w','aspiration-dur','aspiration-streak','gel-w'].forEach(k=>{
-      const el=document.getElementById('grimpe-'+k);
-      const pk=k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
-      if(el&&p[pk]!==undefined) el.value=p[pk];
-    });
+    const setF=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;};
+    setF('grimpe-cases-per-answer', p.casesPerAnswer||6);
+    setF('grimpe-pogi-speed',       p.pogiSpeed||(100/90).toFixed(3));
+    setF('grimpe-inertie',          p.inertie||0.4);
+    setF('grimpe-timer',            p.timerSec||25);
+    setF('grimpe-fatigue-thresh',   p.fatigueThresh||30);
+    setF('grimpe-fringale-block',   p.fringale_block||10);
+    setF('grimpe-crevaison-block',  p.crevaison_block||13);
+    setF('grimpe-crevaison-loss',   p.crevaison_loss||5);
+    setF('grimpe-gel-speed',        p.gelSpeed||2);
+    setF('grimpe-gel-dur',          p.gelDur||10);
     checkReady();
   } else if(a.type==='blackjack'){
     document.getElementById('bj-theme-in').value=a.bjTheme||'';
