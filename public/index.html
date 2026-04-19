@@ -1667,7 +1667,7 @@ function setupGrimpeMode(data){
   GP.cases=0; GP.pogiCases=0; GP.elan=0; GP.watts=GP_SW;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
   GP.errPenalty=false; GP.blockedUntil=0;
-  GP.gelPending=false; GP.epoCount=0;
+  GP.gelPending=false; GP.epoCount=0; GP._sprintFactor=1;
   GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
   GP.startTime=Date.now(); GP.questionStart=null;
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
@@ -1718,9 +1718,10 @@ function grimpePhysicsTick(){
   const wF=Math.pow(Math.min(GP.watts,500)/500, 1/3);
   const spd=wF*(Math.min(GP.elan,GP_ELAN_CAP)/100)*grimpeSlopeFactor(GP.cases)*GP_VMAX;
   GP.cases=Math.min(100, GP.cases+spd*dt);
-  // Pogi linéaire, démarre après 3s
+  // Pogi linéaire, démarre après 3s — accéléré si sprint
   const elapsed=(Date.now()-GP.startTime)/1000;
-  if(elapsed>=3) GP.pogiCases=Math.min(100,GP.pogiCases+(100/90)*dt);
+  const sprintFactor=GP._sprintFactor||1;
+  if(elapsed>=3) GP.pogiCases=Math.min(100,GP.pogiCases+(100/90)*sprintFactor*dt);
   grimpeUpdateDisplay();
   if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
   if(GP.pogiCases>=100&&!GP.done){grimpeFinish();}
@@ -1898,8 +1899,8 @@ async function grimpeUseEpo(type){
 
 function grimpeSprintFinish(){
   document.getElementById('grimpe-sprint-btn').style.display='none';
-  // Termine immédiatement avec le score actuel
-  grimpeFinish();
+  // Accélère Pogi ×15 pour voir l'arrivée rapidement
+  GP._sprintFactor=15;
 }
 
 function grimpeFinish(reason){
