@@ -251,7 +251,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           </div>
           <div class="type-opt" id="type-grimpe" onclick="selectType('grimpe')">
             <div class="type-ico">🚴</div>
-            <div class="type-name">La Grimpée</div>
+            <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
         </div>
@@ -311,7 +311,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>⚡ Paramètres jeu (cases)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Cases/réponse (X)</div><input type="number" id="grimpe-cases-per-answer" value="6" min="1" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Cases/réponse (X)</div><input type="number" id="grimpe-cases-per-answer" value="7" min="1" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Vitesse Pogi (cases/s)</div><input type="number" id="grimpe-pogi-speed" value="1.11" min="0.5" max="3" step="0.01" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Inertie (cases/s max)</div><input type="number" id="grimpe-inertie" value="0.4" min="0" max="2" step="0.05" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono question (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
@@ -323,7 +323,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">😮 Fatigue après (s)</div><input type="number" id="grimpe-fatigue-thresh" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale blocage (s)</div><input type="number" id="grimpe-fringale-block" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison blocage (s)</div><input type="number" id="grimpe-crevaison-block" value="13" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison perte (cases)</div><input type="number" id="grimpe-crevaison-loss" value="5" min="0" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison perte (cases)</div><input type="number" id="grimpe-crevaison-loss" value="0" min="0" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
         </div>
         <div class="field">
@@ -1838,7 +1838,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||'La Grimpée'):rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
