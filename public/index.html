@@ -1568,7 +1568,7 @@ const GP = {
 };
 
 // Paramètres physique élan
-const GP_VMAX=4.5, GP_DRAIN_K=6, GP_EFF=15, GP_ELAN_CAP=350;
+const GP_VMAX=4.5, GP_DRAIN_K=8, GP_EFF=15, GP_ELAN_CAP=350;
 const GP_SW=5, GP_BW=55, GP_ASP_PER_STREAK=5, GP_ASP_CAP=140, GP_GEL_FACTOR=25;
 
 function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
@@ -1722,7 +1722,6 @@ function grimpePhysicsTick(){
   const elapsed=(Date.now()-GP.startTime)/1000;
   if(elapsed>=3) GP.pogiCases=Math.min(100,GP.pogiCases+(100/90)*dt);
   grimpeUpdateDisplay();
-  grimpeGelPoll();
   if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
   if(GP.pogiCases>=100&&!GP.done){grimpeFinish();}
 }
@@ -1754,13 +1753,8 @@ function grimpeStartQuestionTimer(){
     if(t<=0){
       clearInterval(GP.timerInt);GP.timerInt=null;
       GP.goodStreak=0; GP.questionStart=null;
-      const elapsed=(Date.now()-GP.startTime)/1000-GP.lastAnswerT;
-      if(GP.lastAnswerT>0&&elapsed>=(GP.params.fatigueThresh||30)){
-        GP.fatigue=true;
-        const fb=document.getElementById('grimpe-fb');
-        fb.textContent='😮 Fatigue ! Prochaine = 1 case';fb.style.color='var(--orange)';
-        setTimeout(()=>{fb.textContent='';},2000);
-      }
+      // Pas de réponse dans le temps → perte d'élan
+      GP.elan=0;
       grimpeStartQuestionTimer();
     }
   },1000);
@@ -1832,7 +1826,7 @@ async function submitGrimpeAnswer(){
     // 🔧 2 affilée → Crevaison −10 cases + bloqué
     if(GP.wrongStreak>=2){
       const block=pr.crevaison_block||13;
-      GP.watts=Math.max(GP_SW, GP.watts-100); GP.elan=0;
+      GP.watts=Math.max(GP_SW, GP.watts-150); GP.elan=0;
       GP.blockedUntil=Date.now()+block*1000;
       GP.wrongStreak=0;
       fb.textContent='🔧 CREVAISON ! Tu perds tout ton élan, bloqué '+block+'s !';fb.style.color='var(--red)';
@@ -1844,7 +1838,7 @@ async function submitGrimpeAnswer(){
     // 🍌 2e erreur dans le jeu → Fringale −5 cases + bloqué
     if(GP.wrongTotal===2){
       const block=pr.fringale_block||10;
-      GP.watts=Math.max(GP_SW, GP.watts-60);
+      GP.watts=Math.max(GP_SW, GP.watts-60); GP.elan=0;
       GP.blockedUntil=Date.now()+block*1000;
       fb.textContent='🍌 FRINGALE ! Tu perds de l\'élan, bloqué '+block+'s !';fb.style.color='var(--orange)';
       document.getElementById('grimpe-streak').textContent='🍌 Bloqué '+block+'s…';
@@ -1903,10 +1897,9 @@ async function grimpeUseEpo(type){
 }
 
 function grimpeSprintFinish(){
-  // Accélère Pogi ×10 pour voir l'arrivée rapidement
   document.getElementById('grimpe-sprint-btn').style.display='none';
-  GP.params._sprintMode=true;
-  GP.params.pogiSpeed=(GP.params.pogiSpeed||(100/90))*10;
+  // Termine immédiatement avec le score actuel
+  grimpeFinish();
 }
 
 function grimpeFinish(reason){
