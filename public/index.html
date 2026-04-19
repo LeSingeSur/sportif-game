@@ -620,20 +620,25 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LA GRIMPÉE zone -->
   <div id="grimpe-zone">
+    <!-- Encart règles (masqué après 1ère réponse) -->
+    <div id="grimpe-rules" style="background:var(--c2);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;font-size:12px;line-height:1.6;color:var(--mute)">
+      🚴 Grimpe 100 cases avant Pogacar (90s) · Chaque bonne réponse t'avance · Plus la pente est raide, moins tu avances · Enchaîne les bonnes réponses pour l'aspiration 🌬️ · 3 erreurs = chute 💥
+      <span style="color:#ff4444;margin-left:6px">· 💉 EPO = +10 cases mais risque contrôle antidopage !</span>
+    </div>
     <!-- Vitesse en grand, watts en petit -->
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
       <div>
-        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">VITESSE</div>
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">ÉLAN</div>
         <div id="grimpe-kmh" style="font-family:var(--fh);font-size:52px;line-height:1;color:var(--neon)">0</div>
-        <div style="font-size:13px;color:var(--mute);margin-top:-2px">km/h</div>
+        <div style="font-size:13px;color:var(--mute);margin-top:-2px">cases/s</div>
       </div>
       <div style="text-align:center;flex:1;padding:0 8px">
         <div class="grimpe-status" id="grimpe-status"></div>
         <div class="grimpe-streak" id="grimpe-streak"></div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">PUISSANCE</div>
-        <div id="grimpe-watts" style="font-family:var(--fh);font-size:22px;line-height:1;color:var(--txt);transition:color .3s">0W</div>
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">WATTS</div>
+        <div id="grimpe-watts" style="font-family:var(--fh);font-size:22px;line-height:1;color:var(--txt);transition:color .3s">0</div>
         <div id="grimpe-pente-txt" style="font-size:11px;color:var(--mute);margin-top:2px">Pente 1%</div>
       </div>
     </div>
@@ -646,7 +651,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Info km + gap -->
     <div class="grimpe-info">
-      <span id="grimpe-km-txt">Km 0 / 10</span>
+      <span id="grimpe-km-txt">Section 1/10 — Pente 1%</span>
       <span id="grimpe-pogi-gap">Pogacar : —</span>
     </div>
     <!-- Timer -->
@@ -661,6 +666,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="ans-row">
       <input type="text" class="ans-in" id="grimpe-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
       <button class="chk-btn" id="grimpe-chk">✓</button>
+    </div>
+    <!-- Boutons EPO -->
+    <div id="grimpe-epo-btns" style="display:flex;gap:8px;margin-top:6px">
+      <button id="grimpe-epo-btn" onclick="grimpeUseEpo('EPO')" style="flex:1;padding:9px;background:#1a0a0a;color:#ff4444;font-family:var(--fh);font-size:13px;font-weight:800;border:1px solid #ff4444;border-radius:var(--r);cursor:pointer;letter-spacing:1px">💉 EPO</button>
+      <button id="grimpe-transfusion-btn" onclick="grimpeUseEpo('TRANSFUSION')" style="flex:1;padding:9px;background:#1a0a0a;color:#ff4444;font-family:var(--fh);font-size:13px;font-weight:800;border:1px solid #ff4444;border-radius:var(--r);cursor:pointer;letter-spacing:1px;display:none">🩸 Transfusion</button>
+      <button id="grimpe-gel-btn" onclick="grimpeActivateGel()" style="flex:1;padding:9px;background:#0a1a0a;color:#ffdd00;font-family:var(--fh);font-size:13px;font-weight:800;border:1px solid #ffdd00;border-radius:var(--r);cursor:pointer;letter-spacing:1px">🍬 GEL</button>
     </div>
     <div class="fb" id="grimpe-fb"></div>
     <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:100%;padding:12px;background:var(--neon);color:#000;font-family:var(--fh);font-size:15px;font-weight:900;border:none;border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px">🏁 Sprint final — voir mon score</button>
@@ -1545,19 +1556,24 @@ function finishBJ(finalScore, msg){
   },400);
 }
 
-// ── LA GRIMPÉE MODE ───────────────────────────────────────────────────────
+// ── L'ALPE D'HUEZ MODE ────────────────────────────────────────────────────
 const GP = {
-  cases:0, pogiCases:0,
+  cases:0, pogiCases:0, elan:0, watts:0,
   done:false, wrongTotal:0, wrongStreak:0, goodStreak:0,
-  fatigue:false, errPenalty:false, blockedUntil:0, lastAnswerT:0,
-  gelActive:false, gelEnd:0,
+  errPenalty:false, blockedUntil:0,
+  gelPending:false,
   found:[], timerInt:null, physicsInt:null,
   startTime:0, questionStart:null, theme:'', totalAnswers:10,
+  epoCount:0,
   params:{},
 };
 
+// Paramètres physique élan
+const GP_VMAX=4.0, GP_DRAIN_K=6, GP_EFF=15, GP_ELAN_CAP=350;
+const GP_SW=5, GP_BW=55, GP_ASP_PER_STREAK=5, GP_ASP_CAP=140, GP_GEL_FACTOR=25;
+
 function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
-function grimpeSlopeFactor(c){ return 1 - grimpeSection(c)/20; }
+function grimpeSlopeFactor(c){ const p=grimpeSection(c); return Math.max(0,1-p/15); }
 
 function grimpeDrawProfile(){
   const cv=document.getElementById('grimpe-canvas');
@@ -1599,24 +1615,25 @@ function grimpeUpdateRiders(){
 
 function grimpeUpdateDisplay(){
   const pr=GP.params;
+  const p=grimpeSection(GP.cases);
   const sf=grimpeSlopeFactor(GP.cases);
-  const s=grimpeSection(GP.cases);
-  const X=pr.casesPerAnswer||6;
-  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
-  const gelBonus=gelOn?(pr.gelSpeed||2):0;
-  const inertia=(GP.cases/100)*(pr.inertie||0.4)*sf+gelBonus;
-  const nextGain=GP.fatigue?1:Math.max(1,Math.round(X*sf+GP.goodStreak));
+  const gelOn=GP.gelPending;
+  const wF=Math.pow(Math.min(GP.watts,500)/500,1/3);
+  const spd=wF*(Math.min(GP.elan,GP_ELAN_CAP)/100)*sf*GP_VMAX;
   const statusEl=document.getElementById('grimpe-status');
-  if(statusEl){
-    statusEl.textContent=gelOn?'🍬 GEL ACTIF !':GP.fatigue?'😮 Fatigué':'🚴 En course';
-    statusEl.style.color=gelOn?'#ffdd00':GP.fatigue?'var(--orange)':'var(--neon)';
+  if(statusEl&&!gelOn){
+    statusEl.textContent='🚴 En course';statusEl.style.color='var(--neon)';
   }
   const kmEl=document.getElementById('grimpe-km-txt');
-  if(kmEl)kmEl.textContent='Section '+s+'/10 — Pente '+s+'%';
+  if(kmEl)kmEl.textContent='Section '+p+'/10 — Pente '+p+'%';
   const wEl=document.getElementById('grimpe-watts');
-  if(wEl){wEl.textContent=Math.round(GP.cases)+' cases';wEl.style.color=GP.cases>70?'var(--neon)':GP.cases>40?'var(--orange)':'var(--txt)';}
+  if(wEl){wEl.textContent=Math.round(GP.watts)+'W';wEl.style.color=GP.watts>200?'var(--neon)':GP.watts>100?'var(--orange)':'var(--txt)';}
   const kmhEl=document.getElementById('grimpe-kmh');
-  if(kmhEl){kmhEl.textContent=(inertia*10).toFixed(1)+' c/s';kmhEl.style.color=inertia>0.3?'var(--neon)':'var(--mute)';}
+  if(kmhEl){
+    const elanPct=Math.round(Math.min(GP.elan,GP_ELAN_CAP));
+    kmhEl.textContent=elanPct+'%';
+    kmhEl.style.color=elanPct>80?'var(--neon)':elanPct>30?'var(--orange)':'var(--red)';
+  }
   const gapEl=document.getElementById('grimpe-pogi-gap');
   if(gapEl){
     const gap=GP.pogiCases-GP.cases;
@@ -1624,7 +1641,12 @@ function grimpeUpdateDisplay(){
     gapEl.style.color=gap>20?'var(--red)':gap>0?'var(--orange)':'var(--neon)';
   }
   const previewEl=document.getElementById('grimpe-bonus-preview');
-  if(previewEl&&GP.questionStart)previewEl.textContent='Prochaine bonne reponse: +'+nextGain+' cases'+(GP.goodStreak>1?' asp+'+GP.goodStreak:'');
+  if(previewEl){
+    const nextW=Math.min(GP.watts+GP_BW,500);
+    const nextElan=Math.min(100+(GP.goodStreak+1)*GP_ASP_PER_STREAK,GP_ASP_CAP);
+    previewEl.textContent=gelOn?'🍬 Réponds pour activer le GEL !':'Prochaine réponse: '+nextW+'W — élan '+nextElan+'%';
+    if(gelOn)previewEl.style.color='#ffdd00'; else previewEl.style.color='var(--mute)';
+  }
   grimpeDrawProfile();
   grimpeUpdateRiders();
 }
@@ -1643,18 +1665,17 @@ function setupGrimpeMode(data){
     crevaison_loss: p.crevaison_loss||0,
     fringale_block: p.fringale_block||10,
   };
-  GP.cases=0; GP.pogiCases=0;
+  GP.cases=0; GP.pogiCases=0; GP.elan=0; GP.watts=GP_SW;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
-  GP.fatigue=false;  GP.blockedUntil=0; GP.lastAnswerT=0;
-  GP.gelActive=false; GP.gelEnd=0;
-  GP.inertiaSlowUntil=0;
+  GP.errPenalty=false; GP.blockedUntil=0;
+  GP.gelPending=false; GP.epoCount=0;
   GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
-  GP.epoCount=0; GP.epoUsed=false;
   GP.startTime=Date.now(); GP.questionStart=null;
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
   const badge=document.getElementById('type-badge');
   if(badge)badge.textContent="L'Alpe d’Huez";
+  document.getElementById('game-tip').innerHTML='Réponds vite · Avance avant Pogacar · Tape EPO pour un boost risqué';
   hideAllZones();
   document.getElementById('grimpe-zone').style.display='flex';
   const themeEl=document.getElementById('grimpe-theme');
@@ -1670,6 +1691,14 @@ function setupGrimpeMode(data){
   document.getElementById('grimpe-fb').textContent='';
   const sprintBtn=document.getElementById('grimpe-sprint-btn');
   if(sprintBtn)sprintBtn.style.display='none';
+  const rulesEl=document.getElementById('grimpe-rules');
+  if(rulesEl)rulesEl.style.display='block';
+  const epoBtn=document.getElementById('grimpe-epo-btn');
+  const transBtn=document.getElementById('grimpe-transfusion-btn');
+  const gelBtn=document.getElementById('grimpe-gel-btn');
+  if(epoBtn){epoBtn.style.display='block';}
+  if(transBtn){transBtn.style.display='none';}
+  if(gelBtn){gelBtn.style.display='block';}
   setTimeout(()=>{if(cv){cv.width=cv.offsetWidth||340;cv.height=cv.offsetHeight||110;}grimpeDrawProfile();},100);
   document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
   document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
@@ -1681,13 +1710,18 @@ function setupGrimpeMode(data){
 function grimpePhysicsTick(){
   if(GP.done)return;
   const dt=0.1;
-  const pr=GP.params;
-  const sf=grimpeSlopeFactor(GP.cases);
-  const gelOn=GP.gelActive&&Date.now()<GP.gelEnd;
-  const gelBonus=gelOn?(pr.gelSpeed||2)*dt:0;
-  const slowDown=GP.inertiaSlowUntil&&Date.now()<GP.inertiaSlowUntil?0.3:1;
-  GP.cases=Math.min(100,GP.cases+(GP.cases/100)*(pr.inertie||0.4)*sf*slowDown*dt+gelBonus);
-  GP.pogiCases=Math.min(100,GP.pogiCases+(pr.pogiSpeed||(100/90))*dt);
+  const p=grimpeSection(GP.cases);
+  // Vide la jauge selon la pente
+  const drain=GP_DRAIN_K*(1+p*0.5);
+  const elanFloor=(GP.watts/500)*GP_EFF;
+  GP.elan=Math.max(elanFloor, GP.elan-drain*dt);
+  // Vitesse = watts^(1/3) × élan/100 × slopeFactor × VMAX
+  const wF=Math.pow(Math.min(GP.watts,500)/500, 1/3);
+  const spd=wF*(Math.min(GP.elan,GP_ELAN_CAP)/100)*grimpeSlopeFactor(GP.cases)*GP_VMAX;
+  GP.cases=Math.min(100, GP.cases+spd*dt);
+  // Pogi linéaire, démarre après 3s
+  const elapsed=(Date.now()-GP.startTime)/1000;
+  if(elapsed>=3) GP.pogiCases=Math.min(100,GP.pogiCases+(100/90)*dt);
   grimpeUpdateDisplay();
   grimpeGelPoll();
   if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
@@ -1741,31 +1775,10 @@ async function submitGrimpeAnswer(){
   const ans=inp.value.trim();
   if(!ans)return;
 
-  // EPO / Transfusion
+  // EPO / Transfusion (fallback texte)
   const ansUp=ans.toUpperCase();
   if(ansUp==='EPO'||ansUp==='TRANSFUSION'){
-    inp.value=''; GP.questionStart=null;
-    const fb=document.getElementById('grimpe-fb');
-    if(GP.epoCount>=2){ fb.textContent='🚫 Déjà au max de produits !'; fb.style.color='var(--red)'; setTimeout(()=>{fb.textContent='';},1500); grimpeStartQuestionTimer(); return; }
-    // Demande une réponse non trouvée au serveur
-    const epoRes=await fetch('/api/grimpe-epo',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({athleteId:G.athleteId,found:GP.found})});
-    const epoData=await epoRes.json();
-    GP.epoCount++;
-    GP.cases=Math.min(100,GP.cases+10);
-    const risk=GP.epoCount===1?50:80;
-    const name=GP.epoCount===1?'💉 EPO':'🩸 Transfusion';
-    if(epoData.answer){
-      GP.found.push(epoData.answer);
-      fb.textContent=name+' : "'+epoData.answer+'" +10 cases ! Risque contrôle: '+risk+'%';
-    } else {
-      fb.textContent=name+' +10 cases ! Risque contrôle: '+risk+'%';
-    }
-    fb.style.color='#ff4444';
-    document.getElementById('grimpe-streak').textContent='🧪 Produit pris ×'+GP.epoCount+' — Risque '+risk+'%';
-    setTimeout(()=>{fb.textContent='';},3000);
-    grimpeStartQuestionTimer();
-    return;
+    inp.value=''; await grimpeUseEpo(ansUp); return;
   }
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   const fb=document.getElementById('grimpe-fb');
@@ -1776,17 +1789,24 @@ async function submitGrimpeAnswer(){
   const pr=GP.params;
   if(data.correct){
     GP.found.push(data.answer||ans);
-    const sf=grimpeSlopeFactor(GP.cases);
-    const X=pr.casesPerAnswer||6;
-    let gained;
-    if(GP.fatigue){gained=1;GP.fatigue=false;}
-    else{const base=X*sf;gained=Math.max(1,Math.round(base+GP.goodStreak));}
-    GP.cases=Math.min(100,GP.cases+gained);
+    if(GP.found.length===1){const r=document.getElementById('grimpe-rules');if(r)r.style.display='none';}
+    // Nouvelle mécanique: watts + élan
+    GP.watts=Math.min(GP.watts+GP_BW, 500);
     GP.goodStreak++;GP.wrongStreak=0;
-    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
-    const aspTxt=GP.goodStreak>1?' 🌬️x'+GP.goodStreak:'';
-    fb.textContent='✅ +'+gained+' cases !'+aspTxt;fb.style.color='var(--neon)';
-    document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Serie x'+GP.goodStreak:'';
+    // Élan: aspiration selon streak, capé GP_ASP_CAP
+    const aspElan=Math.min(100+GP.goodStreak*GP_ASP_PER_STREAK, GP_ASP_CAP);
+    // Gel pending: boost élan proportionnel à la pente
+    if(GP.gelPending){
+      const p2=grimpeSection(GP.cases);
+      GP.elan=Math.min(100+p2*GP_GEL_FACTOR, GP_ELAN_CAP);
+      GP.gelPending=false;
+      fb.textContent='🍬 GEL ! Boost ×'+p2+' ! +watts';fb.style.color='#ffdd00';
+    } else {
+      GP.elan=aspElan;
+      const aspTxt=GP.goodStreak>1?' 🌬️×'+GP.goodStreak:'';
+      fb.textContent='✅ +watts'+aspTxt;fb.style.color='var(--neon)';
+    }
+    document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Série ×'+GP.goodStreak+' — élan '+(Math.round(aspElan))+'%':'';
     setTimeout(()=>{fb.textContent='';},1000);
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
@@ -1801,14 +1821,11 @@ async function submitGrimpeAnswer(){
     grimpeStartQuestionTimer();
   } else {
     GP.wrongTotal++;GP.wrongStreak++;GP.goodStreak=0;
-     // reset ancien système
-    GP.inertiaSlowUntil=0;
+    GP.elan=0; // élan coupé sur erreur
     document.getElementById('grimpe-streak').textContent='';
-    GP.lastAnswerT=(Date.now()-GP.startTime)/1000;
 
     // 💥 3 erreurs → Chute
     if(GP.wrongTotal>=3){
-      GP.cases=Math.max(0,GP.cases-2);
       fb.textContent='💥 CHUTE ! 0 points.';fb.style.color='var(--red)';
       setTimeout(()=>grimpeFinish('chute'),1500);
       return;
@@ -1817,10 +1834,10 @@ async function submitGrimpeAnswer(){
     // 🔧 2 affilée → Crevaison −10 cases + bloqué
     if(GP.wrongStreak>=2){
       const block=pr.crevaison_block||13;
-      GP.cases=Math.max(0,GP.cases-10);
+      GP.watts=Math.max(GP_SW, GP.watts-100); GP.elan=0;
       GP.blockedUntil=Date.now()+block*1000;
       GP.wrongStreak=0;
-      fb.textContent='🔧 CREVAISON ! −10 cases, bloqué '+block+'s !';fb.style.color='var(--red)';
+      fb.textContent='🔧 CREVAISON ! −100W, bloqué '+block+'s !';fb.style.color='var(--red)';
       document.getElementById('grimpe-streak').textContent='🔧 Bloqué '+block+'s...';
       setTimeout(()=>{document.getElementById('grimpe-streak').textContent='';grimpeStartQuestionTimer();},block*1000);
       return;
@@ -1829,7 +1846,7 @@ async function submitGrimpeAnswer(){
     // 🍌 2e erreur dans le jeu → Fringale −5 cases + bloqué
     if(GP.wrongTotal===2){
       const block=pr.fringale_block||10;
-      GP.cases=Math.max(0,GP.cases-5);
+      GP.watts=Math.max(GP_SW, GP.watts-60);
       GP.blockedUntil=Date.now()+block*1000;
       fb.textContent='🍌 FRINGALE ! −5 cases, bloqué '+block+'s !';fb.style.color='var(--orange)';
       document.getElementById('grimpe-streak').textContent='🍌 Fringale — bloqué '+block+'s';
@@ -1838,21 +1855,48 @@ async function submitGrimpeAnswer(){
     }
 
     // ❌ 1ère erreur → −2 cases
-    GP.cases=Math.max(0,GP.cases-2);
-    fb.textContent='❌ −2 cases !';fb.style.color='var(--red)';
+    GP.watts=Math.max(GP_SW, GP.watts-30);
+    fb.textContent='❌ −30W !';fb.style.color='var(--red)';
     setTimeout(()=>{fb.textContent='';},1500);
     grimpeStartQuestionTimer();
   }
 }
 
 function grimpeActivateGel(){
-  if(GP.done)return;
-  const pr=GP.params;
-  GP.gelActive=true;GP.gelEnd=Date.now()+(pr.gelDur||10)*1000;
-  document.getElementById('grimpe-streak').textContent='🍬 GEL ACTIF ! Boost inertie !';
+  if(GP.done||GP.gelPending)return;
+  GP.gelPending=true;
+  const gelBtn=document.getElementById('grimpe-gel-btn');
+  if(gelBtn)gelBtn.style.display='none';
+  document.getElementById('grimpe-streak').textContent='🍬 GEL PRÊT — réponds pour le boost !';
   const statusEl=document.getElementById('grimpe-status');
-  if(statusEl){statusEl.textContent='🍬 GEL ACTIF !';statusEl.style.color='#ffdd00';}
-  setTimeout(()=>{GP.gelActive=false;document.getElementById('grimpe-streak').textContent='';}, (pr.gelDur||10)*1000);
+  if(statusEl){statusEl.textContent='🍬 GEL PRÊT !';statusEl.style.color='#ffdd00';}
+}
+
+async function grimpeUseEpo(type){
+  if(GP.done||GP.epoCount>=2)return;
+  const fb=document.getElementById('grimpe-fb');
+  const epoRes=await fetch('/api/grimpe-epo',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({athleteId:G.athleteId,found:GP.found})});
+  const epoData=await epoRes.json();
+  GP.epoCount++;
+  GP.cases=Math.min(100,GP.cases+10);
+  const risk=GP.epoCount===1?50:80;
+  const name=type==='EPO'?'💉 EPO':'🩸 Transfusion';
+  if(epoData.answer) GP.found.push(epoData.answer);
+  fb.textContent=name+(epoData.answer?' : "'+epoData.answer+'"':'')+' +10 cases ! Risque contrôle: '+risk+'%';
+  fb.style.color='#ff4444';
+  document.getElementById('grimpe-streak').textContent='🧪 Produit ×'+GP.epoCount+' — Risque contrôle '+risk+'%';
+  // Mettre à jour boutons
+  const epoBtn=document.getElementById('grimpe-epo-btn');
+  const transBtn=document.getElementById('grimpe-transfusion-btn');
+  if(GP.epoCount===1){
+    epoBtn.style.display='none';
+    if(transBtn)transBtn.style.display='block';
+  } else {
+    if(transBtn)transBtn.style.display='none';
+    if(epoBtn)epoBtn.style.display='none';
+  }
+  setTimeout(()=>{fb.textContent='';},3000);
 }
 
 function grimpeSprintFinish(){
