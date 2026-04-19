@@ -358,6 +358,12 @@ app.get('/api/athlete', (req, res) => {
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'grimpe') {
+    base.grimpeTheme   = athlete.grimpeTheme || '';
+    base.clue          = athlete.grimpeTheme || athlete.clue || '';
+    base.grimpeAnswers = (athlete.grimpeAnswers || []).length;
+    base.grimpeParams  = athlete.grimpeParams || {};
+    base.maxScore      = 100;
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
     base.bjTarget  = athlete.bjTarget || 50;
