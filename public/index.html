@@ -1747,13 +1747,23 @@ async function submitGrimpeAnswer(){
     inp.value=''; GP.questionStart=null;
     const fb=document.getElementById('grimpe-fb');
     if(GP.epoCount>=2){ fb.textContent='🚫 Déjà au max de produits !'; fb.style.color='var(--red)'; setTimeout(()=>{fb.textContent='';},1500); grimpeStartQuestionTimer(); return; }
+    // Demande une réponse non trouvée au serveur
+    const epoRes=await fetch('/api/grimpe-epo',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:G.athleteId,found:GP.found})});
+    const epoData=await epoRes.json();
     GP.epoCount++;
-    GP.cases=Math.min(100, GP.cases+10);
+    GP.cases=Math.min(100,GP.cases+10);
     const risk=GP.epoCount===1?50:80;
     const name=GP.epoCount===1?'💉 EPO':'🩸 Transfusion';
-    fb.textContent=name+' +10 cases ! Risque contrôle: '+risk+'%'; fb.style.color='#ff4444';
+    if(epoData.answer){
+      GP.found.push(epoData.answer);
+      fb.textContent=name+' : "'+epoData.answer+'" +10 cases ! Risque contrôle: '+risk+'%';
+    } else {
+      fb.textContent=name+' +10 cases ! Risque contrôle: '+risk+'%';
+    }
+    fb.style.color='#ff4444';
     document.getElementById('grimpe-streak').textContent='🧪 Produit pris ×'+GP.epoCount+' — Risque '+risk+'%';
-    setTimeout(()=>{fb.textContent='';},2500);
+    setTimeout(()=>{fb.textContent='';},3000);
     grimpeStartQuestionTimer();
     return;
   }
