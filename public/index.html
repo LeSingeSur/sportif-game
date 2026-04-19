@@ -1668,7 +1668,9 @@ function setupGrimpeMode(data){
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
   GP.errPenalty=false; GP.blockedUntil=0;
   GP.gelPending=false; GP.epoCount=0; GP._sprintFactor=1;
-  GP.found=[]; GP.theme=data.grimpeTheme||''; GP.totalAnswers=data.grimpeAnswers||10;
+  GP.found=[]; GP.theme=data.grimpeTheme||data.answer||''; GP.totalAnswers=data.grimpeAnswers||10;
+  GP._sprintFactor=1;
+  G.athleteName=GP.theme||"L'Alpe d'Huez";
   GP.startTime=Date.now(); GP.questionStart=null;
   if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
   if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
@@ -1678,7 +1680,13 @@ function setupGrimpeMode(data){
   hideAllZones();
   document.getElementById('grimpe-zone').style.display='flex';
   const themeEl=document.getElementById('grimpe-theme');
-  if(themeEl)themeEl.textContent=GP.theme||'Identifie ces coureurs cyclistes !';
+  if(themeEl){
+    const themeText=GP.theme||data.clue||'';
+    themeEl.textContent=themeText||'Identifie ces sportifs !';
+    themeEl.style.display='block';
+    themeEl.style.fontSize=themeText?'14px':'12px';
+    themeEl.style.opacity=themeText?'1':'0.5';
+  }
   const cv=document.getElementById('grimpe-canvas');
   document.getElementById('grimpe-in').disabled=false;
   document.getElementById('grimpe-chk').disabled=false;
