@@ -219,6 +219,38 @@ app.post('/api/grimpe-check', (req, res) => {
   res.json({ correct, total: (athlete.grimpeAnswers||[]).length });
 });
 
+// EPO — révèle une réponse non encore trouvée
+app.post('/api/grimpe-epo', (req, res) => {
+  const { athleteId, found } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'grimpe') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const foundNorm = (found||[]).map(norm);
+  const unfound = (athlete.grimpeAnswers||[]).filter(a => !foundNorm.includes(norm(a)));
+  if(!unfound.length) return res.json({ answer: null });
+  // Retourne une réponse aléatoire non trouvée
+  const pick = unfound[Math.floor(Math.random()*unfound.length)];
+  res.json({ answer: pick });
+});
+app.post('/api/grimpe-gel', (req, res) => {
+  const { athleteId, password } = req.body;
+  if(password !== ADMIN_PASSWORD) return res.status(403).json({ error: 'Interdit' });
+  const athlete = athletes.find(a => a.id === athleteId);
+  if(!athlete) return res.status(404).json({ error: 'Joueur introuvable' });
+  athlete.grimpeGel = Date.now();
+  res.json({ ok: true });
+});
+
+// Le joueur poll ce endpoint pour savoir si gel activé
+app.get('/api/grimpe-gel', (req, res) => {
+  const { athleteId } = req.query;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if(!athlete) return res.status(404).json({ error: 'Introuvable' });
+  const gelTime = athlete.grimpeGel || 0;
+  const active = (Date.now() - gelTime) < 15000; // 15s fenêtre
+  res.json({ active, gelTime });
+});
+
 app.get('/api/audio-proxy', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).send('URL manquante');
