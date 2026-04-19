@@ -131,7 +131,8 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
-    base.grimpeAnswers = (athlete.grimpeAnswers || []).length; // just send count to client
+    base.clue          = athlete.grimpeTheme || athlete.clue || '';
+    base.grimpeAnswers = (athlete.grimpeAnswers || []).length;
     base.grimpeParams  = athlete.grimpeParams || {};
     base.maxScore = 100;
   } else if (athlete.type === 'blackjack') {
