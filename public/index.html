@@ -11,12 +11,12 @@
 html{height:100%;background:#07070f}
 :root{--bg:#07070f;--c1:#111120;--c2:#191928;--neon:#d4ff00;--cyan:#00e5c8;--red:#ff3f5c;--orange:#ff8c00;--txt:#ededf8;--mute:#52526e;--r:14px;--fh:'Bebas Neue',sans-serif;--fb:'Nunito',sans-serif}
 body{font-family:var(--fb);color:var(--txt);min-height:100%;background:var(--bg);background-image:radial-gradient(ellipse 70% 40% at 10% 2%,rgba(212,255,0,.07) 0%,transparent 55%),radial-gradient(ellipse 50% 35% at 90% 98%,rgba(0,229,200,.05) 0%,transparent 55%);display:flex;flex-direction:column;align-items:center;-webkit-font-smoothing:antialiased}
-.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100dvh;padding:28px 18px 52px}
+.scr{display:none;flex-direction:column;width:100%;max-width:460px;min-height:100vh;min-height:100dvh;padding:28px 18px 52px}
 .scr.on{display:flex}
-#sp,#sg,#sl,#sv,#sd{min-height:100dvh}
+#sp,#sg,#sl,#sv,#sd{min-height:100vh;min-height:100dvh}
 .scr{display:none;flex-direction:column;width:100%;max-width:460px;padding:28px 18px 52px}
 .scr.on{display:flex}
-#sp,#sg,#sl,#sv,#sd{min-height:100dvh}
+#sp,#sg,#sl,#sv,#sd{min-height:100vh;min-height:100dvh}
 .scr.on{display:flex}
 .logo{font-family:var(--fh);font-size:clamp(48px,15vw,80px);line-height:.9;letter-spacing:2px;text-align:center;color:var(--neon);text-shadow:0 0 40px rgba(212,255,0,.5),0 0 90px rgba(212,255,0,.15);margin-bottom:2px}
 .logo-tag{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:28px}
@@ -75,9 +75,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 /* IMAGE MODE */
 .img-wrap{position:relative;width:100%;border-radius:16px;overflow:hidden;background:var(--c1);flex-shrink:0;touch-action:none}
 .img-wrap img{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;pointer-events:none}
-.grid-overlay{position:absolute;inset:0;display:grid}
+.grid-overlay{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;display:grid}
 .tile{background:rgba(10,10,20,.92);border:1px solid rgba(255,255,255,.04);transition:opacity .2s;position:relative;overflow:hidden}
-.tile:not(.rev)::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#181830,#0d0d1a)}
+.tile:not(.rev)::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;inset:0;background:linear-gradient(135deg,#181830,#0d0d1a)}
 .tile:not(.rev)::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);animation:tshim 3s infinite;animation-delay:var(--td,0s)}
 @keyframes tshim{0%{left:-100%}100%{left:200%}}
 .tile.rev{background:transparent!important;cursor:default;pointer-events:none}
@@ -95,7 +95,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 #buzz-zone{display:none;flex-direction:column;gap:12px;padding-bottom:100px}
 @media(min-width:600px){#buzz-zone{padding-bottom:0}}
 .buzz-score-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;margin:4px auto 0;width:120px;height:120px;border-radius:50%;border:4px solid rgba(212,255,0,.15);background:var(--c1);position:relative}
-.buzz-score-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.buzz-score-ring svg{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .buzz-score-ring svg circle{fill:none;stroke-width:4;stroke-linecap:round}
 .buzz-score-ring svg .ring-bg{stroke:rgba(255,255,255,.06)}
 .buzz-score-ring svg .ring-fill{stroke:var(--neon);stroke-dasharray:320;stroke-dashoffset:0;transition:stroke-dashoffset .4s,stroke .4s}
@@ -197,7 +197,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-bottom{position:sticky;bottom:0;background:var(--bg);padding:8px 0 16px;display:flex;flex-direction:column;gap:8px;z-index:10;border-top:1px solid rgba(255,255,255,.06);margin-top:4px}
 @media(min-width:600px){.sportus-bottom{position:static;padding:0;background:none;border-top:none}}
 
-.pf{position:fixed;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
+.pf{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;background:rgba(255,63,92,.12);pointer-events:none;opacity:0;z-index:99}
 .pf.show{animation:pflash .4s ease}
 @keyframes pflash{0%{opacity:1}100%{opacity:0}}
 .ans-area{display:flex;flex-direction:column;gap:9px;margin-top:auto;padding-top:14px}
@@ -311,7 +311,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .replique-timer-fill{height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 1s linear}
 #demineur-zone{display:none;flex-direction:column;gap:14px}
 .dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.3;min-height:52px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
+.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.3;min-height:52px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 .dem-case:active{transform:scale(.96)}
 .dem-case.safe{background:rgba(0,230,118,.15);border-color:#00e676;color:#00e676;cursor:default}
 .dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default}
@@ -361,7 +361,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .done-ico{font-size:72px}.done-title{font-family:var(--fh);font-size:44px;color:var(--neon);letter-spacing:2px}
 .done-sub{font-size:15px;color:var(--mute);line-height:1.6}
 /* CONFETTI */
-#cft{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+#cft{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;pointer-events:none;z-index:999;overflow:hidden}
 .cp{position:absolute;opacity:0;animation:cfall var(--d,2s) var(--dl,0s) ease-in forwards;border-radius:var(--br,3px)}
 @keyframes cfall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
 .spin{display:flex;gap:6px;justify-content:center;align-items:center;height:56px}
@@ -476,7 +476,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="buzz-btn" id="buzz-btn" style="display:none" disabled>⚡ BUZZ !</button>
       <!-- answer input (shown after buzz) -->
       <div class="buzz-input-row" id="buzz-input-row">
-        <input type="text" class="buzz-ans-in" id="buzz-ans-in" placeholder="Qui est-ce ?" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        <input type="text" class="buzz-ans-in" id="buzz-ans-in" placeholder="Qui est-ce ?" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
         <button class="buzz-chk" id="buzz-chk-btn">✓</button>
       </div>
       <div class="buzz-freeze-msg" id="buzz-freeze-msg"></div>
@@ -494,7 +494,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div class="sportus-bottom">
       <div class="sportus-kbd" id="sportus-kbd"></div>
       <div class="sportus-input-row">
-        <input type="text" class="sportus-in" id="sportus-in" placeholder="Nom complet…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+        <input type="text" class="sportus-in" id="sportus-in" placeholder="Nom complet…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="send">
         <button class="sportus-chk" id="sportus-chk">✓</button>
       </div>
       <div class="sportus-fb" id="sportus-fb"></div>
@@ -525,7 +525,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div class="prix-history" id="prix-history"></div>
     <div class="prix-input-row">
-      <input type="number" class="prix-in" id="prix-in" placeholder="Ta réponse…" min="0" autocomplete="off">
+      <input type="number" class="prix-in" id="prix-in" placeholder="Ta réponse…" min="0" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off">
       <div id="prix-countdown" style="font-family:var(--fh);font-size:42px;line-height:1;min-width:44px;text-align:center;color:var(--neon);transition:color .3s,transform .2s;flex-shrink:0">10</div>
       <button class="prix-chk" id="prix-chk">✓</button>
     </div>
@@ -719,7 +719,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div id="scout-revealed-list" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="scout-ans-row">
-      <input type="text" class="scout-in" id="scout-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+      <input type="text" class="scout-in" id="scout-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
       <button class="chk-btn" id="scout-chk">✓</button>
     </div>
     <div class="fb" id="scout-fb"></div>
@@ -825,7 +825,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <!-- Shared answer (text + image only) -->
   <div class="ans-area" id="std-ans-area">
     <div class="ans-row">
-      <input type="text" class="ans-in" id="ans-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+      <input type="text" class="ans-in" id="ans-in" placeholder="Nom du sportif…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
       <button class="chk-btn" id="chk-btn">✓</button>
     </div>
     <div class="fb" id="fb"></div>
@@ -1225,7 +1225,7 @@ document.getElementById('prix-in').addEventListener('keydown', e=>{ if(e.key==='
 
 async function checkPrix(){
   if(P.done || !G.active) return;
-  const raw = document.getElementById('prix-in').value.trim().replace(',','.');
+  const raw = document.getElementById('prix-in').value.trim().replaceAll(',','.');
   const guess = parseFloat(raw);
   if(isNaN(guess) || guess < 0){
     document.getElementById('prix-in').classList.add('err');
@@ -2283,7 +2283,7 @@ function chooseRepliqueMode(mode){
     const d=document.createElement('div');
     d.innerHTML='<div style="font-size:12px;color:var(--mute);margin-bottom:6px">Tape la fin de la citation :</div>'
       +'<div style="display:flex;gap:8px">'
-      +'<input type="text" id="rq-cash-in" class="scout-in" placeholder="Suite de la citation…" autocomplete="off" spellcheck="false" style="flex:1">'
+      +'<input type="text" id="rq-cash-in" class="scout-in" placeholder="Suite de la citation…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" style="flex:1">'
       +'<button class="chk-btn" onclick="submitRepliqueCash()">✓</button></div>';
     area.appendChild(d);
     setTimeout(()=>document.getElementById('rq-cash-in')?.focus(),80);
@@ -2396,7 +2396,7 @@ function startRepliquePhase2(){
 
 function showAuthorInput(authorArea){
   authorArea.innerHTML='<div style="display:flex;gap:8px">'
-    +'<input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l\'auteur…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" style="flex:1">'
+    +'<input type="text" id="rq-author-input" class="scout-in" placeholder="Nom de l\'auteur…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" style="flex:1">'
     +'<button class="chk-btn" onclick="submitRepliqueAuthor(false,null,\'cash\')">✓</button></div>';
   const inp=document.getElementById('rq-author-input');
   if(inp){inp.onkeydown=e=>{if(e.key==='Enter')submitRepliqueAuthor(false,null,'cash');};setTimeout(()=>inp.focus(),80);}
@@ -2473,9 +2473,15 @@ function toggleChaseSound(){
   const btn=document.getElementById('chase-sound-toggle');
   if(btn) btn.textContent=chaseSoundOn?'🔔 Bip actif':'🔕 Bip désactivé';
 }
+let _chaseAudioCtx = null;
 function playChaseBeep(urgent){
+  if(!chaseSoundOn) return;
   try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    if(!_chaseAudioCtx || _chaseAudioCtx.state === 'closed'){
+      _chaseAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    }
+    if(_chaseAudioCtx.state === 'suspended') _chaseAudioCtx.resume();
+    const ctx = _chaseAudioCtx;
     const osc=ctx.createOscillator();
     const gain=ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
