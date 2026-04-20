@@ -1857,7 +1857,11 @@ async function submitGrimpeAnswer(){
     setTimeout(()=>{fb.textContent='';},1000);
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
-      fb.textContent='🏁 Toutes les reponses trouvees !';fb.style.color='var(--neon)';
+      // Figer Pogacar immédiatement — le joueur a tout trouvé
+      if(GP.physicsInt){clearInterval(GP.physicsInt);GP.physicsInt=null;}
+      if(GP.timerInt){clearInterval(GP.timerInt);GP.timerInt=null;}
+      fb.textContent='🏁 Toutes les réponses trouvées !';fb.style.color='var(--neon)';
+      setTimeout(()=>grimpeFinish('all_found'),1800);
       return;
     }
     grimpeStartQuestionTimer();
@@ -2003,12 +2007,13 @@ function grimpeFinish(reason){
     return;
   }
 
-  if(statusEl){statusEl.textContent=isWin?'🏆 Victoire !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':'var(--orange)';}
+  if(statusEl){statusEl.textContent=isWin?'🏆 Victoire !':reason==='all_found'?'🏁 Toutes trouvées !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':reason==='all_found'?'var(--cyan)':'var(--orange)';}
+  const distTxtFinal=isWin?'🏆 Arrivé avant Pogacar !':reason==='all_found'?'🎯 Toutes les réponses trouvées ! '+rawScore+'/100 cases':distTxt;
   G.score=rawScore;setScore(rawScore,true);setVictoryIcon('grimpe');
   setTimeout(()=>{
-    document.getElementById('v-name').textContent="L'Alpe d’Huez";
+    document.getElementById('v-name').textContent="L'Alpe d'Huez";
     document.getElementById('v-sc').textContent=rawScore;
-    document.getElementById('v-sub').textContent=distTxt;
+    document.getElementById('v-sub').textContent=distTxtFinal;
     show('sv');if(rawScore>0)confetti();submitScore(rawScore);
   },1000);
 }
