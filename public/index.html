@@ -1743,18 +1743,18 @@ function setupGrimpeMode(data){
 function grimpePhysicsTick(){
   if(GP.done)return;
   const dt=0.1;
+  const sprintFactor=GP._sprintFactor||1;
   const p=grimpeSection(GP.cases);
-  // Vide la jauge selon la pente
+  // Vide la jauge selon la pente (accéléré en sprint)
   const drain=GP_DRAIN_K*(1+p*0.5);
   const elanFloor=(GP.watts/500)*GP_EFF;
-  GP.elan=Math.max(elanFloor, GP.elan-drain*dt);
-  // Vitesse = watts^(1/3) × élan/100 × slopeFactor × VMAX
+  GP.elan=Math.max(elanFloor, GP.elan-drain*dt*sprintFactor);
+  // Vitesse joueur (accélérée en sprint)
   const wF=Math.pow(Math.min(GP.watts,500)/500, 1/3);
   const spd=wF*(Math.min(GP.elan,GP_ELAN_CAP)/100)*grimpeSlopeFactor(GP.cases)*GP_VMAX;
-  GP.cases=Math.min(100, GP.cases+spd*dt);
-  // Pogi linéaire, démarre après 3s — accéléré si sprint
+  GP.cases=Math.min(100, GP.cases+spd*dt*sprintFactor);
+  // Pogi linéaire — même facteur sprint
   const elapsed=(Date.now()-GP.startTime)/1000;
-  const sprintFactor=GP._sprintFactor||1;
   if(elapsed>=3) GP.pogiCases=Math.min(100,GP.pogiCases+(100/90)*sprintFactor*dt);
   grimpeUpdateDisplay();
   if(GP.cases>=100&&!GP.done){grimpeFinish();return;}
