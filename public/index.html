@@ -1,38 +1,89 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#07070f">
-<title>Le Grand-Chelem ⚡ 10 jeux · 100 pts</title>
-<style>
-/* Responsive Mobile-First */
-:root { --primary: #6366f1; --danger: #ef4444; --card: #1e293b; }
-body { font-family: system-ui, sans-serif; margin: 0; background: #0f172a; color: #fff; }
-.container { max-width: 800px; margin: 0 auto; padding: 1rem; }
-.card { background: var(--card); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-.btn { width: 100%; padding: 1rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; margin-top: 0.75rem; }
-.btn:active { transform: scale(0.98); }
-.input { width: 100%; padding: 1rem; background: #0f172a; border: 2px solid #334155; border-radius: 12px; color: #fff; font-size: 1.125rem; margin-bottom: 1rem; }
-.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin: 1rem 0; }
-.stat-box { background: #0f172a; padding: 0.75rem; border-radius: 8px; text-align: center; }
-.stat-val { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
-.stat-lbl { font-size: 0.75rem; color: #94a3b8; }
-.timer { font-size: 2.5rem; font-weight: 800; text-align: center; color: var(--danger); margin: 1rem 0; }
-.track { height: 160px; background: linear-gradient(to bottom, #86efac, #22c55e); border-radius: 12px; position: relative; margin: 1rem 0; overflow: hidden; }
-.track-pos { position: absolute; left: 50%; transform: translateX(-50%); font-size: 2.5rem; transition: bottom 0.4s ease; }
-.powerups { display: flex; gap: 0.75rem; margin: 1rem 0; }
-.powerup { flex: 1; padding: 0.75rem; background: #0f172a; border: 2px solid #334155; border-radius: 12px; text-align: center; cursor: pointer; }
-.powerup.active { border-color: var(--primary); background: #1e293b; }
-.hidden { display: none !important; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366f1">
+    <title>Le Grand-Chelem ⚡ 10 jeux · 100 pts</title>
+    <style>
+        :root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--primary:#6366f1;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:16px;--shadow:0 8px 32px rgba(0,0,0,0.4)}
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;overflow-x:hidden}
+        
+        .header{background:linear-gradient(135deg,#6366f1,#ec4899);padding:1rem;text-align:center;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+        .header h1{font-size:clamp(1.25rem,5vw,1.75rem);font-weight:800;letter-spacing:-0.5px}
+        .header p{font-size:0.875rem;opacity:0.9;margin-top:0.25rem}
 
-@media (max-width: 640px) {
-  .stats { grid-template-columns: 1fr; }
-  .btn { padding: 0.875rem; font-size: 0.95rem; }
-  .timer { font-size: 2rem; }
-  .powerup { padding: 0.5rem; font-size: 0.85rem; }
-}
-</style>
+        .container{max-width:720px;margin:0 auto;padding:1rem}
+        .card{background:var(--card);border-radius:var(--radius);padding:clamp(1rem,3vw,1.5rem);margin-bottom:1rem;box-shadow:var(--shadow)}
+        .card-title{font-size:1.25rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+        
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;width:100%;padding:clamp(0.875rem,2vw,1rem);border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 0.1s,opacity 0.2s;background:var(--primary);color:#fff;text-transform:uppercase;letter-spacing:0.5px}
+        .btn:active{transform:scale(0.98)}
+        .btn:disabled{opacity:0.5;cursor:not-allowed}
+        .btn-success{background:var(--success)}
+        .btn-warning{background:var(--warning);color:#000}
+        .btn-danger{background:var(--danger)}
+        .btn-group{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-top:1rem}
+        .btn-sm{padding:0.625rem 1rem;font-size:0.875rem}
+
+        .input{width:100%;padding:1rem;background:#0f172a;border:2px solid #334155;border-radius:12px;color:#fff;font-size:1.125rem;margin-bottom:1rem;font-family:inherit}
+        .input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,0.2)}
+
+        .game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.75rem;margin:1rem 0}
+        .game-item{background:var(--card);padding:1rem;border-radius:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all 0.2s}
+        .game-item:hover{transform:translateY(-2px);border-color:var(--primary)}
+        .game-item.played{opacity:0.6;border-color:var(--success);pointer-events:none}
+        .game-emoji{font-size:2rem;margin-bottom:0.5rem}
+        .game-name{font-size:0.875rem;font-weight:600}
+
+        .timer{font-size:clamp(2rem,8vw,3rem);font-weight:800;text-align:center;color:var(--danger);font-variant-numeric:tabular-nums;margin:1rem 0}
+        .progress-bar{height:8px;background:#334155;border-radius:4px;overflow:hidden;margin:1rem 0}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--success));transition:width 0.3s ease}
+
+        .score-display{background:linear-gradient(135deg,var(--primary),#ec4899);padding:1.5rem;border-radius:12px;text-align:center;margin:1rem 0}
+        .score-value{font-size:clamp(2.5rem,10vw,4rem);font-weight:800;line-height:1}
+        .score-label{font-size:0.875rem;opacity:0.9;margin-top:0.5rem}
+
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin:1rem 0}
+        .stat-box{background:#0f172a;padding:0.75rem;border-radius:8px;text-align:center}
+        .stat-val{font-size:1.5rem;font-weight:700;color:var(--primary)}
+        .stat-lbl{font-size:0.75rem;color:var(--muted);margin-top:0.25rem}
+
+        .powerups{display:flex;gap:0.75rem;flex-wrap:wrap;margin:1rem 0}
+        .powerup{flex:1;min-width:80px;padding:0.75rem;background:#0f172a;border:2px solid #334155;border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s}
+        .powerup:active{transform:scale(0.95)}
+        .powerup.active{border-color:var(--primary);background:#1e293b}
+        .powerup-icon{font-size:1.5rem;margin-bottom:0.25rem}
+        .powerup-lbl{font-size:0.75rem;font-weight:600}
+
+        .track{height:180px;background:linear-gradient(to bottom,#86efac,#22c55e);border-radius:12px;position:relative;margin:1rem 0;overflow:hidden}
+        .track-pos{position:absolute;left:50%;transform:translateX(-50%);font-size:2.5rem;transition:bottom 0.4s cubic-bezier(0.4,0,0.2,1)}
+
+        .hidden{display:none!important}
+        .text-center{text-align:center}
+        .mt-4{margin-top:1rem}
+        .mb-4{margin-bottom:1rem}
+        .text-sm{font-size:0.875rem}
+        .text-muted{color:var(--muted)}
+        .text-success{color:var(--success)}
+        .text-danger{color:var(--danger)}
+        .font-bold{font-weight:700}
+
+        @media(max-width:640px){
+            .stats{grid-template-columns:1fr}
+            .btn-group{grid-template-columns:1fr}
+            .powerup{min-width:70px;padding:0.5rem}
+            .game-grid{grid-template-columns:repeat(2,1fr)}
+        }
+
+        .animate-in{animation:slideUp 0.3s ease-out}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+        .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+        .modal.active{display:flex}
+        .modal-content{background:var(--card);border-radius:var(--radius);padding:2rem;max-width:400px;width:100%;text-align:center;animation:slideUp 0.3s}
+    </style>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
