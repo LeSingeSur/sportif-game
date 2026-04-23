@@ -152,8 +152,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .wb.rev .wt{color:var(--txt);animation:pop .28s cubic-bezier(.34,1.56,.64,1)}
 @keyframes pop{0%{transform:scale(.75);opacity:0}100%{transform:scale(1);opacity:1}}
 /* IMAGE MODE */
-.img-wrap{position:relative;width:100%;border-radius:16px;overflow:hidden;background:var(--c1);flex-shrink:0;touch-action:none}
-.img-wrap img{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;pointer-events:none}
+.img-wrap{position:relative;width:100%;border-radius:16px;overflow:hidden;background:var(--c1);flex-shrink:0;touch-action:pan-y}
+.img-wrap img{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;user-select:none;-webkit-user-select:none;pointer-events:none}
 .grid-overlay{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;display:grid}
 .tile{background:rgba(10,10,20,.92);border:1px solid rgba(255,255,255,.04);transition:opacity .2s;position:relative;overflow:hidden}
 .tile:not(.rev)::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;inset:0;background:linear-gradient(135deg,#181830,#0d0d1a)}
@@ -420,7 +420,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .lb-tabs::-webkit-scrollbar{display:none}
 .lb-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:border-color .15s,color .15s;flex-shrink:0}
 .lb-tab.active{border-color:var(--neon);color:var(--neon)}
-.lb-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:0}
+.lb-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:0;max-height:60vh}
 .lb-item{display:flex;align-items:center;gap:13px;background:var(--c1);border-radius:var(--r);padding:13px 15px}
 .lb-rank{font-family:var(--fh);font-size:26px;width:34px;text-align:center;flex-shrink:0}
 .lb-rank.g{color:#ffd700}.lb-rank.s{color:#c0c0c0}.lb-rank.b{color:#cd7f32}.lb-rank.o{color:var(--mute)}
@@ -902,7 +902,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LE DÉMINEUR zone -->
   <div id="demineur-zone">
-    <div id="dem-question" style="font-size:14px;font-weight:700;text-align:center;padding:10px 12px;background:var(--c1);border-radius:var(--r);color:var(--txt);line-height:1.4;display:none"></div>
+    <div id="dem-question" style="font-size:14px;font-weight:700;text-align:center;padding:10px 12px;background:var(--c1);border-radius:var(--r);color:var(--txt);line-height:1.4"></div>
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div id="dem-timer-txt" style="font-family:var(--fh);font-size:22px;color:var(--neon)">60s</div>
       <div style="font-size:12px;color:var(--mute)">Pot temporaire</div>
@@ -1662,8 +1662,8 @@ const GP = {
 };
 
 // Paramètres physique élan
-const GP_VMAX=4.5, GP_DRAIN_K=8, GP_EFF=15, GP_ELAN_CAP=350;
-const GP_SW=5, GP_BW=55, GP_ASP_PER_STREAK=5, GP_ASP_CAP=140, GP_GEL_FACTOR=25;
+const GP_VMAX=6, GP_DRAIN_K=8, GP_EFF=15, GP_ELAN_CAP=350;
+const GP_SW=5, GP_BW=85, GP_ASP_PER_STREAK=5, GP_ASP_CAP=160, GP_GEL_ELAN=240;
 
 function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
 function grimpeSlopeFactor(c){ const p=grimpeSection(c); return Math.max(0,1-p/15); }
@@ -1922,10 +1922,9 @@ async function submitGrimpeAnswer(){
     const aspElan=Math.min(100+GP.goodStreak*GP_ASP_PER_STREAK, GP_ASP_CAP);
     // Gel pending: boost élan proportionnel à la pente
     if(GP.gelPending){
-      const p2=grimpeSection(GP.cases);
-      GP.elan=Math.min(100+p2*GP_GEL_FACTOR, GP_ELAN_CAP);
+      GP.elan=GP_GEL_ELAN;
       GP.gelPending=false;
-      fb.textContent='🍬 GEL activé ! Boost pente '+p2+'% !';fb.style.color='#ffdd00';
+      fb.textContent='🍬 GEL activé ! Boost élan !';fb.style.color='#ffdd00';
     } else {
       GP.elan=aspElan;
       const aspTxt=GP.goodStreak>1?' 🌬️×'+GP.goodStreak:'';
@@ -1951,6 +1950,12 @@ async function submitGrimpeAnswer(){
   } else {
     GP.wrongTotal++;GP.wrongStreak++;GP.goodStreak=0;
     GP.elan=0; // élan coupé sur erreur
+    // Gel annulé si pending
+    if(GP.gelPending){
+      GP.gelPending=false;
+      const gelBtn=document.getElementById('grimpe-gel-btn');
+      if(gelBtn)gelBtn.style.display='block';
+    }
     document.getElementById('grimpe-streak').textContent='';
     grimpeFlashInput(false);
     grimpeUpdateLives();
@@ -2568,7 +2573,7 @@ function submitRepliqueAuthor(timeout,choice,mode){
       else if(normRQ(btn.textContent)===normRQ(choice)) btn.classList.add('wrong');
       btn.onclick=null;
     });
-    RQ.p2Score=-15;
+    RQ.p2Score=0;
   } else {
     RQ.p2Score=0;
   }
@@ -2578,7 +2583,6 @@ function submitRepliqueAuthor(timeout,choice,mode){
   G.score=total;
   if(timeout) fb.textContent='⏰ Temps écoulé — c\'était '+(RQ.data.answer||'?');
   else if(correct) fb.textContent='✅ Auteur trouvé ! +'+authorQCMScore+' pts';
-  else if(RQ.p2Score===-15) fb.textContent='❌ −15 pts ! C\'était '+(RQ.data.answer||'?');
   else fb.textContent='❌ C\'était '+(RQ.data.answer||'?');
   fb.className='fb '+(correct?'':'pen');
   setScore(total,true);
