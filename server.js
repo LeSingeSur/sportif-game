@@ -2,6 +2,7 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const fetch    = require('node-fetch');
+const { MongoClient } = require('mongodb');
 const app      = express();
 
 app.use(express.json({ limit: '10mb' }));
@@ -14,28 +15,91 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sportif2024';
-const DATA_FILE      = path.join(__dirname, 'data.json');
+const MONGO_URI      = process.env.MONGODB_URI || '';
 const WRONG_PENALTY  = 10;
 
-function loadData() {
+// ── MongoDB ────────────────────────────────────────────────────────────────
+let db, colAthletes, colScores, colConfig;
+let athletes     = [];
+let scores       = {};
+let globalScores = [];
+let musicConfig  = { url: '', title: '' };
+let welcomeImage = { url: '' };
+
+async function connectMongo() {
+  if (!MONGO_URI) { console.log('Pas de MONGODB_URI — mode fichier local'); loadFromFile(); return; }
   try {
-    if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch(e) { console.error('Erreur lecture:', e.message); }
-  return { athletes: [], scores: {}, globalScores: [] };
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    db          = client.db('arena');
+    colAthletes = db.collection('athletes');
+    colScores   = db.collection('scores');
+    colConfig   = db.collection('config');
+    console.log('MongoDB connecté');
+    await loadFromMongo();
+  } catch(e) {
+    console.error('MongoDB erreur:', e.message);
+    loadFromFile();
+  }
 }
-function saveData() {
+
+// Charger depuis MongoDB
+async function loadFromMongo() {
+  athletes     = await colAthletes.find({}).toArray();
+  const sc     = await colScores.find({}).toArray();
+  scores       = {};
+  globalScores = [];
+  sc.forEach(s => { scores[s.athleteId] = s.scores || []; });
+  const cfg    = await colConfig.findOne({ key: 'main' }) || {};
+  musicConfig  = cfg.musicConfig  || { url: '', title: '' };
+  welcomeImage = cfg.welcomeImage || { url: '' };
+  rebuildGlobalScores();
+  console.log(` ${athletes.length} sportif(s) chargé(s) depuis MongoDB`);
+}
+
+// Sauvegarder dans MongoDB (ou fichier en fallback)
+async function saveData() {
+  if (!db) { saveToFile(); return; }
+  try {
+    // Athletes
+    for (const a of athletes) {
+      await colAthletes.updateOne({ id: a.id }, { $set: a }, { upsert: true });
+    }
+    // Config
+    await colConfig.updateOne({ key: 'main' }, { $set: { key:'main', musicConfig, welcomeImage } }, { upsert: true });
+  } catch(e) { console.error('Erreur saveData MongoDB:', e.message); }
+}
+
+async function saveScore(athleteId, pseudo, score) {
+  if (!db) { saveToFile(); return; }
+  try {
+    await colScores.updateOne(
+      { athleteId },
+      { $push: { scores: { pseudo, score, date: new Date() } } },
+      { upsert: true }
+    );
+  } catch(e) { console.error('Erreur saveScore:', e.message); }
+}
+
+// Fallback fichier local
+const DATA_FILE = path.join(__dirname, 'data.json');
+function loadFromFile() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const d = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      athletes     = d.athletes     || [];
+      scores       = d.scores       || {};
+      globalScores = d.globalScores || [];
+      musicConfig  = d.musicConfig  || { url: '', title: '' };
+      welcomeImage = d.welcomeImage || { url: '' };
+      console.log(` ${athletes.length} sportif(s) chargé(s) depuis fichier`);
+    }
+  } catch(e) { console.error('Erreur lecture fichier:', e.message); }
+}
+function saveToFile() {
   try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage }, null, 2)); }
-  catch(e) { console.error('Erreur écriture:', e.message); }
+  catch(e) { console.error('Erreur écriture fichier:', e.message); }
 }
-
-const saved      = loadData();
-let athletes     = saved.athletes     || [];
-let scores       = saved.scores       || {};
-let globalScores = saved.globalScores || [];
-let musicConfig  = saved.musicConfig  || { url: '', title: '' };
-let welcomeImage = saved.welcomeImage || { url: '' };
-console.log(` ${athletes.length} sportif(s) chargé(s)`);
-
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function hasPlayed(pseudo, athleteId) {
   return (scores[athleteId] || []).some(e => norm(e.pseudo) === norm(pseudo));
@@ -422,6 +486,7 @@ app.post('/api/score', (req, res) => {
   scores[athleteId].sort((a, b) => b.score - a.score);
   rebuildGlobalScores();
   saveData();
+  saveScore(athleteId, pseudo.trim().slice(0, 20), Math.max(0, score)); // MongoDB async
   res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length, answer: athlete.answer });
 });
 
@@ -726,4 +791,6 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html`));
+connectMongo().then(() => {
+  app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html`));
+});
