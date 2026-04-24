@@ -458,7 +458,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <div id="cft"></div>
 <div class="pf" id="pf"></div>
 
-<!-- PSEUDO -->
+<!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
   <div class="logo-tag">⚡ 10 jeux · 100 pts à gagner ⚡</div>
@@ -479,11 +479,25 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
-      <div class="field">
-        <span class="flbl">Ton pseudo</span>
-        <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+      <!-- Étape 1: pseudo -->
+      <div id="account-step1">
+        <div class="field">
+          <span class="flbl">Ton pseudo</span>
+          <input type="text" id="pseudo-in" placeholder="Ex: SuperChampion" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <button class="btn btn-p" id="btn-next-account" style="font-size:16px;letter-spacing:1px">Continuer →</button>
       </div>
-      <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
+      <!-- Étape 2: PIN (nouveau ou existant) -->
+      <div id="account-step2" style="display:none;flex-direction:column;gap:10px">
+        <div id="account-msg" style="font-size:13px;text-align:center;color:var(--mute)"></div>
+        <div class="field">
+          <span class="flbl">PIN (4 chiffres)</span>
+          <input type="password" id="pin-in" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" style="letter-spacing:6px;font-size:22px;text-align:center">
+        </div>
+        <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
+        <button id="btn-back-account" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline">← Changer de pseudo</button>
+      </div>
+      <div id="account-err" style="color:var(--red);font-size:12px;text-align:center;min-height:16px"></div>
 
       <!-- Welcome message shown after pseudo entered -->
       <div id="welcome-msg" style="display:none;flex-direction:column;align-items:center;gap:10px;margin-top:8px;animation:fu .4s ease">
@@ -1012,18 +1026,50 @@ let welcomeImageUrl='';
   }catch(e){}
 })();
 
+// ── SYSTÈME DE COMPTES ────────────────────────────────────────────────────
+let _accountIsNew = false;
+
 document.getElementById('pseudo-in').addEventListener('input', e=>{
   const pseudo=e.target.value.trim();
   const msgEl=document.getElementById('welcome-msg');
   const txtEl=document.getElementById('welcome-txt');
   if(!msgEl||!txtEl) return;
-  if(pseudo.length>=2){
-    txtEl.textContent='Bienvenue '+pseudo+' ! 👋';
-    msgEl.style.display='flex';
-  } else {
-    msgEl.style.display='none';
-  }
+  if(pseudo.length>=2){txtEl.textContent='Bienvenue '+pseudo+' ! 👋';msgEl.style.display='flex';}
+  else msgEl.style.display='none';
 });
+
+document.getElementById('btn-next-account').onclick=async function(){
+  const pseudo=document.getElementById('pseudo-in').value.trim();
+  if(!pseudo){shake('pseudo-in');return;}
+  const errEl=document.getElementById('account-err');
+  const msgEl=document.getElementById('account-msg');
+  errEl.textContent='';
+  // Vérifier si le pseudo existe
+  try{
+    const r=await fetch('/api/account/check?pseudo='+encodeURIComponent(pseudo));
+    const d=await r.json();
+    _accountIsNew=!d.exists;
+    msgEl.textContent=d.exists?'Compte existant — entre ton PIN':'Nouveau compte — choisis un PIN à 4 chiffres';
+    document.getElementById('account-step1').style.display='none';
+    const step2=document.getElementById('account-step2');
+    step2.style.display='flex';
+    setTimeout(()=>document.getElementById('pin-in').focus(),100);
+  }catch(e){
+    errEl.textContent='Erreur réseau — réessaie';
+  }
+};
+
+document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-next-account').click();});
+document.getElementById('pin-in').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-start').click();});
+document.getElementById('btn-back-account').onclick=()=>{
+  document.getElementById('account-step1').style.display='block';
+  document.getElementById('account-step2').style.display='none';
+  document.getElementById('account-err').textContent='';
+  setTimeout(()=>document.getElementById('pseudo-in').focus(),100);
+};
+
+document.getElementById('btn-start').onclick=startGame;
+document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
 function toggleMusic(){
   const audio=document.getElementById('music-audio');
   if(audio.paused){
@@ -1066,14 +1112,31 @@ if(PREVIEW_MODE){
   document.body.prepend(banner);
 }
 
-function startGame(){
-  const p=document.getElementById('pseudo-in').value.trim();
-  if(!p){shake('pseudo-in');return}
-  // Stop music
-  const audio=document.getElementById('music-audio');
-  if(audio){audio.pause();audio.currentTime=0;}
-  G.pseudo=p; document.getElementById('ptag').textContent=p;
-  show('sg'); loadAthlete();
+async function startGame(){
+  const pseudo=document.getElementById('pseudo-in').value.trim();
+  const pin=document.getElementById('pin-in').value.trim();
+  const errEl=document.getElementById('account-err');
+  if(!pseudo){shake('pseudo-in');return;}
+  if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){
+    errEl.textContent='PIN invalide — 4 chiffres requis';
+    shake('pin-in');return;
+  }
+  errEl.textContent='';
+  try{
+    const endpoint=_accountIsNew?'/api/account/create':'/api/account/login';
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pseudo,pin})});
+    const d=await r.json();
+    if(!d.ok){errEl.textContent=d.error||'Erreur';shake('pin-in');return;}
+    // Auth OK
+    const audio=document.getElementById('music-audio');
+    if(audio){audio.pause();audio.currentTime=0;}
+    G.pseudo=pseudo;
+    document.getElementById('ptag').textContent=pseudo;
+    show('sg');loadAthlete();
+  }catch(e){
+    errEl.textContent='Erreur réseau — réessaie';
+  }
 }
 
 // LOAD ATHLETE
@@ -4138,6 +4201,35 @@ window.addEventListener('load',()=>{
     setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
   }
 });
+
+// ── POPUP BIENVENUE ────────────────────────────────────────────────────────
+async function loadWelcomePopup(){
+  try{
+    const r=await fetch('/api/popup');
+    const d=await r.json();
+    if(!d.active||(!d.title&&!d.message))return;
+    document.getElementById('popup-emoji-display').textContent=d.emoji||'🏆';
+    document.getElementById('popup-title-display').textContent=d.title||'';
+    document.getElementById('popup-msg-display').textContent=d.message||'';
+    const btn=document.getElementById('popup-close-btn');
+    btn.style.background=d.color||'#d4ff00';
+    btn.style.color=(d.color&&d.color!=='#d4ff00')?'#fff':'#000';
+    document.getElementById('welcome-popup').style.display='flex';
+  }catch(e){}
+}
+function closeWelcomePopup(){
+  document.getElementById('welcome-popup').style.display='none';
+}
+loadWelcomePopup();
 </script>
+<!-- POPUP BIENVENUE -->
+<div id="welcome-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--c1);border-radius:18px;padding:28px 24px;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:16px;animation:fu .3s ease">
+    <div id="popup-emoji-display" style="font-size:52px">🏆</div>
+    <div id="popup-title-display" style="font-family:var(--fh);font-size:22px;color:var(--neon);line-height:1.2"></div>
+    <div id="popup-msg-display" style="font-size:14px;color:var(--mute);line-height:1.6"></div>
+    <button id="popup-close-btn" onclick="closeWelcomePopup()" style="padding:14px;border:none;border-radius:12px;font-family:var(--fh);font-size:16px;font-weight:900;cursor:pointer;letter-spacing:1px">C'EST PARTI 🚀</button>
+  </div>
+</div>
 </body>
 </html>

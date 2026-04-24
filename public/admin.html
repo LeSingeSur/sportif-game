@@ -1,4 +1,17 @@
-<!DOCTYPE html>
+<!DOC
+  <!-- TAB: COMPTES -->
+  <div id="tab-comptes" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">👤 Comptes joueurs</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="comptes-count" style="font-size:12px;color:var(--mute)">Chargement...</div>
+        <button class="btn" style="padding:6px 14px;font-size:12px" onclick="loadComptes()">🔄 Actualiser</button>
+      </div>
+      <div id="comptes-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto"></div>
+    </div>
+  </div>
+
+TYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -175,6 +188,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <button class="nav-tab active" onclick="showAdminTab('defis')">📋 Défis</button>
     <button class="nav-tab" onclick="showAdminTab('classement')">🏆 Classement</button>
     <button class="nav-tab" onclick="showAdminTab('musique')">🎵 Musique</button>
+    <button class="nav-tab" onclick="showAdminTab('comptes')">👤 Comptes</button>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -303,10 +317,14 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="grimpe-theme-in" placeholder="Ex: Alpe d'Huez — Identifie ces coureurs !">
         </div>
         <div class="field">
-          <label>Réponses acceptées (une par ligne ou séparées par ;)</label>
-          <textarea id="grimpe-answers-in" placeholder="Vingegaard;Jonas Vingegaard&#10;Pogacar&#10;Merckx;Eddy Merckx" style="min-height:120px"></textarea>
-          <span class="hint">Le joueur doit trouver un maximum de réponses. Une réponse = avance sur la montée.</span>
-          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
+          <label>Réponses acceptées</label>
+          <span class="hint">Chaque ligne = une réponse. Les variantes (ex: Vingegaard;Jonas Vingegaard) sont séparées par ; — tolérance 1 faute d'orthographe.</span>
+          <textarea id="grimpe-bulk-in" placeholder="Pogacar&#10;Vingegaard;Jonas Vingegaard&#10;Van Aert&#10;Merckx;Eddy Merckx" style="min-height:80px;margin-top:6px"></textarea>
+          <button class="btn btn-s" id="btn-grimpe-bulk" style="margin-top:6px">📋 Importer ces réponses</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <div id="grimpe-items-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-grimpe-item" style="margin-top:8px">➕ Ajouter une réponse</button>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
         </div>
         <div class="field">
           <label>⚡ Paramètres jeu (cases)</label>
@@ -680,6 +698,30 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <div class="msg" id="music-msg"></div>
     </div>
     <div class="card" style="margin-top:12px">
+      <div class="card-title">🎉 Popup de bienvenue</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--c2);border-radius:10px;padding:10px 12px">
+        <input type="checkbox" id="popup-active-in" style="width:18px;height:18px;cursor:pointer;accent-color:var(--neon)">
+        <label for="popup-active-in" style="font-size:13px;color:var(--txt);cursor:pointer;font-weight:700">Afficher le popup aux joueurs</label>
+      </div>
+      <div class="field">
+        <label>Titre</label>
+        <input type="text" id="popup-title-in" placeholder="Ex: Bienvenue au Grand Chelem 2025 !">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea id="popup-msg-in" placeholder="Ex: Bonsoir à tous ! Le jeu commence dans quelques instants..." style="min-height:70px"></textarea>
+      </div>
+      <div class="field" style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:0 0 70px"><label>Emoji</label><input type="text" id="popup-emoji-in" placeholder="🏆" maxlength="4" style="text-align:center;font-size:22px"></div>
+        <div style="flex:1"><label>Couleur bouton</label><input type="color" id="popup-color-in" value="#d4ff00" style="width:100%;height:38px;border-radius:8px;border:none;cursor:pointer"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <button class="btn btn-p" onclick="savePopup()">💾 Sauvegarder</button>
+        <button class="btn" onclick="clearPopup()">🗑 Désactiver</button>
+        <span id="popup-msg-status" style="font-size:12px;color:var(--neon)"></span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
       <div class="card-title">🖼 Image de bienvenue</div>
       <div class="field">
         <label>URL de l'image (GitHub raw, JPG/PNG/GIF)</label>
@@ -818,8 +860,44 @@ function showAdminTab(tab){
   document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
   document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
   document.getElementById('tab-musique').style.display=tab==='musique'?'block':'none';
+  document.getElementById('tab-comptes').style.display=tab==='comptes'?'block':'none';
   if(tab==='classement') loadAdminScores();
-  if(tab==='musique') loadMusicConfig();
+  if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
+  if(tab==='comptes') loadComptes();
+}
+
+async function loadComptes(){
+  const list=document.getElementById('comptes-list');
+  const countEl=document.getElementById('comptes-count');
+  list.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement...</div>';
+  try{
+    const res=await fetch('/api/admin/accounts?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    if(!data.accounts){list.innerHTML='<div style="color:var(--red)">Erreur</div>';return;}
+    countEl.textContent=data.accounts.length+' compte(s)';
+    if(!data.accounts.length){list.innerHTML='<div style="color:var(--mute);text-align:center;padding:16px">Aucun compte créé.</div>';return;}
+    list.innerHTML='';
+    data.accounts.forEach(a=>{
+      const div=document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:10px 14px';
+      div.innerHTML=`<div>
+        <div style="font-weight:700;font-size:14px">${a.pseudo}</div>
+        <div style="font-size:11px;color:var(--mute)">${a.createdAt?new Date(a.createdAt).toLocaleDateString('fr-FR'):''}</div>
+      </div>
+      <button onclick="deleteCompte('${a.pseudo}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑 Supprimer</button>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML='<div style="color:var(--red)">Erreur réseau</div>';}
+}
+
+async function deleteCompte(pseudo){
+  if(!confirm('Supprimer le compte "'+pseudo+'" ?')) return;
+  const res=await fetch('/api/account/'+encodeURIComponent(pseudo),{
+    method:'DELETE',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw})});
+  const d=await res.json();
+  if(d.ok){loadComptes();}
+  else alert('Erreur: '+(d.error||'inconnue'));
 }
 
 async function loadMusicConfig(){
@@ -968,8 +1046,14 @@ async function startEdit(id){
   selectType(a.type||'blackjack');
   if(a.type==='grimpe'){
     document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
-    document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
-    document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
+    // Charger les réponses comme items (conserver les variantes si stockées)
+    grimpeItems=(a.grimpeAnswers||[]).map(ans=>{
+      // Si des variantes sont stockées dans grimpeAnswersFull, les utiliser
+      const full=a.grimpeAnswersFull;
+      if(full){const match=full.find(g=>g[0]===ans);return match?match.join(';'):ans;}
+      return ans;
+    });
+    renderGrimpeItems();
     const p=a.grimpeParams||{};
     const setF=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;};
     setF('grimpe-cases-per-answer', p.casesPerAnswer||6);
@@ -1096,7 +1180,7 @@ function cancelEdit(){
   document.getElementById('bj-target-in').value='';
   document.getElementById('bj-answers-in').value='';
   document.getElementById('bj-answers-count').textContent='0 entrée(s)';
-  document.getElementById('grimpe-theme-in').value='';
+  document.getElementById('grimpe-theme-in').value='';grimpeItems=[];renderGrimpeItems();
   document.getElementById('grimpe-answers-in').value='';
   document.getElementById('grimpe-count').textContent='0 réponse(s)';
   document.getElementById('img-url-in').value='';
@@ -1201,7 +1285,7 @@ function updateAliases(){
 function checkReady(){
   const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
-  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&parseGrimpeAnswers().length>=1;
+  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
@@ -1343,17 +1427,87 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
-function parseGrimpeAnswers(){
-  const raw=document.getElementById('grimpe-answers-in').value;
-  return raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+// ── GRIMPE ITEMS (style démineur) ─────────────────────────────────────────
+let grimpeItems = []; // [{text: 'Pogacar', aliases: ['Tadej Pogacar']}]
+
+function renderGrimpeItems(){
+  const list=document.getElementById('grimpe-items-list');
+  list.innerHTML='';
+  grimpeItems.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:6px;background:var(--c2);border-radius:8px;padding:6px 8px';
+    div.innerHTML=`<input type="text" value="${item}" style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" placeholder="Ex: Pogacar;Tadej Pogacar">
+      <button onclick="grimpeItems.splice(${i},1);renderGrimpeItems();checkReady()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">×</button>`;
+    div.querySelector('input').addEventListener('input',e=>{grimpeItems[i]=e.target.value;checkReady();});
+    list.appendChild(div);
+  });
+  document.getElementById('grimpe-count').textContent=grimpeItems.filter(x=>x.trim()).length+' réponse(s)';
 }
-function grimpeParam(id,def){ const v=parseInt(document.getElementById(id)?.value); return isNaN(v)?def:v; }
+
+function parseGrimpeAnswers(){
+  return grimpeItems.map(x=>x.trim()).filter(Boolean).map(line=>line.split(';')[0].trim()).filter(Boolean);
+}
+
+function parseGrimpeAnswersFull(){
+  // Returns array of arrays [[main, alias1, alias2], ...]
+  return grimpeItems.map(x=>x.trim()).filter(Boolean).map(line=>line.split(';').map(s=>s.trim()).filter(Boolean));
+}
+
+document.getElementById('btn-grimpe-bulk').onclick=()=>{
+  const raw=document.getElementById('grimpe-bulk-in').value;
+  const lines=raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  // Group by pairs: if user types "Vingegaard;Jonas Vingegaard" on one line, keep as one item
+  const bulk=document.getElementById('grimpe-bulk-in').value;
+  const items=bulk.split('\n').map(l=>l.trim()).filter(Boolean);
+  grimpeItems.push(...items);
+  document.getElementById('grimpe-bulk-in').value='';
+  renderGrimpeItems();checkReady();
+};
+
+document.getElementById('btn-add-grimpe-item').onclick=()=>{
+  grimpeItems.push('');
+  renderGrimpeItems();
+  const inputs=document.getElementById('grimpe-items-list').querySelectorAll('input');
+  if(inputs.length) inputs[inputs.length-1].focus();
+};
+
 document.getElementById('grimpe-theme-in').addEventListener('input',checkReady);
-document.getElementById('grimpe-answers-in').addEventListener('input',e=>{
-  const arr=parseGrimpeAnswers();
-  document.getElementById('grimpe-count').textContent=arr.length+' réponse(s)';
-  checkReady();
-});
+
+// ── POPUP BIENVENUE ────────────────────────────────────────────────────────
+async function loadPopupConfig(){
+  try{
+    const r=await fetch('/api/popup');
+    const d=await r.json();
+    document.getElementById('popup-active-in').checked=!!d.active;
+    document.getElementById('popup-title-in').value=d.title||'';
+    document.getElementById('popup-msg-in').value=d.message||'';
+    document.getElementById('popup-emoji-in').value=d.emoji||'🏆';
+    document.getElementById('popup-color-in').value=d.color||'#d4ff00';
+  }catch(e){}
+}
+
+async function savePopup(){
+  const active=document.getElementById('popup-active-in').checked;
+  const title=document.getElementById('popup-title-in').value.trim();
+  const message=document.getElementById('popup-msg-in').value.trim();
+  const emoji=document.getElementById('popup-emoji-in').value.trim()||'🏆';
+  const color=document.getElementById('popup-color-in').value||'#d4ff00';
+  const r=await fetch('/api/admin/popup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,title,message,emoji,color,active})});
+  const d=await r.json();
+  document.getElementById('popup-msg-status').textContent=d.ok?'✅ Sauvegardé':'❌ Erreur';
+  setTimeout(()=>{document.getElementById('popup-msg-status').textContent='';},2000);
+}
+
+async function clearPopup(){
+  document.getElementById('popup-active-in').checked=false;
+  const r=await fetch('/api/admin/popup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,title:'',message:'',emoji:'🏆',color:'#d4ff00',active:false})});
+  document.getElementById('popup-title-in').value='';
+  document.getElementById('popup-msg-in').value='';
+  document.getElementById('popup-msg-status').textContent='✅ Popup désactivé';
+  setTimeout(()=>{document.getElementById('popup-msg-status').textContent='';},2000);
+}
 
 // ── BLACKJACK ──────────────────────────────────────────────────────────────
 function parseBJAnswers(){
@@ -1823,6 +1977,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const rqTimeVal        = currentType==='replique'?rqTime:60;
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
+  const grimpeAnswersFull = currentType==='grimpe'?parseGrimpeAnswersFull():[];
   const grimpeParams = currentType==='grimpe'?{
     casesPerAnswer: parseFloat(document.getElementById('grimpe-cases-per-answer')?.value)||6,
     pogiSpeed:      parseFloat(document.getElementById('grimpe-pogi-speed')?.value)||1.11,
@@ -1870,7 +2025,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeParams};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams};
   if(editId)body.editId=editId;
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
