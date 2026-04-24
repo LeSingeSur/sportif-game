@@ -2,7 +2,8 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const fetch    = require('node-fetch');
-const { MongoClient } = require('mongodb');
+let MongoClient;
+try { MongoClient = require('mongodb').MongoClient; } catch(e) { console.log('mongodb non installé — mode fichier uniquement'); }
 const app      = express();
 
 app.use(express.json({ limit: '10mb' }));
@@ -27,7 +28,7 @@ let musicConfig  = { url: '', title: '' };
 let welcomeImage = { url: '' };
 
 async function connectMongo() {
-  if (!MONGO_URI) { console.log('Pas de MONGODB_URI — mode fichier local'); loadFromFile(); return; }
+  if (!MONGO_URI || !MongoClient) { console.log('Pas de MongoDB — mode fichier local'); loadFromFile(); return; }
   try {
     const client = new MongoClient(MONGO_URI);
     await client.connect();
@@ -37,6 +38,7 @@ async function connectMongo() {
     colConfig   = db.collection('config');
     console.log('MongoDB connecté');
     await loadFromMongo();
+    await loadAccounts();
   } catch(e) {
     console.error('MongoDB erreur:', e.message);
     loadFromFile();
@@ -53,6 +55,7 @@ async function loadFromMongo() {
   const cfg    = await colConfig.findOne({ key: 'main' }) || {};
   musicConfig  = cfg.musicConfig  || { url: '', title: '' };
   welcomeImage = cfg.welcomeImage || { url: '' };
+  popupConfig  = cfg.popupConfig   || { active: false, title: '', message: '', emoji: '🏆', color: '#d4ff00' };
   rebuildGlobalScores();
   console.log(` ${athletes.length} sportif(s) chargé(s) depuis MongoDB`);
 }
@@ -280,8 +283,14 @@ app.post('/api/grimpe-check', (req, res) => {
   if(!normAns) return res.json({ correct: false, reason: 'empty' });
   const alreadyFound = (found||[]).map(norm);
   if(alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
-  const correct = (athlete.grimpeAnswers||[]).some(a => lev(norm(a), normAns) <= 1);
-  res.json({ correct, total: (athlete.grimpeAnswers||[]).length });
+  // Vérifier contre toutes les variantes (grimpeAnswersFull) ou grimpeAnswers
+  const allGroups = (athlete.grimpeAnswersFull||[]).length
+    ? athlete.grimpeAnswersFull
+    : (athlete.grimpeAnswers||[]).map(a=>[a]);
+  const correct = allGroups.some(group => group.some(a => lev(norm(a), normAns) <= 1));
+  // Retourner la forme principale (premier élément du groupe)
+  const matchedGroup = correct ? allGroups.find(group => group.some(a => lev(norm(a), normAns) <= 1)) : null;
+  res.json({ correct, total: (athlete.grimpeAnswers||[]).length, answer: matchedGroup?matchedGroup[0]:null });
 });
 
 // EPO — révèle une réponse non encore trouvée
@@ -497,7 +506,7 @@ app.get('/api/scores/global', (req, res) => {
   if (!isAdmin && pseudo && !hasFinishedAll(pseudo)) {
     return res.json({ locked: true, played: athletes.filter(a => hasPlayed(pseudo, a.id)).length, total: athletes.length });
   }
-  res.json(globalScores.slice(0, 10));
+  res.json(globalScores.slice(0, 50));
 });
 
 app.get('/api/scores/:athleteId', (req, res) => {
@@ -509,7 +518,7 @@ app.get('/api/scores/:athleteId', (req, res) => {
   if (!isAdmin && pseudo && !hasFinishedAll(pseudo)) {
     return res.json({ locked: true, athlete: a ? { emoji: a.emoji, answer: '???', type: a.type || 'text' } : null, scores: [] });
   }
-  res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: (scores[id] || []).slice(0, 10) });
+  res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: (scores[id] || []).slice(0, 50) });
 });
 
 // -- SPORTUS (Motus) ------------------------------------------------------
@@ -731,6 +740,7 @@ app.post('/api/admin/athlete', (req, res) => {
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
     grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
     grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    grimpeAnswersFull: type === 'grimpe' ? (req.body.grimpeAnswersFull||[]) : undefined,
     grimpeParams:  type === 'grimpe' ? (req.body.grimpeParams||{}) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
     coefficient: parseFloat(coefficient) || 1,
@@ -788,6 +798,98 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   scores[parseInt(req.params.id)] = [];
   rebuildGlobalScores(); saveData(); res.json({ success: true });
+});
+
+
+// ── POPUP BIENVENUE ────────────────────────────────────────────────────────
+let popupConfig = { active: false, title: '', message: '', emoji: '🏆', color: '#d4ff00' };
+
+app.get('/api/popup', (req, res) => { res.json(popupConfig); });
+
+app.post('/api/admin/popup', async (req, res) => {
+  const { password, title, message, emoji, color, active } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  popupConfig = { active: !!active, title: title||'', message: message||'', emoji: emoji||'🏆', color: color||'#d4ff00' };
+  if (db) {
+    try { await colConfig.updateOne({ key: 'main' }, { $set: { key:'main', musicConfig, welcomeImage, popupConfig } }, { upsert: true }); }
+    catch(e) { console.error('savePopup:', e.message); }
+  }
+  res.json({ ok: true });
+});
+
+// ── COMPTES JOUEURS ────────────────────────────────────────────────────────
+// Simple hash PIN (pas de bcrypt pour garder simple)
+function hashPin(pin){ let h=0;for(const c of pin){h=(h<<5)-h+c.charCodeAt(0);h|=0;}return Math.abs(h).toString(36); }
+
+// Stockage comptes en mémoire + MongoDB
+let accounts = {}; // { pseudo_lower: { pseudo, pinHash, createdAt } }
+
+async function loadAccounts(){
+  if(!db) return;
+  try{
+    const col=db.collection('accounts');
+    const all=await col.find({}).toArray();
+    all.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+    console.log(`${all.length} compte(s) chargé(s)`);
+  }catch(e){ console.error('loadAccounts:', e.message); }
+}
+
+async function saveAccount(account){
+  if(!db) return;
+  try{
+    const col=db.collection('accounts');
+    await col.updateOne({pseudo:account.pseudo},{$set:account},{upsert:true});
+  }catch(e){ console.error('saveAccount:', e.message); }
+}
+
+// Vérifier si pseudo existe
+app.get('/api/account/check', (req, res) => {
+  const pseudo=(req.query.pseudo||'').trim();
+  if(!pseudo) return res.status(400).json({error:'Pseudo requis'});
+  const exists=!!(accounts[pseudo.toLowerCase()]);
+  res.json({exists});
+});
+
+// Créer un compte
+app.post('/api/account/create', async (req, res) => {
+  const {pseudo, pin}=req.body;
+  if(!pseudo||!pin) return res.status(400).json({error:'Données manquantes'});
+  if(!/^\d{4}$/.test(pin)) return res.status(400).json({error:'PIN invalide'});
+  const key=pseudo.toLowerCase();
+  if(accounts[key]) return res.status(409).json({error:'Pseudo déjà pris — choisis-en un autre'});
+  const account={pseudo:pseudo.trim().slice(0,20), pinHash:hashPin(pin), createdAt:new Date().toISOString()};
+  accounts[key]=account;
+  await saveAccount(account);
+  res.json({ok:true});
+});
+
+// Connexion
+app.post('/api/account/login', async (req, res) => {
+  const {pseudo, pin}=req.body;
+  if(!pseudo||!pin) return res.status(400).json({error:'Données manquantes'});
+  const account=accounts[pseudo.toLowerCase()];
+  if(!account) return res.status(404).json({error:'Compte introuvable'});
+  if(account.pinHash!==hashPin(pin)) return res.status(401).json({error:'PIN incorrect'});
+  res.json({ok:true, pseudo:account.pseudo});
+});
+
+// Liste tous les comptes (admin)
+app.get('/api/admin/accounts', (req, res) => {
+  const {password}=req.query;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const list=Object.values(accounts).map(a=>({pseudo:a.pseudo, createdAt:a.createdAt}));
+  list.sort((a,b)=>a.pseudo.localeCompare(b.pseudo));
+  res.json({accounts:list});
+});
+
+// Reset compte (admin)
+app.delete('/api/account/:pseudo', async (req, res) => {
+  const {password}=req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const key=req.params.pseudo.toLowerCase();
+  delete accounts[key];
+  if(db) await db.collection('accounts').deleteOne({pseudo:{$regex:new RegExp('^'+key+'$','i')}});
+  res.json({ok:true});
 });
 
 const PORT = process.env.PORT || 3000;
