@@ -357,6 +357,20 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* LA GRIMPÉE */
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
+#biathlon-zone{display:none;flex-direction:column;gap:10px}
+.biat-phase{font-family:var(--fh);font-size:11px;letter-spacing:3px;color:var(--mute);text-align:center}
+.biat-big{font-family:var(--fh);font-size:56px;line-height:1;text-align:center;color:var(--neon)}
+.biat-target{width:48px;height:48px;border-radius:50%;border:3px solid var(--mute);display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .3s}
+.biat-target.hit{border-color:var(--neon);background:rgba(212,255,0,.15)}
+.biat-target.miss{border-color:var(--red);background:rgba(255,60,60,.15)}
+.biat-qcm-btn{background:var(--c2);border:2px solid transparent;border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;transition:all .15s;font-family:var(--ff)}
+.biat-qcm-btn:active{background:var(--c1)}
+.biat-qcm-btn.correct{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.1)}
+.biat-qcm-btn.wrong{border-color:var(--red);color:var(--red);background:rgba(255,60,60,.1)}
+.biat-order-btn{background:var(--c2);border:2px solid transparent;border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;font-family:var(--ff);display:flex;align-items:center;gap:10px}
+.biat-order-btn.placed{border-color:var(--neon);opacity:.5}
+.biat-slot{background:var(--c1);border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mute);min-height:48px;display:flex;align-items:center;gap:10px}
+.biat-slot.filled{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.08);cursor:pointer}
 .grimpe-profile{position:relative;height:110px;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-radius:12px;overflow:hidden;margin:4px 0}
 .grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
 .grimpe-timer-bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden}
@@ -567,7 +581,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <!-- IMAGE mode -->
   <div id="img-zone" style="display:none">
     <div class="img-wrap" id="img-wrap">
-      <img id="game-img" src="" alt="Sportif mystère">
+      <img id="game-img" src="" alt="Réponse mystère">
       <div class="grid-overlay" id="grid-overlay"></div>
     </div>
     <div class="img-counter" id="img-counter"></div>
@@ -727,7 +741,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px">
       <div style="font-family:var(--fh);font-size:22px;text-align:center;color:#00c8ff">🔍 LE SCOUT</div>
       <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
-        <div>🎯 <strong>But :</strong> Identifie le sportif mystère en achetant des indices. Moins tu dépenses, plus tu gardes de points.</div>
+        <div>🎯 <strong>But :</strong> Identifie la réponse mystère en achetant des indices. Moins tu dépenses, plus tu gardes de points.</div>
         <div>👁 <strong>Entrouvrir</strong> → 60% du coût · vois la moitié des mots masqués</div>
         <div>📂 <strong>Ouvrir</strong> → coût total · révèle tout le texte</div>
         <div style="background:rgba(255,200,0,.1);border:1px solid rgba(255,200,0,.3);border-radius:8px;padding:8px 10px">⚠️ <strong>Attention :</strong> si tu entrouvres un tiroir, tu dois l'ouvrir complètement <em>avant</em> de pouvoir toucher à un autre.</div>
@@ -810,6 +824,80 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="grimpe-lives" style="text-align:center;font-size:20px;letter-spacing:4px;min-height:26px;margin-top:2px">❤️❤️❤️</div>
     <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:100%;padding:12px;background:var(--neon);color:#000;font-family:var(--fh);font-size:15px;font-weight:900;border:none;border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px">🏁 Terminer — voir mon score</button>
   </div>
+
+  <!-- BIATHLON rules modal -->
+  <div id="biathlon-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px">
+      <div style="font-family:var(--fh);font-size:22px;text-align:center;color:var(--neon)">🎿 BIATHLON ARENA</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
+        <div>🎿 <strong>Étape 1 — Le Contrat (100 pts)</strong><br><span style="color:var(--mute)">Annonce combien de réponses tu vas trouver, puis sprint de 60s. L'écart entre ton annonce et ton résultat définit ton BPM.</span></div>
+        <div>🎯 <strong>Étape 2 — Stand de tir (60 pts)</strong><br><span style="color:var(--mute)">3 questions QCM. Le nombre de choix dépend de ton BPM — plus tu as été précis, plus c'est facile.</span></div>
+        <div>🏁 <strong>Étape 3 — Sprint final (40 pts)</strong><br><span style="color:var(--mute)">Classe 5 éléments dans le bon ordre. Le temps dépend de tes fautes au tir.</span></div>
+      </div>
+      <button id="biathlon-rules-ok" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px" onclick="document.getElementById('biathlon-rules-modal').style.display='none'">▶ COMMENCER</button>
+    </div>
+  </div>
+  <!-- BIATHLON zone -->
+  <div id="biathlon-zone">
+    <!-- Phase indicator -->
+    <div class="biat-phase" id="biat-phase-label">ÉTAPE 1 — PROLOGUE</div>
+    <!-- STEP 1: Annonce + Sprint -->
+    <div id="biat-step1">
+      <div id="biat-announce-screen">
+        <div class="bj-theme" id="biat-theme-display">Thème…</div>
+        <div style="font-size:13px;color:var(--mute);text-align:center;margin:8px 0">Entre 1 et 10 — combien de noms peux-tu trouver ?</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0">
+          <button class="pin-key" onclick="biatAnnounce(1)" style="font-size:18px">1</button><button class="pin-key" onclick="biatAnnounce(2)" style="font-size:18px">2</button><button class="pin-key" onclick="biatAnnounce(3)" style="font-size:18px">3</button><button class="pin-key" onclick="biatAnnounce(4)" style="font-size:18px">4</button><button class="pin-key" onclick="biatAnnounce(5)" style="font-size:18px">5</button><button class="pin-key" onclick="biatAnnounce(6)" style="font-size:18px">6</button><button class="pin-key" onclick="biatAnnounce(7)" style="font-size:18px">7</button><button class="pin-key" onclick="biatAnnounce(8)" style="font-size:18px">8</button><button class="pin-key" onclick="biatAnnounce(9)" style="font-size:18px">9</button><button class="pin-key" onclick="biatAnnounce(10)" style="font-size:18px">10</button>
+        </div>
+      </div>
+      <div id="biat-sprint-screen" style="display:none;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><span class="biat-phase">ANNONCE</span><div class="biat-big" id="biat-announce-display">0</div></div>
+          <div style="text-align:center"><span class="biat-phase">TROUVÉS</span><div class="biat-big" id="biat-found-display" style="color:var(--txt)">0</div></div>
+          <div style="text-align:right"><span class="biat-phase">TEMPS</span><div class="biat-big" id="biat-timer-display">60</div></div>
+        </div>
+        <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-timer-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+        <div id="biat-sprint-fb" style="min-height:24px;text-align:center;font-family:var(--fh);font-size:18px;font-weight:900"></div>
+        <div class="ans-row">
+          <input type="text" class="ans-in" id="biat-sprint-in" placeholder="Tape un nom…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
+          <button class="chk-btn" id="biat-sprint-chk">✓</button>
+        </div>
+        <div id="biat-found-list" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px"></div>
+      </div>
+    </div>
+    <!-- STEP 2: Stand de tir -->
+    <div id="biat-step2" style="display:none;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
+        <div class="biat-target" id="biat-t0">🎯</div>
+        <div class="biat-target" id="biat-t1">🎯</div>
+        <div class="biat-target" id="biat-t2">🎯</div>
+      </div>
+      <div id="biat-bpm-badge" style="text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto"></div>
+      <div class="bj-theme" id="biat-qcm-question">…</div>
+      <div id="biat-qcm-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div id="biat-qcm-input-row" class="ans-row" style="display:none">
+        <input type="text" class="ans-in" id="biat-qcm-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+        <button class="chk-btn" id="biat-qcm-chk">✓</button>
+      </div>
+    </div>
+    <!-- STEP 3: Sprint final -->
+    <div id="biat-step3" style="display:none;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><span class="biat-phase">TEMPS</span><div class="biat-big" id="biat-final-timer" style="font-size:42px">50</div></div>
+        <div id="biat-miss-badge" style="font-size:13px;color:var(--mute);text-align:right"></div>
+      </div>
+      <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-final-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+      <div class="bj-theme" id="biat-order-question-display">…</div>
+      <div style="font-size:11px;color:var(--mute);text-align:center">Tape les numéros dans le bon ordre</div>
+      <!-- Slots -->
+      <div id="biat-slots" style="display:flex;flex-direction:column;gap:6px"></div>
+      <!-- Items -->
+      <div id="biat-order-items" style="display:flex;flex-direction:column;gap:6px"></div>
+      <button class="btn btn-p" id="biat-validate-order" style="margin-top:8px;display:none" onclick="biatValidateOrder()">✓ Valider le classement</button>
+    </div>
+    <div class="fb" id="biat-fb"></div>
+  </div>
+
   <!-- LE SCOUT zone -->
   <div id="scout-zone">
     <div class="scout-score-big" id="scout-score" style="font-size:40px;text-align:center">100</div>
@@ -1265,6 +1353,9 @@ async function loadAthlete(){
     } else if(data.type==='grimpe'){
       document.getElementById('std-ans-area').style.display='none';
       setupGrimpeMode(data);
+    } else if(data.type==='biathlon'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupBiathlonMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1278,7 +1369,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
@@ -4254,6 +4345,311 @@ window.addEventListener('load',()=>{
     setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
   }
 });
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// BIATHLON MODE
+// ══════════════════════════════════════════════════════════════════════════
+const BIAT={
+  data:null, announce:0, found:[], misses:0,
+  sprintInt:null, sprintTime:60,
+  qcmIndex:0, qcmMisses:0,
+  finalInt:null, finalTime:50,
+  orderSlots:[], totalScore:0,
+  bpm:'normal' // normal | élevé | critique | hors-contrôle
+};
+
+function setupBiathlonMode(data){
+  BIAT.data=data; BIAT.announce=0; BIAT.found=[]; BIAT.misses=0;
+  BIAT.qcmIndex=0; BIAT.qcmMisses=0; BIAT.totalScore=0;
+  BIAT.orderSlots=new Array(5).fill(null);
+  hideAllZones();
+  document.getElementById('biathlon-zone').style.display='flex';
+  // Show announce screen
+  document.getElementById('biat-announce-screen').style.display='block';
+  document.getElementById('biat-sprint-screen').style.display='none';
+  document.getElementById('biat-step1').style.display='flex';
+  document.getElementById('biat-step2').style.display='none';
+  document.getElementById('biat-step3').style.display='none';
+  document.getElementById('biat-phase-label').textContent='ÉTAPE 1 — TON CONTRAT';
+  const themeEl=document.getElementById('biat-theme-display');
+  if(themeEl)themeEl.textContent=data.biatTheme||'Thème…';
+  const badge=document.getElementById('type-badge');
+  if(badge)badge.textContent='🎿 Biathlon';
+  // Show rules modal
+  const modal=document.getElementById('biathlon-rules-modal');
+  if(modal)modal.style.display='flex';
+}
+
+function biatAnnounce(n){
+  BIAT.announce=n;
+  // Switch to sprint
+  document.getElementById('biat-announce-screen').style.display='none';
+  document.getElementById('biat-sprint-screen').style.display='flex';
+  document.getElementById('biat-announce-display').textContent=n;
+  document.getElementById('biat-found-display').textContent='0';
+  document.getElementById('biat-timer-display').textContent='60';
+  document.getElementById('biat-timer-bar').style.width='100%';
+  document.getElementById('biat-found-list').innerHTML='';
+  document.getElementById('biat-sprint-in').focus();
+  BIAT.sprintTime=60;
+  BIAT.sprintInt=setInterval(biatSprintTick,1000);
+}
+
+function biatSprintTick(){
+  BIAT.sprintTime--;
+  document.getElementById('biat-timer-display').textContent=BIAT.sprintTime;
+  document.getElementById('biat-timer-bar').style.width=(BIAT.sprintTime/60*100)+'%';
+  if(BIAT.sprintTime<=0){clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;biatEndSprint();}
+}
+
+document.getElementById('biat-sprint-chk').onclick=biatSprintSubmit;
+document.getElementById('biat-sprint-in').addEventListener('keydown',e=>{if(e.key==='Enter')biatSprintSubmit();});
+
+async function biatSprintSubmit(){
+  if(!BIAT.sprintInt)return; // timer ended
+  const inp=document.getElementById('biat-sprint-in');
+  const ans=inp.value.trim();
+  if(!ans)return;
+  inp.value='';
+  // Check already found
+  if(BIAT.found.includes(ans.toLowerCase())){
+    const fb=document.getElementById('biat-sprint-fb');
+    fb.textContent='Déjà trouvé !';fb.style.color='var(--orange)';
+    setTimeout(()=>{fb.textContent='';},800);return;
+  }
+  const res=await fetch('/api/biathlon-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId:G.athleteId,answer:ans})});
+  const d=await res.json();
+  const fb=document.getElementById('biat-sprint-fb');
+  if(d.correct){
+    BIAT.found.push((d.answer||ans).toLowerCase());
+    document.getElementById('biat-found-display').textContent=BIAT.found.length;
+    fb.textContent='✅ '+( d.answer||ans)+'!';fb.style.color='var(--neon)';
+    // Add tag
+    const tag=document.createElement('span');
+    tag.textContent=d.answer||ans;
+    tag.style.cssText='background:rgba(212,255,0,.15);color:var(--neon);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700';
+    document.getElementById('biat-found-list').appendChild(tag);
+    // Check if reached announce
+    if(BIAT.found.length>=BIAT.announce){clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;setTimeout(biatEndSprint,500);}
+  } else {
+    fb.textContent='❌ Pas dans le thème';fb.style.color='var(--red)';
+  }
+  setTimeout(()=>{fb.textContent='';},800);
+}
+
+function biatEndSprint(){
+  clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;
+  const found=BIAT.found.length;
+  const ecart=Math.abs(BIAT.announce-found);
+  // Determine BPM
+  if(ecart<=1)BIAT.bpm='normal';
+  else if(ecart===2)BIAT.bpm='élevé';
+  else if(ecart===3)BIAT.bpm='critique';
+  else BIAT.bpm='hors-contrôle';
+  BIAT.totalScore+=found*10;
+  // Transition to step 2
+  setTimeout(()=>biatStartStep2(),800);
+}
+
+// BPM colors
+const BPM_COLOR={normal:'var(--neon)',élevé:'var(--orange)',critique:'#ff8800','hors-contrôle':'var(--red)'};
+const BPM_LABEL={normal:'💚 BPM NORMAL','élevé':'🟡 BPM ÉLEVÉ','critique':'🟠 BPM CRITIQUE','hors-contrôle':'🔴 BPM HORS-CONTRÔLE'};
+const BPM_CHOICES={normal:2,élevé:3,critique:4,'hors-contrôle':0}; // 0 = saisie libre
+
+function biatStartStep2(){
+  document.getElementById('biat-step1').style.display='none';
+  document.getElementById('biat-step2').style.display='flex';
+  document.getElementById('biat-phase-label').textContent='ÉTAPE 2 — STAND DE TIR';
+  // BPM badge
+  const badge=document.getElementById('biat-bpm-badge');
+  badge.textContent=BPM_LABEL[BIAT.bpm];
+  badge.style.cssText=`text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto;background:rgba(255,255,255,.06);border:1px solid ${BPM_COLOR[BIAT.bpm]};color:${BPM_COLOR[BIAT.bpm]}`;
+  // Reset targets
+  for(let i=0;i<3;i++){const t=document.getElementById('biat-t'+i);t.className='biat-target';t.textContent='🎯';}
+  biatShowQCM(0);
+}
+
+function biatShowQCM(idx){
+  BIAT.qcmIndex=idx;
+  const qcms=BIAT.data.biatQCM||[];
+  if(idx>=qcms.length){biatEndStep2();return;}
+  const q=qcms[idx];
+  document.getElementById('biat-qcm-question').textContent=q.question||'…';
+  const choicesEl=document.getElementById('biat-qcm-choices');
+  const inputRow=document.getElementById('biat-qcm-input-row');
+  const nChoices=BPM_CHOICES[BIAT.bpm];
+  if(nChoices===0){
+    // Free input
+    choicesEl.style.display='none';
+    inputRow.style.display='flex';
+    document.getElementById('biat-qcm-in').value='';
+    document.getElementById('biat-qcm-in').focus();
+  } else {
+    inputRow.style.display='none';
+    choicesEl.style.display='flex';
+    // Build choices: answer + n-1 wrong ones
+    const wrong=(q.wrong||[]).filter(Boolean);
+    let choices=[q.answer,...wrong.slice(0,nChoices-1)];
+    // Shuffle
+    for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+    choicesEl.innerHTML='';
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='biat-qcm-btn';
+      btn.textContent=c;
+      btn.onclick=()=>biatQCMAnswer(c,q.answer,btn);
+      choicesEl.appendChild(btn);
+    });
+  }
+}
+
+document.getElementById('biat-qcm-chk').onclick=()=>{
+  const q=(BIAT.data.biatQCM||[])[BIAT.qcmIndex];
+  if(!q)return;
+  const ans=document.getElementById('biat-qcm-in').value.trim();
+  biatQCMAnswer(ans,q.answer,null);
+};
+document.getElementById('biat-qcm-in').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('biat-qcm-chk').click();});
+
+function biatQCMAnswer(ans,correct,btn){
+  const isCorrect=ans.trim().toLowerCase()===correct.trim().toLowerCase();
+  const idx=BIAT.qcmIndex;
+  const t=document.getElementById('biat-t'+idx);
+  // Disable all buttons
+  document.querySelectorAll('.biat-qcm-btn').forEach(b=>b.disabled=true);
+  if(btn){btn.classList.add(isCorrect?'correct':'wrong');}
+  if(isCorrect){
+    t.className='biat-target hit';t.textContent='✅';
+    BIAT.totalScore+=20;
+  } else {
+    t.className='biat-target miss';t.textContent='❌';
+    BIAT.qcmMisses++;
+    // Show correct answer briefly
+    document.querySelectorAll('.biat-qcm-btn').forEach(b=>{if(b.textContent===correct)b.classList.add('correct');});
+  }
+  setTimeout(()=>biatShowQCM(idx+1),1000);
+}
+
+function biatEndStep2(){
+  document.getElementById('biat-step2').style.display='none';
+  biatStartStep3();
+}
+
+function biatStartStep3(){
+  document.getElementById('biat-step3').style.display='flex';
+  document.getElementById('biat-phase-label').textContent='ÉTAPE 3 — SPRINT FINAL';
+  // Time based on misses
+  const times=[50,40,30,20];
+  const t=times[Math.min(BIAT.qcmMisses,3)];
+  BIAT.finalTime=t;
+  document.getElementById('biat-final-timer').textContent=t;
+  document.getElementById('biat-final-bar').style.width='100%';
+  const missEl=document.getElementById('biat-miss-badge');
+  missEl.textContent=BIAT.qcmMisses+' cible(s) manquée(s) → '+t+'s';
+  // Order question
+  document.getElementById('biat-order-question-display').textContent=BIAT.data.biatOrderQuestion||'Classe ces éléments';
+  // Build slots and items
+  const order=BIAT.data.biatOrder||[];
+  BIAT.orderSlots=new Array(order.length).fill(null);
+  // Shuffle items for display
+  const shuffled=[...order.map((t,i)=>({text:t,correct:i}))];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  // Slots
+  const slotsEl=document.getElementById('biat-slots');
+  slotsEl.innerHTML='';
+  order.forEach((_,i)=>{
+    const div=document.createElement('div');
+    div.className='biat-slot';
+    div.id='slot-'+i;
+    div.innerHTML=`<span style="font-size:11px;color:var(--neon);font-weight:800;min-width:16px">${i+1}.</span><span id="slot-text-${i}" style="flex:1">—</span>`;
+    div.onclick=()=>biatSlotClick(i);
+    slotsEl.appendChild(div);
+  });
+  // Items
+  const itemsEl=document.getElementById('biat-order-items');
+  itemsEl.innerHTML='';
+  shuffled.forEach((item,i)=>{
+    const btn=document.createElement('button');
+    btn.className='biat-order-btn';
+    btn.id='order-item-'+i;
+    btn.dataset.correctIdx=item.correct;
+    btn.dataset.text=item.text;
+    btn.innerHTML=`<span style="font-size:14px">${item.text}</span>`;
+    btn.onclick=()=>biatItemClick(btn);
+    itemsEl.appendChild(btn);
+  });
+  document.getElementById('biat-validate-order').style.display='none';
+  // Start timer
+  BIAT.finalInt=setInterval(biatFinalTick,1000);
+}
+
+let _biatSelectedItem=null;
+function biatItemClick(btn){
+  if(btn.classList.contains('placed'))return;
+  // Deselect previous
+  document.querySelectorAll('.biat-order-btn').forEach(b=>b.style.borderColor='transparent');
+  _biatSelectedItem=btn;
+  btn.style.borderColor='var(--neon)';
+}
+function biatSlotClick(slotIdx){
+  if(!_biatSelectedItem)return;
+  const text=_biatSelectedItem.dataset.text;
+  const correctIdx=parseInt(_biatSelectedItem.dataset.correctIdx);
+  BIAT.orderSlots[slotIdx]=correctIdx;
+  // Update slot display
+  const slot=document.getElementById('slot-'+slotIdx);
+  slot.classList.add('filled');
+  document.getElementById('slot-text-'+slotIdx).textContent=text;
+  // Mark item as placed
+  _biatSelectedItem.classList.add('placed');
+  _biatSelectedItem.style.borderColor='transparent';
+  _biatSelectedItem=null;
+  // Show validate if all slots filled
+  if(BIAT.orderSlots.every(s=>s!==null)){
+    document.getElementById('biat-validate-order').style.display='block';
+  }
+}
+
+function biatFinalTick(){
+  BIAT.finalTime--;
+  document.getElementById('biat-final-timer').textContent=BIAT.finalTime;
+  const total=parseInt(document.getElementById('biat-final-timer').dataset.total||50);
+  document.getElementById('biat-final-bar').style.width=(BIAT.finalTime/total*100)+'%';
+  if(BIAT.finalTime<=0){clearInterval(BIAT.finalInt);BIAT.finalInt=null;biatValidateOrder();}
+}
+
+function biatValidateOrder(){
+  clearInterval(BIAT.finalInt);BIAT.finalInt=null;
+  document.getElementById('biat-validate-order').style.display='none';
+  // Disable all
+  document.querySelectorAll('.biat-order-btn').forEach(b=>b.disabled=true);
+  // Score: 8pts per correct position
+  let pts=0;
+  BIAT.orderSlots.forEach((correctIdx,slotIdx)=>{
+    if(correctIdx===slotIdx)pts+=8;
+  });
+  BIAT.totalScore+=pts;
+  // Show result
+  const slotsEl=document.getElementById('biat-slots');
+  BIAT.orderSlots.forEach((correctIdx,slotIdx)=>{
+    const slot=document.getElementById('slot-'+slotIdx);
+    if(slot){
+      if(correctIdx===slotIdx){slot.style.borderColor='var(--neon)';slot.style.background='rgba(212,255,0,.1)';}
+      else{slot.style.borderColor='var(--red)';slot.style.background='rgba(255,60,60,.1)';}
+    }
+  });
+  setTimeout(()=>biatFinish(),1500);
+}
+
+function biatFinish(){
+  const score=Math.min(200,Math.max(0,Math.round(BIAT.totalScore)));
+  G.score=score;
+  setScore(score,true);
+  setVictoryIcon('biathlon');
+  submitScore(G.pseudo,score,G.athleteId);
+  show('sv');
+}
 
 // ── POPUP BIENVENUE ────────────────────────────────────────────────────────
 async function loadWelcomePopup(){
