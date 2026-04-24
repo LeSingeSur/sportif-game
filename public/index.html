@@ -845,8 +845,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="biat-step1">
       <div id="biat-announce-screen">
         <div class="bj-theme" id="biat-theme-display">Thème…</div>
-        <div style="font-size:13px;color:var(--mute);text-align:center;margin:8px 0">Entre 1 et 10 — combien de noms peux-tu trouver ?</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px">
+          <div style="font-size:13px;color:var(--mute)">Combien de noms vas-tu trouver ?</div>
+          <div style="font-family:var(--fh);font-size:26px;color:var(--neon)" id="biat-announce-timer">15</div>
+        </div>
+        <div style="height:3px;background:var(--c2);border-radius:99px;margin-bottom:10px"><div id="biat-announce-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0">
           <button class="pin-key" onclick="biatAnnounce(1)" style="font-size:18px">1</button><button class="pin-key" onclick="biatAnnounce(2)" style="font-size:18px">2</button><button class="pin-key" onclick="biatAnnounce(3)" style="font-size:18px">3</button><button class="pin-key" onclick="biatAnnounce(4)" style="font-size:18px">4</button><button class="pin-key" onclick="biatAnnounce(5)" style="font-size:18px">5</button><button class="pin-key" onclick="biatAnnounce(6)" style="font-size:18px">6</button><button class="pin-key" onclick="biatAnnounce(7)" style="font-size:18px">7</button><button class="pin-key" onclick="biatAnnounce(8)" style="font-size:18px">8</button><button class="pin-key" onclick="biatAnnounce(9)" style="font-size:18px">9</button><button class="pin-key" onclick="biatAnnounce(10)" style="font-size:18px">10</button>
         </div>
       </div>
@@ -854,7 +858,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div><span class="biat-phase">ANNONCE</span><div class="biat-big" id="biat-announce-display">0</div></div>
           <div style="text-align:center"><span class="biat-phase">TROUVÉS</span><div class="biat-big" id="biat-found-display" style="color:var(--txt)">0</div></div>
-          <div style="text-align:right"><span class="biat-phase">TEMPS</span><div class="biat-big" id="biat-timer-display">60</div></div>
+          <div style="text-align:right"><span class="biat-phase">TEMPS</span><div class="biat-big" id="biat-timer-display">90</div></div>
         </div>
         <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-timer-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
         <div id="biat-sprint-fb" style="min-height:24px;text-align:center;font-family:var(--fh);font-size:18px;font-weight:900"></div>
@@ -863,6 +867,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
           <button class="chk-btn" id="biat-sprint-chk">✓</button>
         </div>
         <div id="biat-found-list" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px"></div>
+        <button id="biat-sprint-done" onclick="biatEndSprint()" style="margin-top:6px;width:100%;padding:11px;background:var(--c2);color:var(--neon);border:1px solid var(--neon);border-radius:var(--r);font-family:var(--fh);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px">🏁 J'ai terminé</button>
       </div>
     </div>
     <!-- STEP 2: Stand de tir -->
@@ -872,7 +877,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div class="biat-target" id="biat-t1">🎯</div>
         <div class="biat-target" id="biat-t2">🎯</div>
       </div>
-      <div id="biat-bpm-badge" style="text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div id="biat-bpm-badge" style="font-family:var(--fh);font-size:12px;padding:5px 12px;border-radius:99px;display:inline-block"></div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="biat-qcm-timer">30</div>
+      </div>
+      <div style="height:3px;background:var(--c2);border-radius:99px;margin-bottom:6px"><div id="biat-qcm-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
       <div class="bj-theme" id="biat-qcm-question">…</div>
       <div id="biat-qcm-choices" style="display:flex;flex-direction:column;gap:8px"></div>
       <div id="biat-qcm-input-row" class="ans-row" style="display:none">
@@ -4381,7 +4390,27 @@ function setupBiathlonMode(data){
   if(modal)modal.style.display='flex';
 }
 
+let _biatAnnounceInt=null;
+function biatStartAnnounceTimer(){
+  let t=15;
+  document.getElementById('biat-announce-timer').textContent=t;
+  document.getElementById('biat-announce-bar').style.width='100%';
+  document.getElementById('biat-announce-bar').style.transition='width 1s linear';
+  _biatAnnounceInt=setInterval(()=>{
+    t--;
+    const el=document.getElementById('biat-announce-timer');
+    const bar=document.getElementById('biat-announce-bar');
+    if(el)el.textContent=t;
+    if(bar)bar.style.width=(t/15*100)+'%';
+    if(el&&t<=5)el.style.color='var(--red)';
+    if(t<=0){clearInterval(_biatAnnounceInt);_biatAnnounceInt=null;biatAnnounce(5);}
+  },1000);
+}
+
 function biatAnnounce(n){
+  if(_biatAnnounceInt){clearInterval(_biatAnnounceInt);_biatAnnounceInt=null;}
+  const timerEl=document.getElementById('biat-announce-timer');
+  if(timerEl)timerEl.style.color='var(--neon)';
   BIAT.announce=n;
   // Switch to sprint
   document.getElementById('biat-announce-screen').style.display='none';
@@ -4392,14 +4421,14 @@ function biatAnnounce(n){
   document.getElementById('biat-timer-bar').style.width='100%';
   document.getElementById('biat-found-list').innerHTML='';
   document.getElementById('biat-sprint-in').focus();
-  BIAT.sprintTime=60;
+  BIAT.sprintTime=90;
   BIAT.sprintInt=setInterval(biatSprintTick,1000);
 }
 
 function biatSprintTick(){
   BIAT.sprintTime--;
   document.getElementById('biat-timer-display').textContent=BIAT.sprintTime;
-  document.getElementById('biat-timer-bar').style.width=(BIAT.sprintTime/60*100)+'%';
+  document.getElementById('biat-timer-bar').style.width=(BIAT.sprintTime/90*100)+'%';
   if(BIAT.sprintTime<=0){clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;biatEndSprint();}
 }
 
@@ -4470,8 +4499,11 @@ function biatStartStep2(){
   biatShowQCM(0);
 }
 
+let _biatQCMInt=null;
 function biatShowQCM(idx){
   BIAT.qcmIndex=idx;
+  // Clear previous QCM timer
+  if(_biatQCMInt){clearInterval(_biatQCMInt);_biatQCMInt=null;}
   const qcms=BIAT.data.biatQCM||[];
   if(idx>=qcms.length){biatEndStep2();return;}
   const q=qcms[idx];
@@ -4479,6 +4511,18 @@ function biatShowQCM(idx){
   const choicesEl=document.getElementById('biat-qcm-choices');
   const inputRow=document.getElementById('biat-qcm-input-row');
   const nChoices=BPM_CHOICES[BIAT.bpm];
+  // Start 30s timer
+  let qcmT=30;
+  const qcmTimerEl=document.getElementById('biat-qcm-timer');
+  const qcmBar=document.getElementById('biat-qcm-bar');
+  if(qcmTimerEl){qcmTimerEl.textContent=30;qcmTimerEl.style.color='var(--neon)';}
+  if(qcmBar){qcmBar.style.width='100%';qcmBar.style.transition='width 1s linear';}
+  _biatQCMInt=setInterval(()=>{
+    qcmT--;
+    if(qcmTimerEl){qcmTimerEl.textContent=qcmT;if(qcmT<=10)qcmTimerEl.style.color='var(--red)';}
+    if(qcmBar)qcmBar.style.width=(qcmT/30*100)+'%';
+    if(qcmT<=0){clearInterval(_biatQCMInt);_biatQCMInt=null;biatQCMAnswer('',q.answer,null);}
+  },1000);
   if(nChoices===0){
     // Free input
     choicesEl.style.display='none';
@@ -4513,6 +4557,7 @@ document.getElementById('biat-qcm-chk').onclick=()=>{
 document.getElementById('biat-qcm-in').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('biat-qcm-chk').click();});
 
 function biatQCMAnswer(ans,correct,btn){
+  if(_biatQCMInt){clearInterval(_biatQCMInt);_biatQCMInt=null;}
   const isCorrect=ans.trim().toLowerCase()===correct.trim().toLowerCase();
   const idx=BIAT.qcmIndex;
   const t=document.getElementById('biat-t'+idx);
