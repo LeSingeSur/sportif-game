@@ -106,6 +106,13 @@ body{font-family:var(--fb);color:var(--txt);min-height:100%;background:var(--bg)
 .gt-ico{font-size:18px;margin-bottom:3px}
 .gt-name{font-size:9px;font-weight:800;color:var(--mute);letter-spacing:.5px;line-height:1.2}
 .pseudo-block{display:flex;flex-direction:column;gap:10px}
+.pin-box{width:52px;height:62px;border-radius:12px;background:var(--c2);border:2px solid var(--c2);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:28px;font-weight:900;color:var(--mute);transition:all .15s}
+.pin-box.filled{color:var(--neon);border-color:var(--neon);background:rgba(212,255,0,.08)}
+.pin-box.active{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.2)}
+.pin-key{background:var(--c2);border:none;border-radius:12px;padding:14px;font-family:var(--fh);font-size:20px;font-weight:700;color:var(--txt);cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent}
+.pin-key:active{background:var(--c1)}
+.pin-key-del{background:var(--c1);color:var(--mute)}
+.pin-key-ok{background:var(--neon);color:#000;letter-spacing:1px}
 .welcome-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0}
 .card{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:26px 20px;display:flex;flex-direction:column;gap:16px}
 .card h2{font-family:var(--fh);font-size:30px;letter-spacing:1px}
@@ -488,14 +495,34 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <button class="btn btn-p" id="btn-next-account" style="font-size:16px;letter-spacing:1px">Continuer →</button>
       </div>
       <!-- Étape 2: PIN (nouveau ou existant) -->
-      <div id="account-step2" style="display:none;flex-direction:column;gap:10px">
-        <div id="account-msg" style="font-size:13px;text-align:center;color:var(--mute)"></div>
-        <div class="field">
-          <span class="flbl">PIN (4 chiffres)</span>
-          <input type="password" id="pin-in" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" style="letter-spacing:6px;font-size:22px;text-align:center">
+      <div id="account-step2" style="display:none;flex-direction:column;gap:12px">
+        <div id="account-msg" style="font-size:13px;text-align:center;color:var(--neon);font-weight:700;letter-spacing:1px"></div>
+        <!-- PIN visuel — 4 cases -->
+        <div style="display:flex;justify-content:center;gap:10px" id="pin-boxes">
+          <div class="pin-box" id="pinb-0">·</div>
+          <div class="pin-box" id="pinb-1">·</div>
+          <div class="pin-box" id="pinb-2">·</div>
+          <div class="pin-box" id="pinb-3">·</div>
         </div>
-        <button class="btn btn-p" id="btn-start" style="font-size:16px;letter-spacing:1px">🚀&nbsp;&nbsp;C'est parti !</button>
-        <button id="btn-back-account" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline">← Changer de pseudo</button>
+        <!-- Champ caché pour la saisie réelle -->
+        <input type="password" id="pin-in" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
+          style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+        <!-- Pavé numérique -->
+        <div id="pin-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto;width:100%">
+          <button class="pin-key" onclick="pinKey('1')">1</button>
+          <button class="pin-key" onclick="pinKey('2')">2</button>
+          <button class="pin-key" onclick="pinKey('3')">3</button>
+          <button class="pin-key" onclick="pinKey('4')">4</button>
+          <button class="pin-key" onclick="pinKey('5')">5</button>
+          <button class="pin-key" onclick="pinKey('6')">6</button>
+          <button class="pin-key" onclick="pinKey('7')">7</button>
+          <button class="pin-key" onclick="pinKey('8')">8</button>
+          <button class="pin-key" onclick="pinKey('9')">9</button>
+          <button class="pin-key pin-key-del" onclick="pinKey('del')" style="font-size:18px">⌫</button>
+          <button class="pin-key" onclick="pinKey('0')">0</button>
+          <button class="pin-key pin-key-ok btn-p" id="btn-start" style="font-size:15px;font-weight:900">OK</button>
+        </div>
+        <button id="btn-back-account" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-align:center">← Changer de pseudo</button>
       </div>
       <div id="account-err" style="color:var(--red);font-size:12px;text-align:center;min-height:16px"></div>
 
@@ -1026,6 +1053,30 @@ let welcomeImageUrl='';
   }catch(e){}
 })();
 
+// ── PIN KEYPAD ────────────────────────────────────────────────────────────
+let _pinValue='';
+function pinKey(k){
+  if(k==='del'){_pinValue=_pinValue.slice(0,-1);}
+  else if(k==='ok'||k===undefined){document.getElementById('btn-start').click();return;}
+  else if(_pinValue.length<4){_pinValue+=k;}
+  // Update hidden input
+  const inp=document.getElementById('pin-in');
+  if(inp)inp.value=_pinValue;
+  // Update visual boxes
+  for(let i=0;i<4;i++){
+    const box=document.getElementById('pinb-'+i);
+    if(!box)continue;
+    if(i<_pinValue.length){box.textContent='●';box.classList.add('filled');box.classList.remove('active');}
+    else if(i===_pinValue.length){box.textContent='·';box.classList.remove('filled');box.classList.add('active');}
+    else{box.textContent='·';box.classList.remove('filled','active');}
+  }
+  // Auto-submit when 4 digits entered
+  if(_pinValue.length===4)setTimeout(()=>document.getElementById('btn-start').click(),150);
+}
+
+// Reset PIN on step 2 show
+function resetPin(){_pinValue='';if(document.getElementById('pin-in'))document.getElementById('pin-in').value='';for(let i=0;i<4;i++){const b=document.getElementById('pinb-'+i);if(b){b.textContent='·';b.classList.remove('filled','active');}}}
+
 // ── SYSTÈME DE COMPTES ────────────────────────────────────────────────────
 let _accountIsNew = false;
 
@@ -1053,6 +1104,7 @@ document.getElementById('btn-next-account').onclick=async function(){
     document.getElementById('account-step1').style.display='none';
     const step2=document.getElementById('account-step2');
     step2.style.display='flex';
+    resetPin();
     setTimeout(()=>document.getElementById('pin-in').focus(),100);
   }catch(e){
     errEl.textContent='Erreur réseau — réessaie';
@@ -1065,6 +1117,7 @@ document.getElementById('btn-back-account').onclick=()=>{
   document.getElementById('account-step1').style.display='block';
   document.getElementById('account-step2').style.display='none';
   document.getElementById('account-err').textContent='';
+  resetPin();
   setTimeout(()=>document.getElementById('pseudo-in').focus(),100);
 };
 
