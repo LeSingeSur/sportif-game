@@ -1295,7 +1295,7 @@ function checkReady(){
   const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
-  if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in').value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1&&biatQCMItems.length>=1&&biatOrderItems.filter(x=>x.trim()).length>=2;
+  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in').value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1&&biatQCMItems.length>=1&&biatOrderItems.filter(x=>x.trim()).length>=2;
   else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
