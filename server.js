@@ -835,10 +835,11 @@ async function loadAccounts(){
 }
 
 async function saveAccount(account){
-  if(!db) return;
+  if(!db){ console.log('saveAccount: db non connecté'); return; }
   try{
     const col=db.collection('accounts');
     await col.updateOne({pseudo:account.pseudo},{$set:account},{upsert:true});
+    console.log('Compte sauvegardé:', account.pseudo);
   }catch(e){ console.error('saveAccount:', e.message); }
 }
 
