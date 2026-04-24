@@ -7,6 +7,10 @@ try { MongoClient = require('mongodb').MongoClient; } catch(e) { console.log('mo
 const app      = express();
 
 app.use(express.json({ limit: '10mb' }));
+app.set('trust proxy', true); // Récupère la vraie IP derrière Koyeb
+
+// Helper IP
+function getIP(req){ return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '?'; }
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
@@ -196,6 +200,13 @@ app.get('/api/preview', (req, res) => {
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'biathlon') {
+    base.biatTheme         = athlete.biatTheme || '';
+    base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length; // count only
+    base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
+    base.biatOrderQuestion = athlete.biatOrderQuestion || '';
+    base.biatOrder         = athlete.biatOrder || [];
+    base.maxScore = 200;
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
     base.clue          = athlete.grimpeTheme || athlete.clue || '';
@@ -490,6 +501,7 @@ app.post('/api/score', (req, res) => {
   if (hasPlayed(pseudo, athleteId)) return res.status(409).json({ error: 'already_played' });
 
   const entry = { pseudo: pseudo.trim().slice(0, 20), score: Math.max(0, score), athleteId, athleteName: athlete.answer, date: new Date().toISOString() };
+  console.log(`[SCORE] ${entry.pseudo} | ${entry.score}pts | ${athlete.answer} | IP: ${getIP(req)}`);
   if (!scores[athleteId]) scores[athleteId] = [];
   scores[athleteId].push(entry);
   scores[athleteId].sort((a, b) => b.score - a.score);
@@ -675,6 +687,7 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'scout' && (!req.body.scoutIndices || !req.body.scoutIndices.some(i=>i.text))) return res.status(400).json({ error: 'Au moins un indice obligatoire' });
   if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAuthor)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
   if (type === 'grimpe' && (!req.body.grimpeTheme || !req.body.grimpeAnswers || req.body.grimpeAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses obligatoires' });
+  if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
@@ -740,6 +753,11 @@ app.post('/api/admin/athlete', (req, res) => {
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
     grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
     grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
+    biatSprintAnswers:  type === 'biathlon' ? (req.body.biatSprintAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    biatQCM:            type === 'biathlon' ? (req.body.biatQCM||[]) : undefined,
+    biatOrderQuestion:  type === 'biathlon' ? (req.body.biatOrderQuestion||'').trim() : undefined,
+    biatOrder:          type === 'biathlon' ? (req.body.biatOrder||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
     grimpeAnswersFull: type === 'grimpe' ? (req.body.grimpeAnswersFull||[]) : undefined,
     grimpeParams:  type === 'grimpe' ? (req.body.grimpeParams||{}) : undefined,
     published: req.body.published !== undefined ? !!req.body.published : false,
@@ -801,6 +819,22 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
 });
 
 
+// ── BIATHLON ──────────────────────────────────────────────────────────────
+app.post('/api/biathlon-check', (req, res) => {
+  const { athleteId, answer } = req.body;
+  const athlete = athletes.find(a => a.id === athleteId);
+  if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable' });
+  const normAns = norm(answer||'');
+  // Check against all sprint answers (with aliases and tolerance)
+  const allAnswers = (athlete.biatSprintAnswers||[]);
+  const matched = allAnswers.find(a => {
+    const variants = a.split(';').map(v=>v.trim());
+    return variants.some(v => lev(norm(v), normAns) <= 1);
+  });
+  const mainAnswer = matched ? matched.split(';')[0].trim() : null;
+  res.json({ correct: !!matched, answer: mainAnswer });
+});
+
 // ── POPUP BIENVENUE ────────────────────────────────────────────────────────
 let popupConfig = { active: false, title: '', message: '', emoji: '🏆', color: '#d4ff00' };
 
@@ -858,9 +892,10 @@ app.post('/api/account/create', async (req, res) => {
   if(!/^\d{4}$/.test(pin)) return res.status(400).json({error:'PIN invalide'});
   const key=pseudo.toLowerCase();
   if(accounts[key]) return res.status(409).json({error:'Pseudo déjà pris — choisis-en un autre'});
-  const account={pseudo:pseudo.trim().slice(0,20), pinHash:hashPin(pin), createdAt:new Date().toISOString()};
+  const account={pseudo:pseudo.trim().slice(0,20), pinHash:hashPin(pin), createdAt:new Date().toISOString(), ip:getIP(req)};
   accounts[key]=account;
   await saveAccount(account);
+  console.log(`[COMPTE CRÉÉ] ${account.pseudo} | IP: ${account.ip}`);
   res.json({ok:true});
 });
 
@@ -878,7 +913,7 @@ app.post('/api/account/login', async (req, res) => {
 app.get('/api/admin/accounts', (req, res) => {
   const {password}=req.query;
   if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
-  const list=Object.values(accounts).map(a=>({pseudo:a.pseudo, createdAt:a.createdAt}));
+  const list=Object.values(accounts).map(a=>({pseudo:a.pseudo, createdAt:a.createdAt, ip:a.ip||'?'}));
   list.sort((a,b)=>a.pseudo.localeCompare(b.pseudo));
   res.json({accounts:list});
 });
