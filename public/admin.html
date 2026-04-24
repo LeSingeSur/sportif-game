@@ -659,7 +659,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   <div id="tab-classement" class="tab-content" style="display:none">
     <div class="card">
       <div class="card-title">🌍 Classement Global</div>
-      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun score pour l'instant.</div></div>
     </div>
     <div class="card">
       <div class="card-title">📊 Scores par défi</div>
@@ -728,6 +728,20 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
+
+  <!-- TAB: COMPTES -->
+  <div id="tab-comptes" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">👤 Comptes joueurs</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="comptes-count" style="font-size:12px;color:var(--mute)">—</div>
+        <button class="btn" style="padding:6px 14px;font-size:12px" onclick="loadComptes()">🔄 Actualiser</button>
+      </div>
+      <div id="comptes-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto">
+        <div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun compte créé.</div>
+      </div>
+    </div>
+  </div>
 
 </div>
 <script>
@@ -838,10 +852,10 @@ function selectType(type){
 function showAdminTab(tab){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   event.target.classList.add('active');
-  document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
-  document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
-  document.getElementById('tab-musique').style.display=tab==='musique'?'block':'none';
-  document.getElementById('tab-comptes').style.display=tab==='comptes'?'block':'none';
+  ['defis','classement','musique','comptes'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.style.display=tab===t?'block':'none';
+  });
   if(tab==='classement') loadAdminScores();
   if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
   if(tab==='comptes') loadComptes();
