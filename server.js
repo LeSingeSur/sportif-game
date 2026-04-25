@@ -896,6 +896,14 @@ app.delete('/api/admin/teams/:id', async (req, res) => {
   res.json({ok:true});
 });
 
+// Récupérer l'équipe d'un joueur
+app.get('/api/account/team', (req, res) => {
+  const pseudo=(req.query.pseudo||'').trim();
+  const account=accounts[pseudo.toLowerCase()];
+  if(!account) return res.json({teamId:null});
+  res.json({teamId:account.teamId||null});
+});
+
 // Assigner équipe à un joueur
 app.post('/api/account/set-team', async (req, res) => {
   const { pseudo, teamId } = req.body;
