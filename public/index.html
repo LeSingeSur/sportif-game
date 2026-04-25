@@ -4518,7 +4518,7 @@ const BIAT={
 };
 
 function setupBiathlonMode(data){
-  BIAT.data=data; BIAT.announce=0; BIAT.found=[]; BIAT.misses=0; BIAT.sprintDone=false;
+  BIAT.data=data; BIAT.announce=0; BIAT.found=[]; BIAT.misses=0; BIAT.sprintDone=false; BIAT._sprintEnded=false;
   BIAT.qcmIndex=0; BIAT.qcmMisses=0; BIAT.totalScore=0;
   BIAT.orderSlots=new Array(5).fill(null);
   hideAllZones();
@@ -4549,7 +4549,7 @@ function biatStartFromModal(){
 }
 
 function biatStartAnnounceTimer(){
-  let t=parseInt(BIAT.data?.biatAnnounceTime)||45;
+  let t=parseInt(BIAT.data?.biatAnnounceTime)||30;
   document.getElementById('biat-announce-timer').textContent=t;
   document.getElementById('biat-announce-bar').style.width='100%';
   document.getElementById('biat-announce-bar').style.transition='width 1s linear';
@@ -4657,6 +4657,8 @@ async function biatSprintSubmit(){
 }
 
 function biatEndSprint(){
+  if(BIAT._sprintEnded)return;
+  BIAT._sprintEnded=true;
   clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;
   BIAT.sprintDone=true;
   const found=BIAT.found.length;
@@ -4897,12 +4899,33 @@ function _biatStartFinalTimer(){
 let _biatSelectedItem=null;
 function biatItemClick(btn){
   if(btn.classList.contains('placed'))return;
+  // Toggle deselect if clicking same item
+  if(_biatSelectedItem===btn){
+    _biatSelectedItem=null;
+    btn.style.borderColor='transparent';
+    return;
+  }
   // Deselect previous
   document.querySelectorAll('.biat-order-btn').forEach(b=>b.style.borderColor='transparent');
   _biatSelectedItem=btn;
   btn.style.borderColor='var(--neon)';
 }
 function biatSlotClick(slotIdx){
+  // If slot already filled and no item selected — undo placement
+  if(!_biatSelectedItem&&BIAT.orderSlots[slotIdx]!==null){
+    const correctIdx=BIAT.orderSlots[slotIdx];
+    BIAT.orderSlots[slotIdx]=null;
+    const slot=document.getElementById('slot-'+slotIdx);
+    if(slot){slot.classList.remove('filled');document.getElementById('slot-text-'+slotIdx).textContent='—';}
+    // Unplace the item
+    document.querySelectorAll('.biat-order-btn').forEach(b=>{
+      if(parseInt(b.dataset.correctIdx)===correctIdx){
+        b.classList.remove('placed');b.style.borderColor='transparent';
+      }
+    });
+    document.getElementById('biat-validate-order').style.display='none';
+    return;
+  }
   if(!_biatSelectedItem)return;
   const text=_biatSelectedItem.dataset.text;
   const correctIdx=parseInt(_biatSelectedItem.dataset.correctIdx);
