@@ -4450,7 +4450,7 @@ const BIAT={
 };
 
 function setupBiathlonMode(data){
-  BIAT.data=data; BIAT.announce=0; BIAT.found=[]; BIAT.misses=0;
+  BIAT.data=data; BIAT.announce=0; BIAT.found=[]; BIAT.misses=0; BIAT.sprintDone=false;
   BIAT.qcmIndex=0; BIAT.qcmMisses=0; BIAT.totalScore=0;
   BIAT.orderSlots=new Array(5).fill(null);
   hideAllZones();
@@ -4518,7 +4518,7 @@ document.getElementById('biat-sprint-chk').onclick=biatSprintSubmit;
 document.getElementById('biat-sprint-in').addEventListener('keydown',e=>{if(e.key==='Enter')biatSprintSubmit();});
 
 async function biatSprintSubmit(){
-  if(!BIAT.sprintInt)return; // timer ended
+  if(BIAT.sprintDone)return; // sprint terminé
   const inp=document.getElementById('biat-sprint-in');
   const ans=inp.value.trim();
   if(!ans)return;
@@ -4541,16 +4541,29 @@ async function biatSprintSubmit(){
     tag.textContent=d.answer||ans;
     tag.style.cssText='background:rgba(212,255,0,.15);color:var(--neon);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700';
     document.getElementById('biat-found-list').appendChild(tag);
-    // Check if reached announce
-    if(BIAT.found.length>=BIAT.announce){clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;setTimeout(biatEndSprint,500);}
+    // Arrêt quand annonce atteinte (bonnes + mauvaises)
+    const totalAttempts=BIAT.found.length+BIAT.misses;
+    if(totalAttempts>=BIAT.announce){
+      BIAT.sprintDone=true;
+      clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;
+      setTimeout(biatEndSprint,600);
+    }
   } else {
-    fb.textContent='❌ Pas dans le thème';fb.style.color='var(--red)';
+    BIAT.misses++;
+    const totalAttempts=BIAT.found.length+BIAT.misses;
+    fb.textContent='❌ Pas dans le thème ('+totalAttempts+'/'+BIAT.announce+')';fb.style.color='var(--red)';
+    if(totalAttempts>=BIAT.announce){
+      BIAT.sprintDone=true;
+      clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;
+      setTimeout(biatEndSprint,600);
+    }
   }
   setTimeout(()=>{fb.textContent='';},800);
 }
 
 function biatEndSprint(){
   clearInterval(BIAT.sprintInt);BIAT.sprintInt=null;
+  BIAT.sprintDone=true;
   const found=BIAT.found.length;
   const ecart=Math.abs(BIAT.announce-found);
   // Determine BPM
