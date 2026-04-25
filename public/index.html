@@ -568,6 +568,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
       <div style="text-align:center;margin-top:4px">
         <button id="btn-lb-open" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:3px">🏆 Voir le classement</button>
+        <!-- Équipe du joueur -->
+        <div id="player-team-display" style="display:none;flex-direction:column;align-items:center;gap:6px;margin-top:4px">
+          <div id="player-team-badge" style="padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700"></div>
+          <button id="btn-change-team" onclick="showTeamStep()" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer;font-family:var(--ff);text-decoration:underline">Changer d'équipe</button>
+        </div>
+        <div id="player-no-team" style="display:none;flex-direction:column;align-items:center;gap:4px;margin-top:4px">
+          <button onclick="showTeamStep()" style="background:var(--c2);border:none;color:var(--txt);font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;cursor:pointer;font-family:var(--ff)">👥 Rejoindre une équipe</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1215,13 +1223,34 @@ async function finishAccountWithTeam(teamId){
       await fetch('/api/account/set-team',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({pseudo,teamId})});
     }
-    // Proceed to game
+    G.pseudo=pseudo;G.team=teamId||null;
+    // Hide team step, go to game
+    document.getElementById('account-step3').style.display='none';
     const audio=document.getElementById('music-audio');
     if(audio){audio.pause();audio.currentTime=0;}
-    G.pseudo=pseudo;G.team=teamId||null;
     document.getElementById('ptag').textContent=pseudo;
+    updateTeamDisplay(teamId);
     show('sg');loadAthlete();
   }catch(e){errEl.textContent='Erreur réseau';}
+}
+
+function updateTeamDisplay(teamId){
+  const badge=document.getElementById('player-team-badge');
+  const teamDisp=document.getElementById('player-team-display');
+  const noTeam=document.getElementById('player-no-team');
+  if(!badge)return;
+  if(teamId&&_teams.length){
+    const t=_teams.find(t=>t.id===teamId);
+    if(t){
+      badge.textContent=(t.emoji||'👥')+' '+t.name;
+      badge.style.cssText=`padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;background:${t.color}22;color:${t.color};border:1px solid ${t.color}`;
+      if(teamDisp)teamDisp.style.display='flex';
+      if(noTeam)noTeam.style.display='none';
+      return;
+    }
+  }
+  if(teamDisp)teamDisp.style.display='none';
+  if(noTeam&&_teams.length)noTeam.style.display='flex';
 }
 
 document.getElementById('btn-skip-team').onclick=()=>finishAccountWithTeam(null);
@@ -1356,13 +1385,15 @@ async function startGame(){
     if(!d.ok){errEl.textContent=d.error||'Erreur';shake('pin-in');return;}
     // Auth OK
     if(_accountIsNew&&_teams.length>0){
-      // Show team selection
       showTeamStep();
     } else {
       const audio=document.getElementById('music-audio');
       if(audio){audio.pause();audio.currentTime=0;}
       G.pseudo=pseudo;G.team=null;
       document.getElementById('ptag').textContent=pseudo;
+      // Load team info for existing account
+      fetch('/api/account/team?pseudo='+encodeURIComponent(pseudo))
+        .then(r=>r.json()).then(d=>{G.team=d.teamId||null;updateTeamDisplay(G.team);}).catch(()=>{});
       show('sg');loadAthlete();
     }
   }catch(e){
@@ -4518,19 +4549,32 @@ document.getElementById('biat-sprint-chk').onclick=biatSprintSubmit;
 document.getElementById('biat-sprint-in').addEventListener('keydown',e=>{if(e.key==='Enter')biatSprintSubmit();});
 
 async function biatSprintSubmit(){
-  if(BIAT.sprintDone)return; // sprint terminé
+  if(BIAT.sprintDone)return;
   const inp=document.getElementById('biat-sprint-in');
   const ans=inp.value.trim();
   if(!ans)return;
   inp.value='';
+  inp.focus();
+  const athleteId=G.athleteId||BIAT.data?.id;
+  if(!athleteId){
+    const fb=document.getElementById('biat-sprint-fb');
+    fb.textContent='⚠️ Erreur: défi non chargé';fb.style.color='var(--red)';return;
+  }
   // Check already found
   if(BIAT.found.includes(ans.toLowerCase())){
     const fb=document.getElementById('biat-sprint-fb');
     fb.textContent='Déjà trouvé !';fb.style.color='var(--orange)';
     setTimeout(()=>{fb.textContent='';},800);return;
   }
-  const res=await fetch('/api/biathlon-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId:G.athleteId,answer:ans})});
-  const d=await res.json();
+  let d;
+  try{
+    const res=await fetch('/api/biathlon-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId,answer:ans})});
+    d=await res.json();
+  }catch(e){
+    const fb=document.getElementById('biat-sprint-fb');
+    fb.textContent='⚠️ Erreur réseau';fb.style.color='var(--red)';
+    setTimeout(()=>{fb.textContent='';},1000);return;
+  }
   const fb=document.getElementById('biat-sprint-fb');
   if(d.correct){
     BIAT.found.push((d.answer||ans).toLowerCase());
@@ -4558,7 +4602,7 @@ async function biatSprintSubmit(){
       setTimeout(biatEndSprint,600);
     }
   }
-  setTimeout(()=>{fb.textContent='';},800);
+  setTimeout(()=>{fb.textContent='';},1500);
 }
 
 function biatEndSprint(){
@@ -4597,6 +4641,8 @@ function biatStartStep2(){
   badge.style.cssText=`text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto;background:rgba(255,255,255,.06);border:1px solid ${BPM_COLOR[BIAT.bpm]};color:${BPM_COLOR[BIAT.bpm]}`;
   // Reset targets
   for(let i=0;i<3;i++){const t=document.getElementById('biat-t'+i);t.className='biat-target';t.textContent='🎯';}
+  const qcms=BIAT.data.biatQCM||[];
+  if(!qcms.length){biatEndStep2();return;}
   biatShowQCM(0);
 }
 
