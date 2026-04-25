@@ -859,6 +859,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
 
+  <!-- BIATHLON announce modal -->
+  <div id="biat-start-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:14px;text-align:center">
+      <div style="font-size:40px">🎿</div>
+      <div style="font-family:var(--fh);font-size:20px;color:var(--neon)" id="biat-start-theme">Thème</div>
+      <div style="font-size:13px;color:var(--mute);line-height:1.6">Tu vas annoncer combien de noms tu penses trouver.<br>Puis tu auras <strong style="color:var(--txt)">90 secondes</strong> pour les trouver.<br><br><span style="color:var(--orange)">⚠️ Plus tu es précis dans ton annonce, plus le jeu suivant sera facile.</span></div>
+      <button class="btn btn-p" onclick="biatStartFromModal()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
+    </div>
+  </div>
   <!-- BIATHLON zone -->
   <div id="biathlon-zone">
     <!-- Phase indicator -->
@@ -4530,6 +4539,12 @@ function setupBiathlonMode(data){
 }
 
 let _biatAnnounceInt=null;
+function biatStartFromModal(){
+  const m=document.getElementById('biat-start-modal');
+  if(m)m.style.display='none';
+  biatStartAnnounceTimer();
+}
+
 function biatStartAnnounceTimer(){
   let t=30;
   document.getElementById('biat-announce-timer').textContent=t;
