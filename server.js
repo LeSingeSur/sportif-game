@@ -43,6 +43,7 @@ async function connectMongo() {
     console.log('MongoDB connecté');
     await loadFromMongo();
     await loadAccounts();
+    await loadTeams();
   } catch(e) {
     console.error('MongoDB erreur:', e.message);
     loadFromFile();
@@ -849,6 +850,109 @@ app.post('/api/admin/popup', async (req, res) => {
     catch(e) { console.error('savePopup:', e.message); }
   }
   res.json({ ok: true });
+});
+
+
+// ── ÉQUIPES ────────────────────────────────────────────────────────────────
+let teams = []; // [{id, name, emoji, color}]
+
+async function loadTeams(){
+  if(!db) return;
+  try{
+    const col=db.collection('teams');
+    teams=await col.find({}).toArray();
+    console.log(`${teams.length} équipe(s) chargée(s)`);
+  }catch(e){ console.error('loadTeams:', e.message); }
+}
+
+async function saveTeam(team){
+  if(!db) return;
+  try{ await db.collection('teams').updateOne({id:team.id},{$set:team},{upsert:true}); }
+  catch(e){ console.error('saveTeam:', e.message); }
+}
+
+// Lister équipes (public)
+app.get('/api/teams', (req, res) => {
+  res.json({ teams: teams.map(t=>({id:t.id,name:t.name,emoji:t.emoji,color:t.color})) });
+});
+
+// Créer équipe (admin)
+app.post('/api/admin/teams', async (req, res) => {
+  const { password, name, emoji, color } = req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  if(!name) return res.status(400).json({error:'Nom obligatoire'});
+  const team={ id: Date.now().toString(), name:name.trim(), emoji:emoji||'👥', color:color||'#6366f1', createdAt:new Date().toISOString() };
+  teams.push(team);
+  await saveTeam(team);
+  res.json({ok:true, team});
+});
+
+// Supprimer équipe (admin)
+app.delete('/api/admin/teams/:id', async (req, res) => {
+  const { password } = req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  teams=teams.filter(t=>t.id!==req.params.id);
+  if(db) await db.collection('teams').deleteOne({id:req.params.id});
+  res.json({ok:true});
+});
+
+// Assigner équipe à un joueur
+app.post('/api/account/set-team', async (req, res) => {
+  const { pseudo, teamId } = req.body;
+  if(!pseudo) return res.status(400).json({error:'Pseudo requis'});
+  const account=accounts[pseudo.toLowerCase()];
+  if(!account) return res.status(404).json({error:'Compte introuvable'});
+  account.teamId=teamId||null;
+  await saveAccount(account);
+  res.json({ok:true});
+});
+
+// Lister joueurs par équipe (admin)
+app.get('/api/admin/team-players', (req, res) => {
+  const { password } = req.query;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const result={};
+  teams.forEach(t=>{ result[t.id]={ team:t, players:[] }; });
+  result['none']={ team:{id:'none',name:'Sans équipe',emoji:'❓',color:'#666'}, players:[] };
+  Object.values(accounts).forEach(a=>{
+    const key=a.teamId&&result[a.teamId]?a.teamId:'none';
+    result[key].players.push({pseudo:a.pseudo, teamId:a.teamId||null});
+  });
+  res.json({groups:Object.values(result)});
+});
+
+// Classement équipes (public)
+app.get('/api/scores/teams', (req, res) => {
+  const minPlayers=parseInt(req.query.min)||4;
+  const teamScores={};
+  // Aggregate scores per team
+  Object.values(accounts).forEach(a=>{
+    if(!a.teamId) return;
+    if(!teamScores[a.teamId]) teamScores[a.teamId]={ scores:[], pseudos:[] };
+  });
+  // Get best score per player per athlete
+  const playerBest={};
+  globalScores.forEach(s=>{
+    const account=accounts[s.pseudo?.toLowerCase()];
+    if(!account||!account.teamId) return;
+    const key=account.teamId+'_'+s.pseudo;
+    if(!playerBest[key]||s.score>playerBest[key].score){
+      playerBest[key]={score:s.score,teamId:account.teamId,pseudo:s.pseudo};
+    }
+  });
+  Object.values(playerBest).forEach(p=>{
+    if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
+    if(!teamScores[p.teamId].pseudos.includes(p.pseudo)){
+      teamScores[p.teamId].scores.push(p.score);
+      teamScores[p.teamId].pseudos.push(p.pseudo);
+    }
+  });
+  const result=teams.map(t=>{
+    const ts=teamScores[t.id]||{scores:[],pseudos:[]};
+    const avg=ts.scores.length>=minPlayers?Math.round(ts.scores.reduce((a,b)=>a+b,0)/ts.scores.length):null;
+    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:ts.scores.length,avg,qualified:ts.scores.length>=minPlayers};
+  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  res.json({teams:result,minPlayers});
 });
 
 // ── COMPTES JOUEURS ────────────────────────────────────────────────────────
