@@ -203,11 +203,12 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
-    base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length; // count only
+    base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length;
     base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.biatOrderQuestion = athlete.biatOrderQuestion || '';
     base.biatOrder         = athlete.biatOrder || [];
     base.maxScore = 200;
+    console.log(`[BIATHLON] QCM:${base.biatQCM.length} Sprint:${base.biatSprintAnswers} Order:${base.biatOrder.length}`);
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
     base.clue          = athlete.grimpeTheme || athlete.clue || '';
@@ -794,13 +795,21 @@ app.post('/api/admin/reorder', (req, res) => {
   res.json({ success: true });
 });
 
-app.delete('/api/admin/athlete/:id', (req, res) => {
+app.delete('/api/admin/athlete/:id', async (req, res) => {
   const { password } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   const id = parseInt(req.params.id);
   athletes = athletes.filter(a => a.id !== id);
   delete scores[id];
   rebuildGlobalScores(); saveData();
+  // Supprimer aussi dans MongoDB
+  if (db) {
+    try {
+      await colAthletes.deleteOne({ id: id });
+      await colScores.deleteOne({ athleteId: id });
+      console.log(`[DELETE] Athlète ${id} supprimé de MongoDB`);
+    } catch(e) { console.error('Erreur suppression MongoDB:', e.message); }
+  }
   res.json({ success: true });
 });
 
@@ -824,9 +833,9 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
 app.post('/api/biathlon-check', (req, res) => {
   const { athleteId, answer } = req.body;
   const athlete = athletes.find(a => String(a.id) === String(athleteId));
-  if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable' });
+  console.log(`[BIATHLON-CHECK] id=${athleteId} found=${!!athlete} type=${athlete?.type} answer="${answer}"`);
+  if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable', athleteId, found: !!athlete, type: athlete?.type });
   const normAns = norm(answer||'');
-  // Check against all sprint answers (with aliases and tolerance)
   const allAnswers = (athlete.biatSprintAnswers||[]);
   const matched = allAnswers.find(a => {
     const variants = a.split(';').map(v=>v.trim());
