@@ -4534,8 +4534,11 @@ function setupBiathlonMode(data){
   if(themeEl)themeEl.textContent=data.biatTheme||'Thème…';
   const badge=document.getElementById('type-badge');
   if(badge)badge.textContent='🎿 Biathlon';
-  // Démarrer le timer d'annonce directement
-  biatStartAnnounceTimer();
+  // Afficher le modal — timer démarre seulement au clic
+  const startModal=document.getElementById('biat-start-modal');
+  const startTheme=document.getElementById('biat-start-theme');
+  if(startTheme)startTheme.textContent=data.biatTheme||'Biathlon';
+  if(startModal)startModal.style.display='flex';
 }
 
 let _biatAnnounceInt=null;

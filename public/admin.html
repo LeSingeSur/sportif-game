@@ -1082,15 +1082,16 @@ async function startEdit(id){
   document.getElementById('answer-in').value=a.answer;
   document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
   selectType(a.type||'blackjack');
+  if(a.type==='biathlon'){
+    if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
+    if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
+    biatSprintItems=[...(a.biatSprintAnswers||[])];
+    biatQCMItems=(a.biatQCM||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
+    biatOrderItems=[...(a.biatOrder||[])];
+    setTimeout(()=>{renderBiatSprint();renderBiatQCM();renderBiatOrder();},50);
+  }
   if(a.type==='grimpe'){
     document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
-    if(currentType==='biathlon'){
-      if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
-      if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
-      biatSprintItems=(a.biatSprintAnswers||[]);renderBiatSprint();
-      biatQCMItems=(a.biatQCM||[]);renderBiatQCM();
-      biatOrderItems=(a.biatOrder||[]);renderBiatOrder();
-    }
     grimpeItems=(a.grimpeAnswers||[]).map((ans,i)=>{
       const full=a.grimpeAnswersFull;
       if(full&&full[i]) return full[i].join(';');
@@ -2262,6 +2263,7 @@ document.getElementById('btn-save').onclick=async()=>{
   }
   const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder};
   if(editId)body.editId=editId;
+  if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();
