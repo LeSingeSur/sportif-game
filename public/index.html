@@ -842,19 +842,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:100%;padding:12px;background:var(--neon);color:#000;font-family:var(--fh);font-size:15px;font-weight:900;border:none;border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px">🏁 Terminer — voir mon score</button>
   </div>
 
-  <!-- BIATHLON rules modal -->
-  <div id="biathlon-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px">
-      <div style="font-family:var(--fh);font-size:22px;text-align:center;color:var(--neon)">🎿 BIATHLON ARENA</div>
-      <div style="font-size:13px;color:var(--txt);line-height:1.7;display:flex;flex-direction:column;gap:8px">
-        <div>🎿 <strong>Étape 1 — Le Contrat (100 pts)</strong><br><span style="color:var(--mute)">Annonce un chiffre (1-10). Tu as 90s pour trouver autant de réponses. 10 pts par bonne réponse. L'écart entre ton annonce et ton résultat définit ton BPM pour la suite.</span></div>
-        <div>💚 BPM Normal (écart 0-1) → 2 choix &nbsp;|&nbsp; 🟡 Élevé (écart 2) → 3 choix<br>🟠 Critique (écart 3) → 4 choix &nbsp;|&nbsp; 🔴 Hors-contrôle (écart 4+) → saisie libre</div>
-        <div>🎯 <strong>Étape 2 — Stand de tir (60 pts)</strong><br><span style="color:var(--mute)">3 questions QCM en 30s chacune. 20 pts par cible touchée.</span></div>
-        <div>🏁 <strong>Étape 3 — Sprint final (40 pts)</strong><br><span style="color:var(--mute)">Classe 5 éléments dans le bon ordre. Temps selon tes fautes au tir : 50s → 40s → 30s → 20s. 8 pts par bonne position.</span></div>
-      </div>
-      <button id="biathlon-rules-ok" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px" onclick="document.getElementById('biathlon-rules-modal').style.display='none';biatStartAnnounceTimer()">▶ COMMENCER</button>
-    </div>
-  </div>
+
   <!-- BIATHLON zone -->
   <div id="biathlon-zone">
     <!-- Phase indicator -->
@@ -882,6 +870,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="biat-step1">
       <div id="biat-announce-screen">
         <div class="bj-theme" id="biat-theme-display">Thème…</div>
+        <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin:6px 0">
+          🎿 Annonce combien de noms tu vas trouver · 10 pts par bonne réponse · Sois précis pour faciliter la suite
+        </div>
+        <div style="background:rgba(212,255,0,.06);border:1px solid rgba(212,255,0,.2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--txt);margin:4px 0;line-height:1.6">
+          🎿 <strong>Étape 1 — Le Contrat</strong><br>
+          <span style="color:var(--mute)">Tu vas avoir 90s pour trouver un maximum de noms sur ce thème. Avant ça, annonce combien tu penses en trouver. Plus tu es précis, plus l'étape suivante sera facile.</span>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px">
           <div style="font-size:13px;color:var(--mute)">Combien de noms vas-tu trouver ?</div>
           <div style="font-family:var(--fh);font-size:26px;color:var(--neon)" id="biat-announce-timer">15</div>
@@ -909,6 +904,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- STEP 2: Stand de tir -->
     <div id="biat-step2" style="display:none;flex-direction:column;gap:12px">
+      <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
+          🎯 3 questions · 30s par cible · 20 pts si tu touches · Plus tu as été précis à l'étape 1, plus c'est facile ici
+        </div>
       <div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
         <div class="biat-target" id="biat-t0">🎯</div>
         <div class="biat-target" id="biat-t1">🎯</div>
@@ -933,8 +931,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div id="biat-miss-badge" style="font-size:13px;color:var(--mute);text-align:right"></div>
       </div>
       <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-final-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+      <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:4px">
+          🏁 Classe les éléments dans le bon ordre · 8 pts par bonne position · Clique un élément puis sa position
+        </div>
       <div class="bj-theme" id="biat-order-question-display">…</div>
-      <div style="font-size:11px;color:var(--mute);text-align:center">Tape les numéros dans le bon ordre</div>
       <!-- Slots -->
       <div id="biat-slots" style="display:flex;flex-direction:column;gap:6px"></div>
       <!-- Items -->
@@ -4497,9 +4497,8 @@ function setupBiathlonMode(data){
   if(themeEl)themeEl.textContent=data.biatTheme||'Thème…';
   const badge=document.getElementById('type-badge');
   if(badge)badge.textContent='🎿 Biathlon';
-  // Show rules modal
-  const modal=document.getElementById('biathlon-rules-modal');
-  if(modal)modal.style.display='flex';
+  // Démarrer le timer d'annonce directement
+  biatStartAnnounceTimer();
 }
 
 let _biatAnnounceInt=null;
@@ -4570,6 +4569,11 @@ async function biatSprintSubmit(){
   try{
     const res=await fetch('/api/biathlon-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId,answer:ans})});
     d=await res.json();
+    if(!res.ok){
+      const fb=document.getElementById('biat-sprint-fb');
+      fb.textContent='⚠️ '+( d.error||'Erreur serveur');fb.style.color='var(--red)';
+      setTimeout(()=>{fb.textContent='';},2000);return;
+    }
   }catch(e){
     const fb=document.getElementById('biat-sprint-fb');
     fb.textContent='⚠️ Erreur réseau';fb.style.color='var(--red)';
@@ -4615,6 +4619,7 @@ function biatEndSprint(){
   else if(ecart===2)BIAT.bpm='élevé';
   else if(ecart===3)BIAT.bpm='critique';
   else BIAT.bpm='hors-contrôle';
+  if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=found*10;
   // Transition to step 2
   setTimeout(()=>biatStartStep2(),800);
