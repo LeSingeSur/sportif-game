@@ -176,6 +176,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <button class="nav-tab" onclick="showAdminTab('classement')">Classement</button>
     <button class="nav-tab" onclick="showAdminTab('musique')">Musique</button>
     <button class="nav-tab" onclick="showAdminTab('comptes')">Comptes</button>
+    <button class="nav-tab" onclick="showAdminTab('equipes')">Équipes</button>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -767,6 +768,42 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   </div>
 </div>
 
+  <!-- TAB: ÉQUIPES -->
+  <div id="tab-equipes" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">👥 Gestion des équipes</div>
+      <!-- Créer équipe -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;background:var(--c2);border-radius:12px;padding:12px">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">NOUVELLE ÉQUIPE</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="team-emoji-in" placeholder="👥" maxlength="4" style="width:52px;text-align:center;font-size:20px;background:var(--c1);border:none;border-radius:8px;color:var(--txt);padding:6px">
+          <input type="text" id="team-name-in" placeholder="Nom de l'équipe…" style="flex:1;background:var(--c1);border:none;border-radius:8px;color:var(--txt);padding:6px 10px;font-size:14px">
+          <input type="color" id="team-color-in" value="#6366f1" style="width:40px;height:38px;border-radius:8px;border:none;cursor:pointer;padding:2px">
+        </div>
+        <button class="btn btn-p" onclick="createTeam()" style="padding:10px">➕ Créer l'équipe</button>
+      </div>
+      <!-- Config min joueurs -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <label style="font-size:13px;color:var(--mute);flex:1">Joueurs min pour classement équipe</label>
+        <input type="number" id="team-min-in" value="4" min="1" max="20" style="width:60px;background:var(--c2);border:none;border-radius:8px;color:var(--txt);padding:6px;text-align:center;font-size:16px;font-weight:700">
+      </div>
+      <!-- Liste équipes -->
+      <div id="teams-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <!-- Joueurs par équipe -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">👥 Joueurs par équipe</div>
+      <button class="btn" onclick="loadTeamPlayers()" style="margin-bottom:12px;padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      <div id="team-players-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <!-- Classement équipes -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🏆 Classement équipes</div>
+      <button class="btn" onclick="loadTeamScores()" style="margin-bottom:12px;padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      <div id="team-scores-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+
   <!-- TAB: COMPTES -->
   <div id="tab-comptes" class="tab-content" style="display:none">
     <div class="card">
@@ -891,13 +928,14 @@ function selectType(type){
 function showAdminTab(tab){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   event.target.classList.add('active');
-  ['defis','classement','musique','comptes'].forEach(t=>{
+  ['defis','classement','musique','comptes','equipes'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
     if(el)el.style.display=tab===t?'block':'none';
   });
   if(tab==='classement') loadAdminScores();
   if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
   if(tab==='comptes') loadComptes();
+  if(tab==='equipes') loadEquipes();
 }
 
 async function loadMusicConfig(){
@@ -1581,6 +1619,99 @@ async function clearPopup(){
 }
 
 // ── COMPTES ─────────────────────────────────────────────────────────────────
+// ── ÉQUIPES ADMIN ──────────────────────────────────────────────────────────
+let _adminTeams=[];
+
+async function loadEquipes(){
+  const r=await fetch('/api/teams');
+  const d=await r.json();
+  _adminTeams=d.teams||[];
+  renderTeamsList();
+}
+
+function renderTeamsList(){
+  const list=document.getElementById('teams-list');
+  if(!list)return;
+  if(!_adminTeams.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:12px">Aucune équipe créée.</div>';return;}
+  list.innerHTML='';
+  _adminTeams.forEach(t=>{
+    const div=document.createElement('div');
+    div.style.cssText=`display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;border:2px solid ${t.color};background:${t.color}22`;
+    div.innerHTML=`<span style="font-size:22px">${t.emoji}</span>
+      <div style="flex:1;font-weight:700;font-size:15px;color:${t.color}">${t.name}</div>
+      <button onclick="deleteTeam('${t.id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">🗑</button>`;
+    list.appendChild(div);
+  });
+}
+
+async function createTeam(){
+  const name=document.getElementById('team-name-in').value.trim();
+  const emoji=document.getElementById('team-emoji-in').value.trim()||'👥';
+  const color=document.getElementById('team-color-in').value||'#6366f1';
+  if(!name)return alert('Nom obligatoire');
+  const r=await fetch('/api/admin/teams',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,name,emoji,color})});
+  const d=await r.json();
+  if(d.ok){document.getElementById('team-name-in').value='';document.getElementById('team-emoji-in').value='';loadEquipes();}
+  else alert('Erreur: '+d.error);
+}
+
+async function deleteTeam(id){
+  if(!confirm('Supprimer cette équipe ?'))return;
+  await fetch('/api/admin/teams/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadEquipes();loadTeamPlayers();
+}
+
+async function loadTeamPlayers(){
+  const list=document.getElementById('team-players-list');
+  list.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement...</div>';
+  const r=await fetch('/api/admin/team-players?password='+encodeURIComponent(adminPw));
+  const d=await r.json();
+  list.innerHTML='';
+  (d.groups||[]).forEach(g=>{
+    if(!g.players.length)return;
+    const div=document.createElement('div');
+    div.style.cssText=`border:1px solid ${g.team.color||'#666'};border-radius:12px;padding:10px 12px`;
+    div.innerHTML=`<div style="font-weight:700;font-size:13px;color:${g.team.color||'#fff'};margin-bottom:8px">${g.team.emoji} ${g.team.name} (${g.players.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${g.players.map(p=>`<div style="display:flex;align-items:center;gap:4px;background:var(--c2);border-radius:8px;padding:4px 10px;font-size:12px">
+        ${p.pseudo}
+        <select onchange="movePlayer('${p.pseudo}',this.value)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px">
+          <option value="">↕ Déplacer</option>
+          ${_adminTeams.map(t=>`<option value="${t.id}" ${t.id===p.teamId?'selected':''}>${t.emoji} ${t.name}</option>`).join('')}
+          <option value="none">❓ Sans équipe</option>
+        </select>
+      </div>`).join('')}</div>`;
+    list.appendChild(div);
+  });
+}
+
+async function movePlayer(pseudo,teamId){
+  if(!teamId)return;
+  await fetch('/api/account/set-team',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pseudo,teamId:teamId==='none'?null:teamId})});
+  setTimeout(loadTeamPlayers,300);
+}
+
+async function loadTeamScores(){
+  const min=document.getElementById('team-min-in').value||4;
+  const r=await fetch('/api/scores/teams?min='+min);
+  const d=await r.json();
+  const list=document.getElementById('team-scores-list');
+  if(!d.teams||!d.teams.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center">Aucun score équipe.</div>';return;}
+  list.innerHTML='';
+  d.teams.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText=`display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:${t.color}22;border:1px solid ${t.color}`;
+    div.innerHTML=`<div style="font-family:var(--fh);font-size:20px;color:var(--mute);min-width:24px">${i+1}.</div>
+      <div style="font-size:22px">${t.emoji}</div>
+      <div style="flex:1"><div style="font-weight:700;color:${t.color}">${t.name}</div>
+        <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)${!t.qualified?' — pas assez de joueurs':''}</div></div>
+      ${t.qualified?`<div style="font-family:var(--fh);font-size:22px;color:${t.color}">${t.avg}</div>
+        <div style="font-size:11px;color:var(--mute)">pts moy.</div>`:'<div style="font-size:12px;color:var(--mute)">—</div>'}`;
+    list.appendChild(div);
+  });
+}
+
 async function loadComptes(){
   const list=document.getElementById('comptes-list');
   const countEl=document.getElementById('comptes-count');
