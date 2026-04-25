@@ -4657,9 +4657,9 @@ function biatEndSprint(){
   else if(ecart===2)BIAT.bpm='élevé';
   else if(ecart===3)BIAT.bpm='critique';
   else BIAT.bpm='hors-contrôle';
-  if(!BIAT.totalScore||isNaN(BIAT.totalScore))BIAT.totalScore=0;
+  if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=found*10;
-  console.log('[BIAT SCORE] Après sprint: '+BIAT.totalScore);
+  console.log('[BIAT SCORE] Après sprint: found='+found+' score='+BIAT.totalScore);
   // Show running score
   const scoreEl=document.getElementById('sc-val');
   if(scoreEl&&!isNaN(BIAT.totalScore))scoreEl.textContent=BIAT.totalScore;
@@ -4692,10 +4692,16 @@ function biatStartStep2(){
   const nChoices=BPM_CHOICES[BIAT.bpm];
   const qcmHint=document.getElementById('biat-qcm-hint');
   if(qcmHint){
-    const choiceMsg=nChoices===0?'✍️ <span style="color:var(--red)">Pas de propositions — tape ta réponse directement</span>':
-      nChoices===2?'💚 <span style="color:var(--neon)">2 propositions à chaque question</span>':
-      '🟡 <span style="color:var(--orange)">'+nChoices+' propositions à chaque question</span>';
-    qcmHint.innerHTML='🎯 <strong>Stand de tir</strong> · 3 questions · 30s chacune · 20 pts par bonne réponse<br><span style="display:block;margin-top:4px">'+choiceMsg+'</span>';
+    const found=BIAT.found.length;
+    const ecart=Math.abs(BIAT.announce-found);
+    const perfMsg=ecart===0?'Tu as été <strong style="color:var(--neon)">parfait</strong> à l\'étape 1 !':
+      ecart===1?'Tu as été <strong style="color:var(--neon)">très précis</strong> à l\'étape 1.':
+      ecart<=3?'Tu avais <strong style="color:var(--orange)">un écart de '+ecart+'</strong> à l\'étape 1.':
+      'Tu avais <strong style="color:var(--red)">un grand écart de '+ecart+'</strong> à l\'étape 1.';
+    const choiceMsg=nChoices===0
+      ?'→ <strong style="color:var(--red)">Aucune proposition</strong> — saisie libre.'
+      :`→ Tu as <strong style="color:${nChoices===2?'var(--neon)':'var(--orange)'}">${nChoices} proposition${nChoices>1?'s':''}</strong> par question.`;
+    qcmHint.innerHTML=`🎯 <strong>Stand de tir</strong> · 3 questions · 30s · 20 pts/cible<br><span style="display:block;margin-top:4px;font-size:11px">${perfMsg} ${choiceMsg}</span>`;
   }
   const qcms=BIAT.data.biatQCM||[];
   if(!qcms.length){biatEndStep2();return;}
