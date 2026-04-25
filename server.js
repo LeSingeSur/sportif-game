@@ -69,10 +69,13 @@ async function loadFromMongo() {
 async function saveData() {
   if (!db) { saveToFile(); return; }
   try {
-    // Athletes
+    const currentIds = athletes.map(a => a.id);
+    // Upsert tous les athlètes en mémoire
     for (const a of athletes) {
       await colAthletes.updateOne({ id: a.id }, { $set: a }, { upsert: true });
     }
+    // Supprimer de MongoDB les athlètes qui ne sont plus en mémoire
+    await colAthletes.deleteMany({ id: { $nin: currentIds } });
     // Config
     await colConfig.updateOne({ key: 'main' }, { $set: { key:'main', musicConfig, welcomeImage } }, { upsert: true });
   } catch(e) { console.error('Erreur saveData MongoDB:', e.message); }
@@ -444,6 +447,14 @@ app.get('/api/athlete', (req, res) => {
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'biathlon') {
+    base.biatTheme         = athlete.biatTheme || '';
+    base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length;
+    base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
+    base.biatOrderQuestion = athlete.biatOrderQuestion || '';
+    base.biatOrder         = athlete.biatOrder || [];
+    base.maxScore = 200;
+    console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
     base.clue          = athlete.grimpeTheme || athlete.clue || '';
@@ -802,12 +813,13 @@ app.delete('/api/admin/athlete/:id', async (req, res) => {
   athletes = athletes.filter(a => a.id !== id);
   delete scores[id];
   rebuildGlobalScores(); saveData();
-  // Supprimer aussi dans MongoDB
+  // Supprimer dans MongoDB — cherche par id numérique ET string
   if (db) {
     try {
-      await colAthletes.deleteOne({ id: id });
-      await colScores.deleteOne({ athleteId: id });
-      console.log(`[DELETE] Athlète ${id} supprimé de MongoDB`);
+      const r1 = await colAthletes.deleteOne({ id: id });
+      const r2 = r1.deletedCount === 0 ? await colAthletes.deleteOne({ id: String(id) }) : r1;
+      await colScores.deleteMany({ athleteId: { $in: [id, String(id)] } });
+      console.log(`[DELETE] Athlète ${id} supprimé de MongoDB (deleted: ${r1.deletedCount + (r2?.deletedCount||0)})`);
     } catch(e) { console.error('Erreur suppression MongoDB:', e.message); }
   }
   res.json({ success: true });
