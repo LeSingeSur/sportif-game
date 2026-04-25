@@ -4549,7 +4549,7 @@ function biatStartFromModal(){
 }
 
 function biatStartAnnounceTimer(){
-  let t=30;
+  let t=parseInt(BIAT.data?.biatAnnounceTime)||45;
   document.getElementById('biat-announce-timer').textContent=t;
   document.getElementById('biat-announce-bar').style.width='100%';
   document.getElementById('biat-announce-bar').style.transition='width 1s linear';
@@ -4558,7 +4558,8 @@ function biatStartAnnounceTimer(){
     const el=document.getElementById('biat-announce-timer');
     const bar=document.getElementById('biat-announce-bar');
     if(el)el.textContent=t;
-    if(bar)bar.style.width=(t/30*100)+'%';
+    const tMax=parseInt(BIAT.data?.biatAnnounceTime)||45;
+    if(bar)bar.style.width=(t/tMax*100)+'%';
     if(el&&t<=5)el.style.color='var(--red)';
     if(t<=0){clearInterval(_biatAnnounceInt);_biatAnnounceInt=null;biatAnnounce(5);}
   },1000);

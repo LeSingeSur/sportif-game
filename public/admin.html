@@ -272,6 +272,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <span class="hint">Thème affiché au joueur pour son annonce.</span>
         </div>
         <div class="field">
+          <label>⏱ Temps pour choisir l'annonce (secondes)</label>
+          <input type="number" id="biat-announce-time-in" value="45" min="10" max="120" style="max-width:100px">
+          <span class="hint">Défaut : 45s. Le joueur a ce temps pour annoncer son chiffre avant de démarrer le sprint.</span>
+        </div>
+        <div class="field">
           <label>Réponses valides (étape 1)</label>
           <span class="hint">Le joueur doit taper ces noms pendant le sprint de 60s.</span>
           <textarea id="biat-sprint-bulk" placeholder="Djokovic&#10;Federer;Roger Federer&#10;Nadal;Rafael Nadal" style="min-height:80px;margin-top:6px"></textarea>
@@ -1084,6 +1089,7 @@ async function startEdit(id){
   selectType(a.type||'blackjack');
   if(a.type==='biathlon'){
     if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
+    if(document.getElementById('biat-announce-time-in'))document.getElementById('biat-announce-time-in').value=a.biatAnnounceTime||45;
     if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
     biatSprintItems=[...(a.biatSprintAnswers||[])];
     biatQCMItems=(a.biatQCM||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
@@ -2208,6 +2214,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const rqTimeVal        = currentType==='replique'?rqTime:60;
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
+  const biatAnnounceTime = currentType==='biathlon'?parseInt(document.getElementById('biat-announce-time-in').value)||45:45;
   const biatSprintAnswers = currentType==='biathlon'?biatSprintItems.map(x=>x.trim()).filter(Boolean):[];
   const biatQCM = currentType==='biathlon'?biatQCMItems:[];
   const biatOrderQuestion = currentType==='biathlon'?document.getElementById('biat-order-question-in').value.trim():'';
@@ -2261,7 +2268,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
