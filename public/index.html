@@ -843,6 +843,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
 
+  <!-- BIATHLON sprint3 briefing -->
+  <div id="biat-sprint3-briefing" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:14px">
+      <div style="font-family:var(--fh);font-size:20px;text-align:center;color:var(--neon)">🏁 SPRINT FINAL</div>
+      <div id="biat-sprint3-briefing-text" style="font-size:13px;color:var(--txt);line-height:1.7">
+        Tu vas devoir classer <strong>5 éléments</strong> dans le bon ordre.<br><br>
+        <strong>Comment jouer :</strong><br>
+        1️⃣ Clique sur un élément dans la liste du bas<br>
+        2️⃣ Puis clique sur la position où tu veux le placer<br>
+        3️⃣ Recommence pour chaque élément<br><br>
+        <span style="color:var(--neon)">8 pts par bonne position · Max 40 pts</span>
+      </div>
+      <button class="btn btn-p" onclick="biatStartStep3FromBriefing()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
+    </div>
+  </div>
+
   <!-- BIATHLON zone -->
   <div id="biathlon-zone">
     <!-- Phase indicator -->
@@ -879,7 +895,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px">
           <div style="font-size:13px;color:var(--mute)">Combien de noms vas-tu trouver ?</div>
-          <div style="font-family:var(--fh);font-size:26px;color:var(--neon)" id="biat-announce-timer">15</div>
+          <div style="font-family:var(--fh);font-size:26px;color:var(--neon)" id="biat-announce-timer">30</div>
         </div>
         <div style="height:3px;background:var(--c2);border-radius:99px;margin-bottom:10px"><div id="biat-announce-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0">
@@ -904,8 +920,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- STEP 2: Stand de tir -->
     <div id="biat-step2" style="display:none;flex-direction:column;gap:12px">
-      <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
-          🎯 3 questions · 30s par cible · 20 pts si tu touches · Plus tu as été précis à l'étape 1, plus c'est facile ici
+      <div id="biat-qcm-hint" style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
+          🎯 Stand de tir — 3 questions · 20 pts par cible
         </div>
       <div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
         <div class="biat-target" id="biat-t0">🎯</div>
@@ -925,14 +941,36 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
     </div>
     <!-- STEP 3: Sprint final -->
+    <!-- Modal explicatif avant step3 -->
+    <div id="biat-step3-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px">
+        <div style="font-family:var(--fh);font-size:18px;text-align:center;color:var(--neon)">🏁 SPRINT FINAL</div>
+        <div style="font-size:13px;color:var(--txt);line-height:1.7">
+          Tu dois <strong>classer des éléments dans le bon ordre</strong>.<br><br>
+          <strong>Comment jouer :</strong><br>
+          1️⃣ Clique sur une proposition en bas<br>
+          2️⃣ Elle se surligne<br>
+          3️⃣ Clique sur la case de ta position en haut<br><br>
+          <span id="biat-step3-time-hint" style="color:var(--neon);font-weight:700"></span>
+        </div>
+        <button class="btn btn-p" onclick="biatLaunchStep3()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ OK — COMMENCER LE TIMER</button>
+      </div>
+    </div>
     <div id="biat-step3" style="display:none;flex-direction:column;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><span class="biat-phase">TEMPS</span><div class="biat-big" id="biat-final-timer" style="font-size:42px">50</div></div>
         <div id="biat-miss-badge" style="font-size:13px;color:var(--mute);text-align:right"></div>
       </div>
       <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-final-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
-      <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:4px">
-          🏁 Classe les éléments dans le bon ordre · 8 pts par bonne position · Clique un élément puis sa position
+      <div id="biat-step3-hint" style="background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.3);border-radius:10px;padding:12px;font-size:13px;color:var(--txt);margin-bottom:8px;display:none">
+          🏁 <strong>Sprint final — Lis bien avant de commencer !</strong><br>
+          <span style="color:var(--mute)">Classe les éléments dans le bon ordre :<br>
+          1️⃣ Clique sur un <strong>élément</strong> pour le sélectionner<br>
+          2️⃣ Puis clique sur la <strong>position</strong> (1, 2, 3...) où le placer<br>
+          · 8 pts par bonne position · Le timer démarre dans 5s</span>
+        </div>
+        <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:4px">
+          🏁 Classe les éléments dans le bon ordre · 8 pts par bonne position
         </div>
       <div class="bj-theme" id="biat-order-question-display">…</div>
       <!-- Slots -->
@@ -4503,7 +4541,7 @@ function setupBiathlonMode(data){
 
 let _biatAnnounceInt=null;
 function biatStartAnnounceTimer(){
-  let t=15;
+  let t=30;
   document.getElementById('biat-announce-timer').textContent=t;
   document.getElementById('biat-announce-bar').style.width='100%';
   document.getElementById('biat-announce-bar').style.transition='width 1s linear';
@@ -4512,7 +4550,7 @@ function biatStartAnnounceTimer(){
     const el=document.getElementById('biat-announce-timer');
     const bar=document.getElementById('biat-announce-bar');
     if(el)el.textContent=t;
-    if(bar)bar.style.width=(t/15*100)+'%';
+    if(bar)bar.style.width=(t/30*100)+'%';
     if(el&&t<=5)el.style.color='var(--red)';
     if(t<=0){clearInterval(_biatAnnounceInt);_biatAnnounceInt=null;biatAnnounce(5);}
   },1000);
@@ -4619,8 +4657,12 @@ function biatEndSprint(){
   else if(ecart===2)BIAT.bpm='élevé';
   else if(ecart===3)BIAT.bpm='critique';
   else BIAT.bpm='hors-contrôle';
-  if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
+  if(!BIAT.totalScore||isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=found*10;
+  console.log('[BIAT SCORE] Après sprint: '+BIAT.totalScore);
+  // Show running score
+  const scoreEl=document.getElementById('sc-val');
+  if(scoreEl&&!isNaN(BIAT.totalScore))scoreEl.textContent=BIAT.totalScore;
   // Transition to step 2
   setTimeout(()=>biatStartStep2(),800);
 }
@@ -4646,6 +4688,15 @@ function biatStartStep2(){
   badge.style.cssText=`text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto;background:rgba(255,255,255,.06);border:1px solid ${BPM_COLOR[BIAT.bpm]};color:${BPM_COLOR[BIAT.bpm]}`;
   // Reset targets
   for(let i=0;i<3;i++){const t=document.getElementById('biat-t'+i);t.className='biat-target';t.textContent='🎯';}
+  // QCM hint dynamique selon BPM
+  const nChoices=BPM_CHOICES[BIAT.bpm];
+  const qcmHint=document.getElementById('biat-qcm-hint');
+  if(qcmHint){
+    const choiceMsg=nChoices===0?'✍️ <span style="color:var(--red)">Pas de propositions — tape ta réponse directement</span>':
+      nChoices===2?'💚 <span style="color:var(--neon)">2 propositions à chaque question</span>':
+      '🟡 <span style="color:var(--orange)">'+nChoices+' propositions à chaque question</span>';
+    qcmHint.innerHTML='🎯 <strong>Stand de tir</strong> · 3 questions · 30s chacune · 20 pts par bonne réponse<br><span style="display:block;margin-top:4px">'+choiceMsg+'</span>';
+  }
   const qcms=BIAT.data.biatQCM||[];
   if(!qcms.length){biatEndStep2();return;}
   biatShowQCM(0);
@@ -4659,6 +4710,14 @@ function biatShowQCM(idx){
   const qcms=BIAT.data.biatQCM||[];
   if(idx>=qcms.length){biatEndStep2();return;}
   const q=qcms[idx];
+  // Mini bandeau explicatif avant la première cible
+  if(idx===0){
+    const nC=BPM_CHOICES[BIAT.bpm];
+    const bpmMsg=nC===0?'Résultat étape 1 : tu réponds en saisie libre (pas de propositions).':`Résultat étape 1 : tu as ${nC} proposition(s) par question.`;
+    const fb=document.getElementById('biat-fb');
+    fb.textContent='🎯 Stand de tir · '+bpmMsg;fb.style.color='var(--mute)';
+    setTimeout(()=>{if(fb.textContent.includes('Stand'))fb.textContent='';},4000);
+  }
   document.getElementById('biat-qcm-question').textContent=q.question||'…';
   const choicesEl=document.getElementById('biat-qcm-choices');
   const inputRow=document.getElementById('biat-qcm-input-row');
@@ -4719,6 +4778,8 @@ function biatQCMAnswer(ans,correct,btn){
   if(isCorrect){
     t.className='biat-target hit';t.textContent='✅';
     BIAT.totalScore+=20;
+    const _sc=document.getElementById('sc-val');if(_sc)_sc.textContent=BIAT.totalScore;
+    console.log('[BIAT SCORE] Après QCM: '+BIAT.totalScore);
   } else {
     t.className='biat-target miss';t.textContent='❌';
     BIAT.qcmMisses++;
@@ -4730,11 +4791,35 @@ function biatQCMAnswer(ans,correct,btn){
 
 function biatEndStep2(){
   document.getElementById('biat-step2').style.display='none';
+  // Show sprint final briefing modal
+  const briefing=document.getElementById('biat-sprint3-briefing');
+  if(briefing){
+    briefing.style.display='flex';
+    // Auto-start after 8s if no click
+    BIAT._briefingTimeout=setTimeout(()=>{
+      briefing.style.display='none';
+      biatStartStep3();
+    },8000);
+  } else {
+    biatStartStep3();
+  }
+}
+function biatStartStep3FromBriefing(){
+  clearTimeout(BIAT._briefingTimeout);
+  document.getElementById('biat-sprint3-briefing').style.display='none';
   biatStartStep3();
+}
+function biatLaunchStep3(){
+  // Ferme le modal step3 et démarre le timer
+  const m=document.getElementById('biat-step3-modal');
+  if(m)m.style.display='none';
+  _biatStartFinalTimer();
 }
 
 function biatStartStep3(){
+  // Afficher step3 mais PAS encore le timer
   document.getElementById('biat-step3').style.display='flex';
+  document.getElementById('biat-validate-order').style.display='none';
   document.getElementById('biat-phase-label').textContent='ÉTAPE 3 — SPRINT FINAL';
   // Update stepper
   const s2=document.getElementById('biat-step-2');const s3=document.getElementById('biat-step-3');
@@ -4783,7 +4868,9 @@ function biatStartStep3(){
     itemsEl.appendChild(btn);
   });
   document.getElementById('biat-validate-order').style.display='none';
-  // Start timer
+  // Timer démarré par bouton OK dans le modal
+}
+function _biatStartFinalTimer(){
   BIAT.finalInt=setInterval(biatFinalTick,1000);
 }
 
@@ -4830,9 +4917,13 @@ function biatValidateOrder(){
   // Score: 8pts per correct position
   let pts=0;
   BIAT.orderSlots.forEach((correctIdx,slotIdx)=>{
-    if(correctIdx===slotIdx)pts+=8;
+    if(correctIdx!==null&&correctIdx===slotIdx)pts+=8;
   });
+  if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=pts;
+  if(!BIAT.totalScore||isNaN(BIAT.totalScore))BIAT.totalScore=0;
+  BIAT.totalScore+=pts;
+  console.log('[BIAT SCORE] Après ordre: '+BIAT.totalScore);
   // Show result
   const slotsEl=document.getElementById('biat-slots');
   BIAT.orderSlots.forEach((correctIdx,slotIdx)=>{
