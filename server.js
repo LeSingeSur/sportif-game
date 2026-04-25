@@ -215,6 +215,7 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
+    base.biatAnnounceTime  = athlete.biatAnnounceTime || 45;
     base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length;
     base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.biatOrderQuestion = athlete.biatOrderQuestion || '';
@@ -780,6 +781,7 @@ app.post('/api/admin/athlete', (req, res) => {
     grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
     grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
+    biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
     biatSprintAnswers:  type === 'biathlon' ? (req.body.biatSprintAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
     biatQCM:            type === 'biathlon' ? (req.body.biatQCM||[]) : undefined,
     biatOrderQuestion:  type === 'biathlon' ? (req.body.biatOrderQuestion||'').trim() : undefined,
