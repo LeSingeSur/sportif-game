@@ -962,16 +962,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div id="biat-miss-badge" style="font-size:13px;color:var(--mute);text-align:right"></div>
       </div>
       <div style="height:4px;background:var(--c2);border-radius:99px"><div id="biat-final-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
-      <div id="biat-step3-hint" style="background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.3);border-radius:10px;padding:12px;font-size:13px;color:var(--txt);margin-bottom:8px;display:none">
-          🏁 <strong>Sprint final — Lis bien avant de commencer !</strong><br>
-          <span style="color:var(--mute)">Classe les éléments dans le bon ordre :<br>
-          1️⃣ Clique sur un <strong>élément</strong> pour le sélectionner<br>
-          2️⃣ Puis clique sur la <strong>position</strong> (1, 2, 3...) où le placer<br>
-          · 8 pts par bonne position · Le timer démarre dans 5s</span>
-        </div>
-        <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:4px">
-          🏁 Classe les éléments dans le bon ordre · 8 pts par bonne position
-        </div>
       <div class="bj-theme" id="biat-order-question-display">…</div>
       <!-- Slots -->
       <div id="biat-slots" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -4949,6 +4939,13 @@ function biatFinish(){
   const score=Math.min(200,Math.max(0,Math.round(BIAT.totalScore)));
   G.score=score;
   setScore(score,true);
+  // Mettre à jour l'écran victoire
+  const vSc=document.getElementById('v-sc');
+  if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');
+  if(vName)vName.textContent=BIAT.data?.biatTheme||'Biathlon';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent='Sprint '+BIAT.found.length*10+' pts · Tir '+(BIAT.qcmMisses===0?60:(3-BIAT.qcmMisses)*20)+' pts · Ordre '+(score-BIAT.found.length*10-(3-Math.min(BIAT.qcmMisses,3))*20)+' pts';
   setVictoryIcon('biathlon');
   submitScore(score);
   show('sv');
