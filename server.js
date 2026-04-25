@@ -281,7 +281,7 @@ app.post('/api/admin/welcome-image', (req, res) => {
 // -- LA GRIMPÉE ------------------------------------------------------------
 app.post('/api/grimpe-check', (req, res) => {
   const { athleteId, answer, found } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'grimpe') return res.status(404).json({ error: 'Défi introuvable' });
   const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
   function lev(a,b){
@@ -308,7 +308,7 @@ app.post('/api/grimpe-check', (req, res) => {
 // EPO — révèle une réponse non encore trouvée
 app.post('/api/grimpe-epo', (req, res) => {
   const { athleteId, found } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'grimpe') return res.status(404).json({ error: 'Défi introuvable' });
   const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
   const foundNorm = (found||[]).map(norm);
@@ -321,7 +321,7 @@ app.post('/api/grimpe-epo', (req, res) => {
 app.post('/api/grimpe-gel', (req, res) => {
   const { athleteId, password } = req.body;
   if(password !== ADMIN_PASSWORD) return res.status(403).json({ error: 'Interdit' });
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if(!athlete) return res.status(404).json({ error: 'Joueur introuvable' });
   athlete.grimpeGel = Date.now();
   res.json({ ok: true });
@@ -330,7 +330,7 @@ app.post('/api/grimpe-gel', (req, res) => {
 // Le joueur poll ce endpoint pour savoir si gel activé
 app.get('/api/grimpe-gel', (req, res) => {
   const { athleteId } = req.query;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if(!athlete) return res.status(404).json({ error: 'Introuvable' });
   const gelTime = athlete.grimpeGel || 0;
   const active = (Date.now() - gelTime) < 15000; // 15s fenêtre
@@ -482,7 +482,7 @@ app.get('/api/finished', (req, res) => {
 app.post('/api/check', (req, res) => {
   const { pseudo, athleteId, answer } = req.body;
   if (!answer || !athleteId || !pseudo) return res.status(400).json({ correct: false });
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete) return res.status(404).json({ correct: false });
   const correct = athlete.aliases.some(a => norm(a) === norm(answer));
   res.json({
@@ -497,7 +497,7 @@ app.post('/api/check', (req, res) => {
 app.post('/api/score', (req, res) => {
   const { pseudo, score, athleteId } = req.body;
   if (!pseudo || score === undefined || !athleteId) return res.status(400).json({ error: 'Données manquantes' });
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete) return res.status(404).json({ error: 'Sportif introuvable' });
   if (hasPlayed(pseudo, athleteId)) return res.status(409).json({ error: 'already_played' });
 
@@ -538,7 +538,7 @@ app.get('/api/scores/:athleteId', (req, res) => {
 app.post('/api/sportus-check', (req, res) => {
   const { athleteId, guess } = req.body;
   if (!athleteId || !guess) return res.status(400).json({ error: 'Données manquantes' });
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete) return res.status(404).json({ error: 'Sportif introuvable' });
 
   // Target = last name, normalised, uppercase
@@ -578,7 +578,7 @@ app.post('/api/sportus-check', (req, res) => {
 // -- THE CHASE ------------------------------------------------------------
 app.post('/api/chase-check', (req, res) => {
   const { athleteId, answer, found } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'chase') return res.status(404).json({ error: 'Défi introuvable' });
   const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
   const normAns = norm(answer || '');
@@ -602,7 +602,7 @@ app.post('/api/chase-check', (req, res) => {
 // -- LE DÉMINEUR -----------------------------------------------------------
 app.post('/api/demineur-check', (req, res) => {
   const { athleteId, index } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'demineur') return res.status(404).json({ error: 'Défi introuvable' });
   const item = (athlete.demineurItems || [])[index];
   if (!item) return res.status(404).json({ error: 'Item introuvable' });
@@ -612,7 +612,7 @@ app.post('/api/demineur-check', (req, res) => {
 // -- LA TRAPPE -------------------------------------------------------------
 app.post('/api/trappe-check', (req, res) => {
   const { athleteId, questionIndex } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'trappe') return res.status(404).json({ error: 'Défi introuvable' });
   const questions = athlete.trappeQuestions && athlete.trappeQuestions.length
     ? athlete.trappeQuestions
@@ -627,7 +627,7 @@ app.post('/api/trappe-check', (req, res) => {
 app.post('/api/prix-check', (req, res) => {
   const { athleteId, guess } = req.body;
   if (!athleteId || guess === undefined) return res.status(400).json({ error: 'Données manquantes' });
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'prix') return res.status(404).json({ error: 'Défi introuvable' });
 
   const target    = athlete.targetValue;
@@ -823,7 +823,7 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
 // ── BIATHLON ──────────────────────────────────────────────────────────────
 app.post('/api/biathlon-check', (req, res) => {
   const { athleteId, answer } = req.body;
-  const athlete = athletes.find(a => a.id === athleteId);
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable' });
   const normAns = norm(answer||'');
   // Check against all sprint answers (with aliases and tolerance)
