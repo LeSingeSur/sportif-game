@@ -4911,34 +4911,35 @@ function biatItemClick(btn){
   btn.style.borderColor='var(--neon)';
 }
 function biatSlotClick(slotIdx){
-  // If slot already filled and no item selected — undo placement
+  // Si slot déjà rempli et pas d'item sélectionné — annuler
   if(!_biatSelectedItem&&BIAT.orderSlots[slotIdx]!==null){
     const correctIdx=BIAT.orderSlots[slotIdx];
     BIAT.orderSlots[slotIdx]=null;
     const slot=document.getElementById('slot-'+slotIdx);
     if(slot){slot.classList.remove('filled');document.getElementById('slot-text-'+slotIdx).textContent='—';}
-    // Unplace the item
     document.querySelectorAll('.biat-order-btn').forEach(b=>{
-      if(parseInt(b.dataset.correctIdx)===correctIdx){
-        b.classList.remove('placed');b.style.borderColor='transparent';
-      }
+      if(parseInt(b.dataset.correctIdx)===correctIdx){b.classList.remove('placed');b.style.borderColor='transparent';}
     });
     document.getElementById('biat-validate-order').style.display='none';
     return;
   }
   if(!_biatSelectedItem)return;
+  // Si slot déjà rempli — remettre l'ancien item disponible
+  if(BIAT.orderSlots[slotIdx]!==null){
+    const oldIdx=BIAT.orderSlots[slotIdx];
+    document.querySelectorAll('.biat-order-btn').forEach(b=>{
+      if(parseInt(b.dataset.correctIdx)===oldIdx){b.classList.remove('placed');b.style.borderColor='transparent';}
+    });
+  }
   const text=_biatSelectedItem.dataset.text;
   const correctIdx=parseInt(_biatSelectedItem.dataset.correctIdx);
   BIAT.orderSlots[slotIdx]=correctIdx;
-  // Update slot display
   const slot=document.getElementById('slot-'+slotIdx);
   slot.classList.add('filled');
   document.getElementById('slot-text-'+slotIdx).textContent=text;
-  // Mark item as placed
   _biatSelectedItem.classList.add('placed');
   _biatSelectedItem.style.borderColor='transparent';
   _biatSelectedItem=null;
-  // Show validate if all slots filled
   if(BIAT.orderSlots.every(s=>s!==null)){
     document.getElementById('biat-validate-order').style.display='block';
   }
