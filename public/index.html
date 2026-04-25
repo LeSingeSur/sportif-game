@@ -4813,13 +4813,26 @@ function biatLaunchStep3(){
   // Ferme le modal step3 et démarre le timer
   const m=document.getElementById('biat-step3-modal');
   if(m)m.style.display='none';
+  document.getElementById('biat-step3').style.display='flex';
+  document.getElementById('biat-validate-order').style.display='none';
+  document.getElementById('biat-final-timer').textContent=BIAT.finalTime;
+  document.getElementById('biat-final-bar').style.width='100%';
+  const missEl=document.getElementById('biat-miss-badge');
+  if(missEl)missEl.textContent=BIAT.qcmMisses+' cible(s) manquée(s) → '+BIAT.finalTime+'s';
   _biatStartFinalTimer();
 }
 
 function biatStartStep3(){
-  // Afficher step3 mais PAS encore le timer
-  document.getElementById('biat-step3').style.display='flex';
-  document.getElementById('biat-validate-order').style.display='none';
+  // Calculer le temps disponible selon les fautes
+  const times=[50,40,30,20];
+  const t=times[Math.min(BIAT.qcmMisses,3)];
+  BIAT.finalTime=t;
+  // Mettre à jour le hint de temps dans le modal
+  const timeHint=document.getElementById('biat-step3-time-hint');
+  if(timeHint)timeHint.textContent='⏱ Tu as '+t+'s — '+(BIAT.qcmMisses===0?'Parfait au stand !':BIAT.qcmMisses+' cible(s) manquée(s) au stand.');
+  // Afficher le modal step3
+  const modal3=document.getElementById('biat-step3-modal');
+  if(modal3)modal3.style.display='flex';
   document.getElementById('biat-phase-label').textContent='ÉTAPE 3 — SPRINT FINAL';
   // Update stepper
   const s2=document.getElementById('biat-step-2');const s3=document.getElementById('biat-step-3');
@@ -4827,14 +4840,6 @@ function biatStartStep3(){
   if(s2){s2.classList.remove('active');s2.classList.add('done');}
   if(s3){s3.classList.add('active');}
   if(sep2)sep2.style.background='var(--neon)';
-  // Time based on misses
-  const times=[50,40,30,20];
-  const t=times[Math.min(BIAT.qcmMisses,3)];
-  BIAT.finalTime=t;
-  document.getElementById('biat-final-timer').textContent=t;
-  document.getElementById('biat-final-bar').style.width='100%';
-  const missEl=document.getElementById('biat-miss-badge');
-  missEl.textContent=BIAT.qcmMisses+' cible(s) manquée(s) → '+t+'s';
   // Order question
   document.getElementById('biat-order-question-display').textContent=BIAT.data.biatOrderQuestion||'Classe ces éléments';
   // Build slots and items
@@ -4921,9 +4926,7 @@ function biatValidateOrder(){
   });
   if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=pts;
-  if(!BIAT.totalScore||isNaN(BIAT.totalScore))BIAT.totalScore=0;
-  BIAT.totalScore+=pts;
-  console.log('[BIAT SCORE] Après ordre: '+BIAT.totalScore);
+  console.log('[BIAT SCORE] Après ordre: '+BIAT.totalScore+' (pts ordre: '+pts+')');
   // Show result
   const slotsEl=document.getElementById('biat-slots');
   BIAT.orderSlots.forEach((correctIdx,slotIdx)=>{
