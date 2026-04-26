@@ -1236,16 +1236,24 @@ async function loadTeams(){
 loadTeams();
 
 function showTeamStep(){
-  document.getElementById('account-step2').style.display='none';
+  // Masquer step2 seulement si on est dans le flow de création
+  const step2=document.getElementById('account-step2');
+  if(step2&&step2.style.display!=='none')step2.style.display='none';
   document.getElementById('account-step3').style.display='flex';
   const list=document.getElementById('team-list');
   list.innerHTML='';
   if(!_teams.length){
-    list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center">Aucune équipe disponible</div>';
+    // Recharger les équipes au cas où
+    loadTeams().then(()=>{
+      if(!_teams.length){
+        list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center">Aucune équipe disponible</div>';
+      } else { showTeamStep(); }
+    });
+    return;
   }
   _teams.forEach(t=>{
     const btn=document.createElement('button');
-    btn.style.cssText=`padding:12px 16px;border-radius:12px;border:2px solid ${t.color||'#fff'};background:${t.color||'#fff'}22;color:${t.color||'#fff'};font-family:var(--fh);font-size:15px;font-weight:800;cursor:pointer;text-align:left`;
+    btn.style.cssText=`padding:12px 16px;border-radius:12px;border:2px solid ${t.color||'#fff'};background:${t.color||'#fff'}22;color:${t.color||'#fff'};font-family:var(--fh);font-size:15px;font-weight:800;cursor:pointer;text-align:left;width:100%`;
     btn.textContent=(t.emoji||'👥')+' '+t.name;
     btn.onclick=()=>finishAccountWithTeam(t.id);
     list.appendChild(btn);
@@ -1253,22 +1261,32 @@ function showTeamStep(){
 }
 
 async function finishAccountWithTeam(teamId){
-  const pseudo=document.getElementById('pseudo-in').value.trim();
+  // Utiliser G.pseudo si déjà connecté, sinon lire le champ
+  const pseudo=G.pseudo||document.getElementById('pseudo-in').value.trim();
   const errEl=document.getElementById('account-err');
   try{
-    if(teamId){
-      await fetch('/api/account/set-team',{method:'POST',headers:{'Content-Type':'application/json'},
+    if(teamId&&pseudo){
+      const r=await fetch('/api/account/set-team',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({pseudo,teamId})});
+      const d=await r.json();
+      if(!d.ok&&d.error){if(errEl)errEl.textContent=d.error;return;}
     }
-    G.pseudo=pseudo;G.team=teamId||null;
-    // Hide team step, go to game
+    G.team=teamId||null;
     document.getElementById('account-step3').style.display='none';
+    updateTeamDisplay(teamId);
+    // Si déjà connecté — rester sur l'écran de jeu
+    if(G.pseudo){
+      document.getElementById('ptag').textContent=pseudo;
+      if(!G.active){show('sg');loadAthlete();}
+      return;
+    }
+    // Sinon — connexion initiale
+    G.pseudo=pseudo;
     const audio=document.getElementById('music-audio');
     if(audio){audio.pause();audio.currentTime=0;}
     document.getElementById('ptag').textContent=pseudo;
-    updateTeamDisplay(teamId);
     show('sg');loadAthlete();
-  }catch(e){errEl.textContent='Erreur réseau';}
+  }catch(e){if(errEl)errEl.textContent='Erreur réseau';}
 }
 
 function updateTeamDisplay(teamId){
@@ -4664,10 +4682,7 @@ function biatEndSprint(){
   const found=BIAT.found.length;
   const ecart=Math.abs(BIAT.announce-found);
   // Determine BPM
-  if(ecart<=1)BIAT.bpm='normal';
-  else if(ecart===2)BIAT.bpm='élevé';
-  else if(ecart===3)BIAT.bpm='critique';
-  else BIAT.bpm='hors-contrôle';
+  // BPM déterminé par les fautes au QCM (calculé après étape 2)
   if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=found*10;
   console.log('[BIAT SCORE] Après sprint: found='+found+' score='+BIAT.totalScore);
@@ -4681,7 +4696,21 @@ function biatEndSprint(){
 // BPM colors
 const BPM_COLOR={normal:'var(--neon)',élevé:'var(--orange)',critique:'#ff8800','hors-contrôle':'var(--red)'};
 const BPM_LABEL={normal:'💚 BPM NORMAL','élevé':'🟡 BPM ÉLEVÉ','critique':'🟠 BPM CRITIQUE','hors-contrôle':'🔴 BPM HORS-CONTRÔLE'};
-const BPM_CHOICES={normal:2,élevé:3,critique:4,'hors-contrôle':0}; // 0 = saisie libre
+function getBiatBadgeLabel(){
+  const m=BIAT.qcmMisses;
+  if(m===0)return '💚 0 faute — 2 choix';
+  if(m===1)return '🟡 1 faute — 3 choix';
+  if(m===2)return '🟠 2 fautes — 4 choix';
+  return '🔴 3+ fautes — Saisie libre';
+}
+const BPM_CHOICES={normal:2,élevé:3,critique:4,'hors-contrôle':0}; // kept for compat
+function getBiatChoices(){
+  const m=BIAT.qcmMisses;
+  if(m===0)return 2;
+  if(m===1)return 3;
+  if(m===2)return 4;
+  return 0; // saisie libre
+}
 
 function biatStartStep2(){
   document.getElementById('biat-step1').style.display='none';
@@ -4695,12 +4724,14 @@ function biatStartStep2(){
   if(sep1)sep1.style.background='var(--neon)';
   // BPM badge
   const badge=document.getElementById('biat-bpm-badge');
-  badge.textContent=BPM_LABEL[BIAT.bpm];
-  badge.style.cssText=`text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto;background:rgba(255,255,255,.06);border:1px solid ${BPM_COLOR[BIAT.bpm]};color:${BPM_COLOR[BIAT.bpm]}`;
+  const bpmColors=['var(--neon)','var(--orange)','#ff8800','var(--red)'];
+  const bpmC=bpmColors[Math.min(BIAT.qcmMisses,3)];
+  badge.textContent=getBiatBadgeLabel();
+  badge.style.cssText=`text-align:center;font-family:var(--fh);font-size:13px;padding:6px 14px;border-radius:99px;display:inline-block;margin:0 auto;background:rgba(255,255,255,.06);border:1px solid ${bpmC};color:${bpmC}`;
   // Reset targets
   for(let i=0;i<3;i++){const t=document.getElementById('biat-t'+i);t.className='biat-target';t.textContent='🎯';}
   // QCM hint dynamique selon BPM
-  const nChoices=BPM_CHOICES[BIAT.bpm];
+  const nChoices=getBiatChoices();
   const qcmHint=document.getElementById('biat-qcm-hint');
   if(qcmHint){
     const found=BIAT.found.length;
@@ -4738,7 +4769,7 @@ function biatShowQCM(idx){
   document.getElementById('biat-qcm-question').textContent=q.question||'…';
   const choicesEl=document.getElementById('biat-qcm-choices');
   const inputRow=document.getElementById('biat-qcm-input-row');
-  const nChoices=BPM_CHOICES[BIAT.bpm];
+  const nChoices=getBiatChoices();
   // Start 30s timer
   let qcmT=30;
   const qcmTimerEl=document.getElementById('biat-qcm-timer');
@@ -4786,7 +4817,10 @@ document.getElementById('biat-qcm-in').addEventListener('keydown',e=>{if(e.key==
 
 function biatQCMAnswer(ans,correct,btn){
   if(_biatQCMInt){clearInterval(_biatQCMInt);_biatQCMInt=null;}
-  const isCorrect=ans.trim().toLowerCase()===correct.trim().toLowerCase();
+  // Support plusieurs bonnes réponses séparées par ;
+  const correctVariants=(correct||'').split(';').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const ansNorm=ans.trim().toLowerCase();
+  const isCorrect=correctVariants.some(v=>v===ansNorm);
   const idx=BIAT.qcmIndex;
   const t=document.getElementById('biat-t'+idx);
   // Disable all buttons
@@ -4800,8 +4834,9 @@ function biatQCMAnswer(ans,correct,btn){
   } else {
     t.className='biat-target miss';t.textContent='❌';
     BIAT.qcmMisses++;
-    // Show correct answer briefly
-    document.querySelectorAll('.biat-qcm-btn').forEach(b=>{if(b.textContent===correct)b.classList.add('correct');});
+    document.querySelectorAll('.biat-qcm-btn').forEach(b=>{
+      if(correctVariants.includes(b.textContent.trim().toLowerCase()))b.classList.add('correct');
+    });
   }
   setTimeout(()=>biatShowQCM(idx+1),1000);
 }
