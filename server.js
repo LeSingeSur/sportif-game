@@ -969,26 +969,24 @@ app.get('/api/admin/team-players', (req, res) => {
 app.get('/api/scores/teams', (req, res) => {
   const minPlayers=parseInt(req.query.min)||4;
   const teamScores={};
-  // Aggregate scores per team
-  Object.values(accounts).forEach(a=>{
-    if(!a.teamId) return;
-    if(!teamScores[a.teamId]) teamScores[a.teamId]={ scores:[], pseudos:[] };
-  });
-  // Get best score per player per athlete
+  // Parcourir tous les scores par athlète
   const playerBest={};
-  globalScores.forEach(s=>{
-    const account=accounts[s.pseudo?.toLowerCase()];
-    if(!account||!account.teamId) return;
-    const key=account.teamId+'_'+s.pseudo;
-    if(!playerBest[key]||s.score>playerBest[key].score){
-      playerBest[key]={score:s.score,teamId:account.teamId,pseudo:s.pseudo};
+  for(const [athleteId, list] of Object.entries(scores)){
+    for(const entry of list){
+      const account=accounts[norm(entry.pseudo)];
+      if(!account||!account.teamId) continue;
+      const key=account.teamId+'_'+norm(entry.pseudo);
+      if(!playerBest[key]||entry.score>playerBest[key].score){
+        playerBest[key]={score:entry.score,teamId:account.teamId,pseudo:entry.pseudo};
+      }
     }
-  });
+  }
   Object.values(playerBest).forEach(p=>{
     if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
-    if(!teamScores[p.teamId].pseudos.includes(p.pseudo)){
+    const pNorm=norm(p.pseudo);
+    if(!teamScores[p.teamId].pseudos.includes(pNorm)){
       teamScores[p.teamId].scores.push(p.score);
-      teamScores[p.teamId].pseudos.push(p.pseudo);
+      teamScores[p.teamId].pseudos.push(pNorm);
     }
   });
   const result=teams.map(t=>{
