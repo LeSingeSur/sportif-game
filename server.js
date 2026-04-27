@@ -975,7 +975,7 @@ app.get('/api/scores/teams', (req, res) => {
   for(const [athleteId, list] of Object.entries(scores)){
     for(const entry of list){
       totalEntries++;
-      const key=norm(entry.pseudo);
+      const key=entry.pseudo.toLowerCase();
       const account=accounts[key];
       if(!account){ continue; }
       if(!account.teamId){ continue; }
