@@ -62,7 +62,9 @@ async function loadFromMongo() {
   welcomeImage = cfg.welcomeImage || { url: '' };
   popupConfig  = cfg.popupConfig   || { active: false, title: '', message: '', emoji: '🏆', color: '#d4ff00' };
   rebuildGlobalScores();
+  const totalScoreEntries=Object.values(scores).reduce((s,arr)=>s+arr.length,0);
   console.log(` ${athletes.length} sportif(s) chargé(s) depuis MongoDB`);
+  console.log(` ${totalScoreEntries} score(s) chargé(s) depuis MongoDB`);
 }
 
 // Sauvegarder dans MongoDB (ou fichier en fallback)
@@ -987,10 +989,13 @@ app.get('/api/scores/teams', (req, res) => {
     }
   }
   console.log(`[TEAM SCORES] entries:${totalEntries} matched:${matchedEntries} accounts:${Object.keys(accounts).length} teams:${teams.length}`);
-  // Log accounts with teams
-  Object.values(accounts).forEach(a=>{
-    if(a.teamId) console.log(`  → ${a.pseudo} team:${a.teamId}`);
-  });
+  // Log sample accounts with teams
+  const accountsWithTeams=Object.values(accounts).filter(a=>a.teamId);
+  console.log(`[TEAM SCORES] accounts with teams: ${accountsWithTeams.length}`);
+  accountsWithTeams.slice(0,3).forEach(a=>console.log(`  → "${a.pseudo}" (key:"${a.pseudo.toLowerCase()}") team:${a.teamId}`));
+  // Log sample score entries
+  const sampleEntries=Object.values(scores).flat().slice(0,3);
+  sampleEntries.forEach(e=>console.log(`  score: "${e.pseudo}" (key:"${e.pseudo.toLowerCase()}")`));
   Object.values(playerBest).forEach(p=>{
     if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
     const pNorm=norm(p.pseudo);
