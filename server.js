@@ -969,18 +969,28 @@ app.get('/api/admin/team-players', (req, res) => {
 app.get('/api/scores/teams', (req, res) => {
   const minPlayers=parseInt(req.query.min)||4;
   const teamScores={};
-  // Parcourir tous les scores par athlète
   const playerBest={};
+  let totalEntries=0;
+  let matchedEntries=0;
   for(const [athleteId, list] of Object.entries(scores)){
     for(const entry of list){
-      const account=accounts[norm(entry.pseudo)];
-      if(!account||!account.teamId) continue;
-      const key=account.teamId+'_'+norm(entry.pseudo);
-      if(!playerBest[key]||entry.score>playerBest[key].score){
-        playerBest[key]={score:entry.score,teamId:account.teamId,pseudo:entry.pseudo};
+      totalEntries++;
+      const key=norm(entry.pseudo);
+      const account=accounts[key];
+      if(!account){ continue; }
+      if(!account.teamId){ continue; }
+      matchedEntries++;
+      const pKey=account.teamId+'_'+key;
+      if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
+        playerBest[pKey]={score:entry.score,teamId:account.teamId,pseudo:entry.pseudo};
       }
     }
   }
+  console.log(`[TEAM SCORES] entries:${totalEntries} matched:${matchedEntries} accounts:${Object.keys(accounts).length} teams:${teams.length}`);
+  // Log accounts with teams
+  Object.values(accounts).forEach(a=>{
+    if(a.teamId) console.log(`  → ${a.pseudo} team:${a.teamId}`);
+  });
   Object.values(playerBest).forEach(p=>{
     if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
     const pNorm=norm(p.pseudo);
