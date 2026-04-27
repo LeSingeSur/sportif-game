@@ -994,6 +994,7 @@ app.get('/api/scores/teams', (req, res) => {
     const avg=ts.scores.length>=minPlayers?Math.round(ts.scores.reduce((a,b)=>a+b,0)/ts.scores.length):null;
     return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:ts.scores.length,avg,qualified:ts.scores.length>=minPlayers};
   }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  console.log('[TEAM SCORES] accounts:'+Object.keys(accounts).length+' scores:'+Object.keys(scores).length+' teams:'+teams.length+' result:'+result.length);
   res.json({teams:result,minPlayers});
 });
 
