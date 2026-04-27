@@ -977,25 +977,24 @@ app.get('/api/scores/teams', (req, res) => {
   for(const [athleteId, list] of Object.entries(scores)){
     for(const entry of list){
       totalEntries++;
-      const key=entry.pseudo.toLowerCase();
-      const account=accounts[key];
-      if(!account){ continue; }
-      if(!account.teamId){ continue; }
+      const pseudoKey=entry.pseudo.toLowerCase();
+      const pseudoNorm=norm(entry.pseudo);
+      const account=accounts[pseudoKey]||accounts[pseudoNorm];
+      if(!account||!account.teamId){ continue; }
       matchedEntries++;
-      const pKey=account.teamId+'_'+key;
+      const pKey=account.teamId+'_'+pseudoKey;
       if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
         playerBest[pKey]={score:entry.score,teamId:account.teamId,pseudo:entry.pseudo};
       }
     }
   }
   console.log(`[TEAM SCORES] entries:${totalEntries} matched:${matchedEntries} accounts:${Object.keys(accounts).length} teams:${teams.length}`);
-  // Log sample accounts with teams
   const accountsWithTeams=Object.values(accounts).filter(a=>a.teamId);
   console.log(`[TEAM SCORES] accounts with teams: ${accountsWithTeams.length}`);
-  accountsWithTeams.slice(0,3).forEach(a=>console.log(`  → "${a.pseudo}" (key:"${a.pseudo.toLowerCase()}") team:${a.teamId}`));
-  // Log sample score entries
+  console.log(`[TEAM SCORES] team ids: ${teams.map(t=>t.id).join(',')}`);
+  accountsWithTeams.slice(0,3).forEach(a=>console.log(`  → "${a.pseudo}" teamId:"${a.teamId}"`));
   const sampleEntries=Object.values(scores).flat().slice(0,3);
-  sampleEntries.forEach(e=>console.log(`  score: "${e.pseudo}" (key:"${e.pseudo.toLowerCase()}")`));
+  sampleEntries.forEach(e=>console.log(`  score: "${e.pseudo}" key:"${e.pseudo.toLowerCase()}" hasAccount:${!!(accounts[e.pseudo.toLowerCase()]||accounts[norm(e.pseudo)])} hasTeam:${!!(accounts[e.pseudo.toLowerCase()]||accounts[norm(e.pseudo)])?.teamId}`));
   Object.values(playerBest).forEach(p=>{
     if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
     const pNorm=norm(p.pseudo);
