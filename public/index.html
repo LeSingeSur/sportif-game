@@ -4702,7 +4702,10 @@ function biatEndSprint(){
   const found=BIAT.found.length;
   const ecart=Math.abs(BIAT.announce-found);
   // Determine BPM
-  // BPM déterminé par les fautes au QCM (calculé après étape 2)
+  if(ecart===0)BIAT.bpm='normal';
+  else if(ecart===1)BIAT.bpm='élevé';
+  else if(ecart===2)BIAT.bpm='critique';
+  else BIAT.bpm='hors-contrôle';
   if(isNaN(BIAT.totalScore))BIAT.totalScore=0;
   BIAT.totalScore+=found*10;
   console.log('[BIAT SCORE] Après sprint: found='+found+' score='+BIAT.totalScore);
@@ -4717,19 +4720,19 @@ function biatEndSprint(){
 const BPM_COLOR={normal:'var(--neon)',élevé:'var(--orange)',critique:'#ff8800','hors-contrôle':'var(--red)'};
 const BPM_LABEL={normal:'💚 BPM NORMAL','élevé':'🟡 BPM ÉLEVÉ','critique':'🟠 BPM CRITIQUE','hors-contrôle':'🔴 BPM HORS-CONTRÔLE'};
 function getBiatBadgeLabel(){
-  const m=BIAT.qcmMisses;
-  if(m===0)return '💚 0 faute — 2 choix';
-  if(m===1)return '🟡 1 faute — 3 choix';
-  if(m===2)return '🟠 2 fautes — 4 choix';
-  return '🔴 3+ fautes — Saisie libre';
+  const choices=getBiatChoices();
+  const ecart=Math.abs(BIAT.announce-BIAT.found.length);
+  if(BIAT.bpm==='normal')return '💚 Écart 0 — 2 choix';
+  if(BIAT.bpm==='élevé')return '🟡 Écart 1 — 3 choix';
+  if(BIAT.bpm==='critique')return '🟠 Écart 2 — 4 choix';
+  return '🔴 Écart 3+ — Saisie libre';
 }
 const BPM_CHOICES={normal:2,élevé:3,critique:4,'hors-contrôle':0}; // kept for compat
 function getBiatChoices(){
-  const m=BIAT.qcmMisses;
-  if(m===0)return 2;
-  if(m===1)return 3;
-  if(m===2)return 4;
-  return 0; // saisie libre
+  if(BIAT.bpm==='normal')return 2;
+  if(BIAT.bpm==='élevé')return 3;
+  if(BIAT.bpm==='critique')return 4;
+  return 0; // hors-contrôle = saisie libre
 }
 
 function biatStartStep2(){
