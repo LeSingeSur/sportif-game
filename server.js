@@ -968,8 +968,10 @@ app.get('/api/admin/team-players', (req, res) => {
 });
 
 // Classement équipes (public)
-app.get('/api/scores/teams', (req, res) => {
-  const minPlayers=parseInt(req.query.min)||4;
+app.get('/api/scores/teams', async (req, res) => {
+  // Recharger les comptes depuis MongoDB pour avoir les teamId à jour
+  await loadAccounts();
+  const minPlayers=parseInt(req.query.min)||1;
   const teamScores={};
   const playerBest={};
   let totalEntries=0;
@@ -978,9 +980,13 @@ app.get('/api/scores/teams', (req, res) => {
     for(const entry of list){
       totalEntries++;
       const pseudoKey=entry.pseudo.toLowerCase();
+      const pseudoTrimmed=entry.pseudo.trim().toLowerCase();
       const pseudoNorm=norm(entry.pseudo);
-      const account=accounts[pseudoKey]||accounts[pseudoNorm];
-      if(!account||!account.teamId){ continue; }
+      const account=accounts[pseudoKey]||accounts[pseudoTrimmed]||accounts[pseudoNorm];
+      if(!account||!account.teamId){
+        if(totalEntries<=5)console.log(`  MISS: "${entry.pseudo}" key:"${pseudoKey}" inAccounts:${!!accounts[pseudoKey]}`);
+        continue;
+      }
       matchedEntries++;
       const pKey=account.teamId+'_'+pseudoKey;
       if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
