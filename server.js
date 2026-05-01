@@ -471,6 +471,9 @@ app.get('/api/athlete', (req, res) => {
     base.biatOrder         = athlete.biatOrder || [];
     base.maxScore = 200;
     console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
+  } else if (athlete.type === 'maillonfaible') {
+    base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
+    base.maxScore = 105;
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
     base.clue          = athlete.grimpeTheme || athlete.clue || '';
@@ -1032,6 +1035,24 @@ app.get('/api/admin/team-players', (req, res) => {
 });
 
 // Classement équipes (public)
+// Endpoint de diagnostic équipes
+app.get('/api/debug/teams', (req, res) => {
+  const {password}=req.query;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const accountsWithTeam=Object.values(accounts).filter(a=>a.teamId);
+  const gsWithTeam=globalScores.filter(gs=>{
+    const acc=accounts[gs.pseudo.toLowerCase()]||accounts[norm(gs.pseudo)];
+    return acc&&acc.teamId;
+  });
+  res.json({
+    totalAccounts:Object.keys(accounts).length,
+    accountsWithTeam:accountsWithTeam.map(a=>({pseudo:a.pseudo,teamId:a.teamId})),
+    totalGlobalScores:globalScores.length,
+    globalScoresWithTeam:gsWithTeam.map(gs=>({pseudo:gs.pseudo,score:gs.score})),
+    teams:teams.map(t=>({id:t.id,name:t.name}))
+  });
+});
+
 app.get('/api/scores/teams', (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
   // Recharger les équipes depuis les comptes en mémoire
