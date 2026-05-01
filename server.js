@@ -1032,52 +1032,26 @@ app.get('/api/admin/team-players', (req, res) => {
 });
 
 // Classement équipes (public)
-app.get('/api/scores/teams', async (req, res) => {
+app.get('/api/scores/teams', (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
-  try{
-    // Recharger les comptes depuis MongoDB directement
-    const col=db?db.collection('accounts'):null;
-    const freshAccounts={};
-    if(col){
-      const all=await col.find({}).toArray();
-      all.forEach(a=>{ freshAccounts[a.pseudo.toLowerCase()]=a; });
-    } else {
-      Object.assign(freshAccounts,accounts);
-    }
-    // Construire le classement
-    const playerBest={};
-    for(const [athleteId,list] of Object.entries(scores)){
-      for(const entry of list){
-        const key=entry.pseudo.toLowerCase().trim();
-        const acc=freshAccounts[key];
-        if(!acc||!acc.teamId) continue;
-        const pKey=acc.teamId+'_'+key;
-        if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
-          playerBest[pKey]={score:entry.score,teamId:acc.teamId,pseudo:entry.pseudo};
-        }
-      }
-    }
-    const teamScores={};
-    Object.values(playerBest).forEach(p=>{
-      if(!teamScores[p.teamId])teamScores[p.teamId]={scores:[],pseudos:[]};
-      const k=p.pseudo.toLowerCase().trim();
-      if(!teamScores[p.teamId].pseudos.includes(k)){
-        teamScores[p.teamId].scores.push(p.score);
-        teamScores[p.teamId].pseudos.push(k);
-      }
-    });
-    const result=teams.map(t=>{
-      const ts=teamScores[t.id]||{scores:[],pseudos:[]};
-      const avg=ts.scores.length>=minPlayers?Math.round(ts.scores.reduce((a,b)=>a+b,0)/ts.scores.length):null;
-      return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:ts.scores.length,avg,qualified:ts.scores.length>=minPlayers};
-    }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
-    console.log('[TEAM SCORES] freshAccounts:'+Object.keys(freshAccounts).length+' withTeam:'+Object.values(freshAccounts).filter(a=>a.teamId).length+' result:'+result.length);
-    res.json({teams:result,minPlayers});
-  }catch(e){
-    console.error('[TEAM SCORES ERROR]',e.message);
-    res.json({teams:[],minPlayers});
+  // Recharger les équipes depuis les comptes en mémoire
+  // globalScores = [{pseudo, score}] déjà calculé
+  // accounts = {pseudo_lower: {pseudo, teamId}}
+  const teamData={};
+  for(const gs of globalScores){
+    const acc=accounts[gs.pseudo.toLowerCase()]||accounts[norm(gs.pseudo)];
+    if(!acc||!acc.teamId) continue;
+    if(!teamData[acc.teamId]) teamData[acc.teamId]={scores:[]};
+    teamData[acc.teamId].scores.push(gs.score);
   }
-});;
+  const result=teams.map(t=>{
+    const td=teamData[t.id]||{scores:[]};
+    const avg=td.scores.length>=minPlayers?Math.round(td.scores.reduce((a,b)=>a+b,0)/td.scores.length):null;
+    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:td.scores.length,avg,qualified:td.scores.length>=minPlayers};
+  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  console.log('[TEAM] globalScores:'+globalScores.length+' result:'+result.length+' teams:'+teams.length);
+  res.json({teams:result,minPlayers});
+});;;
 
 // ── COMPTES JOUEURS ────────────────────────────────────────────────────────
 // Simple hash PIN (pas de bcrypt pour garder simple)
