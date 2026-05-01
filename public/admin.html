@@ -1537,16 +1537,12 @@ function renderMFQuestions(){
     div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">Q${i+1} — Palier ${i+1} → ${CUMUL[i]||'?'} pts</div>
       <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:4px;outline:none">
       <input type="text" value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
-      <div style="display:flex;gap:4px">
-        ${[0,1,2].map(j=>`<input type="text" value="${(q.wrong&&q.wrong[j]||'').replace(/"/g,'&quot;')}" placeholder="Faux ${j+1}" style="flex:1;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:6px;padding:4px 6px;outline:none">`).join('')}
-      </div>
+      <input type="text" value="${(q.wrong&&q.wrong[0]||'').replace(/"/g,'&quot;')}" placeholder="Mauvaise réponse (l'autre proposition)…" style="width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.4);color:var(--red);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
       <button onclick="mfQuestions.splice(${i},1);renderMFQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px">🗑 Supprimer</button>`;
     const inputs=div.querySelectorAll('input');
     inputs[0].addEventListener('input',e=>{mfQuestions[i].question=e.target.value;});
     inputs[1].addEventListener('input',e=>{mfQuestions[i].answer=e.target.value;});
-    inputs[2].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[0]=e.target.value;});
-    inputs[3].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[1]=e.target.value;});
-    inputs[4].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[2]=e.target.value;});
+    inputs[2].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=[''];mfQuestions[i].wrong[0]=e.target.value;});
     list.appendChild(div);
   });
   if(count)count.textContent=mfQuestions.filter(q=>q.question&&q.answer).length+'/10 questions';

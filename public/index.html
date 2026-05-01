@@ -5160,7 +5160,8 @@ function mfShowQuestion(){
   const choicesEl=document.getElementById('mf-choices');
   choicesEl.innerHTML='';
   const wrong=(q.wrong||[]).filter(Boolean);
-  let choices=[q.answer,...wrong.slice(0,3)];
+  // Seulement 2 propositions : bonne réponse + 1 mauvaise
+  let choices=[q.answer, wrong[0]||'Faux'];
   for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
   choices.forEach(c=>{
     const btn=document.createElement('button');
