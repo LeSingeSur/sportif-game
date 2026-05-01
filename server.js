@@ -216,6 +216,9 @@ app.get('/api/preview', (req, res) => {
     base.repliqueCitation = athlete.repliqueCitation || '';
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
+  } else if (athlete.type === 'maillonfaible') {
+    base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
+    base.maxScore = 105;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
     base.biatAnnounceTime  = athlete.biatAnnounceTime || 45;
@@ -702,7 +705,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -714,8 +717,9 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'replique' && (!req.body.repliqueCitation || !req.body.repliqueAuthor)) return res.status(400).json({ error: 'Citation et auteur obligatoires' });
   if (type === 'grimpe' && (!req.body.grimpeTheme || !req.body.grimpeAnswers || req.body.grimpeAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses obligatoires' });
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
+  if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
@@ -783,6 +787,7 @@ app.post('/api/admin/athlete', (req, res) => {
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
     grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
     grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
     biatSprintAnswers:  type === 'biathlon' ? (req.body.biatSprintAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
@@ -1028,66 +1033,51 @@ app.get('/api/admin/team-players', (req, res) => {
 
 // Classement équipes (public)
 app.get('/api/scores/teams', async (req, res) => {
-  // Recharger comptes depuis MongoDB pour teamId frais
-  if(db){
-    try{
-      const col=db.collection('accounts');
-      const all=await col.find({teamId:{$exists:true,$ne:null}}).toArray();
-      all.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
-    }catch(e){}
-  }
-  const _awTeams=Object.values(accounts).filter(a=>a.teamId);
-  console.log(`[TEAM REQ] ${_awTeams.length} comptes avec équipe en mémoire`);
-  _awTeams.forEach(a=>console.log(`  mem: "${a.pseudo}" → "${a.pseudo.toLowerCase()}" teamId:${a.teamId}`));
-  const _allScores=Object.values(scores).flat();
-  console.log(`[TEAM REQ] ${_allScores.length} scores en mémoire`);
-  _allScores.slice(0,5).forEach(e=>console.log(`  score: "${e.pseudo}" → key:"${e.pseudo.toLowerCase()}" hasAccount:${!!accounts[e.pseudo.toLowerCase()]} hasTeam:${!!(accounts[e.pseudo.toLowerCase()]?.teamId)}`));
   const minPlayers=parseInt(req.query.min)||1;
-  const teamScores={};
-  const playerBest={};
-  let totalEntries=0;
-  let matchedEntries=0;
-  for(const [athleteId, list] of Object.entries(scores)){
-    for(const entry of list){
-      totalEntries++;
-      const pseudoKey=entry.pseudo.toLowerCase();
-      const pseudoTrimmed=entry.pseudo.trim().toLowerCase();
-      const pseudoNorm=norm(entry.pseudo);
-      const account=accounts[pseudoKey]||accounts[pseudoTrimmed]||accounts[pseudoNorm];
-      if(!account||!account.teamId){
-        if(totalEntries<=5)console.log(`  MISS: "${entry.pseudo}" key:"${pseudoKey}" inAccounts:${!!accounts[pseudoKey]}`);
-        continue;
-      }
-      matchedEntries++;
-      const pKey=account.teamId+'_'+pseudoKey;
-      if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
-        playerBest[pKey]={score:entry.score,teamId:account.teamId,pseudo:entry.pseudo};
+  try{
+    // Recharger les comptes depuis MongoDB directement
+    const col=db?db.collection('accounts'):null;
+    const freshAccounts={};
+    if(col){
+      const all=await col.find({}).toArray();
+      all.forEach(a=>{ freshAccounts[a.pseudo.toLowerCase()]=a; });
+    } else {
+      Object.assign(freshAccounts,accounts);
+    }
+    // Construire le classement
+    const playerBest={};
+    for(const [athleteId,list] of Object.entries(scores)){
+      for(const entry of list){
+        const key=entry.pseudo.toLowerCase().trim();
+        const acc=freshAccounts[key];
+        if(!acc||!acc.teamId) continue;
+        const pKey=acc.teamId+'_'+key;
+        if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
+          playerBest[pKey]={score:entry.score,teamId:acc.teamId,pseudo:entry.pseudo};
+        }
       }
     }
+    const teamScores={};
+    Object.values(playerBest).forEach(p=>{
+      if(!teamScores[p.teamId])teamScores[p.teamId]={scores:[],pseudos:[]};
+      const k=p.pseudo.toLowerCase().trim();
+      if(!teamScores[p.teamId].pseudos.includes(k)){
+        teamScores[p.teamId].scores.push(p.score);
+        teamScores[p.teamId].pseudos.push(k);
+      }
+    });
+    const result=teams.map(t=>{
+      const ts=teamScores[t.id]||{scores:[],pseudos:[]};
+      const avg=ts.scores.length>=minPlayers?Math.round(ts.scores.reduce((a,b)=>a+b,0)/ts.scores.length):null;
+      return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:ts.scores.length,avg,qualified:ts.scores.length>=minPlayers};
+    }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+    console.log('[TEAM SCORES] freshAccounts:'+Object.keys(freshAccounts).length+' withTeam:'+Object.values(freshAccounts).filter(a=>a.teamId).length+' result:'+result.length);
+    res.json({teams:result,minPlayers});
+  }catch(e){
+    console.error('[TEAM SCORES ERROR]',e.message);
+    res.json({teams:[],minPlayers});
   }
-  console.log(`[TEAM SCORES] entries:${totalEntries} matched:${matchedEntries} accounts:${Object.keys(accounts).length} teams:${teams.length}`);
-  const accountsWithTeams=Object.values(accounts).filter(a=>a.teamId);
-  console.log(`[TEAM SCORES] accounts with teams: ${accountsWithTeams.length}`);
-  console.log(`[TEAM SCORES] team ids: ${teams.map(t=>t.id).join(',')}`);
-  accountsWithTeams.slice(0,3).forEach(a=>console.log(`  → "${a.pseudo}" teamId:"${a.teamId}"`));
-  const sampleEntries=Object.values(scores).flat().slice(0,3);
-  sampleEntries.forEach(e=>console.log(`  score: "${e.pseudo}" key:"${e.pseudo.toLowerCase()}" hasAccount:${!!(accounts[e.pseudo.toLowerCase()]||accounts[norm(e.pseudo)])} hasTeam:${!!(accounts[e.pseudo.toLowerCase()]||accounts[norm(e.pseudo)])?.teamId}`));
-  Object.values(playerBest).forEach(p=>{
-    if(!teamScores[p.teamId]) teamScores[p.teamId]={scores:[],pseudos:[]};
-    const pNorm=norm(p.pseudo);
-    if(!teamScores[p.teamId].pseudos.includes(pNorm)){
-      teamScores[p.teamId].scores.push(p.score);
-      teamScores[p.teamId].pseudos.push(pNorm);
-    }
-  });
-  const result=teams.map(t=>{
-    const ts=teamScores[t.id]||{scores:[],pseudos:[]};
-    const avg=ts.scores.length>=minPlayers?Math.round(ts.scores.reduce((a,b)=>a+b,0)/ts.scores.length):null;
-    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:ts.scores.length,avg,qualified:ts.scores.length>=minPlayers};
-  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
-  console.log('[TEAM SCORES] accounts:'+Object.keys(accounts).length+' scores:'+Object.keys(scores).length+' teams:'+teams.length+' result:'+result.length);
-  res.json({teams:result,minPlayers});
-});
+});;
 
 // ── COMPTES JOUEURS ────────────────────────────────────────────────────────
 // Simple hash PIN (pas de bcrypt pour garder simple)
