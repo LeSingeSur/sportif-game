@@ -257,11 +257,30 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
+          <div class="type-opt" id="type-maillonfaible" onclick="selectType('maillonfaible')">
+            <div class="type-ico">🔗</div>
+            <div class="type-name">Maillon Faible</div>
+            <div class="type-desc">Chaîne de questions</div>
+          </div>
           <div class="type-opt" id="type-biathlon" onclick="selectType('biathlon')">
             <div class="type-ico">🎿</div>
             <div class="type-name">Biathlon</div>
             <div class="type-desc">Course + Tir</div>
           </div>
+        </div>
+      </div>
+
+      <!-- MAILLON FAIBLE FIELDS -->
+      <div id="maillonfaible-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
+          🔗 Chaîne de 10 questions · Paliers : 6 → 13 → 21 → 30 → 40 → 51 → 63 → 76 → 90 → 105 pts (max 105) · Banque sécurise les pts
+        </div>
+        <div class="field">
+          <label>Questions (10 obligatoires)</label>
+          <span class="hint">Une par ligne : Question | Bonne réponse | Faux1 | Faux2 | Faux3</span>
+          <div id="mf-questions-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          <button class="btn btn-s" id="btn-add-mf-q" style="margin-top:8px">➕ Ajouter une question</button>
+          <div id="mf-count" style="font-size:12px;color:var(--mute);margin-top:4px">0/10 questions</div>
         </div>
       </div>
 
@@ -925,7 +944,8 @@ function selectType(type){
     if(el) el.classList.toggle('sel',t===type);
   });
   document.getElementById('grimpe-fields').style.display    = type==='grimpe'?'block':'none';
-  document.getElementById('biathlon-fields').style.display  = type==='biathlon'?'block':'none';
+  document.getElementById('biathlon-fields').style.display      = type==='biathlon'?'block':'none';
+  document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -936,7 +956,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -1103,6 +1123,10 @@ async function startEdit(id){
   selectType(a.type||'blackjack');
   if(a.type==='biathlon'){
     if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
+    if(a.type==='maillonfaible'){
+      mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
+      setTimeout(()=>renderMFQuestions(),50);
+    }
     if(document.getElementById('biat-announce-time-in'))document.getElementById('biat-announce-time-in').value=a.biatAnnounceTime||45;
     if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
     biatSprintItems=[...(a.biatSprintAnswers||[])];
@@ -1246,6 +1270,7 @@ function cancelEdit(){
   document.getElementById('bj-answers-count').textContent='0 entrée(s)';
   document.getElementById('grimpe-theme-in').value='';grimpeItems=[];if(typeof renderGrimpeItems==='function')renderGrimpeItems();
   if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value='';
+  mfQuestions=[];renderMFQuestions();
   if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value='';
   biatSprintItems=[];biatQCMItems=[];biatOrderItems=[];
   renderBiatSprint();renderBiatQCM();renderBiatOrder();
@@ -1351,10 +1376,11 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in').value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1&&biatQCMItems.length>=1&&biatOrderItems.filter(x=>x.trim()).length>=2;
+  else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
   else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
@@ -1496,6 +1522,44 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
+// ── MAILLON FAIBLE ADMIN ──────────────────────────────────────────────────
+let mfQuestions=[];
+
+function renderMFQuestions(){
+  const list=document.getElementById('mf-questions-list');
+  const count=document.getElementById('mf-count');
+  if(!list)return;
+  list.innerHTML='';
+  const CUMUL=[6,13,21,30,40,51,63,76,90,105];
+  mfQuestions.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">Q${i+1} — Palier ${i+1} → ${CUMUL[i]||'?'} pts</div>
+      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:4px;outline:none">
+      <input type="text" value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
+      <div style="display:flex;gap:4px">
+        ${[0,1,2].map(j=>`<input type="text" value="${(q.wrong&&q.wrong[j]||'').replace(/"/g,'&quot;')}" placeholder="Faux ${j+1}" style="flex:1;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:6px;padding:4px 6px;outline:none">`).join('')}
+      </div>
+      <button onclick="mfQuestions.splice(${i},1);renderMFQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px">🗑 Supprimer</button>`;
+    const inputs=div.querySelectorAll('input');
+    inputs[0].addEventListener('input',e=>{mfQuestions[i].question=e.target.value;});
+    inputs[1].addEventListener('input',e=>{mfQuestions[i].answer=e.target.value;});
+    inputs[2].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[0]=e.target.value;});
+    inputs[3].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[1]=e.target.value;});
+    inputs[4].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=['','',''];mfQuestions[i].wrong[2]=e.target.value;});
+    list.appendChild(div);
+  });
+  if(count)count.textContent=mfQuestions.filter(q=>q.question&&q.answer).length+'/10 questions';
+  checkReady();
+}
+
+const _btnAddMF=document.getElementById('btn-add-mf-q');
+if(_btnAddMF)_btnAddMF.onclick=()=>{
+  if(mfQuestions.length>=10)return alert('10 questions max');
+  mfQuestions.push({question:'',answer:'',wrong:['','','']});
+  renderMFQuestions();
+};
+
 // ── BIATHLON ADMIN ─────────────────────────────────────────────────────────
 let biatSprintItems=[], biatQCMItems=[], biatOrderItems=[];
 
@@ -2256,6 +2320,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const rqTimeVal        = currentType==='replique'?rqTime:60;
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
+  const mfQuestionsData = currentType==='maillonfaible'?mfQuestions:[];
   const biatAnnounceTime = currentType==='biathlon'?parseInt(document.getElementById('biat-announce-time-in').value)||45:45;
   const biatSprintAnswers = currentType==='biathlon'?biatSprintItems.map(x=>x.trim()).filter(Boolean):[];
   const biatQCM = currentType==='biathlon'?biatQCMItems:[];
@@ -2278,7 +2343,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -2310,7 +2375,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{

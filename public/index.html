@@ -358,6 +358,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 /* LA GRIMPÉE */
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
+#mf-zone{display:none;flex-direction:column;gap:10px}
+.mf-chain{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.mf-node{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--mute);transition:all .3s;font-family:var(--fh)}
+.mf-node.active{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.1);transform:scale(1.2)}
+.mf-node.banked{border-color:#4ade80;color:#4ade80;background:rgba(74,222,128,.1)}
+.mf-node.failed{border-color:var(--red);color:var(--red);background:rgba(255,60,60,.1)}
+.mf-bank-btn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:14px;padding:14px;font-family:var(--fh);font-size:16px;font-weight:900;cursor:pointer;letter-spacing:1px;width:100%;box-shadow:0 0 20px rgba(245,158,11,.4);animation:pulse-bank 1.5s infinite}
+@keyframes pulse-bank{0%,100%{box-shadow:0 0 20px rgba(245,158,11,.4)}50%{box-shadow:0 0 35px rgba(245,158,11,.8)}}
 #idees-zone{display:none;flex-direction:column;gap:12px}
 .idee-card{background:var(--c2);border-radius:14px;padding:12px 14px}
 .idee-vote-btn{background:var(--c1);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;font-family:var(--ff)}
@@ -873,6 +881,38 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="btn btn-p" onclick="biatStartFromModal()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
     </div>
   </div>
+  <!-- MAILLON FAIBLE rules modal -->
+  <div id="mf-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--c1);border-radius:18px;padding:24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:14px;text-align:center">
+      <div style="font-size:40px">🔗</div>
+      <div style="font-family:var(--fh);font-size:20px;color:var(--neon)">MAILLON FAIBLE</div>
+      <div style="font-size:13px;color:var(--mute);line-height:1.7;text-align:left">
+        <div style="margin-bottom:8px">🎯 <strong style="color:var(--txt)">10 questions</strong> — tu dois répondre correctement pour monter dans la chaîne.</div>
+        <div style="margin-bottom:8px">📈 <strong style="color:var(--txt)">Les points augmentent</strong> à chaque bonne réponse : 6 → 13 → 21 → 30 → 40 → 51 → 63 → 76 → 90 → <strong style="color:var(--neon)">105 pts</strong></div>
+        <div style="margin-bottom:8px">🏦 <strong style="color:#f59e0b)">BANQUER</strong> = sécuriser tes points et repartir de zéro sur la chaîne. Tu peux banquer autant de fois que tu veux.</div>
+        <div style="color:var(--red)">❌ Une erreur = tu perds tout ce que tu n'as pas banqué. <strong>Tu es le maillon faible !</strong></div>
+      </div>
+      <button class="btn btn-p" onclick="mfStartFromModal()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
+    </div>
+  </div>
+
+  <!-- MAILLON FAIBLE zone -->
+  <div id="mf-zone">
+    <div class="mf-chain" id="mf-chain"></div>
+    <div style="text-align:center;margin:4px 0">
+      <span style="font-size:11px;color:var(--mute)">EN JEU</span>
+      <div style="font-family:var(--fh);font-size:36px;color:var(--neon)" id="mf-current-pts">0</div>
+      <span style="font-size:11px;color:var(--mute)">BANQUÉS</span>
+      <div style="font-family:var(--fh);font-size:24px;color:#4ade80" id="mf-banked-pts">0</div>
+    </div>
+    <div style="height:3px;background:var(--c2);border-radius:99px"><div id="mf-timer-bar" style="height:100%;background:var(--neon);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+    <div style="font-family:var(--fh);font-size:13px;text-align:center;color:var(--mute)" id="mf-timer-display">20s</div>
+    <div class="bj-theme" id="mf-question">…</div>
+    <div id="mf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="mf-bank-btn" id="mf-bank-btn" onclick="mfBank()">🏦 BANQUER — sécuriser mes points</button>
+    <div class="fb" id="mf-fb"></div>
+  </div>
+
   <!-- BIATHLON zone -->
   <div id="biathlon-zone">
     <!-- Phase indicator -->
@@ -1509,6 +1549,8 @@ async function loadAthlete(){
     const data=await res.json();
     if(!PREVIEW_MODE && data.done){show('sd');return}
     G.athleteId=data.id; G.type=data.type||'text'; G.active=true;
+    // Toujours stocker la réponse correcte dès le chargement
+    if(data.answer) G.athleteName=data.answer;
     document.getElementById('sport-ico').textContent=data.emoji;
 
     if(data.type==='image'){
@@ -1549,6 +1591,9 @@ async function loadAthlete(){
     } else if(data.type==='biathlon'){
       document.getElementById('std-ans-area').style.display='none';
       setupBiathlonMode(data);
+    } else if(data.type==='maillonfaible'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupMFMode(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1562,7 +1607,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
@@ -5065,6 +5110,142 @@ function biatFinish(){
   const vSub=document.getElementById('v-sub');
   if(vSub)vSub.textContent='Sprint '+BIAT.found.length*10+' pts · Tir '+(BIAT.qcmMisses===0?60:(3-BIAT.qcmMisses)*20)+' pts · Ordre '+(score-BIAT.found.length*10-(3-Math.min(BIAT.qcmMisses,3))*20)+' pts';
   setVictoryIcon('biathlon');
+  submitScore(score);
+  show('sv');
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// MAILLON FAIBLE
+// ══════════════════════════════════════════════════════════════════════════
+const MF_CUMUL=[6,13,21,30,40,51,63,76,90,105];
+const MF={
+  data:null, qIdx:0, banked:0, current:0, timerInt:null, timerLeft:20, done:false, chainStart:0
+};
+
+function setupMFMode(data){
+  MF.data=data; MF.qIdx=0; MF.banked=0; MF.current=0; MF.done=false; MF.chainStart=0;
+  hideAllZones();
+  document.getElementById('mf-zone').style.display='flex';
+  // Show rules modal first
+  const mfModal=document.getElementById('mf-rules-modal');
+  if(mfModal)mfModal.style.display='flex';
+  return; // don't show question yet
+  // Build chain
+  const chain=document.getElementById('mf-chain');
+  chain.innerHTML='';
+  MF_CUMUL.forEach((pts,i)=>{
+    const div=document.createElement('div');
+    div.className='mf-node'+(i===0?' active':'');
+    div.id='mf-node-'+i;
+    div.textContent=pts;
+    chain.appendChild(div);
+  });
+  mfShowQuestion();
+}
+
+function mfStartFromModal(){
+  const m=document.getElementById('mf-rules-modal');
+  if(m)m.style.display='none';
+  mfShowQuestion();
+}
+
+function mfShowQuestion(){
+  const q=(MF.data.mfQuestions||[])[MF.qIdx];
+  if(!q){mfFinish();return;}
+  document.getElementById('mf-current-pts').textContent=MF.current;
+  document.getElementById('mf-banked-pts').textContent=MF.banked;
+  document.getElementById('mf-question').textContent=q.question;
+  // Choices
+  const choicesEl=document.getElementById('mf-choices');
+  choicesEl.innerHTML='';
+  const wrong=(q.wrong||[]).filter(Boolean);
+  let choices=[q.answer,...wrong.slice(0,3)];
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  choices.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='biat-qcm-btn';
+    btn.textContent=c;
+    btn.onclick=()=>mfAnswer(c,q.answer,btn);
+    choicesEl.appendChild(btn);
+  });
+  // Timer 20s
+  MF.timerLeft=20;
+  document.getElementById('mf-timer-bar').style.width='100%';
+  document.getElementById('mf-timer-display').textContent='20s';
+  clearInterval(MF.timerInt);
+  MF.timerInt=setInterval(()=>{
+    MF.timerLeft--;
+    document.getElementById('mf-timer-display').textContent=MF.timerLeft+'s';
+    document.getElementById('mf-timer-bar').style.width=(MF.timerLeft/20*100)+'%';
+    if(MF.timerLeft<=0){clearInterval(MF.timerInt);mfAnswer('',q.answer,null);}
+  },1000);
+}
+
+function mfAnswer(ans,correct,btn){
+  clearInterval(MF.timerInt);
+  document.querySelectorAll('.biat-qcm-btn').forEach(b=>b.disabled=true);
+  const correctVariants=(correct||'').split(';').map(s=>s.trim().toLowerCase());
+  const isCorrect=correctVariants.includes(ans.trim().toLowerCase());
+  const fb=document.getElementById('mf-fb');
+  if(isCorrect){
+    if(btn)btn.classList.add('correct');
+    // Current = cumul depuis dernier banque (sous-chaîne)
+    const subIdx=MF.qIdx-MF.chainStart;
+    MF.current=MF_CUMUL[subIdx]||MF_CUMUL[MF_CUMUL.length-1];
+    document.getElementById('mf-current-pts').textContent=MF.current;
+    // Update chain
+    const node=document.getElementById('mf-node-'+MF.qIdx);
+    if(node){node.classList.remove('active');node.classList.add('banked');}
+    MF.qIdx++;
+    const nextNode=document.getElementById('mf-node-'+MF.qIdx);
+    if(nextNode)nextNode.classList.add('active');
+    fb.textContent='✅ +'+((MF_CUMUL[MF.qIdx-1]||0)-(MF_CUMUL[MF.qIdx-2]||0))+' pts';
+    fb.style.color='var(--neon)';
+    if(MF.qIdx>=MF_CUMUL.length){setTimeout(mfFinish,800);return;}
+    setTimeout(()=>{fb.textContent='';mfShowQuestion();},800);
+  } else {
+    // Show correct answer
+    document.querySelectorAll('.biat-qcm-btn').forEach(b=>{
+      if(correctVariants.includes(b.textContent.trim().toLowerCase()))b.classList.add('correct');
+    });
+    if(btn)btn.classList.add('wrong');
+    const node=document.getElementById('mf-node-'+MF.qIdx);
+    if(node){node.classList.remove('active');node.classList.add('failed');}
+    MF.current=0;
+    document.getElementById('mf-current-pts').textContent=0;
+    fb.innerHTML='<span style="font-family:var(--fh);font-size:18px;color:var(--red)">🔗 TU ES LE MAILLON FAIBLE !</span>';
+    setTimeout(()=>{fb.textContent='';mfFinish();},2000);
+  }
+}
+
+function mfBank(){
+  if(MF.current===0||MF.done)return;
+  MF.banked+=MF.current;
+  MF.current=0;
+  MF.chainStart=MF.qIdx; // reset chain start for next questions
+  document.getElementById('mf-banked-pts').textContent=MF.banked;
+  document.getElementById('mf-current-pts').textContent=0;
+  const fb=document.getElementById('mf-fb');
+  fb.textContent='🏦 '+MF.banked+' pts sécurisés !';
+  fb.style.color='#4ade80';
+  setTimeout(()=>{fb.textContent='';},1000);
+}
+
+function mfFinish(){
+  if(MF.done)return;
+  MF.done=true;
+  clearInterval(MF.timerInt);
+  const score=Math.min(105,MF.banked+MF.current);
+  G.score=score;
+  setScore(score,true);
+  const vSc=document.getElementById('v-sc');
+  if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');
+  if(vName)vName.textContent='Maillon Faible';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent='Banqués: '+MF.banked+' pts · En jeu: '+MF.current+' pts';
+  setVictoryIcon('maillonfaible');
   submitScore(score);
   show('sv');
 }
