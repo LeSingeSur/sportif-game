@@ -44,6 +44,7 @@ async function connectMongo() {
     await loadFromMongo();
     await loadAccounts();
     await loadTeams();
+    await loadSuggestions();
   } catch(e) {
     console.error('MongoDB erreur:', e.message);
     loadFromFile();
@@ -874,6 +875,64 @@ app.post('/api/biathlon-check', (req, res) => {
   res.json({ correct: !!matched, answer: mainAnswer });
 });
 
+
+// ── BOITE À IDÉES ──────────────────────────────────────────────────────────
+let suggestions = [];
+
+async function loadSuggestions(){
+  if(!db) return;
+  try{
+    const col=db.collection('suggestions');
+    suggestions=await col.find({}).sort({date:-1}).toArray();
+    console.log(`${suggestions.length} suggestion(s) chargée(s)`);
+  }catch(e){ console.error('loadSuggestions:', e.message); }
+}
+
+// Soumettre une idée (joueur)
+app.post('/api/suggestion', async (req, res) => {
+  const { pseudo, text } = req.body;
+  if(!text||!text.trim()) return res.status(400).json({error:'Idée vide'});
+  const suggestion = {
+    id: Date.now().toString(),
+    pseudo: (pseudo||'Anonyme').trim().slice(0,20),
+    text: text.trim().slice(0,300),
+    date: new Date().toISOString(),
+    votes: 0,
+    voters: []
+  };
+  suggestions.push(suggestion);
+  if(db) await db.collection('suggestions').insertOne(suggestion);
+  res.json({ok:true});
+});
+
+// Voter pour une idée
+app.post('/api/suggestion/vote', async (req, res) => {
+  const { id, pseudo } = req.body;
+  const s=suggestions.find(s=>s.id===id);
+  if(!s) return res.status(404).json({error:'Idée introuvable'});
+  if(!s.voters)s.voters=[];
+  if(s.voters.includes(pseudo)) return res.status(409).json({error:'Déjà voté'});
+  s.voters.push(pseudo);
+  s.votes=(s.votes||0)+1;
+  if(db) await db.collection('suggestions').updateOne({id},{$set:{votes:s.votes,voters:s.voters}});
+  res.json({ok:true,votes:s.votes});
+});
+
+// Lister les idées (public)
+app.get('/api/suggestions', (req, res) => {
+  const sorted=[...suggestions].sort((a,b)=>(b.votes||0)-(a.votes||0));
+  res.json({suggestions:sorted});
+});
+
+// Supprimer une idée (admin)
+app.delete('/api/suggestion/:id', async (req, res) => {
+  const {password}=req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  suggestions=suggestions.filter(s=>s.id!==req.params.id);
+  if(db) await db.collection('suggestions').deleteOne({id:req.params.id});
+  res.json({ok:true});
+});
+
 // ── POPUP BIENVENUE ────────────────────────────────────────────────────────
 let popupConfig = { active: false, title: '', message: '', emoji: '🏆', color: '#d4ff00' };
 
@@ -969,8 +1028,20 @@ app.get('/api/admin/team-players', (req, res) => {
 
 // Classement équipes (public)
 app.get('/api/scores/teams', async (req, res) => {
-  // Recharger les comptes depuis MongoDB pour avoir les teamId à jour
-  await loadAccounts();
+  // Recharger comptes depuis MongoDB pour teamId frais
+  if(db){
+    try{
+      const col=db.collection('accounts');
+      const all=await col.find({teamId:{$exists:true,$ne:null}}).toArray();
+      all.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+    }catch(e){}
+  }
+  const _awTeams=Object.values(accounts).filter(a=>a.teamId);
+  console.log(`[TEAM REQ] ${_awTeams.length} comptes avec équipe en mémoire`);
+  _awTeams.forEach(a=>console.log(`  mem: "${a.pseudo}" → "${a.pseudo.toLowerCase()}" teamId:${a.teamId}`));
+  const _allScores=Object.values(scores).flat();
+  console.log(`[TEAM REQ] ${_allScores.length} scores en mémoire`);
+  _allScores.slice(0,5).forEach(e=>console.log(`  score: "${e.pseudo}" → key:"${e.pseudo.toLowerCase()}" hasAccount:${!!accounts[e.pseudo.toLowerCase()]} hasTeam:${!!(accounts[e.pseudo.toLowerCase()]?.teamId)}`));
   const minPlayers=parseInt(req.query.min)||1;
   const teamScores={};
   const playerBest={};
