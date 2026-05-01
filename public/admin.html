@@ -177,6 +177,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <button class="nav-tab" onclick="showAdminTab('musique')">Musique</button>
     <button class="nav-tab" onclick="showAdminTab('comptes')">Comptes</button>
     <button class="nav-tab" onclick="showAdminTab('equipes')">Équipes</button>
+    <button class="nav-tab" onclick="showAdminTab('idees')">💡 Idées</button>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -773,6 +774,18 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   </div>
 </div>
 
+  <!-- TAB: IDÉES -->
+  <div id="tab-idees" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">💡 Boîte à idées</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="idees-count" style="font-size:12px;color:var(--mute)">—</div>
+        <button class="btn" onclick="loadIdees()" style="padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      </div>
+      <div id="idees-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
   <!-- TAB: ÉQUIPES -->
   <div id="tab-equipes" class="tab-content" style="display:none">
     <div class="card">
@@ -933,7 +946,7 @@ function selectType(type){
 function showAdminTab(tab){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   event.target.classList.add('active');
-  ['defis','classement','musique','comptes','equipes'].forEach(t=>{
+  ['defis','classement','musique','comptes','equipes','idees'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
     if(el)el.style.display=tab===t?'block':'none';
   });
@@ -941,6 +954,7 @@ function showAdminTab(tab){
   if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
   if(tab==='comptes') loadComptes();
   if(tab==='equipes') loadEquipes();
+  if(tab==='idees') loadIdees();
 }
 
 async function loadMusicConfig(){
@@ -1717,6 +1731,34 @@ async function loadTeamScores(){
         <div style="font-size:11px;color:var(--mute)">pts moy.</div>`:'<div style="font-size:12px;color:var(--mute)">—</div>'}`;
     list.appendChild(div);
   });
+}
+
+async function loadIdees(){
+  const r=await fetch('/api/suggestions');
+  const d=await r.json();
+  const list=document.getElementById('idees-list');
+  const count=document.getElementById('idees-count');
+  const sug=d.suggestions||[];
+  if(count)count.textContent=sug.length+' idée(s)';
+  list.innerHTML='';
+  if(!sug.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucune idée soumise.</div>';return;}
+  sug.forEach(s=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start';
+    div.innerHTML=`<div style="flex:1">
+      <div style="font-size:13px;color:var(--txt);line-height:1.5">${s.text}</div>
+      <div style="font-size:11px;color:var(--mute);margin-top:4px">
+        👤 ${s.pseudo} · ${new Date(s.date).toLocaleDateString('fr-FR')} · 👍 ${s.votes||0} vote(s)
+      </div>
+    </div>
+    <button onclick="deleteIdee('${s.id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">🗑</button>`;
+    list.appendChild(div);
+  });
+}
+
+async function deleteIdee(id){
+  await fetch('/api/suggestion/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadIdees();
 }
 
 async function loadComptes(){

@@ -358,6 +358,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 /* LA GRIMPÉE */
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
+#idees-zone{display:none;flex-direction:column;gap:12px}
+.idee-card{background:var(--c2);border-radius:14px;padding:12px 14px}
+.idee-vote-btn{background:var(--c1);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;font-family:var(--ff)}
+.idee-vote-btn.voted{border-color:var(--neon);color:var(--neon)}
 .biat-phase{font-family:var(--fh);font-size:11px;letter-spacing:3px;color:var(--mute);text-align:center}
 .biat-step{text-align:center;transition:opacity .3s,transform .3s;color:var(--mute)}
 .biat-step.active{opacity:1!important;color:var(--neon)}
@@ -576,6 +580,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div id="player-no-team" style="display:none;flex-direction:column;align-items:center;gap:4px;margin-top:4px">
           <button onclick="showTeamStep()" style="background:var(--c2);border:none;color:var(--txt);font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;cursor:pointer;font-family:var(--ff)">👥 Rejoindre une équipe</button>
         </div>
+        <button onclick="showIdees()" style="background:none;border:none;color:var(--mute);font-size:12px;cursor:pointer;font-family:var(--ff);text-decoration:underline;margin-top:6px">💡 Boîte à idées</button>
       </div>
     </div>
   </div>
@@ -1169,6 +1174,18 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 </section>
 
 <!-- LEADERBOARD -->
+<!-- IDEES SCREEN -->
+<section class="scr" id="si">
+  <div class="lb-title">💡 IDÉES</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+    <textarea id="idee-in" placeholder="Ton idée pour améliorer les quiz..." maxlength="300" style="background:var(--c2);border:none;border-radius:12px;color:var(--txt);font-size:14px;padding:12px;min-height:80px;font-family:var(--ff);resize:none;outline:none"></textarea>
+    <button onclick="submitIdee()" class="btn btn-p" style="font-family:var(--fh);letter-spacing:1px">💡 Soumettre mon idée</button>
+    <div id="idee-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px"></div>
+  </div>
+  <div id="idees-list-player" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:50vh"></div>
+  <button class="btn btn-g" onclick="show('sp')" style="margin-top:16px">← Retour</button>
+</section>
+
 <section class="scr" id="sl">
   <div class="lb-title">🏆 CLASSEMENT</div>
   <div class="lb-tabs" id="lb-tabs"></div>
@@ -5050,6 +5067,50 @@ function biatFinish(){
   setVictoryIcon('biathlon');
   submitScore(score);
   show('sv');
+}
+
+// ── BOÎTE À IDÉES ──────────────────────────────────────────────────────────
+async function showIdees(){
+  show('si');
+  const r=await fetch('/api/suggestions');
+  const d=await r.json();
+  const list=document.getElementById('idees-list-player');
+  list.innerHTML='';
+  (d.suggestions||[]).forEach(s=>{
+    const div=document.createElement('div');
+    div.className='idee-card';
+    const voted=false; // could track locally
+    div.innerHTML=`<div style="font-size:14px;color:var(--txt);line-height:1.5;margin-bottom:8px">${s.text}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;color:var(--mute)">👤 ${s.pseudo}</div>
+        <button class="idee-vote-btn" onclick="voteIdee('${s.id}',this)">👍 ${s.votes||0}</button>
+      </div>`;
+    list.appendChild(div);
+  });
+  if(!(d.suggestions||[]).length) list.innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Aucune idée pour l\'instant. Sois le premier !</div>';
+}
+
+async function submitIdee(){
+  const text=document.getElementById('idee-in').value.trim();
+  const err=document.getElementById('idee-err');
+  if(!text){err.textContent='Écris ton idée d\'abord';return;}
+  try{
+    const r=await fetch('/api/suggestion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pseudo:G.pseudo||'Anonyme',text})});
+    const d=await r.json();
+    if(d.ok){document.getElementById('idee-in').value='';showIdees();}
+    else err.textContent=d.error||'Erreur';
+  }catch(e){err.textContent='Erreur réseau';}
+}
+
+async function voteIdee(id,btn){
+  if(btn.classList.contains('voted'))return;
+  try{
+    const r=await fetch('/api/suggestion/vote',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id,pseudo:G.pseudo||'Anonyme'})});
+    const d=await r.json();
+    if(d.ok){btn.classList.add('voted');btn.textContent='👍 '+d.votes;}
+  }catch(e){}
 }
 
 // ── POPUP BIENVENUE ────────────────────────────────────────────────────────
