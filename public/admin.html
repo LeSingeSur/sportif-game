@@ -1123,16 +1123,16 @@ async function startEdit(id){
   selectType(a.type||'blackjack');
   if(a.type==='biathlon'){
     if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
-    if(a.type==='maillonfaible'){
-      mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
-      setTimeout(()=>renderMFQuestions(),50);
-    }
     if(document.getElementById('biat-announce-time-in'))document.getElementById('biat-announce-time-in').value=a.biatAnnounceTime||45;
     if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
     biatSprintItems=[...(a.biatSprintAnswers||[])];
     biatQCMItems=(a.biatQCM||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
     biatOrderItems=[...(a.biatOrder||[])];
     setTimeout(()=>{renderBiatSprint();renderBiatQCM();renderBiatOrder();},50);
+  }
+  if(a.type==='maillonfaible'){
+    mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||[''])]}));
+    setTimeout(()=>renderMFQuestions(),50);
   }
   if(a.type==='grimpe'){
     document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
