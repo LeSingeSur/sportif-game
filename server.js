@@ -1055,38 +1055,50 @@ app.get('/api/debug/teams', (req, res) => {
 
 app.get('/api/scores/teams', async (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
-  // Recharger scores et comptes depuis MongoDB pour être sûr
-  if(db){
-    try{
-      const sc=await db.collection('scores').find({}).toArray();
-      scores={};
-      sc.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
-      const accs=await db.collection('accounts').find({}).toArray();
-      accs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
-    }catch(e){ console.error('reload error:',e.message); }
+  try{
+    if(!db) return res.json({teams:[],minPlayers});
+    // Lire directement depuis MongoDB
+    const [allScores,allAccounts]=await Promise.all([
+      db.collection('scores').find({}).toArray(),
+      db.collection('accounts').find({teamId:{$exists:true,$ne:null}}).toArray()
+    ]);
+    // Index comptes par pseudo lowercase
+    const accMap={};
+    allAccounts.forEach(a=>{ accMap[a.pseudo.toLowerCase()]=a; });
+    // Calculer meilleur score par joueur
+    const playerBest={};
+    for(const doc of allScores){
+      for(const entry of (doc.scores||[])){
+        const key=(entry.pseudo||'').toLowerCase().trim();
+        const acc=accMap[key];
+        if(!acc||!acc.teamId) continue;
+        const pKey=acc.teamId+'_'+key;
+        if(!playerBest[pKey]||entry.score>playerBest[pKey].score){
+          playerBest[pKey]={score:entry.score,teamId:acc.teamId,pseudo:entry.pseudo};
+        }
+      }
+    }
+    // Grouper par équipe
+    const teamData={};
+    Object.values(playerBest).forEach(p=>{
+      if(!teamData[p.teamId]) teamData[p.teamId]={scores:[],pseudos:[]};
+      teamData[p.teamId].scores.push(p.score);
+      teamData[p.teamId].pseudos.push(p.pseudo);
+    });
+    // Enrichir avec infos équipes
+    const allTeams=await db.collection('teams').find({}).toArray();
+    const result=Object.entries(teamData).map(([teamId,td])=>{
+      const t=allTeams.find(t=>String(t.id)===String(teamId))||{name:'Équipe',emoji:'👥',color:'#6366f1'};
+      const avg=td.scores.length>=minPlayers?Math.round(td.scores.reduce((a,b)=>a+b,0)/td.scores.length):null;
+      return{id:teamId,name:t.name,emoji:t.emoji,color:t.color,playerCount:td.scores.length,avg,qualified:td.scores.length>=minPlayers};
+    }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+    console.log('[TEAM] accounts with team:'+allAccounts.length+' playerBest:'+Object.keys(playerBest).length+' result:'+result.length);
+    res.json({teams:result,minPlayers});
+  }catch(e){
+    console.error('[TEAM ERROR]',e.message);
+    res.json({teams:[],minPlayers});
   }
-  rebuildGlobalScores();
-  // Recharger les équipes depuis les comptes en mémoire
-  // globalScores = [{pseudo, score}] déjà calculé
-  // accounts = {pseudo_lower: {pseudo, teamId}}
-  const teamData={};
-  for(const gs of globalScores){
-    const acc=accounts[gs.pseudo.toLowerCase()]||accounts[norm(gs.pseudo)];
-    if(!acc||!acc.teamId) continue;
-    if(!teamData[acc.teamId]) teamData[acc.teamId]={scores:[],teamId:acc.teamId};
-    teamData[acc.teamId].scores.push(gs.score);
-  }
-  // Enrichir avec les infos d'équipe — cherche par id string ET number
-  const result=Object.values(teamData).map(td=>{
-    const t=teams.find(t=>String(t.id)===String(td.teamId))||{name:'Équipe '+td.teamId,emoji:'👥',color:'#6366f1',id:td.teamId};
-    const avg=td.scores.length>=minPlayers?Math.round(td.scores.reduce((a,b)=>a+b,0)/td.scores.length):null;
-    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:td.scores.length,avg,qualified:td.scores.length>=minPlayers};
-  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
-  console.log('[TEAM] gs:'+globalScores.length+' teamData:'+Object.keys(teamData).join(','));
-  console.log('[TEAM] result:'+result.length);
-  console.log('[TEAM] globalScores:'+globalScores.length+' result:'+result.length+' teams:'+teams.length);
-  res.json({teams:result,minPlayers});
-});;;
+});
 
 // ── COMPTES JOUEURS ────────────────────────────────────────────────────────
 // Simple hash PIN (pas de bcrypt pour garder simple)
