@@ -4503,9 +4503,14 @@ async function loadLB(){
     const finished=G.pseudo ? finData.finished : false;
 
     if(!finished&&G.pseudo){
-      // Show locked state
+      // Show locked state but still show teams tab
       const played=finData.played||0; const total=finData.total||0;
       const pct=total>0?Math.round(played/total*100):0;
+      // Add tabs even when locked
+      await loadTeams();
+      tabs.innerHTML='';
+      if(_teams.length>0) tabs.appendChild(makeTab('👥 Équipes','teams'));
+      tabs.appendChild(makeTab('🔒 Individuel','locked'));
       list.innerHTML=`
         <div class="lb-locked">
           <div class="lb-locked-ico">🔒</div>
@@ -4513,14 +4518,25 @@ async function loadLB(){
           <div class="lb-locked-sub">Termine tous les défis pour découvrir le classement !<br><br>${played} / ${total} défi${total>1?'s':''} complétés</div>
           <div class="lb-progress"><div class="lb-progress-f" style="width:${pct}%"></div></div>
         </div>`;
+      // Show teams tab by default if available
+      if(_teams.length>0){lbActiveTab='teams';showTab('teams',list);}
       return;
     }
+
+    await loadTeams();
 
     const resA=await fetch('/api/athletes/list?pseudo='+encodeURIComponent(G.pseudo||''));
     lbAthletes=await resA.json();
     tabs.appendChild(makeTab('🌍 Global','global'));
-    // Onglet équipes si des équipes existent
-    if(_teams.length>0) tabs.appendChild(makeTab('👥 Équipes','teams'));
+    // Charger les équipes fraîches depuis le serveur
+    try{
+      const tRes=await fetch('/api/teams');
+      const tData=await tRes.json();
+      if(tData.teams&&tData.teams.length>0){
+        _teams=tData.teams;
+        tabs.appendChild(makeTab('👥 Équipes','teams'));
+      }
+    }catch(e){}
     lbAthletes.forEach((a,i)=>{
       const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','text':'🃏'};
       const icon=icons[a.type]||'🎮';
@@ -5206,7 +5222,6 @@ function mfAnswer(ans,correct,btn){
     if(MF.qIdx>=MF_CUMUL.length){setTimeout(mfFinish,800);return;}
     setTimeout(()=>{fb.textContent='';mfShowQuestion();},800);
   } else {
-    // Show correct answer
     document.querySelectorAll('.biat-qcm-btn').forEach(b=>{
       if(correctVariants.includes(b.textContent.trim().toLowerCase()))b.classList.add('correct');
     });
@@ -5214,9 +5229,14 @@ function mfAnswer(ans,correct,btn){
     const node=document.getElementById('mf-node-'+MF.qIdx);
     if(node){node.classList.remove('active');node.classList.add('failed');}
     MF.current=0;
+    MF.chainStart=MF.qIdx+1; // repart de 0 sur la chaîne
     document.getElementById('mf-current-pts').textContent=0;
-    fb.innerHTML='<span style="font-family:var(--fh);font-size:18px;color:var(--red)">🔗 TU ES LE MAILLON FAIBLE !</span>';
-    setTimeout(()=>{fb.textContent='';mfFinish();},2000);
+    fb.innerHTML='<span style="font-family:var(--fh);font-size:18px;color:var(--red)">🔗 MAILLON FAIBLE !</span><br><span style="font-size:12px;color:var(--mute)">Banqués : '+MF.banked+' pts · Chaîne remise à zéro</span>';
+    MF.qIdx++;
+    if(MF.qIdx>=MF_CUMUL.length){setTimeout(mfFinish,2000);return;}
+    const nextNode=document.getElementById('mf-node-'+MF.qIdx);
+    if(nextNode)nextNode.classList.add('active');
+    setTimeout(()=>{fb.textContent='';mfShowQuestion();},2000);
   }
 }
 
