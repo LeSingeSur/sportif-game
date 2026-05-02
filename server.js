@@ -1063,14 +1063,17 @@ app.get('/api/scores/teams', (req, res) => {
   for(const gs of globalScores){
     const acc=accounts[gs.pseudo.toLowerCase()]||accounts[norm(gs.pseudo)];
     if(!acc||!acc.teamId) continue;
-    if(!teamData[acc.teamId]) teamData[acc.teamId]={scores:[]};
+    if(!teamData[acc.teamId]) teamData[acc.teamId]={scores:[],teamId:acc.teamId};
     teamData[acc.teamId].scores.push(gs.score);
   }
-  const result=teams.map(t=>{
-    const td=teamData[t.id]||{scores:[]};
+  // Enrichir avec les infos d'équipe — cherche par id string ET number
+  const result=Object.values(teamData).map(td=>{
+    const t=teams.find(t=>String(t.id)===String(td.teamId))||{name:'Équipe '+td.teamId,emoji:'👥',color:'#6366f1',id:td.teamId};
     const avg=td.scores.length>=minPlayers?Math.round(td.scores.reduce((a,b)=>a+b,0)/td.scores.length):null;
     return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:td.scores.length,avg,qualified:td.scores.length>=minPlayers};
   }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  console.log('[TEAM] gs:'+globalScores.length+' teamData:'+Object.keys(teamData).join(','));
+  console.log('[TEAM] result:'+result.length);
   console.log('[TEAM] globalScores:'+globalScores.length+' result:'+result.length+' teams:'+teams.length);
   res.json({teams:result,minPlayers});
 });;;
