@@ -888,7 +888,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-family:var(--fh);font-size:20px;color:var(--neon)">MAILLON FAIBLE</div>
       <div style="font-size:13px;color:var(--mute);line-height:1.7;text-align:left">
         <div style="margin-bottom:8px">🎯 <strong style="color:var(--txt)">10 questions</strong> — tu dois répondre correctement pour monter dans la chaîne.</div>
-        <div style="margin-bottom:8px">📈 <strong style="color:var(--txt)">Les points augmentent</strong> à chaque bonne réponse : 6 → 13 → 21 → 30 → 40 → 51 → 63 → 76 → 90 → <strong style="color:var(--neon)">105 pts</strong></div>
+        <div style="margin-bottom:8px">📈 <strong style="color:var(--txt)">Les points augmentent</strong> à chaque bonne réponse : 8 → 19 → 31 → <strong style="color:#f59e0b">45 pts (La Moitié)</strong> → 61 → 80 → <strong style="color:var(--neon)">100 pts (Max)</strong></div>
         <div style="margin-bottom:8px">🏦 <strong style="color:#f59e0b)">BANQUER</strong> = sécuriser tes points et repartir de zéro sur la chaîne. Tu peux banquer autant de fois que tu veux.</div>
         <div style="color:var(--red)">❌ Une erreur = tu perds tout ce que tu n'as pas banqué. <strong>Tu es le maillon faible !</strong></div>
       </div>
@@ -5134,7 +5134,7 @@ function biatFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // MAILLON FAIBLE
 // ══════════════════════════════════════════════════════════════════════════
-const MF_CUMUL=[6,13,21,30,40,51,63,76,90,105];
+const MF_CUMUL=[8,19,31,45,61,80,100];
 const MF={
   data:null, qIdx:0, banked:0, current:0, timerInt:null, timerLeft:20, done:false, chainStart:0
 };
@@ -5175,10 +5175,8 @@ function mfShowQuestion(){
   // Choices
   const choicesEl=document.getElementById('mf-choices');
   choicesEl.innerHTML='';
-  const wrong=(q.wrong||[]).filter(Boolean);
-  // Seulement 2 propositions : bonne réponse + 1 mauvaise
-  let choices=[q.answer, wrong[0]||'Faux'];
-  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  // Toujours Vrai / Faux
+  const choices=['Vrai','Faux'];
   choices.forEach(c=>{
     const btn=document.createElement('button');
     btn.className='biat-qcm-btn';
@@ -5207,17 +5205,19 @@ function mfAnswer(ans,correct,btn){
   const fb=document.getElementById('mf-fb');
   if(isCorrect){
     if(btn)btn.classList.add('correct');
-    // Current = cumul depuis dernier banque (sous-chaîne)
     const subIdx=MF.qIdx-MF.chainStart;
+    const prevSubIdx=subIdx-1;
     MF.current=MF_CUMUL[subIdx]||MF_CUMUL[MF_CUMUL.length-1];
     document.getElementById('mf-current-pts').textContent=MF.current;
+    // Gain réel = cumul sous-chaîne actuel - cumul sous-chaîne précédent
+    const gain=MF_CUMUL[subIdx]-(prevSubIdx>=0?MF_CUMUL[prevSubIdx]:0);
     // Update chain
     const node=document.getElementById('mf-node-'+MF.qIdx);
     if(node){node.classList.remove('active');node.classList.add('banked');}
     MF.qIdx++;
     const nextNode=document.getElementById('mf-node-'+MF.qIdx);
     if(nextNode)nextNode.classList.add('active');
-    fb.textContent='✅ +'+((MF_CUMUL[MF.qIdx-1]||0)-(MF_CUMUL[MF.qIdx-2]||0))+' pts';
+    fb.textContent='✅ +'+gain+' pts → '+MF.current+' en jeu';
     fb.style.color='var(--neon)';
     if(MF.qIdx>=MF_CUMUL.length){setTimeout(mfFinish,800);return;}
     setTimeout(()=>{fb.textContent='';mfShowQuestion();},800);
@@ -5257,7 +5257,7 @@ function mfFinish(){
   if(MF.done)return;
   MF.done=true;
   clearInterval(MF.timerInt);
-  const score=Math.min(105,MF.banked+MF.current);
+  const score=Math.min(100,MF.banked+MF.current);
   G.score=score;
   setScore(score,true);
   const vSc=document.getElementById('v-sc');

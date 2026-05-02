@@ -273,7 +273,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- MAILLON FAIBLE FIELDS -->
       <div id="maillonfaible-fields" style="display:none">
         <div style="background:var(--c2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
-          🔗 Chaîne de 10 questions · Paliers : 6 → 13 → 21 → 30 → 40 → 51 → 63 → 76 → 90 → 105 pts (max 105) · Banque sécurise les pts
+          🔗 Chaîne de 10 questions · Paliers : 8 → 19 → 31 → 45 (La Moitié) → 61 → 80 → 100 pts (max) · Vrai/Faux · Banque sécurise les pts
         </div>
         <div class="field">
           <label>Questions (10 obligatoires)</label>
@@ -1530,29 +1530,31 @@ function renderMFQuestions(){
   const count=document.getElementById('mf-count');
   if(!list)return;
   list.innerHTML='';
-  const CUMUL=[6,13,21,30,40,51,63,76,90,105];
+  const CUMUL=[8,19,31,45,61,80,100];
   mfQuestions.forEach((q,i)=>{
     const div=document.createElement('div');
     div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    const isVrai=(q.answer||'Vrai')==='Vrai';
     div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">Q${i+1} — Palier ${i+1} → ${CUMUL[i]||'?'} pts</div>
-      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:4px;outline:none">
-      <input type="text" value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
-      <input type="text" value="${(q.wrong&&q.wrong[0]||'').replace(/"/g,'&quot;')}" placeholder="Mauvaise réponse (l'autre proposition)…" style="width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.4);color:var(--red);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
-      <button onclick="mfQuestions.splice(${i},1);renderMFQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px">🗑 Supprimer</button>`;
-    const inputs=div.querySelectorAll('input');
-    inputs[0].addEventListener('input',e=>{mfQuestions[i].question=e.target.value;});
-    inputs[1].addEventListener('input',e=>{mfQuestions[i].answer=e.target.value;});
-    inputs[2].addEventListener('input',e=>{if(!mfQuestions[i].wrong)mfQuestions[i].wrong=[''];mfQuestions[i].wrong[0]=e.target.value;});
+      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Affirmation vraie ou fausse…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:8px;outline:none">
+      <div style="display:flex;gap:8px">
+        <button id="mf-vrai-${i}" onclick="mfSetAnswer(${i},'Vrai')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${isVrai?'var(--neon)':'rgba(255,255,255,.1)'};background:${isVrai?'rgba(212,255,0,.1)':'var(--c1)'};color:${isVrai?'var(--neon)':'var(--mute)'};font-weight:800;cursor:pointer;font-family:var(--ff)">✅ VRAI</button>
+        <button id="mf-faux-${i}" onclick="mfSetAnswer(${i},'Faux')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${!isVrai?'var(--red)':'rgba(255,255,255,.1)'};background:${!isVrai?'rgba(255,60,60,.1)':'var(--c1)'};color:${!isVrai?'var(--red)':'var(--mute)'};font-weight:800;cursor:pointer;font-family:var(--ff)">❌ FAUX</button>
+      </div>
+      <button onclick="mfQuestions.splice(${i},1);renderMFQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:8px">🗑 Supprimer</button>`;
+    const inp=div.querySelector('input');
+    inp.addEventListener('input',e=>{mfQuestions[i].question=e.target.value;});
     list.appendChild(div);
   });
   if(count)count.textContent=mfQuestions.filter(q=>q.question&&q.answer).length+'/10 questions';
   checkReady();
 }
 
+function mfSetAnswer(i,val){mfQuestions[i].answer=val;renderMFQuestions();}
 const _btnAddMF=document.getElementById('btn-add-mf-q');
 if(_btnAddMF)_btnAddMF.onclick=()=>{
   if(mfQuestions.length>=10)return alert('10 questions max');
-  mfQuestions.push({question:'',answer:'',wrong:['','','']});
+  mfQuestions.push({question:'',answer:'Vrai',wrong:[]});
   renderMFQuestions();
 };
 
