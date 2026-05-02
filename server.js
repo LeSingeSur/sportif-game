@@ -218,7 +218,7 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
-    base.maxScore = 105;
+    base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
     base.biatAnnounceTime  = athlete.biatAnnounceTime || 45;
@@ -473,7 +473,7 @@ app.get('/api/athlete', (req, res) => {
     console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
-    base.maxScore = 105;
+    base.maxScore = 100;
   } else if (athlete.type === 'grimpe') {
     base.grimpeTheme   = athlete.grimpeTheme || '';
     base.clue          = athlete.grimpeTheme || athlete.clue || '';
@@ -1053,9 +1053,19 @@ app.get('/api/debug/teams', (req, res) => {
   });
 });
 
-app.get('/api/scores/teams', (req, res) => {
+app.get('/api/scores/teams', async (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
-  rebuildGlobalScores(); // s'assurer que c'est à jour
+  // Recharger scores et comptes depuis MongoDB pour être sûr
+  if(db){
+    try{
+      const sc=await db.collection('scores').find({}).toArray();
+      scores={};
+      sc.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
+      const accs=await db.collection('accounts').find({}).toArray();
+      accs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+    }catch(e){ console.error('reload error:',e.message); }
+  }
+  rebuildGlobalScores();
   // Recharger les équipes depuis les comptes en mémoire
   // globalScores = [{pseudo, score}] déjà calculé
   // accounts = {pseudo_lower: {pseudo, teamId}}
