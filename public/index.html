@@ -1550,7 +1550,7 @@ async function loadAthlete(){
     if(!PREVIEW_MODE && data.done){show('sd');return}
     G.athleteId=data.id; G.type=data.type||'text'; G.active=true;
     // Toujours stocker la réponse correcte dès le chargement
-    if(data.answer) G.athleteName=data.answer;
+    G.athleteName=data.answer||data.biatTheme||data.bjTheme||data.repliqueAuthor||G.athleteName||'';
     document.getElementById('sport-ico').textContent=data.emoji;
 
     if(data.type==='image'){
@@ -2779,11 +2779,11 @@ function finishScout(won){
   const finalScore=won?SC.score:0;
   G.score=finalScore;
   setTimeout(()=>{
-    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-name').textContent=G.athleteName||'?';
     document.getElementById('v-sc').textContent=finalScore;
     document.getElementById('v-sub').textContent=won
       ?`🔍 Trouvé avec ${SC.revealed.length} indice(s) révélé(s)`
-      :`❌ Score épuisé — c'était ${G.athleteName||'???'}`;
+      :`❌ Score épuisé — c'était ${G.athleteName||'?'}`;
     document.getElementById('v-revealed').textContent=SC.revealed.length;
     document.getElementById('v-revealed-lbl').textContent='indices révélés';
     document.getElementById('v-wrong').textContent=100-finalScore;
@@ -2812,7 +2812,7 @@ function setupRepliqueMode(data){
   if(RQ.timerInt){clearInterval(RQ.timerInt);RQ.timerInt=null;}
   if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
   if(RQ.globalTimerInt){clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;}
-  G.athleteName=data.answer||'???';
+  G.athleteName=data.answer||'?';
   document.getElementById('replique-amorce-txt').textContent=(data.repliqueAmorce||data.repliqueCitation||'')+'…';
   document.getElementById('replique-mode-area').style.display='block';
   document.getElementById('replique-answer-area').style.display='none';
@@ -2985,7 +2985,7 @@ function showAuthorInput(authorArea){
 
 function showAuthorDuo(authorArea){
   const correctAuthor=RQ.data.answer||'';
-  const wrongAnswer=(RQ.data.repliqueAuthorChoices||[])[0]||'???';
+  const wrongAnswer=(RQ.data.repliqueAuthorChoices||[])[0]||'?';
   const display=[correctAuthor, wrongAnswer].sort(()=>Math.random()-.5);
   authorArea.innerHTML='';
   display.forEach(ch=>{
@@ -3501,7 +3501,7 @@ function encaisserDemineur(){
 function finishDemineur(finalScore, msg){
   D.done=true; G.active=false;
   G.score=finalScore;
-  document.getElementById('v-name').textContent   = G.athleteName||'???';
+  document.getElementById('v-name').textContent   = G.athleteName||'?';
   document.getElementById('v-sc').textContent     = finalScore;
   document.getElementById('v-sub').textContent    = msg;
   document.getElementById('v-revealed').textContent    = document.querySelectorAll('.dem-case.safe').length;
@@ -3567,7 +3567,7 @@ function endTrappeGame(){
   T.done=true; G.active=false;
   const finalScore = Math.round(T.capital);
   G.score = finalScore;
-  document.getElementById('v-name').textContent   = G.athleteName||'???';
+  document.getElementById('v-name').textContent   = G.athleteName||'?';
   document.getElementById('v-sc').textContent     = finalScore;
   document.getElementById('v-sub').textContent    = `Toutes les questions passées ! Capital final : ${finalScore} pts`;
   document.getElementById('v-revealed').textContent    = T.questions.length;
@@ -3726,7 +3726,7 @@ async function resolveTrappes(){
         T.done = true; G.active = false;
         document.getElementById('trappe-fb').textContent = '⛔ Capital épuisé !';
         setTimeout(()=>{
-          document.getElementById('v-name').textContent   = G.athleteName||'???';
+          document.getElementById('v-name').textContent   = G.athleteName||'?';
           document.getElementById('v-sc').textContent     = 0;
           document.getElementById('v-sub').textContent    = `Capital épuisé à la question ${T.currentQ+1}/${T.questions.length}`;
           document.getElementById('v-revealed').textContent    = T.currentQ+1;
@@ -4415,9 +4415,9 @@ async function submitScoreAndRevealText(){
   document.getElementById('bar-f').style.width='100%';
   if(PREVIEW_MODE){
     document.getElementById('rank-badge').textContent='👁 Preview — score non enregistré';
-    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-name').textContent=G.athleteName||'?';
     document.getElementById('v-sc').textContent=0;
-    document.getElementById('v-sub').textContent=`Score épuisé — c'était ${G.athleteName||'???'}`;
+    document.getElementById('v-sub').textContent=`Score épuisé — c'était ${G.athleteName||'?'}`;
     document.getElementById('v-revealed').textContent=G.revealed;
     document.getElementById('v-revealed-lbl').textContent='mots révélés';
     document.getElementById('v-wrong').textContent=G.wrongAnswers;
@@ -4428,7 +4428,7 @@ async function submitScoreAndRevealText(){
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score:0,athleteId:G.athleteId})});
     const data=await res.json();
-    const name=data.answer||G.athleteName||'???';
+    const name=data.answer||G.athleteName||'?';
     G.athleteName=name;
     if(data.success){
       const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
@@ -4448,9 +4448,9 @@ async function submitScoreAndRevealText(){
 async function submitScoreAndReveal(score){
   if(PREVIEW_MODE){
     document.getElementById('rank-badge').textContent='👁 Preview — score non enregistré';
-    document.getElementById('v-name').textContent=G.athleteName||'???';
+    document.getElementById('v-name').textContent=G.athleteName||'?';
     document.getElementById('v-sc').textContent=score;
-    document.getElementById('v-sub').textContent=`Toutes les cases révélées — c'était ${G.athleteName||'???'}`;
+    document.getElementById('v-sub').textContent=`Toutes les cases révélées — c'était ${G.athleteName||'?'}`;
     document.getElementById('v-revealed').textContent=G.revealed;
     document.getElementById('v-revealed-lbl').textContent='cases révélées';
     document.getElementById('v-wrong').textContent=G.wrongAnswers;
@@ -4461,7 +4461,7 @@ async function submitScoreAndReveal(score){
     const res=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pseudo:G.pseudo,score,athleteId:G.athleteId})});
     const data=await res.json();
-    const name=data.answer||G.athleteName||'???';
+    const name=data.answer||G.athleteName||'?';
     G.athleteName=name;
     if(data.success){
       const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
