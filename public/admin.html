@@ -1432,7 +1432,10 @@ function checkReady(){
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in').value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1&&biatQCMItems.length>=1&&biatOrderItems.filter(x=>x.trim()).length>=2;
   else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
-  else if(currentType==='haltero') hasContent=haQuestions.length>=1&&!!document.getElementById('ha-s1')?.value.trim();
+  else if(currentType==='haltero'){
+    const s1=document.getElementById('ha-s1');
+    hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
+  }
   else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
@@ -1638,6 +1641,11 @@ if(_btnAddHA)_btnAddHA.onclick=()=>{
   haQuestions.push({criterion:'',answer:'s1'});
   renderHAQuestions();
 };
+// Listeners pour checkReady
+['ha-s1','ha-s2','hej-theme'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
 const _btnAddHEJ=document.getElementById('btn-add-hej-q');
 if(_btnAddHEJ)_btnAddHEJ.onclick=()=>{
   if(hejQuestions.length>=4)return alert('4 questions max');
