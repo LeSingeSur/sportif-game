@@ -359,7 +359,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
 #mf-zone{display:none;flex-direction:column;gap:10px}
-#haltero-zone{display:none;flex-direction:column;gap:10px}
+#haltero-zone{display:none;flex-direction:column;gap:10px;width:100%}
 .ha-sportif-card{flex:1;padding:12px;border-radius:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s;font-family:var(--fh);font-size:13px;font-weight:800}
 .ha-sportif-card.selected-s1{border-color:var(--neon);background:rgba(212,255,0,.1);color:var(--neon)}
 .ha-sportif-card.selected-s2{border-color:var(--cyan);background:rgba(0,229,200,.1);color:var(--cyan)}
@@ -912,9 +912,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
 
     <!-- ARRACHÉ -->
-    <div id="halt-arache-zone">
+    <div id="halt-arache-zone" style="width:100%;display:flex;flex-direction:column;gap:10px">
       <!-- Choix poids -->
-      <div id="halt-arache-choix" style="display:flex;flex-direction:column;gap:10px">
+      <div id="halt-arache-choix" style="display:flex;flex-direction:column;gap:10px;width:100%">
         <div class="bj-theme" id="halt-arache-title">Arraché</div>
         <div style="background:var(--c2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
           Choisissez votre barre · Plus de questions = plus de points · Tout ou rien
@@ -954,7 +954,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
 
     <!-- ÉPAULÉ-JETÉ -->
-    <div id="halt-epaule-zone" style="display:none;flex-direction:column;gap:10px">
+    <div id="halt-epaule-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
       <!-- Choix poids -->
       <div id="halt-epaule-choix" style="flex-direction:column;gap:10px;display:flex">
         <div class="bj-theme" id="halt-epaule-theme">Thème…</div>
@@ -5458,6 +5458,8 @@ function haltUpdateBar(n){
 function haltAracherChoix(n){
   haltUpdateBar(n);
   HALT.aNbQ=n; HALT.aAnswers=new Array(n).fill(null); HALT.aQIdx=0;
+  // Apply malus if 2nd attempt and previous was failure
+  if(HALT.aEssai===2&&HALT.aScore===0) HALT.aScore=-10;
   document.getElementById('halt-arache-choix').style.display='none';
   document.getElementById('halt-arache-questions').style.display='flex';
   const d=HALT.data.halteroArache||{};
@@ -5467,6 +5469,9 @@ function haltAracherChoix(n){
 }
 
 function haltAracherShowQ(){
+  // Re-bind buttons chaque fois
+  document.getElementById('halt-btn-s1').onclick=()=>haltAracherAnswer('s1');
+  document.getElementById('halt-btn-s2').onclick=()=>haltAracherAnswer('s2');
   const d=HALT.data.halteroArache||{};
   const q=(d.questions||[])[HALT.aQIdx];
   if(!q){haltAracherEnd();return;}
@@ -5631,7 +5636,7 @@ function haltEpauleStartTimer(){
     t--;
     document.getElementById('halt-epaule-timer').textContent=t;
     document.getElementById('halt-epaule-bar').style.width=(t/15*100)+'%';
-    if(t<=0){clearInterval(HALT.ejTimerInt);haltEpauleAnswer('',HALT.data.halteroEpaule?.questions?.[HALT.ejQIdx]?.answer||'');}
+    if(t<=0){clearInterval(HALT.ejTimerInt);haltEpauleAnswer('__TIMEOUT__',HALT.data.halteroEpaule?.questions?.[HALT.ejQIdx]?.answer||'');}
   },1000);
 }
 
@@ -5726,7 +5731,7 @@ function haltStartJete(){
     t--;
     document.getElementById('halt-jete-timer').textContent=t;
     document.getElementById('halt-jete-bar').style.width=(t/15*100)+'%';
-    if(t<=0){clearInterval(HALT.ejTimerInt);haltJeteAnswer('',HALT.data.halteroEpaule?.jete?.answer||'');}
+    if(t<=0){clearInterval(HALT.ejTimerInt);haltJeteAnswer('__TIMEOUT__',HALT.data.halteroEpaule?.jete?.answer||'');}
   },1000);
 }
 
