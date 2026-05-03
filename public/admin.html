@@ -1181,6 +1181,22 @@ async function startEdit(id){
     mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||[''])]}));
     setTimeout(()=>renderMFQuestions(),50);
   }
+  if(a.type==='haltero'){
+    const ar=a.halteroArache||{};
+    const ej=a.halteroEpaule||{};
+    if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value=ar.sportif1||'';
+    if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value=ar.sportif2||'';
+    if(document.getElementById('hej-theme'))document.getElementById('hej-theme').value=ej.theme||'';
+    if(document.getElementById('hej-jete-q'))document.getElementById('hej-jete-q').value=ej.jete?.question||'';
+    if(document.getElementById('hej-jete-a'))document.getElementById('hej-jete-a').value=ej.jete?.answer||'';
+    ['w1','w2','w3'].forEach((w,i)=>{
+      const el=document.getElementById('hej-jete-'+w);
+      if(el)el.value=ej.jete?.wrong?.[i]||'';
+    });
+    haQuestions=(ar.questions||[]).map(q=>({criterion:q.criterion||'',answer:q.answer||'s1'}));
+    hejQuestions=(ej.questions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
+    setTimeout(()=>{renderHAQuestions();renderHEJQuestions();},50);
+  }
   if(a.type==='grimpe'){
     document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
     grimpeItems=(a.grimpeAnswers||[]).map((ans,i)=>{
