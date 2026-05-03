@@ -919,6 +919,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="background:var(--c2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute)">
           Choisissez votre barre · Plus de questions = plus de points · Tout ou rien
         </div>
+        <!-- Barre visuelle -->
+        <div id="halt-barbell" style="display:flex;align-items:center;justify-content:center;gap:0;margin:4px 0;transition:all .3s">
+          <div style="font-size:28px">⬛</div>
+          <div id="halt-bar-visual" style="height:8px;background:rgba(255,255,255,.2);border-radius:4px;transition:all .3s;width:80px"></div>
+          <div style="font-size:28px">⬛</div>
+        </div>
+        <div id="halt-bar-label" style="text-align:center;font-family:var(--fh);font-size:13px;color:var(--mute)">← Choisissez un poids</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
           <button onclick="haltAracherChoix(1)" style="flex:1;min-width:50px;padding:10px 4px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:14px;font-weight:800;cursor:pointer"><div>1</div><div style="font-size:10px;color:var(--mute)">20pts</div></button><button onclick="haltAracherChoix(2)" style="flex:1;min-width:50px;padding:10px 4px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:14px;font-weight:800;cursor:pointer"><div>2</div><div style="font-size:10px;color:var(--mute)">40pts</div></button><button onclick="haltAracherChoix(3)" style="flex:1;min-width:50px;padding:10px 4px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:14px;font-weight:800;cursor:pointer"><div>3</div><div style="font-size:10px;color:var(--mute)">60pts</div></button><button onclick="haltAracherChoix(4)" style="flex:1;min-width:50px;padding:10px 4px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:14px;font-weight:800;cursor:pointer"><div>4</div><div style="font-size:10px;color:var(--mute)">80pts</div></button><button onclick="haltAracherChoix(5)" style="flex:1;min-width:50px;padding:10px 4px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:14px;font-weight:800;cursor:pointer"><div>5</div><div style="font-size:10px;color:var(--mute)">100pts</div></button>
         </div>
@@ -5438,7 +5445,18 @@ function haltUpdateEssais(){
 }
 
 // ── ARRACHÉ ──────────────────────────────────────────────────────────────
+function haltUpdateBar(n){
+  const bar=document.getElementById('halt-bar-visual');
+  const lbl=document.getElementById('halt-bar-label');
+  if(!bar)return;
+  const colors=['','var(--neon)','#a3e635','#f59e0b','#fb923c','var(--red)'];
+  const widths=[80,100,130,160,190,220];
+  if(n===0){bar.style.width='80px';bar.style.background='rgba(255,255,255,.2)';if(lbl)lbl.textContent='← Choisissez un poids';}
+  else{bar.style.width=widths[n]+'px';bar.style.background=colors[n];if(lbl){lbl.textContent=n+' question'+(n>1?'s':'')+' · '+n*20+' pts';lbl.style.color=colors[n];}}
+}
+
 function haltAracherChoix(n){
+  haltUpdateBar(n);
   HALT.aNbQ=n; HALT.aAnswers=new Array(n).fill(null); HALT.aQIdx=0;
   document.getElementById('halt-arache-choix').style.display='none';
   document.getElementById('halt-arache-questions').style.display='flex';
@@ -5504,46 +5522,47 @@ function haltAracherEnd(){
   });
   const success=errors===0;
   const pts=success?HALT.aNbQ*20:0;
-  // Malus 2ème essai
-  const malus=HALT.aEssai===2&&!success?-10:0;
   if(success) HALT.aScore=pts;
   document.getElementById('halt-arache-questions').style.display='none';
   document.getElementById('halt-arache-result').style.display='flex';
+  const btn=document.getElementById('halt-arache-result').querySelector('button');
   if(success){
     document.getElementById('halt-arache-result-ico').textContent='🏆';
     document.getElementById('halt-arache-result-msg').textContent='BARRE VALIDÉE ! +'+pts+' pts';
     document.getElementById('halt-arache-result-msg').style.color='var(--neon)';
-    document.getElementById('halt-arache-result-detail').textContent='0 erreur · Parfait !';
+    if(HALT.aEssai<2){
+      // Proposer de tenter une barre plus lourde (sans malus)
+      document.getElementById('halt-arache-result-detail').textContent='0 erreur · Tu peux tenter une barre plus lourde sans pénalité !';
+      btn.textContent='Tenter une barre plus lourde →';
+      HALT.aEssai=2; // marqué comme utilisé mais sans malus
+    } else {
+      document.getElementById('halt-arache-result-detail').textContent='Parfait sur les 2 essais !';
+      btn.textContent='Passer à l\'Épaulé-Jeté →';
+      HALT.aEssai=3;
+    }
   } else {
     document.getElementById('halt-arache-result-ico').textContent='💥';
     document.getElementById('halt-arache-result-msg').textContent='LA BARRE TOMBE !';
     document.getElementById('halt-arache-result-msg').style.color='var(--red)';
     const malMsg=HALT.aEssai===2?' · -10 pts (fatigue)':'';
     document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s)'+malMsg+' · Positions non révélées';
-  }
-  if(!success&&HALT.aEssai<2){
-    // Proposer 2ème essai
-    const btn=document.getElementById('halt-arache-result').querySelector('button');
-    btn.textContent='2ème essai (−10 pts de malus) →';
-    HALT.aEssai=2;
-    if(malus<0) HALT.aScore+=malus;
-  } else {
-    const btn=document.getElementById('halt-arache-result').querySelector('button');
-    btn.textContent='Passer à l\'Épaulé-Jeté →';
-    HALT.aEssai=3; // used both
+    if(HALT.aEssai<2){
+      btn.textContent='2ème essai (−10 pts de malus si raté) →';
+      HALT.aEssai=2;
+    } else {
+      btn.textContent='Passer à l\'Épaulé-Jeté →';
+      HALT.aEssai=3;
+    }
   }
   haltUpdateEssais();
 }
 
 function haltAracherSuite(){
   if(HALT.aEssai===2){
-    // 2ème essai — reprendre avec mêmes questions
-    HALT.aAnswers=new Array(HALT.aNbQ).fill(null); HALT.aQIdx=0;
+    // 2ème essai — retenter avec choix de barre (plus lourde ou même)
     document.getElementById('halt-arache-result').style.display='none';
-    document.getElementById('halt-arache-questions').style.display='flex';
-    document.getElementById('halt-btn-s1').onclick=()=>haltAracherAnswer('s1');
-    document.getElementById('halt-btn-s2').onclick=()=>haltAracherAnswer('s2');
-    haltAracherShowQ();
+    document.getElementById('halt-arache-choix').style.display='flex';
+    document.getElementById('halt-arache-questions').style.display='none';
   } else {
     haltStartEpaule();
   }
@@ -5635,11 +5654,8 @@ function haltEpauleAnswer(ans,correct){
     HALT.ejQIdx++;
     setTimeout(()=>{fb.textContent='';haltEpauleShowQ();},600);
   } else {
-    // Barre tombe, secret gardé
-    document.querySelectorAll('#halt-epaule-choices .biat-qcm-btn').forEach(b=>{
-      if(cv.includes(b.textContent.trim().toLowerCase()))b.classList.add('correct');
-    });
-    fb.textContent='💥 Barre tombe !';fb.style.color='var(--red)';
+    // Ne pas révéler la bonne réponse — secret gardé pour 2ème essai
+    fb.textContent='💥 Barre tombe — réponse gardée secrète';fb.style.color='var(--red)';
     if(HALT.ejEssai<2){
       HALT.ejEssai=2;
       setTimeout(()=>haltEpauleEchec(false),1500);
@@ -5739,6 +5755,7 @@ function haltJeteAnswer(ans,correct){
     document.getElementById('halt-epaule-result-msg').textContent='JETÉ MANQUÉ ! 0 pts';
     document.getElementById('halt-epaule-result-msg').style.color='var(--red)';
     const malMsg=HALT.ejEssai===2?' (avec malus fatigue)':'';
+    // Ne pas révéler la bonne réponse
     document.getElementById('halt-epaule-result-detail').textContent='Réponse gardée secrète'+malMsg;
     if(HALT.ejEssai<2){
       HALT.ejEssai=2;
