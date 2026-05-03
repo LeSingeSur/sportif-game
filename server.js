@@ -1061,6 +1061,8 @@ app.get('/api/debug/teams', (req, res) => {
 
 app.get('/api/scores/teams', (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
+  rebuildGlobalScores();
+  console.log('[TEAM] globalScores:'+globalScores.length+' accounts:'+Object.keys(accounts).length);
   // globalScores = [{pseudo, score}] — déjà calculé
   // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
   const teamData={};
