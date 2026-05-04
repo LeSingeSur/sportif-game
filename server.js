@@ -489,6 +489,24 @@ app.get('/api/athlete', (req, res) => {
     base.biatOrder         = athlete.biatOrder || [];
     base.maxScore = 200;
     console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
+  } else if (athlete.type === 'haltero') {
+    const ar = athlete.halteroArache || {};
+    const ej = athlete.halteroEpaule || {};
+    base.halteroArache = {
+      sportif1:  ar.sportif1  || '',
+      sportif2:  ar.sportif2  || '',
+      questions: (ar.questions||[]).map(q=>({criterion:q.criterion||'',answer:q.answer||'s1'}))
+    };
+    base.halteroEpaule = {
+      theme:     ej.theme     || '',
+      questions: (ej.questions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:q.wrong||[]})),
+      jete: {
+        question: ej.jete?.question || '',
+        answer:   ej.jete?.answer   || '',
+        wrong:    ej.jete?.wrong    || []
+      }
+    };
+    base.maxScore = 200;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.maxScore = 100;
