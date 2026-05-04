@@ -1112,6 +1112,41 @@ app.get('/api/scores/teams', (req, res) => {
   res.json({teams:result,minPlayers});
 });
 
+
+// ── MODIFIER UN SCORE ─────────────────────────────────────────────────────
+app.post('/api/admin/score/edit', async (req,res)=>{
+  const {password,athleteId,pseudo,newScore}=req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const id=String(athleteId);
+  if(!scores[id]) return res.status(404).json({error:'Défi introuvable'});
+  const entry=scores[id].find(e=>e.pseudo===pseudo);
+  if(!entry) return res.status(404).json({error:'Score introuvable'});
+  entry.score=Math.max(0,parseInt(newScore)||0);
+  if(db){
+    await db.collection('scores').updateOne(
+      {athleteId:id},
+      {$set:{'scores.$[e].score':entry.score}},
+      {arrayFilters:[{'e.pseudo':pseudo}]}
+    );
+  }
+  rebuildGlobalScores();
+  res.json({ok:true,score:entry.score});
+});
+
+// ── SUPPRIMER UN SCORE ────────────────────────────────────────────────────
+app.post('/api/admin/score/delete', async (req,res)=>{
+  const {password,athleteId,pseudo}=req.body;
+  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
+  const id=String(athleteId);
+  if(!scores[id]) return res.status(404).json({error:'Défi introuvable'});
+  scores[id]=scores[id].filter(e=>e.pseudo!==pseudo);
+  if(db){
+    await db.collection('scores').updateOne({athleteId:id},{$pull:{scores:{pseudo}}});
+  }
+  rebuildGlobalScores();
+  res.json({ok:true});
+});
+
 // ── COMPTES JOUEURS ────────────────────────────────────────────────────────
 // Simple hash PIN (pas de bcrypt pour garder simple)
 function hashPin(pin){ let h=0;for(const c of pin){h=(h<<5)-h+c.charCodeAt(0);h|=0;}return Math.abs(h).toString(36); }
