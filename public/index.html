@@ -919,8 +919,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Essais restants -->
     <div style="display:flex;justify-content:center;gap:8px;margin-bottom:4px">
-      <span style="font-size:11px;color:var(--mute)">ESSAIS :</span>
-      <span id="halt-essais" style="font-size:11px;font-weight:800;color:var(--neon)">●●</span>
+      <span id="halt-essais" style="font-size:12px;font-weight:700;color:var(--mute)">1er essai</span>
     </div>
 
     <!-- ARRACHÉ -->
@@ -5542,13 +5541,26 @@ function haltAracherEnd(){
   });
   const success=errors===0;
   const rawPts=success?HALT.aNbQ*20:0;
-  // Appliquer fatigue : -10 si 2ème essai et raté, ou si 2ème essai et réussi après 1er raté
-  const fatigue=(HALT.aEssai===2&&HALT.aPrevFailed)?-10:0;
-  const pts=Math.max(0,rawPts+fatigue);
-  if(success) HALT.aScore=pts;
-  else if(HALT.aEssai===2) HALT.aScore=0;
-  // Mettre à jour l'affichage du score
-  setScore(HALT.aScore+HALT.ejScore,false); // 2ème essai raté = 0
+  if(success){
+    if(HALT.aEssai===2&&HALT.aPrevFailed){
+      // 1er raté + 2ème réussi → pts - 10
+      HALT.aScore=Math.max(0,rawPts-10);
+    } else {
+      // 1er réussi ou 1er réussi + 2ème plus lourd réussi → pas de fatigue
+      HALT.aScore=rawPts;
+    }
+  } else {
+    // Raté
+    if(HALT.aEssai===2&&HALT.aPrevFailed){
+      // 1er raté + 2ème raté → -10 fatigue mais score = 0 (pas négatif)
+      HALT.aScore=0;
+    } else {
+      // 1er réussi + 2ème plus lourd raté → garder score du 1er, pas de fatigue
+      // HALT.aScore déjà = score du 1er essai, on ne touche pas
+    }
+  }
+  setScore(HALT.aScore+HALT.ejScore,false);
+  haltUpdateEssais(); // 2ème essai raté = 0
   document.getElementById('halt-arache-questions').style.display='none';
   document.getElementById('halt-arache-result').style.display='flex';
   const btn=document.getElementById('halt-arache-result').querySelector('button');
@@ -5557,13 +5569,13 @@ function haltAracherEnd(){
     const fatigueMsg=fatigue<0?' (fatigue −10)':'';
     document.getElementById('halt-arache-result-msg').textContent='BARRE VALIDÉE ! +'+pts+' pts'+fatigueMsg;
     document.getElementById('halt-arache-result-msg').style.color='var(--neon)';
-    if(HALT.aEssai<2){
-      document.getElementById('halt-arache-result-detail').textContent='0 erreur · Tente une barre plus lourde sans pénalité si tu réussis, −10 si tu rates !';
+    if(HALT.aEssai<2&&HALT.aNbQ<5){
+      document.getElementById('halt-arache-result-detail').textContent='0 erreur · Tu peux tenter une barre plus lourde. Si tu rates : tu gardes ces points (pas de fatigue).';
       btn.textContent='Tenter une barre plus lourde →';
       HALT.aEssai=2; HALT.aPrevFailed=false;
     } else {
-      document.getElementById('halt-arache-result-detail').textContent='Parfait !';
-      btn.textContent='Passer à l\'Épaulé-Jeté →';
+      document.getElementById('halt-arache-result-detail').textContent=HALT.aNbQ===5?'Barre max atteinte ! 💪':'2ème essai réussi !';
+      btn.textContent="Passer à l\'Épaulé-Jeté →";
       HALT.aEssai=3;
     }
   } else {
@@ -5571,12 +5583,13 @@ function haltAracherEnd(){
     document.getElementById('halt-arache-result-msg').textContent='LA BARRE TOMBE ! 0 pt';
     document.getElementById('halt-arache-result-msg').style.color='var(--red)';
     if(HALT.aEssai<2){
-      document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s) · Positions non révélées · −10 pts si tu rates encore';
+      document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s) · Positions non révélées · −10 pts si tu rates à nouveau';
       btn.textContent='2ème essai →';
       HALT.aEssai=2; HALT.aPrevFailed=true;
     } else {
-      document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s) · −10 pts fatigue appliqués · 0 pt Arraché';
-      btn.textContent='Passer à l\'Épaulé-Jeté →';
+      const malMsg=HALT.aPrevFailed?' · Fatigue −10 pts appliquée':'';
+      document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s)'+malMsg+' · 0 pt Arraché';
+      btn.textContent="Passer à l\'Épaulé-Jeté →";
       HALT.aEssai=3;
     }
   }
