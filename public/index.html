@@ -980,7 +980,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div id="halt-epaule-questions" style="display:none;flex-direction:column;gap:10px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div><span class="haltero-phase">ÉPAULÉ</span><div class="haltero-pts" id="halt-epaule-qnum">1/1</div></div>
-          <div style="text-align:right"><span class="haltero-phase">TEMPS</span><div class="haltero-pts" id="halt-epaule-timer">15</div></div>
+          <div style="text-align:right"><span class="haltero-phase">TEMPS</span><div class="haltero-pts" id="halt-epaule-timer">30</div></div>
         </div>
         <div style="height:3px;background:var(--c2);border-radius:99px"><div id="halt-epaule-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
         <div class="bj-theme" id="halt-epaule-question">Question…</div>
@@ -998,7 +998,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div><span class="haltero-phase">JETÉ</span></div>
-          <div style="text-align:right"><span class="haltero-phase">TEMPS</span><div class="haltero-pts" id="halt-jete-timer">15</div></div>
+          <div style="text-align:right"><span class="haltero-phase">TEMPS</span><div class="haltero-pts" id="halt-jete-timer">30</div></div>
         </div>
         <div style="height:3px;background:var(--c2);border-radius:99px"><div id="halt-jete-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
         <div class="bj-theme" id="halt-jete-question">Question…</div>
@@ -5551,13 +5551,11 @@ function haltAracherEnd(){
       HALT.aScore=pts; // 1er réussi ou 2ème après réussi sans fatigue
     }
   } else {
-    if(!HALT.aPrevFailed){
-      // 1er essai raté → score reste 0 pour l'instant
-      HALT.aScore=0;
-    } else {
-      // 2ème essai raté après 1er raté → 0
+    if(HALT.aPrevFailed){
+      // 1er raté + 2ème raté → 0
       HALT.aScore=0;
     }
+    // 1er réussi + 2ème raté → on ne touche pas HALT.aScore (garde le 1er)
   }
 
   setScore(HALT.aScore+HALT.ejScore,false);
@@ -5671,13 +5669,13 @@ function haltEpauleShowQ(){
 
 function haltEpauleStartTimer(){
   clearInterval(HALT.ejTimerInt);
-  let t=15;
+  let t=30;
   document.getElementById('halt-epaule-timer').textContent=t;
   document.getElementById('halt-epaule-bar').style.width='100%';
   HALT.ejTimerInt=setInterval(()=>{
     t--;
     document.getElementById('halt-epaule-timer').textContent=t;
-    document.getElementById('halt-epaule-bar').style.width=(t/15*100)+'%';
+    document.getElementById('halt-epaule-bar').style.width=(t/30*100)+'%';
     if(t<=0){clearInterval(HALT.ejTimerInt);haltEpauleAnswer('__TIMEOUT__',HALT.data.halteroEpaule?.questions?.[HALT.ejQIdx]?.answer||'');}
   },1000);
 }
@@ -5766,13 +5764,13 @@ function haltStartJete(){
   }
   // Timer jeté
   clearInterval(HALT.ejTimerInt);
-  let t=15;
+  let t=30;
   document.getElementById('halt-jete-timer').textContent=t;
   document.getElementById('halt-jete-bar').style.width='100%';
   HALT.ejTimerInt=setInterval(()=>{
     t--;
     document.getElementById('halt-jete-timer').textContent=t;
-    document.getElementById('halt-jete-bar').style.width=(t/15*100)+'%';
+    document.getElementById('halt-jete-bar').style.width=(t/30*100)+'%';
     if(t<=0){clearInterval(HALT.ejTimerInt);haltJeteAnswer('__TIMEOUT__',HALT.data.halteroEpaule?.jete?.answer||'');}
   },1000);
 }
