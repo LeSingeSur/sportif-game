@@ -5434,7 +5434,7 @@ const HALT={
 
 function setupHalteroMode(data){
   HALT.data=data; HALT.aEssai=1; HALT.aScore=0; HALT.ejEssai=1; HALT.ejScore=0;
-  HALT.totalScore=0; HALT.done=false; HALT.aPrevFailed=false;
+  HALT.totalScore=0; HALT.done=false; HALT.aPrevFailed=false; HALT.ejPrevFailed=false;
   hideAllZones();
   document.getElementById('haltero-zone').style.display='flex';
   const modal=document.getElementById('haltero-rules-modal');
@@ -5548,14 +5548,13 @@ function haltAracherEnd(){
     if(HALT.aEssai===2&&HALT.aPrevFailed){
       HALT.aScore=Math.max(0,pts-10); // 1er raté + 2ème réussi → -10 fatigue
     } else {
-      HALT.aScore=pts; // 1er réussi ou 2ème après réussi sans fatigue
+      HALT.aScore=Math.max(HALT.aScore,pts); // garder le meilleur score
     }
   } else {
     if(HALT.aPrevFailed){
-      // 1er raté + 2ème raté → 0
-      HALT.aScore=0;
+      HALT.aScore=0; // 1er raté + 2ème raté → 0
     }
-    // 1er réussi + 2ème raté → on ne touche pas HALT.aScore (garde le 1er)
+    // 1er réussi + 2ème raté → HALT.aScore inchangé
   }
 
   setScore(HALT.aScore+HALT.ejScore,false);
@@ -5642,7 +5641,7 @@ function haltEpauleShowQ(){
   const d=HALT.data.halteroEpaule||{};
   const q=(d.questions||[])[HALT.ejQIdx];
   if(!q||HALT.ejQIdx>=HALT.ejNbQ){haltStartJete();return;}
-  const nChoices=EPAULE_CHOICES[HALT.ejQIdx]||2;
+  const nChoices=EPAULE_CHOICES[HALT.ejQIdx]??2;
   document.getElementById('halt-epaule-qnum').textContent=(HALT.ejQIdx+1)+'/'+HALT.ejNbQ;
   document.getElementById('halt-epaule-question').textContent=q.question;
   document.getElementById('halt-epaule-fb').textContent='';
@@ -5719,14 +5718,15 @@ function haltEpauleEchec(final){
   document.getElementById('halt-epaule-result-msg').textContent='BARRE TOMBÉE !';
   document.getElementById('halt-epaule-result-msg').style.color='var(--red)';
   if(!final){
-    document.getElementById('halt-epaule-result-detail').textContent='Réponse gardée secrète · 2ème essai avec -10 pts';
+    document.getElementById('halt-epaule-result-detail').textContent='Réponse gardée secrète · Choisis ta barre pour le 2ème essai';
     const btn=document.getElementById('halt-epaule-result').querySelector('button');
-    btn.textContent='2ème essai →';
+    btn.textContent='2ème essai (choix libre de la barre) →';
     btn.onclick=()=>{
-      HALT.ejQIdx=0;
+      HALT.ejQIdx=0; HALT.ejPrevFailed=true;
       document.getElementById('halt-epaule-result').style.display='none';
-      document.getElementById('halt-epaule-questions').style.display='flex';
-      haltEpauleShowQ();
+      document.getElementById('halt-epaule-choix').style.display='flex';
+      document.getElementById('halt-epaule-zone').style.display='flex';
+      haltUpdateEssais();
     };
   } else {
     document.getElementById('halt-epaule-result-detail').textContent='2 essais utilisés · 0 pts Épaulé-Jeté';
@@ -5743,7 +5743,7 @@ function haltStartJete(){
   document.getElementById('halt-jete-zone').style.display='flex';
   const jete=HALT.data.halteroEpaule?.jete||{};
   document.getElementById('halt-jete-question').textContent=jete.question||'?';
-  const nChoices=EPAULE_CHOICES[HALT.ejNbQ-1]||2;
+  const nChoices=EPAULE_CHOICES[HALT.ejNbQ-1]??2;
   const choicesEl=document.getElementById('halt-jete-choices');
   const inputEl=document.getElementById('halt-jete-input');
   if(nChoices===0){
@@ -5790,26 +5790,53 @@ function haltJeteAnswer(ans,correct){
   document.getElementById('halt-epaule-result').style.display='flex';
   if(ok){
     HALT.ejScore=HALT.ejNbQ*25;
+    // Appliquer fatigue si 2ème essai après 1er raté
+    if(HALT.ejEssai===2&&HALT.ejPrevFailed){
+      HALT.ejScore=Math.max(0,HALT.ejScore-10);
+      document.getElementById('halt-epaule-result-detail').textContent='Épaulé + Jeté réussis ! Fatigue −10 pts.';
+    } else {
+      document.getElementById('halt-epaule-result-detail').textContent='Épaulé + Jeté réussis !';
+    }
     document.getElementById('halt-epaule-result-ico').textContent='🏆';
     document.getElementById('halt-epaule-result-msg').textContent='BARRE VALIDÉE ! +'+HALT.ejScore+' pts';
     document.getElementById('halt-epaule-result-msg').style.color='var(--cyan)';
-    document.getElementById('halt-epaule-result-detail').textContent='Épaulé + Jeté réussis !';
+    // Proposer 2ème essai pour plus lourd si pas max et 1er essai
+    if(HALT.ejEssai<2&&HALT.ejNbQ<4){
+      document.getElementById('halt-epaule-result-detail').textContent='Réussi ! Tente une barre plus lourde. Si tu rates : tu gardes ces pts (pas de fatigue).';
+      const btn=document.getElementById('halt-epaule-result').querySelector('button');
+      btn.textContent='Tenter une barre plus lourde →';
+      btn.onclick=()=>{
+        HALT.ejEssai=2; HALT.ejPrevFailed=false;
+        document.getElementById('halt-epaule-result').style.display='none';
+        document.getElementById('halt-epaule-choix').style.display='flex';
+        document.getElementById('halt-epaule-zone').style.display='flex';
+        haltUpdateEssais();
+      };
+      haltUpdateEssais();
+      return;
+    }
   } else {
-    HALT.ejScore=0;
+    // Garder le meilleur score (si 2ème raté après 1er réussi)
+    if(!HALT.ejPrevFailed) {
+      // Ne pas toucher ejScore - garder le 1er
+    } else {
+      HALT.ejScore=0;
+    }
     document.getElementById('halt-epaule-result-ico').textContent='💥';
-    document.getElementById('halt-epaule-result-msg').textContent='JETÉ MANQUÉ ! 0 pts';
+    document.getElementById('halt-epaule-result-msg').textContent='JETÉ MANQUÉ !';
     document.getElementById('halt-epaule-result-msg').style.color='var(--red)';
-    const malMsg=HALT.ejEssai===2?' (avec malus fatigue)':'';
-    // Ne pas révéler la bonne réponse
-    document.getElementById('halt-epaule-result-detail').textContent='Réponse gardée secrète'+malMsg;
+    document.getElementById('halt-epaule-result-detail').textContent='Réponse gardée secrète'+(HALT.ejEssai===2&&HALT.ejPrevFailed?' · Fatigue −10 appliquée':'');
     if(HALT.ejEssai<2){
-      HALT.ejEssai=2;
-      document.getElementById('halt-epaule-result').querySelector('button').textContent='2ème essai →';
-      document.getElementById('halt-epaule-result').querySelector('button').onclick=()=>{
+      HALT.ejEssai=2; HALT.ejPrevFailed=true;
+      const btn=document.getElementById('halt-epaule-result').querySelector('button');
+      btn.textContent='2ème essai (choix libre de la barre) →';
+      btn.onclick=()=>{
         HALT.ejQIdx=0;
         document.getElementById('halt-epaule-result').style.display='none';
-        document.getElementById('halt-epaule-questions').style.display='flex';
-        haltEpauleShowQ();
+        // Proposer choix de poids pour le 2ème essai
+        document.getElementById('halt-epaule-choix').style.display='flex';
+        document.getElementById('halt-epaule-zone').style.display='flex';
+        haltUpdateEssais();
       };
       haltUpdateEssais();
       return;
