@@ -2584,17 +2584,17 @@ async function loadAdminScores(){
       const d=document.createElement('div');
       d.style.cssText='display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;cursor:pointer';
       d.innerHTML=`<div style="font-size:20px">${a.emoji}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)} ${typeLabel}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
-      d.onclick=()=>showAthleteScores(a.id, a.answer);
+      d.onclick=()=>showAthleteScores(a.id, a.answer||'Défi');
       sel.appendChild(d);
     });
     if(!athletes.length) sel.innerHTML='<div style="color:var(--mute);font-size:13px">Aucun défi.</div>';
   }catch(err){sel.innerHTML='<div style="color:var(--red);font-size:13px">Erreur.</div>';}
 }
 
-async function showAthleteScores(id){
-  const btn=document.querySelector(`.btn-scores[onclick="showAthleteScores(${id})"]`);
-  const name=btn?btn.dataset.name:'Défi';
+async function showAthleteScores(id,name='Défi'){
+  const currentAthId=id;
   document.getElementById('modal-title-text').textContent='📊 '+name;
+  document.getElementById('modal-body').dataset.athId=id;
   document.getElementById('modal-body').innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Chargement…</div>';
   document.getElementById('scores-modal').classList.add('on');
   try{
@@ -2608,11 +2608,33 @@ async function showAthleteScores(id){
     body.innerHTML='';
     data.scores.forEach((e,i)=>{
       const medals=['🥇','🥈','🥉'];
-      const d=document.createElement('div');d.className='score-item';
-      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${new Date(e.date).toLocaleDateString('fr-FR')} ${new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div><div class="score-pts">${e.score}</div>`;
+      const d=document.createElement('div');d.className='score-item';d.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:10px;padding:8px 12px;margin-bottom:6px';
+      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:13px">${esc(e.pseudo)}</div><div style="font-size:11px;color:var(--mute)">${new Date(e.date).toLocaleDateString('fr-FR')}</div></div>
+        <input type="number" value="${e.score}" min="0" max="9999" style="width:60px;background:var(--c1);border:1px solid rgba(255,255,255,.1);color:var(--neon);font-size:14px;font-weight:800;border-radius:6px;padding:4px 6px;text-align:center;font-family:var(--ff)" id="score-inp-${i}">
+        <button onclick="editScore('${id}','${esc(e.pseudo)}',${i})" style="background:var(--neon);color:#000;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer">✓</button>
+        <button onclick="deleteScore('${id}','${esc(e.pseudo)}')" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">🗑</button>`;
       body.appendChild(d);
     });
   }catch(err){document.getElementById('modal-body').innerHTML='<div style="color:var(--red);text-align:center;padding:20px">Erreur.</div>';}
+}
+
+async function editScore(athleteId,pseudo,idx){
+  const inp=document.getElementById('score-inp-'+idx);
+  const newScore=parseInt(inp?.value)||0;
+  const r=await fetch('/api/admin/score/edit',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,athleteId,pseudo,newScore})});
+  const d=await r.json();
+  if(d.ok){inp.style.borderColor='var(--neon)';setTimeout(()=>inp.style.borderColor='rgba(255,255,255,.1)',1000);}
+  else alert('Erreur: '+d.error);
+}
+
+async function deleteScore(athleteId,pseudo){
+  if(!confirm('Supprimer le score de '+pseudo+' ?')) return;
+  const r=await fetch('/api/admin/score/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,athleteId,pseudo})});
+  const d=await r.json();
+  if(d.ok) showAthleteScores(athleteId, document.getElementById('modal-title-text').textContent.replace('📊 ',''));
 }
 
 document.getElementById('modal-close-btn').onclick=()=>document.getElementById('scores-modal').classList.remove('on');

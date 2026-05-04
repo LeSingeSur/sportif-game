@@ -5434,14 +5434,14 @@ const HALT={
   // Arraché
   aEssai:1, aScore:0, aNbQ:0, aAnswers:[], aTimerInt:null, aQIdx:0,
   // Épaulé-Jeté
-  ejEssai:1, ejScore:0, ejNbQ:0, ejTimerInt:null, ejQIdx:0,
+  ejEssai:1, ejScore:0, ejNbQ:0, ejTimerInt:null, ejQIdx:0, ejPrevScore:0,
   // Total
   totalScore:0, done:false
 };
 
 function setupHalteroMode(data){
   HALT.data=data; HALT.aEssai=1; HALT.aScore=0; HALT.ejEssai=1; HALT.ejScore=0;
-  HALT.totalScore=0; HALT.done=false; HALT.aPrevFailed=false; HALT.ejPrevFailed=false;
+  HALT.totalScore=0; HALT.done=false; HALT.aPrevFailed=false; HALT.ejPrevFailed=false; HALT.ejPrevScore=0;
   hideAllZones();
   document.getElementById('haltero-zone').style.display='flex';
   const modal=document.getElementById('haltero-rules-modal');
@@ -5735,17 +5735,24 @@ function haltEpauleEchec(final){
     const btn=document.getElementById('halt-epaule-result').querySelector('button');
     btn.textContent='2ème essai (choix libre de la barre) →';
     btn.onclick=()=>{
-      HALT.ejQIdx=0; HALT.ejPrevFailed=true;
+      HALT.ejQIdx=0;
+      if(HALT.ejPrevScore===0) HALT.ejPrevFailed=true; // fatigue seulement si 1er raté
       document.getElementById('halt-epaule-result').style.display='none';
       document.getElementById('halt-epaule-choix').style.display='flex';
       document.getElementById('halt-epaule-zone').style.display='flex';
       haltUpdateEssais();
     };
   } else {
-    document.getElementById('halt-epaule-result-detail').textContent='2 essais utilisés · 0 pts Épaulé-Jeté';
+    if(HALT.ejPrevScore>0){
+      // 1er réussi + 2ème raté → garder score du 1er
+      HALT.ejScore=HALT.ejPrevScore;
+      document.getElementById('halt-epaule-result-detail').textContent='Barre tombée · Score du 1er essai conservé : '+HALT.ejScore+' pts';
+    } else {
+      HALT.ejScore=0;
+      document.getElementById('halt-epaule-result-detail').textContent='2 essais utilisés · 0 pts Épaulé-Jeté';
+    }
     document.getElementById('halt-epaule-result').querySelector('button').textContent='Voir mon score →';
     document.getElementById('halt-epaule-result').querySelector('button').onclick=haltFinish;
-    HALT.ejScore=0;
   }
   haltUpdateEssais();
 }
@@ -5820,10 +5827,11 @@ function haltJeteAnswer(ans,correct){
     document.getElementById('halt-epaule-result-msg').style.color='var(--cyan)';
     // Proposer 2ème essai pour plus lourd si pas max et 1er essai
     if(HALT.ejEssai<2&&HALT.ejNbQ<4){
-      document.getElementById('halt-epaule-result-detail').textContent='Réussi ! Tente une barre plus lourde. Si tu rates : tu gardes ces pts (pas de fatigue).';
+      document.getElementById('halt-epaule-result-detail').textContent='Réussi ! Tente une barre plus lourde. Si tu rates : tu gardes ces '+HALT.ejScore+' pts (pas de fatigue).';
       const btn=document.getElementById('halt-epaule-result').querySelector('button');
       btn.textContent='Tenter une barre plus lourde →';
       btn.onclick=()=>{
+        HALT.ejPrevScore=HALT.ejScore; // sauvegarder score 1er essai
         HALT.ejEssai=2; HALT.ejPrevFailed=false;
         document.getElementById('halt-epaule-result').style.display='none';
         document.getElementById('halt-epaule-choix').style.display='flex';
@@ -5835,9 +5843,9 @@ function haltJeteAnswer(ans,correct){
     }
   } else {
     // Garder le meilleur score (si 2ème raté après 1er réussi)
-    if(!HALT.ejPrevFailed) {
-      // Ne pas toucher ejScore - garder le 1er
-    } else {
+    if(HALT.ejPrevScore>0){
+      HALT.ejScore=HALT.ejPrevScore; // garder score du 1er essai
+    } else if(HALT.ejPrevFailed){
       HALT.ejScore=0;
     }
     document.getElementById('halt-epaule-result-ico').textContent='💥';
