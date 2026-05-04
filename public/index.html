@@ -5456,8 +5456,11 @@ function haltStartFromModal(){
 }
 
 function haltUpdateEssais(){
-  const a=HALT.aEssai;const ej=HALT.ejEssai;
-  document.getElementById('halt-essais').textContent='A:'+(['●','●●'][a-1]||'○')+' EJ:'+(['●','●●'][ej-1]||'○');
+  const el=document.getElementById('halt-essais');
+  if(!el)return;
+  const inArache=document.getElementById('halt-arache-zone')?.style.display!=='none';
+  const essai=inArache?HALT.aEssai:HALT.ejEssai;
+  el.textContent=essai<=1?'1er essai':'2ème essai';
 }
 
 // ── ARRACHÉ ──────────────────────────────────────────────────────────────
@@ -5598,10 +5601,12 @@ function haltAracherEnd(){
 
 function haltAracherSuite(){
   if(HALT.aEssai===2){
-    // 2ème essai — retenter avec choix de barre (plus lourde ou même)
+    // 2ème essai — retenter avec choix de barre
     document.getElementById('halt-arache-result').style.display='none';
-    document.getElementById('halt-arache-choix').style.display='flex';
     document.getElementById('halt-arache-questions').style.display='none';
+    document.getElementById('halt-arache-zone').style.display='flex';
+    document.getElementById('halt-arache-choix').style.display='flex';
+    haltUpdateEssais();
   } else {
     haltStartEpaule();
   }
