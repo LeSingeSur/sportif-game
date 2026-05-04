@@ -5539,60 +5539,63 @@ function haltAracherEnd(){
   const d=HALT.data.halteroArache||{};
   const questions=d.questions||[];
   let errors=0;
-  HALT.aAnswers.forEach((ans,i)=>{
-    if(!ans||ans!==questions[i]?.answer) errors++;
-  });
+  HALT.aAnswers.forEach((ans,i)=>{ if(!ans||ans!==questions[i]?.answer) errors++; });
   const success=errors===0;
-  const rawPts=success?HALT.aNbQ*20:0;
+
+  // Calcul score
   if(success){
+    const pts=HALT.aNbQ*20;
     if(HALT.aEssai===2&&HALT.aPrevFailed){
-      // 1er raté + 2ème réussi → pts - 10
-      HALT.aScore=Math.max(0,rawPts-10);
+      HALT.aScore=Math.max(0,pts-10); // 1er raté + 2ème réussi → -10 fatigue
     } else {
-      // 1er réussi ou 1er réussi + 2ème plus lourd réussi → pas de fatigue
-      HALT.aScore=rawPts;
+      HALT.aScore=pts; // 1er réussi ou 2ème après réussi sans fatigue
     }
   } else {
-    // Raté
-    if(HALT.aEssai===2&&HALT.aPrevFailed){
-      // 1er raté + 2ème raté → -10 fatigue mais score = 0 (pas négatif)
+    if(!HALT.aPrevFailed){
+      // 1er essai raté → score reste 0 pour l'instant
       HALT.aScore=0;
     } else {
-      // 1er réussi + 2ème plus lourd raté → garder score du 1er, pas de fatigue
-      // HALT.aScore déjà = score du 1er essai, on ne touche pas
+      // 2ème essai raté après 1er raté → 0
+      HALT.aScore=0;
     }
   }
+
   setScore(HALT.aScore+HALT.ejScore,false);
-  haltUpdateEssais(); // 2ème essai raté = 0
   document.getElementById('halt-arache-questions').style.display='none';
   document.getElementById('halt-arache-result').style.display='flex';
   const btn=document.getElementById('halt-arache-result').querySelector('button');
+
   if(success){
+    const fatigueMsg=(HALT.aEssai===2&&HALT.aPrevFailed)?' (fatigue −10)':'';
     document.getElementById('halt-arache-result-ico').textContent='🏆';
-    const fatigueMsg=fatigue<0?' (fatigue −10)':'';
-    document.getElementById('halt-arache-result-msg').textContent='BARRE VALIDÉE ! +'+pts+' pts'+fatigueMsg;
+    document.getElementById('halt-arache-result-msg').textContent='BARRE VALIDÉE ! +'+HALT.aScore+' pts'+fatigueMsg;
     document.getElementById('halt-arache-result-msg').style.color='var(--neon)';
     if(HALT.aEssai<2&&HALT.aNbQ<5){
-      document.getElementById('halt-arache-result-detail').textContent='0 erreur · Tu peux tenter une barre plus lourde. Si tu rates : tu gardes ces points (pas de fatigue).';
+      // 1er essai réussi, peut tenter plus lourd
+      document.getElementById('halt-arache-result-detail').textContent='Si tu rates la prochaine barre : tu gardes ces '+HALT.aScore+' pts (pas de fatigue).';
       btn.textContent='Tenter une barre plus lourde →';
       HALT.aEssai=2; HALT.aPrevFailed=false;
     } else {
-      document.getElementById('halt-arache-result-detail').textContent=HALT.aNbQ===5?'Barre max atteinte ! 💪':'2ème essai réussi !';
-      btn.textContent="Passer à l\'Épaulé-Jeté →";
+      document.getElementById('halt-arache-result-detail').textContent=HALT.aNbQ===5?'Barre maximale ! 💪':'Parfait !';
+      btn.textContent="Passer à l'Épaulé-Jeté →";
       HALT.aEssai=3;
     }
   } else {
     document.getElementById('halt-arache-result-ico').textContent='💥';
-    document.getElementById('halt-arache-result-msg').textContent='LA BARRE TOMBE ! 0 pt';
+    document.getElementById('halt-arache-result-msg').textContent='LA BARRE TOMBE !';
     document.getElementById('halt-arache-result-msg').style.color='var(--red)';
     if(HALT.aEssai<2){
+      // 1er essai raté → 2ème dispo
       document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s) · Positions non révélées · −10 pts si tu rates à nouveau';
       btn.textContent='2ème essai →';
+      btn.onclick=haltAracherSuite;
       HALT.aEssai=2; HALT.aPrevFailed=true;
     } else {
-      const malMsg=HALT.aPrevFailed?' · Fatigue −10 pts appliquée':'';
+      // 2ème essai raté → fin arraché
+      const malMsg=HALT.aPrevFailed?' · Fatigue −10 appliquée':'';
       document.getElementById('halt-arache-result-detail').textContent=errors+' erreur(s)'+malMsg+' · 0 pt Arraché';
-      btn.textContent="Passer à l\'Épaulé-Jeté →";
+      btn.textContent="Passer à l'Épaulé-Jeté →";
+      btn.onclick=haltAracherSuite;
       HALT.aEssai=3;
     }
   }
