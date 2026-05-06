@@ -234,6 +234,15 @@ app.get('/api/preview', (req, res) => {
       }
     };
     base.maxScore = 200;
+  } else if (athlete.type === 'pentathlon') {
+    const p=athlete.pentathlon||{};
+    base.pentathlon={
+      escrime:  { questions:(p.escrime?.questions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||[]})) },
+      natation: { questions:(p.natation?.questions||[]).map(q=>({q:q.q||'',a:q.a||''})), timer:p.natation?.timer||45 },
+      equitation:{ obstacles:(p.equitation?.obstacles||[]).map(o=>({q:o.q||'',a:o.a||'',level:o.level||'moyen'})) },
+      laserrun:  { cycles:(p.laserrun?.cycles||[]).map(c=>({vf:{q:c.vf?.q||'',a:c.vf?.a||'Vrai'},tir:{q:c.tir?.q||'',a:c.tir?.a||''}})), timer:p.laserrun?.timer||60 }
+    };
+    base.maxScore=400;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.maxScore = 100;
@@ -1112,12 +1121,16 @@ app.get('/api/debug/teams', (req, res) => {
 
 app.get('/api/scores/teams', async (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
-  // Recharger les comptes depuis MongoDB pour avoir les teamId frais
   if(db){
     try{
-      const freshAccs=await db.collection('accounts').find({}).toArray();
+      // Recharger comptes ET scores depuis MongoDB
+      const [freshAccs, freshScores]=await Promise.all([
+        db.collection('accounts').find({}).toArray(),
+        db.collection('scores').find({}).toArray()
+      ]);
       freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
-    }catch(e){}
+      freshScores.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
+    }catch(e){ console.error('teams reload error:',e.message); }
   }
   rebuildGlobalScores();
   // globalScores = [{pseudo, score}] — déjà calculé
