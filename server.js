@@ -489,6 +489,15 @@ app.get('/api/athlete', (req, res) => {
     base.biatOrder         = athlete.biatOrder || [];
     base.maxScore = 200;
     console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
+  } else if (athlete.type === 'pentathlon') {
+    const p=athlete.pentathlon||{};
+    base.pentathlon={
+      escrime:  { questions:(p.escrime?.questions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||[]})) },
+      natation: { questions:(p.natation?.questions||[]).map(q=>({q:q.q||'',a:q.a||''})), timer:p.natation?.timer||45 },
+      equitation:{ obstacles:(p.equitation?.obstacles||[]).map(o=>({q:o.q||'',a:o.a||'',w:o.w||[],level:o.level||'moyen'})) },
+      laserrun:  { cycles:(p.laserrun?.cycles||[]).map(c=>({vf:{q:c.vf?.q||'',a:c.vf?.a||''},tir:{q:c.tir?.q||'',a:c.tir?.a||'',w:c.tir?.w||[]}})), timer:p.laserrun?.timer||60 }
+    };
+    base.maxScore=400;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -744,7 +753,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'pentathlon') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -758,7 +767,7 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'pentathlon' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
@@ -826,6 +835,7 @@ app.post('/api/admin/athlete', (req, res) => {
     bjAnswers:  type === 'blackjack' ? (req.body.bjAnswers||{}) : undefined,
     grimpeTheme:   type === 'grimpe' ? (req.body.grimpeTheme||'').trim() : undefined,
     grimpeAnswers: type === 'grimpe' ? (req.body.grimpeAnswers||[]).map(s=>String(s).trim()).filter(Boolean) : undefined,
+    pentathlon:         type === 'pentathlon' ? (req.body.pentathlon||{}) : undefined,
     halteroArache:      type === 'haltero' ? (req.body.halteroArache||{}) : undefined,
     halteroEpaule:      type === 'haltero' ? (req.body.halteroEpaule||{}) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
@@ -909,13 +919,22 @@ app.post('/api/admin/reset-athlete/:id', (req, res) => {
 app.post('/api/biathlon-check', (req, res) => {
   const { athleteId, answer } = req.body;
   const athlete = athletes.find(a => String(a.id) === String(athleteId));
-  console.log(`[BIATHLON-CHECK] id=${athleteId} found=${!!athlete} type=${athlete?.type} answer="${answer}"`);
-  if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable', athleteId, found: !!athlete, type: athlete?.type });
+  if (!athlete || athlete.type !== 'biathlon') return res.status(404).json({ error: 'Défi introuvable' });
   const normAns = norm(answer||'');
   const allAnswers = (athlete.biatSprintAnswers||[]);
   const matched = allAnswers.find(a => {
     const variants = a.split(';').map(v=>v.trim());
-    return variants.some(v => lev(norm(v), normAns) <= 1);
+    // Auto-generate name/lastname variants
+    const allVariants = [];
+    variants.forEach(v => {
+      allVariants.push(v);
+      const parts = v.trim().split(/\s+/);
+      if(parts.length >= 2) {
+        allVariants.push(parts[parts.length-1]); // nom de famille
+        allVariants.push(parts[0]); // prénom
+      }
+    });
+    return allVariants.some(v => lev(norm(v), normAns) <= 1);
   });
   const mainAnswer = matched ? matched.split(';')[0].trim() : null;
   res.json({ correct: !!matched, answer: mainAnswer });
@@ -1091,10 +1110,16 @@ app.get('/api/debug/teams', (req, res) => {
   });
 });
 
-app.get('/api/scores/teams', (req, res) => {
+app.get('/api/scores/teams', async (req, res) => {
   const minPlayers=parseInt(req.query.min)||1;
+  // Recharger les comptes depuis MongoDB pour avoir les teamId frais
+  if(db){
+    try{
+      const freshAccs=await db.collection('accounts').find({}).toArray();
+      freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+    }catch(e){}
+  }
   rebuildGlobalScores();
-  console.log('[TEAM] globalScores:'+globalScores.length+' accounts:'+Object.keys(accounts).length);
   // globalScores = [{pseudo, score}] — déjà calculé
   // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
   const teamData={};
