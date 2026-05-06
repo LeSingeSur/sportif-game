@@ -521,6 +521,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🔍</div><div class="gt-name">Le Scout</div></div>
       <div class="gt-item"><div class="gt-ico">💬</div><div class="gt-name">Réplique</div></div>
       <div class="gt-item"><div class="gt-ico">🚴</div><div class="gt-name">L'Alpe d'Huez</div></div>
+      <div class="gt-item"><div class="gt-ico">🎿</div><div class="gt-name">Biathlon</div></div>
+      <div class="gt-item"><div class="gt-ico">🔗</div><div class="gt-name">Maillon Faible</div></div>
+      <div class="gt-item"><div class="gt-ico">🏋️</div><div class="gt-name">Haltéro-Quiz</div></div>
+      <div class="gt-item"><div class="gt-ico">🏅</div><div class="gt-name">Pentathlon</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -4820,8 +4824,7 @@ async function showTab(tabId,list){
       const data=await res.json();
       list.innerHTML='';
       if(!data.teams||!data.teams.length){
-        const d=data._debug||{};
-        list.innerHTML=`<div class="empty">Aucune équipe avec des scores.<br><span style="font-size:10px;color:var(--mute)">Comptes avec équipe: ${d.accountsWithTeam||0} · Joueurs matchés: ${d.playerBest||0}</span></div>`;
+        list.innerHTML='<div class="empty">Aucune équipe avec des scores. 🚀</div>';
         return;
       }
       data.teams.forEach((t,i)=>{
@@ -6209,7 +6212,7 @@ function natAnswer(ans){
   const ok=ans===(q?.a||'Vrai');
   const fb=document.getElementById('nat-fb');
   if(ok){
-    PENTA.score.natation=Math.min(100,PENTA.score.natation+Math.round(100/(qs.length)));
+    PENTA.score.natation=Math.min(100,PENTA.score.natation+Math.round(100/Math.max(1,qs.length)));
     pentaUpdateTotal();
     fb.textContent='✅';fb.style.color='var(--neon)';
   } else {
