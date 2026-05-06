@@ -257,6 +257,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
+          <div class="type-opt" id="type-pentathlon" onclick="selectType('pentathlon')">
+            <div class="type-ico">🏅</div>
+            <div class="type-name">Pentathlon</div>
+            <div class="type-desc">4 épreuves · 400 pts</div>
+          </div>
           <div class="type-opt" id="type-haltero" onclick="selectType('haltero')">
             <div class="type-ico">🏋️</div>
             <div class="type-name">Haltéro-Quiz</div>
@@ -272,6 +277,42 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Biathlon</div>
             <div class="type-desc">Course + Tir</div>
           </div>
+        </div>
+      </div>
+
+      <!-- PENTATHLON FIELDS -->
+      <div id="pentathlon-fields" style="display:none">
+        <!-- ESCRIME -->
+        <div class="field">
+          <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">🤺 ESCRIME — 100 pts · Multiplicateur + Rompre</div>
+          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 questions · Bonne réponse = touche (+20pts×multiplicateur) · Erreur = reset multiplicateur · Rompre = sécuriser sans répondre</div>
+          <div id="penta-escrime-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-escrime" style="margin-top:6px">➕ Question</button>
+        </div>
+        <!-- NATATION -->
+        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
+          <div style="font-family:var(--fh);font-size:12px;color:var(--cyan);letter-spacing:2px;margin-bottom:6px">🏊 NATATION — 100 pts · Vrai/Faux chronométré</div>
+          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">Questions vrai/faux · Chaque erreur −5s · Timer global</div>
+          <label>Timer (secondes)</label>
+          <input type="number" id="penta-natation-timer" value="45" min="20" max="120" style="max-width:80px;margin-bottom:8px">
+          <div id="penta-natation-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-natation" style="margin-top:6px">➕ Question V/F</button>
+        </div>
+        <!-- ÉQUITATION -->
+        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
+          <div style="font-family:var(--fh);font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:6px">🏇 ÉQUITATION — 100 pts · Ordre stratégique</div>
+          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 obstacles · Le joueur choisit l'ordre avant de commencer · Erreur = chute, parcours arrêté</div>
+          <div id="penta-equitation-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-equitation" style="margin-top:6px">➕ Obstacle</button>
+        </div>
+        <!-- LASER-RUN -->
+        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
+          <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:6px">🔫 LASER-RUN — 100 pts · Course + Tir alternés</div>
+          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 cycles · Chaque cycle = V/F (course) + question ouverte (tir) · Timer global 60s</div>
+          <label>Timer (secondes)</label>
+          <input type="number" id="penta-laserrun-timer" value="60" min="30" max="120" style="max-width:80px;margin-bottom:8px">
+          <div id="penta-laserrun-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-laserrun" style="margin-top:6px">➕ Cycle (V/F + Tir)</button>
         </div>
       </div>
 
@@ -993,6 +1034,7 @@ function selectType(type){
   document.getElementById('biathlon-fields').style.display      = type==='biathlon'?'block':'none';
   document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
+  document.getElementById('pentathlon-fields').style.display    = type==='pentathlon'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -1003,7 +1045,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='pentathlon';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -1334,6 +1376,7 @@ function cancelEdit(){
   document.getElementById('grimpe-theme-in').value='';grimpeItems=[];if(typeof renderGrimpeItems==='function')renderGrimpeItems();
   if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value='';
   mfQuestions=[];renderMFQuestions();
+  pentaEscrimeQ=[];pentaNatationQ=[];pentaEquitationQ=[];pentaLaserrunQ=[];
   haQuestions=[];hejQuestions=[];
   if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value='';
   if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value='';
@@ -1443,11 +1486,12 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='pentathlon') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
-  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in').value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1&&biatQCMItems.length>=1&&biatOrderItems.filter(x=>x.trim()).length>=2;
+  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
+  else if(currentType==='pentathlon') hasContent=pentaEscrimeQ.length>=1;
   else if(currentType==='haltero'){
     const s1=document.getElementById('ha-s1');
     hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
@@ -1593,6 +1637,111 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
+// ── PENTATHLON ADMIN ──────────────────────────────────────────────────────
+let pentaEscrimeQ=[], pentaNatationQ=[], pentaEquitationQ=[], pentaLaserrunQ=[];
+
+function renderPentaList(items,containerId,renderFn){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML='';
+  items.forEach((item,i)=>renderFn(item,i,el));
+  checkReady();
+}
+
+function pentaQDiv(content,onDelete){
+  const d=document.createElement('div');
+  d.style.cssText='background:var(--c2);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px';
+  d.innerHTML=content;
+  const del=document.createElement('button');
+  del.textContent='🗑'; del.onclick=onDelete;
+  del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-end';
+  d.appendChild(del);
+  return d;
+}
+
+function renderPentaEscrime(){
+  renderPentaList(pentaEscrimeQ,'penta-escrime-list',(q,i,el)=>{
+    const d=pentaQDiv(`
+      <div style="font-size:10px;color:var(--neon)">Q${i+1} · Touche ${i+1}</div>
+      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
+      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      <input type="text" value="${(q.w&&q.w[0]||'').replace(/"/g,'&quot;')}" placeholder="Mauvaise réponse…" style="width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+    `,()=>{pentaEscrimeQ.splice(i,1);renderPentaEscrime();});
+    const inputs=d.querySelectorAll('input');
+    inputs[0].oninput=e=>{pentaEscrimeQ[i].q=e.target.value;};
+    inputs[1].oninput=e=>{pentaEscrimeQ[i].a=e.target.value;};
+    inputs[2].oninput=e=>{pentaEscrimeQ[i].w=[e.target.value];};
+    el.appendChild(d);
+  });
+}
+
+function renderPentaNatation(){
+  renderPentaList(pentaNatationQ,'penta-natation-list',(q,i,el)=>{
+    const isV=(q.a||'Vrai')==='Vrai';
+    const d=pentaQDiv(`
+      <div style="font-size:10px;color:var(--cyan)">Q${i+1}</div>
+      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Affirmation vraie ou fausse…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
+      <div style="display:flex;gap:6px;margin-top:2px">
+        <button id="pn-v-${i}" onclick="pentaNatSetA(${i},'Vrai')" style="flex:1;padding:5px;border-radius:6px;border:2px solid ${isV?'var(--neon)':'rgba(255,255,255,.1)'};background:${isV?'rgba(212,255,0,.1)':'var(--c1)'};color:${isV?'var(--neon)':'var(--mute)'};font-weight:700;cursor:pointer;font-family:var(--ff);font-size:11px">✅ VRAI</button>
+        <button id="pn-f-${i}" onclick="pentaNatSetA(${i},'Faux')" style="flex:1;padding:5px;border-radius:6px;border:2px solid ${!isV?'var(--red)':'rgba(255,255,255,.1)'};background:${!isV?'rgba(255,60,60,.1)':'var(--c1)'};color:${!isV?'var(--red)':'var(--mute)'};font-weight:700;cursor:pointer;font-family:var(--ff);font-size:11px">❌ FAUX</button>
+      </div>
+    `,()=>{pentaNatationQ.splice(i,1);renderPentaNatation();});
+    const inp=d.querySelector('input');
+    inp.oninput=e=>{pentaNatationQ[i].q=e.target.value;};
+    el.appendChild(d);
+  });
+}
+function pentaNatSetA(i,v){pentaNatationQ[i].a=v;renderPentaNatation();}
+
+function renderPentaEquitation(){
+  const levels=['facile','moyen','difficile'];
+  renderPentaList(pentaEquitationQ,'penta-equitation-list',(q,i,el)=>{
+    const lv=q.level||'moyen';
+    const d=pentaQDiv(`
+      <div style="font-size:10px;color:#f59e0b">Obstacle ${i+1}</div>
+      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
+      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid #f59e0b;color:#f59e0b;font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      <div style="display:flex;gap:4px;margin-top:2px">
+        ${levels.map(l=>`<button onclick="pentaEqSetL(${i},'${l}')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${lv===l?'#f59e0b':'rgba(255,255,255,.1)'};background:${lv===l?'rgba(245,158,11,.15)':'var(--c1)'};color:${lv===l?'#f59e0b':'var(--mute)'};font-size:10px;cursor:pointer">${l}</button>`).join('')}
+      </div>
+    `,()=>{pentaEquitationQ.splice(i,1);renderPentaEquitation();});
+    const inputs=d.querySelectorAll('input');
+    inputs[0].oninput=e=>{pentaEquitationQ[i].q=e.target.value;};
+    inputs[1].oninput=e=>{pentaEquitationQ[i].a=e.target.value;};
+    el.appendChild(d);
+  });
+}
+function pentaEqSetL(i,l){pentaEquitationQ[i].level=l;renderPentaEquitation();}
+
+function renderPentaLaserrun(){
+  renderPentaList(pentaLaserrunQ,'penta-laserrun-list',(q,i,el)=>{
+    const d=pentaQDiv(`
+      <div style="font-size:10px;color:var(--red)">Cycle ${i+1}</div>
+      <div style="font-size:9px;color:var(--mute)">🏃 COURSE (Vrai/Faux)</div>
+      <input type="text" value="${(q.vf?.q||'').replace(/"/g,'&quot;')}" placeholder="Affirmation course…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      <div style="display:flex;gap:6px">
+        <button id="plr-v-${i}" onclick="pentaLRSetVF(${i},'Vrai')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${(q.vf?.a||'Vrai')==='Vrai'?'var(--neon)':'rgba(255,255,255,.1)'};color:${(q.vf?.a||'Vrai')==='Vrai'?'var(--neon)':'var(--mute)'};background:var(--c1);font-size:10px;cursor:pointer">✅ VRAI</button>
+        <button id="plr-f-${i}" onclick="pentaLRSetVF(${i},'Faux')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${(q.vf?.a||'Vrai')==='Faux'?'var(--red)':'rgba(255,255,255,.1)'};color:${(q.vf?.a||'Vrai')==='Faux'?'var(--red)':'var(--mute)'};background:var(--c1);font-size:10px;cursor:pointer">❌ FAUX</button>
+      </div>
+      <div style="font-size:9px;color:var(--mute);margin-top:4px">🎯 TIR (question ouverte)</div>
+      <input type="text" value="${(q.tir?.q||'').replace(/"/g,'&quot;')}" placeholder="Question tir…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      <input type="text" value="${(q.tir?.a||'').replace(/"/g,'&quot;')}" placeholder="Réponse tir…" style="width:100%;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+    `,()=>{pentaLaserrunQ.splice(i,1);renderPentaLaserrun();});
+    const inputs=d.querySelectorAll('input');
+    inputs[0].oninput=e=>{if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.q=e.target.value;};
+    inputs[1].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.q=e.target.value;};
+    inputs[2].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.a=e.target.value;};
+    el.appendChild(d);
+  });
+}
+function pentaLRSetVF(i,v){if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.a=v;renderPentaLaserrun();}
+
+// Boutons ajouter
+document.getElementById('btn-add-escrime').onclick=()=>{if(pentaEscrimeQ.length>=5)return;pentaEscrimeQ.push({q:'',a:'',w:['']});renderPentaEscrime();};
+document.getElementById('btn-add-natation').onclick=()=>{pentaNatationQ.push({q:'',a:'Vrai'});renderPentaNatation();};
+document.getElementById('btn-add-equitation').onclick=()=>{if(pentaEquitationQ.length>=5)return;pentaEquitationQ.push({q:'',a:'',level:'moyen'});renderPentaEquitation();};
+document.getElementById('btn-add-laserrun').onclick=()=>{if(pentaLaserrunQ.length>=5)return;pentaLaserrunQ.push({vf:{q:'',a:'Vrai'},tir:{q:'',a:''}});renderPentaLaserrun();};
+
 // ── HALTERO ADMIN ─────────────────────────────────────────────────────────
 let haQuestions=[], hejQuestions=[];
 
@@ -1775,6 +1924,11 @@ if(_biatBulkBtn)_biatBulkBtn.onclick=()=>{
 };
 const _biatAddSprint=document.getElementById('btn-add-biat-sprint');
 if(_biatAddSprint)_biatAddSprint.onclick=()=>{biatSprintItems.push('');renderBiatSprint();const ins=document.getElementById('biat-sprint-list').querySelectorAll('input');if(ins.length)ins[ins.length-1].focus();};
+// Listeners checkReady pour champs biathlon
+['biat-theme-in','biat-order-question-in','biat-announce-time-in'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
 const _biatAddQCM=document.getElementById('btn-add-biat-qcm');
 if(_biatAddQCM)_biatAddQCM.onclick=()=>{if(biatQCMItems.length>=3)return alert('3 questions max');biatQCMItems.push({question:'',answer:'',wrong:['','','']});renderBiatQCM();};
 const _biatAddOrder=document.getElementById('btn-add-biat-order');
@@ -2469,6 +2623,12 @@ document.getElementById('btn-save').onclick=async()=>{
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
   const mfQuestionsData = currentType==='maillonfaible'?mfQuestions:[];
+  const pentaData = currentType==='pentathlon'?{
+    escrime:{questions:pentaEscrimeQ},
+    natation:{questions:pentaNatationQ,timer:parseInt(document.getElementById('penta-natation-timer')?.value||45)},
+    equitation:{obstacles:pentaEquitationQ},
+    laserrun:{cycles:pentaLaserrunQ,timer:parseInt(document.getElementById('penta-laserrun-timer')?.value||60)}
+  }:null;
   const halteroArache = currentType==='haltero'?{
     sportif1:document.getElementById('ha-s1')?.value.trim()||'',
     sportif2:document.getElementById('ha-s2')?.value.trim()||'',
@@ -2509,7 +2669,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='pentathlon'?'Pentathlon Arena':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -2541,7 +2701,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,pentathlon:pentaData,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{

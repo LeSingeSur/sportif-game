@@ -360,6 +360,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
 #mf-zone{display:none;flex-direction:column;gap:10px}
 #haltero-zone{display:none;flex-direction:column;gap:10px;width:100%}
+.penta-step{display:flex;flex-direction:column;align-items:center;font-size:20px;color:var(--mute);opacity:0.3;transition:all .3s;font-family:var(--fh)}
 .ha-sportif-card{flex:1;padding:12px;border-radius:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s;font-family:var(--fh);font-size:13px;font-weight:800}
 .ha-sportif-card.selected-s1{border-color:var(--neon);background:rgba(212,255,0,.1);color:var(--neon)}
 .ha-sportif-card.selected-s2{border-color:var(--cyan);background:rgba(0,229,200,.1);color:var(--cyan)}
@@ -889,6 +890,109 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="btn btn-p" onclick="biatStartFromModal()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
     </div>
   </div>
+  <!-- PENTATHLON zone -->
+  <div id="pentathlon-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+
+    <!-- Stepper -->
+    <div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px" id="penta-stepper">
+      <div class="penta-step" id="ps-escrime">🤺<div style="font-size:8px">ESCRIME</div></div>
+      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
+      <div class="penta-step" id="ps-natation">🏊<div style="font-size:8px">NATATION</div></div>
+      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
+      <div class="penta-step" id="ps-equitation">🏇<div style="font-size:8px">ÉQUITATION</div></div>
+      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
+      <div class="penta-step" id="ps-laserrun">🔫<div style="font-size:8px">LASER-RUN</div></div>
+    </div>
+
+    <!-- Score courant -->
+    <div style="text-align:center;font-family:var(--fh);font-size:11px;color:var(--mute)">SCORE PENTATHLON</div>
+    <div style="text-align:center;font-family:var(--fh);font-size:36px;color:var(--neon)" id="penta-total-score">0</div>
+
+    <!-- ESCRIME -->
+    <div id="penta-escrime-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+      <div style="font-family:var(--fh);font-size:14px;color:var(--neon);text-align:center">🤺 ESCRIME</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 12px">
+        <div><div style="font-size:10px;color:var(--mute)">MULTIPLICATEUR</div><div style="font-family:var(--fh);font-size:24px;color:var(--neon)" id="esc-mult">×1</div></div>
+        <div style="text-align:right"><div style="font-size:10px;color:var(--mute)">TOUCHE</div><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="esc-touche">1/5</div></div>
+      </div>
+      <div class="bj-theme" id="esc-question">…</div>
+      <div id="esc-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button onclick="escRompre()" id="esc-rompre-btn" style="background:rgba(245,158,11,.15);border:1px solid #f59e0b;color:#f59e0b;border-radius:12px;padding:12px;font-family:var(--fh);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px">⚔️ ROMPRE — Sécuriser et passer</button>
+      <div class="fb" id="esc-fb"></div>
+    </div>
+
+    <!-- NATATION -->
+    <div id="penta-natation-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+      <div style="font-family:var(--fh);font-size:14px;color:var(--cyan);text-align:center">🏊 NATATION</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--cyan)" id="nat-timer">45</div></div>
+        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">QUESTION</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="nat-qnum">1/?</div></div>
+      </div>
+      <div style="height:3px;background:var(--c2);border-radius:99px"><div id="nat-timer-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
+      <div class="bj-theme" id="nat-question">…</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="natAnswer('Vrai')" id="nat-btn-v" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">✅ VRAI</button>
+        <button onclick="natAnswer('Faux')" id="nat-btn-f" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">❌ FAUX</button>
+      </div>
+      <div class="fb" id="nat-fb"></div>
+    </div>
+
+    <!-- ÉQUITATION -->
+    <div id="penta-equitation-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+      <div style="font-family:var(--fh);font-size:14px;color:#f59e0b;text-align:center">🏇 ÉQUITATION</div>
+      <!-- Phase choix ordre -->
+      <div id="eq-choix-zone" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:12px;color:var(--mute);text-align:center">Choisis l'ordre de tes obstacles avant de commencer</div>
+        <div id="eq-obstacles-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button onclick="eqCommencer()" class="btn btn-p" style="font-family:var(--fh);margin-top:4px">🏇 COMMENCER LE PARCOURS</button>
+      </div>
+      <!-- Phase parcours -->
+      <div id="eq-parcours-zone" style="display:none;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 12px">
+          <div><span style="font-size:10px;color:var(--mute)">OBSTACLE</span><div style="font-family:var(--fh);font-size:24px;color:#f59e0b" id="eq-obs-num">1/5</div></div>
+          <div id="eq-level-badge" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">MOYEN</div>
+        </div>
+        <div class="bj-theme" id="eq-question">…</div>
+        <div id="eq-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="ans-row" id="eq-input" style="display:none">
+          <input type="text" class="ans-in" id="eq-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="chk-btn" onclick="eqSubmit()">✓</button>
+        </div>
+        <div class="fb" id="eq-fb"></div>
+      </div>
+    </div>
+
+    <!-- LASER-RUN -->
+    <div id="penta-laserrun-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+      <div style="font-family:var(--fh);font-size:14px;color:var(--red);text-align:center">🔫 LASER-RUN</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--red)" id="lr-timer">60</div></div>
+        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CYCLE</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="lr-cycle">1/5</div></div>
+      </div>
+      <div style="height:3px;background:var(--c2);border-radius:99px"><div id="lr-timer-bar" style="height:100%;background:var(--red);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
+      <div id="lr-phase-badge" style="text-align:center;font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute)">🏃 COURSE</div>
+      <div class="bj-theme" id="lr-question">…</div>
+      <div id="lr-vf-btns" style="display:flex;gap:10px">
+        <button onclick="lrAnswerVF('Vrai')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">✅ VRAI</button>
+        <button onclick="lrAnswerVF('Faux')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">❌ FAUX</button>
+      </div>
+      <div class="ans-row" id="lr-tir-input" style="display:none">
+        <input type="text" class="ans-in" id="lr-tir-in" placeholder="Réponse tir…" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="chk-btn" onclick="lrAnswerTir()">✓</button>
+      </div>
+      <div class="fb" id="lr-fb"></div>
+    </div>
+
+    <!-- Résultat épreuve -->
+    <div id="penta-result-zone" style="display:none;flex-direction:column;gap:10px;text-align:center">
+      <div style="font-size:40px" id="penta-result-ico">🏅</div>
+      <div style="font-family:var(--fh);font-size:18px" id="penta-result-msg"></div>
+      <div style="font-size:12px;color:var(--mute)" id="penta-result-detail"></div>
+      <button class="btn btn-p" id="penta-result-btn" style="font-family:var(--fh)">Continuer →</button>
+    </div>
+
+  </div>
+
   <!-- HALTERO zone -->
   <div id="haltero-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--c1);border-radius:18px;padding:20px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px">
@@ -1743,6 +1847,9 @@ async function loadAthlete(){
     } else if(data.type==='haltero'){
       document.getElementById('std-ans-area').style.display='none';
       setupHalteroMode(data);
+    } else if(data.type==='pentathlon'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupPentathlon(data);
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1756,7 +1863,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','pentathlon-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
@@ -5883,6 +5990,418 @@ function haltFinish(){
   const vSub=document.getElementById('v-sub');
   if(vSub)vSub.textContent='Arraché: '+HALT.aScore+' pts · Épaulé-Jeté: '+HALT.ejScore+' pts';
   setVictoryIcon('haltero'); submitScore(score); show('sv');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PENTATHLON ARENA
+// ══════════════════════════════════════════════════════════════════════════
+const PENTA={
+  data:null, phase:null, score:{escrime:0,natation:0,equitation:0,laserrun:0},
+  // Escrime
+  escIdx:0, escMult:1, escBanked:0, escDone:false,
+  // Natation
+  natIdx:0, natTimer:45, natTimerInt:null, natMaxTimer:45,
+  // Équitation
+  eqOrder:[], eqIdx:0,
+  // Laser-run
+  lrCycle:0, lrPhase:'vf', lrTimer:60, lrTimerInt:null, lrMaxTimer:60,
+  lrScore:0
+};
+
+const PENTA_PHASES=['escrime','natation','equitation','laserrun'];
+
+function normP(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function checkPentaAnswer(ans,correct){
+  const cv=(correct||'').split(';').map(s=>normP(s));
+  const a=normP(ans);
+  return cv.some(c=>a===c||c.split(/\s+/).some(w=>w===a&&w.length>=4)||a.split(/\s+/).some(w=>c.split(/\s+/).includes(w)&&w.length>=4));
+}
+
+function setupPentathlon(data){
+  PENTA.data=data; PENTA.phase=null;
+  PENTA.score={escrime:0,natation:0,equitation:0,laserrun:0};
+  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escBanked=0; PENTA.escDone=false;
+  PENTA.natIdx=0; PENTA.eqIdx=0; PENTA.lrCycle=0;
+  hideAllZones();
+  document.getElementById('pentathlon-zone').style.display='flex';
+  pentaUpdateStep(null);
+  pentaUpdateTotal();
+  pentaShowRules();
+}
+
+function pentaShowRules(){
+  pentaShowResult('🏅 PENTATHLON ARENA',
+    '4 épreuves · 400 pts max\n🤺 Escrime (×mult + Rompre) · 🏊 Natation (V/F chrono) · 🏇 Équitation (ordre stratégique) · 🔫 Laser-Run (course + tir)',
+    'C\'EST PARTI !', ()=>pentaStartPhase('escrime'));
+}
+
+function pentaUpdateStep(phase){
+  PENTA_PHASES.forEach(p=>{
+    const el=document.getElementById('ps-'+p);
+    if(!el)return;
+    el.style.opacity=p===phase?'1':'0.3';
+    el.style.color=p===phase?'var(--neon)':'var(--mute)';
+  });
+}
+
+function pentaUpdateTotal(){
+  const total=Object.values(PENTA.score).reduce((a,b)=>a+b,0);
+  const el=document.getElementById('penta-total-score');
+  if(el)el.textContent=total;
+  setScore(total,false);
+}
+
+function pentaShowResult(ico,msg,btnTxt,onClick){
+  ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.style.display='none';
+  });
+  const rz=document.getElementById('penta-result-zone');
+  rz.style.display='flex';
+  document.getElementById('penta-result-ico').textContent=ico;
+  document.getElementById('penta-result-msg').textContent=msg;
+  document.getElementById('penta-result-detail').textContent='';
+  const btn=document.getElementById('penta-result-btn');
+  btn.textContent=btnTxt;
+  btn.onclick=onClick;
+}
+
+function pentaStartPhase(phase){
+  PENTA.phase=phase;
+  pentaUpdateStep(phase);
+  document.getElementById('penta-result-zone').style.display='none';
+  ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('penta-'+phase+'-zone').style.display='flex';
+  if(phase==='escrime') escStart();
+  else if(phase==='natation') natStart();
+  else if(phase==='equitation') eqStart();
+  else if(phase==='laserrun') lrStart();
+}
+
+function pentaNextPhase(){
+  const idx=PENTA_PHASES.indexOf(PENTA.phase);
+  if(idx<PENTA_PHASES.length-1){
+    pentaStartPhase(PENTA_PHASES[idx+1]);
+  } else {
+    pentaFinish();
+  }
+}
+
+function pentaFinish(){
+  const total=Object.values(PENTA.score).reduce((a,b)=>a+b,0);
+  G.score=total; setScore(total,true);
+  const vSc=document.getElementById('v-sc'); if(vSc)vSc.textContent=total;
+  const vName=document.getElementById('v-name'); if(vName)vName.textContent='Pentathlon Arena';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent=`🤺${PENTA.score.escrime} · 🏊${PENTA.score.natation} · 🏇${PENTA.score.equitation} · 🔫${PENTA.score.laserrun}`;
+  setVictoryIcon('pentathlon'); submitScore(total); show('sv');
+}
+
+// ── ESCRIME ───────────────────────────────────────────────────────────────
+function escStart(){
+  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escBanked=0; PENTA.escDone=false;
+  document.getElementById('esc-rompre-btn').disabled=false;
+  escShowQ();
+}
+
+function escShowQ(){
+  const qs=PENTA.data.pentathlon?.escrime?.questions||[];
+  const q=qs[PENTA.escIdx];
+  if(!q||PENTA.escIdx>=5){escEnd();return;}
+  document.getElementById('esc-touche').textContent=(PENTA.escIdx+1)+'/5';
+  document.getElementById('esc-mult').textContent='×'+PENTA.escMult;
+  document.getElementById('esc-question').textContent=q.q;
+  document.getElementById('esc-fb').textContent='';
+  const ch=document.getElementById('esc-choices');
+  ch.innerHTML='';
+  const wrong=(q.w||[]).filter(Boolean);
+  let choices=[q.a,...wrong.slice(0,1)];
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  choices.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='biat-qcm-btn'; btn.textContent=c;
+    btn.onclick=()=>escAnswer(c,q.a);
+    ch.appendChild(btn);
+  });
+  document.getElementById('esc-rompre-btn').style.display=PENTA.escBanked>0?'block':'none';
+}
+
+function escAnswer(ans,correct){
+  document.querySelectorAll('#esc-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  const ok=checkPentaAnswer(ans,correct);
+  const fb=document.getElementById('esc-fb');
+  if(ok){
+    const pts=20*PENTA.escMult;
+    PENTA.escBanked+=pts;
+    PENTA.escMult=Math.min(PENTA.escMult+1,5);
+    fb.textContent='🤺 Touche ! +'+pts+' pts (×'+PENTA.escMult+' prochain)';
+    fb.style.color='var(--neon)';
+    document.getElementById('esc-rompre-btn').style.display='block';
+    PENTA.escIdx++;
+    setTimeout(()=>{fb.textContent='';
+      if(PENTA.escIdx>=5){escEnd();} else escShowQ();
+    },700);
+  } else {
+    fb.textContent='❌ Raté ! Multiplicateur remis à ×1';
+    fb.style.color='var(--red)';
+    PENTA.escMult=1;
+    PENTA.escIdx++;
+    setTimeout(()=>{fb.textContent='';
+      if(PENTA.escIdx>=5){escEnd();} else escShowQ();
+    },700);
+  }
+}
+
+function escRompre(){
+  if(PENTA.escBanked===0)return;
+  PENTA.score.escrime=Math.min(100,PENTA.escBanked);
+  pentaUpdateTotal();
+  escEnd(true);
+}
+
+function escEnd(rompu=false){
+  PENTA.score.escrime=Math.min(100,PENTA.escBanked);
+  pentaUpdateTotal();
+  const msg=rompu?`Rompre ! Score sécurisé : ${PENTA.score.escrime} pts`:`Escrime terminée ! ${PENTA.score.escrime} pts`;
+  pentaShowResult('🤺',msg,'🏊 Natation →',()=>pentaNextPhase());
+}
+
+// ── NATATION ──────────────────────────────────────────────────────────────
+function natStart(){
+  PENTA.natIdx=0;
+  const timer=PENTA.data.pentathlon?.natation?.timer||45;
+  PENTA.natTimer=timer; PENTA.natMaxTimer=timer;
+  clearInterval(PENTA.natTimerInt);
+  natShowQ();
+  natStartTimer();
+}
+
+function natStartTimer(){
+  clearInterval(PENTA.natTimerInt);
+  document.getElementById('nat-timer').textContent=PENTA.natTimer;
+  document.getElementById('nat-timer-bar').style.width=(PENTA.natTimer/PENTA.natMaxTimer*100)+'%';
+  PENTA.natTimerInt=setInterval(()=>{
+    PENTA.natTimer--;
+    document.getElementById('nat-timer').textContent=PENTA.natTimer;
+    document.getElementById('nat-timer-bar').style.width=(PENTA.natTimer/PENTA.natMaxTimer*100)+'%';
+    if(PENTA.natTimer<=10)document.getElementById('nat-timer').style.color='var(--red)';
+    if(PENTA.natTimer<=0){clearInterval(PENTA.natTimerInt);natEnd();}
+  },1000);
+}
+
+function natShowQ(){
+  const qs=PENTA.data.pentathlon?.natation?.questions||[];
+  const q=qs[PENTA.natIdx];
+  if(!q){clearInterval(PENTA.natTimerInt);natEnd();return;}
+  document.getElementById('nat-qnum').textContent=(PENTA.natIdx+1)+'/'+(qs.length);
+  document.getElementById('nat-question').textContent=q.q;
+  document.getElementById('nat-fb').textContent='';
+  document.getElementById('nat-btn-v').disabled=false;
+  document.getElementById('nat-btn-f').disabled=false;
+}
+
+function natAnswer(ans){
+  document.getElementById('nat-btn-v').disabled=true;
+  document.getElementById('nat-btn-f').disabled=true;
+  const qs=PENTA.data.pentathlon?.natation?.questions||[];
+  const q=qs[PENTA.natIdx];
+  const ok=ans===(q?.a||'Vrai');
+  const fb=document.getElementById('nat-fb');
+  if(ok){
+    PENTA.score.natation=Math.min(100,PENTA.score.natation+Math.round(100/(qs.length)));
+    pentaUpdateTotal();
+    fb.textContent='✅';fb.style.color='var(--neon)';
+  } else {
+    PENTA.natTimer=Math.max(0,PENTA.natTimer-5);
+    fb.textContent='❌ −5s';fb.style.color='var(--red)';
+  }
+  PENTA.natIdx++;
+  setTimeout(()=>{
+    fb.textContent='';
+    document.getElementById('nat-btn-v').disabled=false;
+    document.getElementById('nat-btn-f').disabled=false;
+    natShowQ();
+  },500);
+}
+
+function natEnd(){
+  clearInterval(PENTA.natTimerInt);
+  PENTA.score.natation=Math.min(100,PENTA.score.natation);
+  pentaUpdateTotal();
+  pentaShowResult('🏊',`Natation terminée ! ${PENTA.score.natation} pts`,'🏇 Équitation →',()=>pentaNextPhase());
+}
+
+// ── ÉQUITATION ────────────────────────────────────────────────────────────
+function eqStart(){
+  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
+  PENTA.eqOrder=[...obs.map((_,i)=>i)];
+  PENTA.eqIdx=0;
+  document.getElementById('eq-choix-zone').style.display='flex';
+  document.getElementById('eq-parcours-zone').style.display='none';
+  eqRenderChoix();
+}
+
+function eqRenderChoix(){
+  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
+  const list=document.getElementById('eq-obstacles-list');
+  list.innerHTML='';
+  PENTA.eqOrder.forEach((obsIdx,pos)=>{
+    const o=obs[obsIdx];
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:8px;padding:8px 10px';
+    const lvColors={facile:'var(--neon)',moyen:'#f59e0b',difficile:'var(--red)'};
+    d.innerHTML=`<div style="font-family:var(--fh);font-size:12px;color:var(--mute)">${pos+1}</div>
+      <div style="flex:1;font-size:12px;color:var(--txt)">${o.q}</div>
+      <div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.3);color:${lvColors[o.level||'moyen']}">${o.level||'moyen'}</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${pos>0?`<button onclick="eqMove(${pos},-1)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px 6px">▲</button>`:''}
+        ${pos<PENTA.eqOrder.length-1?`<button onclick="eqMove(${pos},1)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px 6px">▼</button>`:''}
+      </div>`;
+    list.appendChild(d);
+  });
+}
+
+function eqMove(pos,dir){
+  const newPos=pos+dir;
+  if(newPos<0||newPos>=PENTA.eqOrder.length)return;
+  [PENTA.eqOrder[pos],PENTA.eqOrder[newPos]]=[PENTA.eqOrder[newPos],PENTA.eqOrder[pos]];
+  eqRenderChoix();
+}
+
+function eqCommencer(){
+  document.getElementById('eq-choix-zone').style.display='none';
+  document.getElementById('eq-parcours-zone').style.display='flex';
+  PENTA.eqIdx=0;
+  eqShowObstacle();
+}
+
+function eqShowObstacle(){
+  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
+  if(PENTA.eqIdx>=PENTA.eqOrder.length){eqEnd();return;}
+  const o=obs[PENTA.eqOrder[PENTA.eqIdx]];
+  document.getElementById('eq-obs-num').textContent=(PENTA.eqIdx+1)+'/'+PENTA.eqOrder.length;
+  const lvColors={facile:'var(--neon)',moyen:'#f59e0b',difficile:'var(--red)'};
+  const badge=document.getElementById('eq-level-badge');
+  badge.textContent=(o.level||'moyen').toUpperCase();
+  badge.style.color=lvColors[o.level||'moyen'];
+  document.getElementById('eq-question').textContent=o.q;
+  document.getElementById('eq-fb').textContent='';
+  const ch=document.getElementById('eq-choices');
+  const inp=document.getElementById('eq-input');
+  // All équitation are open answer
+  ch.style.display='none'; inp.style.display='flex';
+  document.getElementById('eq-in').value='';
+  setTimeout(()=>document.getElementById('eq-in').focus(),100);
+}
+
+function eqSubmit(){
+  const ans=document.getElementById('eq-in').value.trim();
+  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
+  const o=obs[PENTA.eqOrder[PENTA.eqIdx]];
+  const ok=checkPentaAnswer(ans,o.a);
+  const fb=document.getElementById('eq-fb');
+  if(ok){
+    const pts=20;
+    PENTA.score.equitation=Math.min(100,PENTA.score.equitation+pts);
+    pentaUpdateTotal();
+    fb.textContent='✅ Obstacle franchi ! +'+pts+' pts';fb.style.color='var(--neon)';
+    PENTA.eqIdx++;
+    setTimeout(()=>{fb.textContent='';eqShowObstacle();},700);
+  } else {
+    fb.textContent='💥 Chute ! Parcours arrêté.';fb.style.color='var(--red)';
+    setTimeout(eqEnd,1500);
+  }
+}
+document.getElementById('eq-in').addEventListener('keydown',e=>{if(e.key==='Enter')eqSubmit();});
+
+function eqEnd(){
+  pentaUpdateTotal();
+  pentaShowResult('🏇',`Équitation terminée ! ${PENTA.score.equitation} pts`,'🔫 Laser-Run →',()=>pentaNextPhase());
+}
+
+// ── LASER-RUN ────────────────────────────────────────────────────────────
+function lrStart(){
+  PENTA.lrCycle=0; PENTA.lrPhase='vf'; PENTA.lrScore=0;
+  const timer=PENTA.data.pentathlon?.laserrun?.timer||60;
+  PENTA.lrTimer=timer; PENTA.lrMaxTimer=timer;
+  clearInterval(PENTA.lrTimerInt);
+  lrStartTimer();
+  lrShowCycle();
+}
+
+function lrStartTimer(){
+  clearInterval(PENTA.lrTimerInt);
+  PENTA.lrTimerInt=setInterval(()=>{
+    PENTA.lrTimer--;
+    document.getElementById('lr-timer').textContent=PENTA.lrTimer;
+    document.getElementById('lr-timer-bar').style.width=(PENTA.lrTimer/PENTA.lrMaxTimer*100)+'%';
+    if(PENTA.lrTimer<=15)document.getElementById('lr-timer').style.color='var(--red)';
+    if(PENTA.lrTimer<=0){clearInterval(PENTA.lrTimerInt);lrEnd();}
+  },1000);
+}
+
+function lrShowCycle(){
+  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
+  if(PENTA.lrCycle>=cycles.length){clearInterval(PENTA.lrTimerInt);lrEnd();return;}
+  const c=cycles[PENTA.lrCycle];
+  document.getElementById('lr-cycle').textContent=(PENTA.lrCycle+1)+'/'+cycles.length;
+  document.getElementById('lr-fb').textContent='';
+  if(PENTA.lrPhase==='vf'){
+    document.getElementById('lr-phase-badge').textContent='🏃 COURSE';
+    document.getElementById('lr-phase-badge').style.color='var(--cyan)';
+    document.getElementById('lr-vf-btns').style.display='flex';
+    document.getElementById('lr-tir-input').style.display='none';
+    document.getElementById('lr-question').textContent=c.vf?.q||'?';
+  } else {
+    document.getElementById('lr-phase-badge').textContent='🎯 TIR';
+    document.getElementById('lr-phase-badge').style.color='var(--red)';
+    document.getElementById('lr-vf-btns').style.display='none';
+    document.getElementById('lr-tir-input').style.display='flex';
+    document.getElementById('lr-tir-in').value='';
+    document.getElementById('lr-question').textContent=c.tir?.q||'?';
+    setTimeout(()=>document.getElementById('lr-tir-in').focus(),100);
+  }
+}
+
+function lrAnswerVF(ans){
+  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
+  const c=cycles[PENTA.lrCycle];
+  const ok=ans===(c.vf?.a||'Vrai');
+  const fb=document.getElementById('lr-fb');
+  if(ok){
+    PENTA.lrScore+=10;
+    fb.textContent='✅ Course passée !';fb.style.color='var(--neon)';
+  } else {
+    fb.textContent='❌ Raté';fb.style.color='var(--red)';
+  }
+  PENTA.lrPhase='tir';
+  setTimeout(()=>{fb.textContent='';lrShowCycle();},400);
+}
+
+function lrAnswerTir(){
+  const ans=document.getElementById('lr-tir-in').value.trim();
+  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
+  const c=cycles[PENTA.lrCycle];
+  const ok=checkPentaAnswer(ans,c.tir?.a||'');
+  const fb=document.getElementById('lr-fb');
+  if(ok){
+    PENTA.lrScore+=10;
+    fb.textContent='🎯 Cible touchée !';fb.style.color='var(--red)';
+  } else {
+    fb.textContent='❌ Manqué';fb.style.color='var(--mute)';
+  }
+  PENTA.lrPhase='vf';
+  PENTA.lrCycle++;
+  setTimeout(()=>{fb.textContent='';lrShowCycle();},400);
+}
+document.getElementById('lr-tir-in').addEventListener('keydown',e=>{if(e.key==='Enter')lrAnswerTir();});
+
+function lrEnd(){
+  clearInterval(PENTA.lrTimerInt);
+  PENTA.score.laserrun=Math.min(100,PENTA.lrScore);
+  pentaUpdateTotal();
+  pentaShowResult('🔫',`Laser-Run terminé ! ${PENTA.score.laserrun} pts`,'🏅 Voir mon score →',pentaFinish);
 }
 
 // ── BOÎTE À IDÉES ──────────────────────────────────────────────────────────
