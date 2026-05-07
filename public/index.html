@@ -916,12 +916,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="penta-escrime-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
       <div style="font-family:var(--fh);font-size:14px;color:var(--neon);text-align:center">🤺 ESCRIME</div>
       <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 12px">
-        <div><div style="font-size:10px;color:var(--mute)">MULTIPLICATEUR</div><div style="font-family:var(--fh);font-size:24px;color:var(--neon)" id="esc-mult">×1</div></div>
+        <div><div style="font-size:10px;color:var(--mute)">MULTIPLICATEUR</div><div style="font-family:var(--fh);font-size:24px;color:var(--neon)" id="esc-mult">×1</div><div style="font-size:11px;color:#f59e0b" id="esc-frozen"></div></div>
+        <div style="text-align:center"><div style="font-size:10px;color:var(--mute)">SCORE</div><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="esc-score-live">0 pts</div></div>
         <div style="text-align:right"><div style="font-size:10px;color:var(--mute)">TOUCHE</div><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="esc-touche">1/5</div></div>
       </div>
       <div class="bj-theme" id="esc-question">…</div>
       <div id="esc-choices" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button onclick="escRompre()" id="esc-rompre-btn" style="background:rgba(245,158,11,.15);border:1px solid #f59e0b;color:#f59e0b;border-radius:12px;padding:12px;font-family:var(--fh);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px">⚔️ ROMPRE — Sécuriser et passer</button>
+      <button onclick="escRompre()" id="esc-rompre-btn" style="display:none;background:rgba(245,158,11,.15);border:1px solid #f59e0b;color:#f59e0b;border-radius:12px;padding:12px;font-family:var(--fh);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px">⚔️ ROMPRE — Geler ×mult</button>
       <div class="fb" id="esc-fb"></div>
     </div>
 
@@ -934,9 +935,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div style="height:3px;background:var(--c2);border-radius:99px"><div id="nat-timer-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
       <div class="bj-theme" id="nat-question">…</div>
-      <div style="display:flex;gap:10px">
-        <button onclick="natAnswer('Vrai')" id="nat-btn-v" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">✅ VRAI</button>
-        <button onclick="natAnswer('Faux')" id="nat-btn-f" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">❌ FAUX</button>
+      <button id="nat-btn-v" style="display:none"></button>
+      <button id="nat-btn-f" style="display:none"></button>
+      <div class="ans-row" id="nat-input" style="display:flex">
+        <input type="text" class="ans-in" id="nat-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="chk-btn" onclick="natSubmit()">✓</button>
       </div>
       <div class="fb" id="nat-fb"></div>
     </div>
@@ -980,11 +983,25 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <button onclick="lrAnswerVF('Vrai')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">✅ VRAI</button>
         <button onclick="lrAnswerVF('Faux')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">❌ FAUX</button>
       </div>
-      <div class="ans-row" id="lr-tir-input" style="display:none">
-        <input type="text" class="ans-in" id="lr-tir-in" placeholder="Réponse tir…" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="chk-btn" onclick="lrAnswerTir()">✓</button>
+      <div id="lr-tir-input" style="display:none"></div>
+      <div id="lr-slider-zone" style="display:none;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute)">
+          <span>0</span><span style="font-family:var(--fh);font-size:18px;color:var(--neon)" id="lr-slider-val">50</span><span id="lr-slider-max">100</span>
+        </div>
+        <input type="range" id="lr-slider" min="0" max="100" value="50" style="width:100%;accent-color:var(--neon)" oninput="document.getElementById('lr-slider-val').textContent=this.value">
+        <button onclick="lrSubmitTir()" class="btn btn-p" style="font-family:var(--fh);font-size:15px">🎯 TIRER</button>
       </div>
       <div class="fb" id="lr-fb"></div>
+    </div>
+
+    <!-- Phase intro overlay -->
+    <div id="penta-phase-intro" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.88);z-index:9000;align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--c1);border-radius:18px;padding:20px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px">
+        <div style="text-align:center;font-size:40px" id="ppi-ico">🏅</div>
+        <div style="font-family:var(--fh);font-size:18px;text-align:center" id="ppi-title">ÉPREUVE</div>
+        <div id="ppi-rules" style="display:flex;flex-direction:column;gap:0"></div>
+        <button class="btn btn-p" id="ppi-btn" style="font-family:var(--fh);font-size:15px;letter-spacing:2px">▶ COMMENCER</button>
+      </div>
     </div>
 
     <!-- Résultat épreuve -->
@@ -992,6 +1009,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:40px" id="penta-result-ico">🏅</div>
       <div style="font-family:var(--fh);font-size:18px" id="penta-result-msg"></div>
       <div style="font-size:12px;color:var(--mute)" id="penta-result-detail"></div>
+      <div id="penta-result-rules" style="text-align:left;margin-top:4px"></div>
       <button class="btn btn-p" id="penta-result-btn" style="font-family:var(--fh)">Continuer →</button>
     </div>
 
@@ -6001,7 +6019,7 @@ function haltFinish(){
 const PENTA={
   data:null, phase:null, score:{escrime:0,natation:0,equitation:0,laserrun:0},
   // Escrime
-  escIdx:0, escMult:1, escBanked:0, escDone:false,
+  escIdx:0, escMult:1, escFrozenMult:0, escScore:0,
   // Natation
   natIdx:0, natTimer:45, natTimerInt:null, natMaxTimer:45,
   // Équitation
@@ -6054,7 +6072,11 @@ function pentaUpdateTotal(){
   setScore(total,false);
 }
 
-function pentaShowResult(ico,msg,btnTxt,onClick){
+function pentaShowResult(ico,msg,detail,rulesList,btnTxt,onClick){
+  // Handle old 4-arg calls
+  if(typeof detail==='function'){onClick=rulesList;btnTxt=detail;rulesList=[];detail='';}
+  else if(typeof rulesList==='function'){onClick=btnTxt;btnTxt=rulesList;rulesList=[];} 
+  else if(!Array.isArray(rulesList)){onClick=rulesList;btnTxt=detail;detail='';rulesList=[];}
   ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.style.display='none';
   });
@@ -6062,7 +6084,17 @@ function pentaShowResult(ico,msg,btnTxt,onClick){
   rz.style.display='flex';
   document.getElementById('penta-result-ico').textContent=ico;
   document.getElementById('penta-result-msg').textContent=msg;
-  document.getElementById('penta-result-detail').textContent='';
+  document.getElementById('penta-result-detail').textContent=detail||'';
+  const rulesEl=document.getElementById('penta-result-rules');
+  if(rulesEl){
+    rulesEl.innerHTML='';
+    (rulesList||[]).forEach(r=>{
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+      d.innerHTML=`<div style="font-size:22px">${r.ico}</div><div><div style="font-weight:700;font-size:13px;color:var(--txt)">${r.name}</div><div style="font-size:12px;color:var(--mute)">${r.desc}</div></div>`;
+      rulesEl.appendChild(d);
+    });
+  }
   const btn=document.getElementById('penta-result-btn');
   btn.textContent=btnTxt;
   btn.onclick=onClick;
@@ -6075,11 +6107,13 @@ function pentaStartPhase(phase){
   ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
-  document.getElementById('penta-'+phase+'-zone').style.display='flex';
-  if(phase==='escrime') escStart();
-  else if(phase==='natation') natStart();
-  else if(phase==='equitation') eqStart();
-  else if(phase==='laserrun') lrStart();
+  pentaPhaseIntro(phase,()=>{
+    document.getElementById('penta-'+phase+'-zone').style.display='flex';
+    if(phase==='escrime') escStart();
+    else if(phase==='natation') natStart();
+    else if(phase==='equitation') eqStart();
+    else if(phase==='laserrun') lrStart();
+  });
 }
 
 function pentaNextPhase(){
@@ -6103,19 +6137,29 @@ function pentaFinish(){
 
 // ── ESCRIME ───────────────────────────────────────────────────────────────
 function escStart(){
-  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escBanked=0; PENTA.escDone=false;
-  document.getElementById('esc-rompre-btn').disabled=false;
+  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escFrozenMult=0; PENTA.escScore=0;
+  escUpdateUI();
   escShowQ();
+}
+
+function escUpdateUI(){
+  const el=document.getElementById('esc-mult');
+  if(el)el.textContent='×'+PENTA.escMult;
+  const frozen=document.getElementById('esc-frozen');
+  if(frozen)frozen.textContent=PENTA.escFrozenMult>0?'❄️ Gelé ×'+PENTA.escFrozenMult:'';
+  const scoreEl=document.getElementById('esc-score-live');
+  if(scoreEl)scoreEl.textContent=PENTA.escScore+' pts';
+  document.getElementById('esc-rompre-btn').style.display=PENTA.escMult>1?'block':'none';
 }
 
 function escShowQ(){
   const qs=PENTA.data.pentathlon?.escrime?.questions||[];
   const q=qs[PENTA.escIdx];
-  if(!q||PENTA.escIdx>=5){escEnd();return;}
-  document.getElementById('esc-touche').textContent=(PENTA.escIdx+1)+'/5';
-  document.getElementById('esc-mult').textContent='×'+PENTA.escMult;
+  if(!q||PENTA.escIdx>=qs.length){escEnd();return;}
+  document.getElementById('esc-touche').textContent=(PENTA.escIdx+1)+'/'+qs.length;
   document.getElementById('esc-question').textContent=q.q;
   document.getElementById('esc-fb').textContent='';
+  escUpdateUI();
   const ch=document.getElementById('esc-choices');
   ch.innerHTML='';
   const wrong=(q.w||[]).filter(Boolean);
@@ -6127,7 +6171,6 @@ function escShowQ(){
     btn.onclick=()=>escAnswer(c,q.a);
     ch.appendChild(btn);
   });
-  document.getElementById('esc-rompre-btn').style.display=PENTA.escBanked>0?'block':'none';
 }
 
 function escAnswer(ans,correct){
@@ -6136,38 +6179,48 @@ function escAnswer(ans,correct){
   const fb=document.getElementById('esc-fb');
   if(ok){
     const pts=20*PENTA.escMult;
-    PENTA.escBanked+=pts;
-    PENTA.escMult=Math.min(PENTA.escMult+1,5);
-    fb.textContent='🤺 Touche ! +'+pts+' pts (×'+PENTA.escMult+' prochain)';
+    PENTA.escScore=Math.min(100,PENTA.escScore+pts);
+    // Restore frozen mult if any, then increment
+    if(PENTA.escFrozenMult>0){
+      PENTA.escMult=PENTA.escFrozenMult+1;
+      PENTA.escFrozenMult=0;
+    } else {
+      PENTA.escMult=Math.min(PENTA.escMult+1,5);
+    }
+    fb.textContent='🤺 Touche ! +'+pts+' pts → ×'+PENTA.escMult+' ensuite';
     fb.style.color='var(--neon)';
-    document.getElementById('esc-rompre-btn').style.display='block';
-    PENTA.escIdx++;
-    setTimeout(()=>{fb.textContent='';
-      if(PENTA.escIdx>=5){escEnd();} else escShowQ();
-    },700);
+    pentaUpdateTotal();
   } else {
-    fb.textContent='❌ Raté ! Multiplicateur remis à ×1';
+    const loss=10;
+    PENTA.escScore=Math.max(0,PENTA.escScore-loss);
+    PENTA.escMult=1; PENTA.escFrozenMult=0;
+    fb.textContent='💥 Touché ! −'+loss+' pts · Multiplicateur ×1';
     fb.style.color='var(--red)';
-    PENTA.escMult=1;
-    PENTA.escIdx++;
-    setTimeout(()=>{fb.textContent='';
-      if(PENTA.escIdx>=5){escEnd();} else escShowQ();
-    },700);
+    pentaUpdateTotal();
   }
+  PENTA.escIdx++;
+  escUpdateUI();
+  setTimeout(()=>{fb.textContent='';
+    if(PENTA.escIdx>=(PENTA.data.pentathlon?.escrime?.questions||[]).length){escEnd();}
+    else escShowQ();
+  },900);
 }
 
 function escRompre(){
-  if(PENTA.escBanked===0)return;
-  PENTA.score.escrime=Math.min(100,PENTA.escBanked);
-  pentaUpdateTotal();
-  escEnd(true);
+  // Gèle le multiplicateur actuel — le joueur repart à ×1 mais récupère son mult gelé après la prochaine touche
+  PENTA.escFrozenMult=PENTA.escMult;
+  PENTA.escMult=1;
+  const fb=document.getElementById('esc-fb');
+  fb.textContent='⚔️ Rompu ! Mult ×'+PENTA.escFrozenMult+' gelé — bonne réponse = reprend depuis ×'+PENTA.escFrozenMult;
+  fb.style.color='#f59e0b';
+  escUpdateUI();
+  setTimeout(()=>{fb.textContent='';},1200);
 }
 
-function escEnd(rompu=false){
-  PENTA.score.escrime=Math.min(100,PENTA.escBanked);
+function escEnd(){
+  PENTA.score.escrime=PENTA.escScore;
   pentaUpdateTotal();
-  const msg=rompu?`Rompre ! Score sécurisé : ${PENTA.score.escrime} pts`:`Escrime terminée ! ${PENTA.score.escrime} pts`;
-  pentaShowResult('🤺',msg,'🏊 Natation →',()=>pentaNextPhase());
+  pentaShowResult('🤺',`Escrime terminée ! ${PENTA.score.escrime} pts`,'🏊 Natation →',()=>pentaNextPhase());
 }
 
 // ── NATATION ──────────────────────────────────────────────────────────────
@@ -6183,7 +6236,7 @@ function natStart(){
 function natStartTimer(){
   clearInterval(PENTA.natTimerInt);
   document.getElementById('nat-timer').textContent=PENTA.natTimer;
-  document.getElementById('nat-timer-bar').style.width=(PENTA.natTimer/PENTA.natMaxTimer*100)+'%';
+  document.getElementById('nat-timer-bar').style.width='100%';
   PENTA.natTimerInt=setInterval(()=>{
     PENTA.natTimer--;
     document.getElementById('nat-timer').textContent=PENTA.natTimer;
@@ -6200,33 +6253,34 @@ function natShowQ(){
   document.getElementById('nat-qnum').textContent=(PENTA.natIdx+1)+'/'+(qs.length);
   document.getElementById('nat-question').textContent=q.q;
   document.getElementById('nat-fb').textContent='';
-  document.getElementById('nat-btn-v').disabled=false;
-  document.getElementById('nat-btn-f').disabled=false;
+  // Hide VF buttons, show input
+  document.getElementById('nat-btn-v').style.display='none';
+  document.getElementById('nat-btn-f').style.display='none';
+  document.getElementById('nat-input').style.display='flex';
+  document.getElementById('nat-in').value='';
+  setTimeout(()=>document.getElementById('nat-in').focus(),100);
 }
 
-function natAnswer(ans){
-  document.getElementById('nat-btn-v').disabled=true;
-  document.getElementById('nat-btn-f').disabled=true;
+function natSubmit(){
+  const ans=document.getElementById('nat-in').value.trim();
+  if(!ans)return;
   const qs=PENTA.data.pentathlon?.natation?.questions||[];
   const q=qs[PENTA.natIdx];
-  const ok=ans===(q?.a||'Vrai');
+  const ok=checkPentaAnswer(ans,q?.a||'');
   const fb=document.getElementById('nat-fb');
   if(ok){
-    PENTA.score.natation=Math.min(100,PENTA.score.natation+Math.round(100/Math.max(1,qs.length)));
+    PENTA.score.natation=Math.min(100,PENTA.score.natation+20);
     pentaUpdateTotal();
-    fb.textContent='✅';fb.style.color='var(--neon)';
+    fb.textContent='✅ +20 pts';fb.style.color='var(--neon)';
   } else {
     PENTA.natTimer=Math.max(0,PENTA.natTimer-5);
     fb.textContent='❌ −5s';fb.style.color='var(--red)';
   }
   PENTA.natIdx++;
-  setTimeout(()=>{
-    fb.textContent='';
-    document.getElementById('nat-btn-v').disabled=false;
-    document.getElementById('nat-btn-f').disabled=false;
-    natShowQ();
-  },500);
+  setTimeout(()=>{fb.textContent='';natShowQ();},500);
 }
+
+function natAnswer(ans){} // kept for compat
 
 function natEnd(){
   clearInterval(PENTA.natTimerInt);
@@ -6286,7 +6340,8 @@ function eqShowObstacle(){
   document.getElementById('eq-obs-num').textContent=(PENTA.eqIdx+1)+'/'+PENTA.eqOrder.length;
   const lvColors={facile:'var(--neon)',moyen:'#f59e0b',difficile:'var(--red)'};
   const badge=document.getElementById('eq-level-badge');
-  badge.textContent=(o.level||'moyen').toUpperCase();
+  const coeff2=EQ_COEFFS[PENTA.eqIdx]||1;
+  badge.textContent='×'+coeff2+' — '+(o.level||'moyen').toUpperCase();
   badge.style.color=lvColors[o.level||'moyen'];
   document.getElementById('eq-question').textContent=o.q;
   document.getElementById('eq-fb').textContent='';
@@ -6298,25 +6353,29 @@ function eqShowObstacle(){
   setTimeout(()=>document.getElementById('eq-in').focus(),100);
 }
 
+const EQ_COEFFS=[1,1.2,1.5,1.8,2]; // coefficient par position
 function eqSubmit(){
   const ans=document.getElementById('eq-in').value.trim();
   const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
   const o=obs[PENTA.eqOrder[PENTA.eqIdx]];
   const ok=checkPentaAnswer(ans,o.a);
   const fb=document.getElementById('eq-fb');
+  const coeff=EQ_COEFFS[PENTA.eqIdx]||1;
   if(ok){
-    const pts=20;
+    const pts=Math.round(13.3*coeff); // 13.3 × (1+1.2+1.5+1.8+2) = 100pts
     PENTA.score.equitation=Math.min(100,PENTA.score.equitation+pts);
     pentaUpdateTotal();
-    fb.textContent='✅ Obstacle franchi ! +'+pts+' pts';fb.style.color='var(--neon)';
+    fb.textContent='✅ Franchi ! +'+pts+' pts (×'+coeff+')';fb.style.color='var(--neon)';
     PENTA.eqIdx++;
     setTimeout(()=>{fb.textContent='';eqShowObstacle();},700);
   } else {
-    fb.textContent='💥 Chute ! Parcours arrêté.';fb.style.color='var(--red)';
-    setTimeout(eqEnd,1500);
+    // Garde les points déjà marqués
+    fb.textContent='💥 Chute ! Score conservé : '+PENTA.score.equitation+' pts';fb.style.color='var(--red)';
+    setTimeout(eqEnd,2000);
   }
 }
 document.getElementById('eq-in').addEventListener('keydown',e=>{if(e.key==='Enter')eqSubmit();});
+document.getElementById('nat-in').addEventListener('keydown',e=>{if(e.key==='Enter')natSubmit();});
 
 function eqEnd(){
   pentaUpdateTotal();
@@ -6355,15 +6414,20 @@ function lrShowCycle(){
     document.getElementById('lr-phase-badge').style.color='var(--cyan)';
     document.getElementById('lr-vf-btns').style.display='flex';
     document.getElementById('lr-tir-input').style.display='none';
+    document.getElementById('lr-slider-zone').style.display='none';
     document.getElementById('lr-question').textContent=c.vf?.q||'?';
   } else {
     document.getElementById('lr-phase-badge').textContent='🎯 TIR';
     document.getElementById('lr-phase-badge').style.color='var(--red)';
     document.getElementById('lr-vf-btns').style.display='none';
-    document.getElementById('lr-tir-input').style.display='flex';
-    document.getElementById('lr-tir-in').value='';
+    document.getElementById('lr-tir-input').style.display='none';
+    document.getElementById('lr-slider-zone').style.display='flex';
     document.getElementById('lr-question').textContent=c.tir?.q||'?';
-    setTimeout(()=>document.getElementById('lr-tir-in').focus(),100);
+    const max=parseInt(c.tir?.max||100);
+    const slider=document.getElementById('lr-slider');
+    slider.max=max; slider.min=0; slider.value=Math.round(max/2);
+    document.getElementById('lr-slider-val').textContent=slider.value;
+    document.getElementById('lr-slider-max').textContent=max;
   }
 }
 
@@ -6382,23 +6446,25 @@ function lrAnswerVF(ans){
   setTimeout(()=>{fb.textContent='';lrShowCycle();},400);
 }
 
-function lrAnswerTir(){
-  const ans=document.getElementById('lr-tir-in').value.trim();
+function lrSubmitTir(){
   const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
   const c=cycles[PENTA.lrCycle];
-  const ok=checkPentaAnswer(ans,c.tir?.a||'');
+  const target=parseInt(c.tir?.a)||0;
+  const val=parseInt(document.getElementById('lr-slider').value)||0;
+  const ecart=Math.abs(val-target);
+  const maxVal=parseInt(c.tir?.max||100);
+  const pts=ecart===0?20:ecart<=Math.round(maxVal*0.05)?15:ecart<=Math.round(maxVal*0.1)?10:ecart<=Math.round(maxVal*0.2)?5:0;
+  PENTA.lrScore+=pts;
   const fb=document.getElementById('lr-fb');
-  if(ok){
-    PENTA.lrScore+=10;
-    fb.textContent='🎯 Cible touchée !';fb.style.color='var(--red)';
-  } else {
-    fb.textContent='❌ Manqué';fb.style.color='var(--mute)';
-  }
+  if(pts===20) fb.textContent='🎯 Bullseye ! +20 pts';
+  else if(pts>0) fb.textContent='🎯 Proche ! +'+pts+' pts (écart: '+ecart+')';
+  else fb.textContent='❌ Manqué (écart: '+ecart+')';
+  fb.style.color=pts>=15?'var(--neon)':pts>0?'#f59e0b':'var(--mute)';
   PENTA.lrPhase='vf';
   PENTA.lrCycle++;
-  setTimeout(()=>{fb.textContent='';lrShowCycle();},400);
+  setTimeout(()=>{fb.textContent='';lrShowCycle();},600);
 }
-document.getElementById('lr-tir-in').addEventListener('keydown',e=>{if(e.key==='Enter')lrAnswerTir();});
+function lrAnswerTir(){lrSubmitTir();}
 
 function lrEnd(){
   clearInterval(PENTA.lrTimerInt);
