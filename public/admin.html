@@ -285,7 +285,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <!-- ESCRIME -->
         <div class="field">
           <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">🤺 ESCRIME — 100 pts · Multiplicateur + Rompre</div>
-          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 questions · Bonne réponse = touche (+20pts×multiplicateur) · Erreur = reset multiplicateur · Rompre = sécuriser sans répondre</div>
+          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">7 questions · 3 propositions · Bonne réponse = touche (+20pts×mult) · Erreur = −10pts + reset mult · ROMPRE = gèle le mult</div>
           <div id="penta-escrime-list" style="display:flex;flex-direction:column;gap:6px"></div>
           <button class="btn btn-s" id="btn-add-escrime" style="margin-top:6px">➕ Question</button>
         </div>
@@ -1683,7 +1683,8 @@ function renderPentaEscrime(){
     const inputs=d.querySelectorAll('input');
     inputs[0].oninput=e=>{pentaEscrimeQ[i].q=e.target.value;};
     inputs[1].oninput=e=>{pentaEscrimeQ[i].a=e.target.value;};
-    inputs[2].oninput=e=>{pentaEscrimeQ[i].w=[e.target.value];};
+    inputs[2].oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[0]=e.target.value;};
+    inputs[3].oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[1]=e.target.value;};
     el.appendChild(d);
   });
 }
@@ -1751,7 +1752,7 @@ function renderPentaLaserrun(){
 function pentaLRSetVF(i,v){if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.a=v;renderPentaLaserrun();}
 
 // Boutons ajouter
-document.getElementById('btn-add-escrime').onclick=()=>{if(pentaEscrimeQ.length>=5)return;pentaEscrimeQ.push({q:'',a:'',w:['']});renderPentaEscrime();};
+document.getElementById('btn-add-escrime').onclick=()=>{if(pentaEscrimeQ.length>=7)return;pentaEscrimeQ.push({q:'',a:'',w:['']});renderPentaEscrime();};
 document.getElementById('btn-add-natation').onclick=()=>{pentaNatationQ.push({q:'',a:'Vrai'});renderPentaNatation();};
 document.getElementById('btn-add-equitation').onclick=()=>{if(pentaEquitationQ.length>=5)return;pentaEquitationQ.push({q:'',a:'',level:'moyen'});renderPentaEquitation();};
 document.getElementById('btn-add-laserrun').onclick=()=>{if(pentaLaserrunQ.length>=5)return;pentaLaserrunQ.push({vf:{q:'',a:'Vrai'},tir:{q:'',a:''}});renderPentaLaserrun();};

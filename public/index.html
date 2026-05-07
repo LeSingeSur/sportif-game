@@ -928,19 +928,26 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
     <!-- NATATION -->
     <div id="penta-natation-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-      <div style="font-family:var(--fh);font-size:14px;color:var(--cyan);text-align:center">🏊 NATATION</div>
+      <div style="font-family:var(--fh);font-size:14px;color:var(--cyan);text-align:center">🏊 NATATION — Les Couloirs</div>
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--cyan)" id="nat-timer">45</div></div>
-        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">QUESTION</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="nat-qnum">1/?</div></div>
+        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--cyan)" id="nat-timer">60</div></div>
+        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">RESTANTS</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="nat-remaining">5</div></div>
       </div>
       <div style="height:3px;background:var(--c2);border-radius:99px"><div id="nat-timer-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
-      <div class="bj-theme" id="nat-question">…</div>
+      <!-- Couloirs — toutes les questions visibles -->
+      <div id="nat-couloirs" style="display:flex;flex-direction:column;gap:6px"></div>
+      <!-- Zone de réponse active -->
+      <div id="nat-active-zone" style="display:none;flex-direction:column;gap:8px;background:rgba(0,229,200,.06);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:12px">
+        <div style="font-size:10px;color:var(--cyan);letter-spacing:2px;font-family:var(--fh)" id="nat-active-label">COULOIR 1</div>
+        <div class="bj-theme" id="nat-question" style="margin:0">…</div>
+        <div class="ans-row">
+          <input type="text" class="ans-in" id="nat-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="chk-btn" onclick="natSubmit()">✓</button>
+        </div>
+      </div>
       <button id="nat-btn-v" style="display:none"></button>
       <button id="nat-btn-f" style="display:none"></button>
-      <div class="ans-row" id="nat-input" style="display:flex">
-        <input type="text" class="ans-in" id="nat-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="chk-btn" onclick="natSubmit()">✓</button>
-      </div>
+      <div id="nat-input" style="display:none"></div>
       <div class="fb" id="nat-fb"></div>
     </div>
 
@@ -6021,7 +6028,7 @@ const PENTA={
   // Escrime
   escIdx:0, escMult:1, escFrozenMult:0, escScore:0,
   // Natation
-  natIdx:0, natTimer:45, natTimerInt:null, natMaxTimer:45,
+  natIdx:null, natAnswered:{}, natTimer:60, natTimerInt:null, natMaxTimer:60,
   // Équitation
   eqOrder:[], eqIdx:0,
   // Laser-run
@@ -6100,6 +6107,64 @@ function pentaShowResult(ico,msg,detail,rulesList,btnTxt,onClick){
   btn.onclick=onClick;
 }
 
+function pentaPhaseIntro(phase, onStart){
+  const intros={
+    escrime:{
+      ico:'🤺', title:'ESCRIME — 100 pts', color:'var(--neon)',
+      rules:[
+        '7 questions · 3 propositions par touche',
+        '✅ Bonne réponse → +20 pts × multiplicateur, mult +1 (max ×5)',
+        '💥 Touché → −10 pts fixes, multiplicateur remis à ×1',
+        '⚔️ ROMPRE → gèle ton multiplicateur · bonne réponse suivante repart du mult gelé +1',
+      ]
+    },
+    natation:{
+      ico:'🏊', title:'NATATION — 100 pts', color:'var(--cyan)',
+      rules:[
+        '5 questions affichées simultanément — choisis ton ordre !',
+        'Clique sur un couloir pour y répondre · 20 pts par bonne réponse',
+        'Timer global 60s · Chaque erreur coûte −5s',
+        'Commence par les questions que tu maîtrises le mieux',
+      ]
+    },
+    equitation:{
+      ico:'🏇', title:'ÉQUITATION — 100 pts', color:'#f59e0b',
+      rules:[
+        'Réorganise les 5 obstacles dans l\'ordre de ton choix',
+        'Coefficients croissants : ×1 → ×1.2 → ×1.5 → ×1.8 → ×2',
+        '💥 Chute = parcours arrêté · Tu gardes les points déjà marqués',
+        'Place tes obstacles faciles en fin de parcours pour plus de points… si tu y arrives !',
+      ]
+    },
+    laserrun:{
+      ico:'🔫', title:'LASER-RUN — 100 pts', color:'var(--red)',
+      rules:[
+        '5 cycles · Chaque cycle = Course (V/F) + Tir (curseur)',
+        '🏃 Course : Vrai ou Faux → 10 pts si correct',
+        '🎯 Tir : place le curseur sur la bonne valeur → 0 à 20 pts selon précision',
+        'Timer global 60s',
+      ]
+    }
+  };
+  const d=intros[phase];
+  const overlay=document.getElementById('penta-phase-intro');
+  if(!d||!overlay){onStart();return;}
+  overlay.style.display='flex';
+  document.getElementById('ppi-ico').textContent=d.ico;
+  const titleEl=document.getElementById('ppi-title');
+  titleEl.textContent=d.title;
+  titleEl.style.color=d.color;
+  const rulesList=document.getElementById('ppi-rules');
+  rulesList.innerHTML='';
+  d.rules.forEach(r=>{
+    const div=document.createElement('div');
+    div.style.cssText='font-size:13px;color:var(--mute);line-height:1.6;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)';
+    div.textContent=r;
+    rulesList.appendChild(div);
+  });
+  document.getElementById('ppi-btn').onclick=()=>{overlay.style.display='none';onStart();};
+}
+
 function pentaStartPhase(phase){
   PENTA.phase=phase;
   pentaUpdateStep(phase);
@@ -6163,7 +6228,7 @@ function escShowQ(){
   const ch=document.getElementById('esc-choices');
   ch.innerHTML='';
   const wrong=(q.w||[]).filter(Boolean);
-  let choices=[q.a,...wrong.slice(0,1)];
+  let choices=[q.a,...wrong.slice(0,2)]; // 3 propositions
   for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
   choices.forEach(c=>{
     const btn=document.createElement('button');
@@ -6223,14 +6288,49 @@ function escEnd(){
   pentaShowResult('🤺',`Escrime terminée ! ${PENTA.score.escrime} pts`,'🏊 Natation →',()=>pentaNextPhase());
 }
 
-// ── NATATION ──────────────────────────────────────────────────────────────
+// ── NATATION — COULOIRS ──────────────────────────────────────────────────
 function natStart(){
-  PENTA.natIdx=0;
-  const timer=PENTA.data.pentathlon?.natation?.timer||45;
+  PENTA.natIdx=null; // aucun couloir actif
+  PENTA.natAnswered={}; // {idx: true/false}
+  const timer=PENTA.data.pentathlon?.natation?.timer||60;
   PENTA.natTimer=timer; PENTA.natMaxTimer=timer;
   clearInterval(PENTA.natTimerInt);
-  natShowQ();
+  natRenderCouloirs();
   natStartTimer();
+}
+
+function natRenderCouloirs(){
+  const qs=PENTA.data.pentathlon?.natation?.questions||[];
+  const container=document.getElementById('nat-couloirs');
+  container.innerHTML='';
+  let remaining=0;
+  qs.forEach((q,i)=>{
+    const answered=PENTA.natAnswered[i];
+    if(answered===undefined) remaining++;
+    const div=document.createElement('div');
+    const isActive=PENTA.natIdx===i;
+    div.style.cssText=`display:flex;align-items:center;gap:10px;background:${isActive?'rgba(0,229,200,.1)':answered===true?'rgba(212,255,0,.06)':answered===false?'rgba(255,60,60,.06)':'var(--c2)'};border:1px solid ${isActive?'var(--cyan)':answered===true?'rgba(212,255,0,.3)':answered===false?'rgba(255,60,60,.3)':'rgba(255,255,255,.06)'};border-radius:10px;padding:10px 12px;cursor:${answered!==undefined?'default':'pointer'};transition:all .2s`;
+    const ico=answered===true?'✅':answered===false?'❌':'🏊';
+    div.innerHTML=`<div style="font-size:18px">${ico}</div><div style="flex:1;font-size:13px;color:${answered===undefined?'var(--txt)':'var(--mute)'}">${q.q}</div><div style="font-family:var(--fh);font-size:12px;color:${isActive?'var(--cyan)':'var(--mute)'}">20 pts</div>`;
+    if(answered===undefined) div.onclick=()=>natSelectCouloir(i);
+    container.appendChild(div);
+  });
+  const remEl=document.getElementById('nat-remaining');
+  if(remEl) remEl.textContent=remaining;
+  if(remaining===0){clearInterval(PENTA.natTimerInt);natEnd();}
+}
+
+function natSelectCouloir(idx){
+  PENTA.natIdx=idx;
+  const qs=PENTA.data.pentathlon?.natation?.questions||[];
+  const q=qs[idx];
+  document.getElementById('nat-active-zone').style.display='flex';
+  document.getElementById('nat-active-label').textContent='COULOIR '+(idx+1);
+  document.getElementById('nat-question').textContent=q.q;
+  document.getElementById('nat-in').value='';
+  document.getElementById('nat-fb').textContent='';
+  natRenderCouloirs();
+  setTimeout(()=>document.getElementById('nat-in').focus(),100);
 }
 
 function natStartTimer(){
@@ -6241,46 +6341,38 @@ function natStartTimer(){
     PENTA.natTimer--;
     document.getElementById('nat-timer').textContent=PENTA.natTimer;
     document.getElementById('nat-timer-bar').style.width=(PENTA.natTimer/PENTA.natMaxTimer*100)+'%';
-    if(PENTA.natTimer<=10)document.getElementById('nat-timer').style.color='var(--red)';
+    if(PENTA.natTimer<=15)document.getElementById('nat-timer').style.color='var(--red)';
     if(PENTA.natTimer<=0){clearInterval(PENTA.natTimerInt);natEnd();}
   },1000);
 }
 
-function natShowQ(){
-  const qs=PENTA.data.pentathlon?.natation?.questions||[];
-  const q=qs[PENTA.natIdx];
-  if(!q){clearInterval(PENTA.natTimerInt);natEnd();return;}
-  document.getElementById('nat-qnum').textContent=(PENTA.natIdx+1)+'/'+(qs.length);
-  document.getElementById('nat-question').textContent=q.q;
-  document.getElementById('nat-fb').textContent='';
-  // Hide VF buttons, show input
-  document.getElementById('nat-btn-v').style.display='none';
-  document.getElementById('nat-btn-f').style.display='none';
-  document.getElementById('nat-input').style.display='flex';
-  document.getElementById('nat-in').value='';
-  setTimeout(()=>document.getElementById('nat-in').focus(),100);
-}
-
 function natSubmit(){
   const ans=document.getElementById('nat-in').value.trim();
-  if(!ans)return;
+  if(!ans||PENTA.natIdx===null)return;
   const qs=PENTA.data.pentathlon?.natation?.questions||[];
   const q=qs[PENTA.natIdx];
   const ok=checkPentaAnswer(ans,q?.a||'');
   const fb=document.getElementById('nat-fb');
   if(ok){
+    PENTA.natAnswered[PENTA.natIdx]=true;
     PENTA.score.natation=Math.min(100,PENTA.score.natation+20);
     pentaUpdateTotal();
     fb.textContent='✅ +20 pts';fb.style.color='var(--neon)';
   } else {
+    PENTA.natAnswered[PENTA.natIdx]=false;
     PENTA.natTimer=Math.max(0,PENTA.natTimer-5);
     fb.textContent='❌ −5s';fb.style.color='var(--red)';
   }
-  PENTA.natIdx++;
-  setTimeout(()=>{fb.textContent='';natShowQ();},500);
+  PENTA.natIdx=null;
+  setTimeout(()=>{
+    fb.textContent='';
+    document.getElementById('nat-active-zone').style.display='none';
+    natRenderCouloirs();
+  },600);
 }
 
-function natAnswer(ans){} // kept for compat
+function natShowQ(){} // compat
+function natAnswer(ans){} // compat
 
 function natEnd(){
   clearInterval(PENTA.natTimerInt);
