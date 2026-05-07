@@ -1674,21 +1674,34 @@ function pentaQDiv(content,onDelete){
 
 function renderPentaEscrime(){
   renderPentaList(pentaEscrimeQ,'penta-escrime-list',(q,i,el)=>{
-    const d=pentaQDiv(`
-      <div style="font-size:10px;color:var(--neon)">Q${i+1} · Touche ${i+1}</div>
-      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
-      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      <input type="text" value="${(q.w&&q.w[0]||'').replace(/"/g,'&quot;')}" placeholder="Mauvaise réponse…" style="width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-    `,()=>{pentaEscrimeQ.splice(i,1);renderPentaEscrime();});
-    const inputs=d.querySelectorAll('input');
-    inputs[0].oninput=e=>{pentaEscrimeQ[i].q=e.target.value;};
-    inputs[1].oninput=e=>{pentaEscrimeQ[i].a=e.target.value;};
-    inputs[2].oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[0]=e.target.value;};
-    inputs[3].oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[1]=e.target.value;};
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px';
+    const label=document.createElement('div');
+    label.style.cssText='font-size:10px;color:var(--neon);margin-bottom:2px';
+    label.textContent='Q'+(i+1)+' · Touche '+(i+1);
+    const inQ=document.createElement('input');
+    inQ.type='text'; inQ.value=q.q||''; inQ.placeholder='Question…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none';
+    inQ.oninput=e=>{pentaEscrimeQ[i].q=e.target.value;checkReady();};
+    const inA=document.createElement('input');
+    inA.type='text'; inA.value=q.a||''; inA.placeholder='Bonne réponse…';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
+    inA.oninput=e=>{pentaEscrimeQ[i].a=e.target.value;checkReady();};
+    const inW1=document.createElement('input');
+    inW1.type='text'; inW1.value=(q.w&&q.w[0])||''; inW1.placeholder='Mauvaise réponse 1…';
+    inW1.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
+    inW1.oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[0]=e.target.value;};
+    const inW2=document.createElement('input');
+    inW2.type='text'; inW2.value=(q.w&&q.w[1])||''; inW2.placeholder='Mauvaise réponse 2…';
+    inW2.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
+    inW2.oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[1]=e.target.value;};
+    const del=document.createElement('button');
+    del.textContent='🗑 Supprimer'; del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px;align-self:flex-start';
+    del.onclick=()=>{pentaEscrimeQ.splice(i,1);renderPentaEscrime();};
+    d.append(label,inQ,inA,inW1,inW2,del);
     el.appendChild(d);
   });
 }
-
 function renderPentaNatation(){
   renderPentaList(pentaNatationQ,'penta-natation-list',(q,i,el)=>{
     const d=pentaQDiv(`
