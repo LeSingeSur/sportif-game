@@ -1223,6 +1223,19 @@ async function startEdit(id){
     mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||[''])]}));
     setTimeout(()=>renderMFQuestions(),50);
   }
+  if(a.type==='pentathlon'){
+    const p=a.pentathlon||{};
+    pentaEscrimeQ=[...(p.escrime?.questions||[])].map(q=>({q:q.q||'',a:q.a||'',w:[...(q.w||[])]}));
+    pentaNatationQ=[...(p.natation?.questions||[])].map(q=>({q:q.q||'',a:q.a||''}));
+    pentaEquitationQ=[...(p.equitation?.obstacles||[])].map(o=>({q:o.q||'',a:o.a||'',level:o.level||'moyen'}));
+    pentaLaserrunQ=[...(p.laserrun?.cycles||[])].map(c=>({
+      vf:{q:c.vf?.q||'',a:c.vf?.a||'Vrai'},
+      tir:{q:c.tir?.q||'',a:c.tir?.a||'',max:c.tir?.max||100}
+    }));
+    if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
+    if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
+    setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
   if(a.type==='haltero'){
     const ar=a.halteroArache||{};
     const ej=a.halteroEpaule||{};
@@ -1677,21 +1690,18 @@ function renderPentaEscrime(){
 
 function renderPentaNatation(){
   renderPentaList(pentaNatationQ,'penta-natation-list',(q,i,el)=>{
-    const isV=(q.a||'Vrai')==='Vrai';
     const d=pentaQDiv(`
-      <div style="font-size:10px;color:var(--cyan)">Q${i+1}</div>
-      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Affirmation vraie ou fausse…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
-      <div style="display:flex;gap:6px;margin-top:2px">
-        <button id="pn-v-${i}" onclick="pentaNatSetA(${i},'Vrai')" style="flex:1;padding:5px;border-radius:6px;border:2px solid ${isV?'var(--neon)':'rgba(255,255,255,.1)'};background:${isV?'rgba(212,255,0,.1)':'var(--c1)'};color:${isV?'var(--neon)':'var(--mute)'};font-weight:700;cursor:pointer;font-family:var(--ff);font-size:11px">✅ VRAI</button>
-        <button id="pn-f-${i}" onclick="pentaNatSetA(${i},'Faux')" style="flex:1;padding:5px;border-radius:6px;border:2px solid ${!isV?'var(--red)':'rgba(255,255,255,.1)'};background:${!isV?'rgba(255,60,60,.1)':'var(--c1)'};color:${!isV?'var(--red)':'var(--mute)'};font-weight:700;cursor:pointer;font-family:var(--ff);font-size:11px">❌ FAUX</button>
-      </div>
+      <div style="font-size:10px;color:var(--cyan)">Q${i+1} · 20 pts</div>
+      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
+      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--cyan);color:var(--cyan);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
     `,()=>{pentaNatationQ.splice(i,1);renderPentaNatation();});
-    const inp=d.querySelector('input');
-    inp.oninput=e=>{pentaNatationQ[i].q=e.target.value;};
+    const inputs=d.querySelectorAll('input');
+    inputs[0].oninput=e=>{pentaNatationQ[i].q=e.target.value;};
+    inputs[1].oninput=e=>{pentaNatationQ[i].a=e.target.value;};
     el.appendChild(d);
   });
 }
-function pentaNatSetA(i,v){pentaNatationQ[i].a=v;renderPentaNatation();}
+function pentaNatSetA(i,v){pentaNatationQ[i].a=v;}
 
 function renderPentaEquitation(){
   const levels=['facile','moyen','difficile'];
@@ -1725,12 +1735,16 @@ function renderPentaLaserrun(){
       </div>
       <div style="font-size:9px;color:var(--mute);margin-top:4px">🎯 TIR (question ouverte)</div>
       <input type="text" value="${(q.tir?.q||'').replace(/"/g,'&quot;')}" placeholder="Question tir…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      <input type="text" value="${(q.tir?.a||'').replace(/"/g,'&quot;')}" placeholder="Réponse tir…" style="width:100%;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      <div style="display:flex;gap:4px">
+        <input type="text" value="${(q.tir?.a||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte (nombre)…" style="flex:2;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+        <input type="number" value="${q.tir?.max||100}" placeholder="Max slider" style="flex:1;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
+      </div>
     `,()=>{pentaLaserrunQ.splice(i,1);renderPentaLaserrun();});
     const inputs=d.querySelectorAll('input');
     inputs[0].oninput=e=>{if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.q=e.target.value;};
     inputs[1].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.q=e.target.value;};
     inputs[2].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.a=e.target.value;};
+    if(inputs[3]) inputs[3].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.max=parseInt(e.target.value)||100;};
     el.appendChild(d);
   });
 }
@@ -2139,9 +2153,13 @@ async function loadComptes(){
     if(!data.accounts.length){list.innerHTML='<div style="color:var(--mute);text-align:center;padding:16px">Aucun compte créé.</div>';return;}
     list.innerHTML='';
     data.accounts.forEach(a=>{
+      const isIPPseudo=/^[\d\.:a-f]{7,}$/i.test(a.pseudo);
       const div=document.createElement('div');
-      div.style.cssText='display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:10px 14px';
-      div.innerHTML=`<div><div style="font-weight:700;font-size:14px">${a.pseudo}</div><div style="font-size:11px;color:var(--mute)">${a.createdAt?new Date(a.createdAt).toLocaleDateString('fr-FR'):''} · ${a.ip||'?'}</div></div><button onclick="deleteCompte('${a.pseudo}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑</button>`;
+      div.style.cssText='display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:10px 14px'+(isIPPseudo?';opacity:0.6':'');
+      const date=a.createdAt?new Date(a.createdAt).toLocaleDateString('fr-FR'):'';
+      const ipStr=a.ip?`<span style="font-size:10px;color:var(--mute);margin-left:6px">${a.ip}</span>`:'';
+      const pseudoDisplay=isIPPseudo?`<span style="color:var(--red)">${esc(a.pseudo)} ⚠️</span>`:esc(a.pseudo||'(sans pseudo)');
+      div.innerHTML=`<div><div style="font-weight:700;font-size:14px">${pseudoDisplay}${ipStr}</div><div style="font-size:11px;color:var(--mute)">${date}${a.teamId?' · 👥':''}</div></div><button onclick="deleteCompte('${esc(a.pseudo)}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑</button>`;
       list.appendChild(div);
     });
   }catch(e){list.innerHTML='<div style="color:var(--red)">Erreur réseau</div>';}
