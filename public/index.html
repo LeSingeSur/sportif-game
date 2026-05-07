@@ -433,15 +433,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .replique-full{background:var(--c1);border-radius:var(--r);padding:16px;font-size:14px;font-style:italic;color:var(--txt);text-align:center;line-height:1.7;border-left:4px solid var(--orange)}
 .replique-timer-bar{height:5px;background:var(--c2);border-radius:99px;overflow:hidden}
 .replique-timer-fill{height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 1s linear}
-#demineur-zone{display:none;flex-direction:column;gap:14px}
-.dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.3;min-height:52px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#demineur-zone{display:none;flex-direction:column;gap:16px}
+.dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 6px;text-align:center;font-size:12px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.4;min-height:64px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;word-break:break-word}
 .dem-case:active{transform:scale(.96)}
 .dem-case.safe{background:rgba(0,230,118,.15);border-color:#00e676;color:#00e676;cursor:default}
 .dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default}
 .dem-case.locked{opacity:.45;cursor:default;pointer-events:none}
 @keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(.95)}100%{transform:scale(1)}}
-.dem-pot{font-family:var(--fh);font-size:48px;text-align:center;color:var(--neon);transition:all .2s;line-height:1}
+.dem-pot{font-family:var(--fh);font-size:36px;text-align:center;color:var(--neon);transition:all .2s;line-height:1.1}
 .dem-pot.flash{animation:dem-flash .3s ease}
 @keyframes dem-flash{0%{transform:scale(1)}50%{transform:scale(1.15);color:#fff}100%{transform:scale(1)}}
 .dem-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
@@ -1438,17 +1438,16 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LE DÉMINEUR zone -->
   <div id="demineur-zone">
-    <div id="dem-question" style="font-size:14px;font-weight:700;text-align:center;padding:10px 12px;background:var(--c1);border-radius:var(--r);color:var(--txt);line-height:1.4"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div id="dem-timer-txt" style="font-family:var(--fh);font-size:22px;color:var(--neon)">60s</div>
-      <div style="font-size:12px;color:var(--mute)">Pot temporaire</div>
+    <div id="dem-question" style="font-size:14px;font-weight:700;text-align:center;padding:12px 14px;background:var(--c1);border-radius:var(--r);color:var(--txt);line-height:1.5"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px">
+      <div id="dem-timer-txt" style="font-family:var(--fh);font-size:24px;color:var(--neon)">60s</div>
+      <div style="text-align:right"><div style="font-size:10px;color:var(--mute);letter-spacing:1px">POT TEMPORAIRE</div><div class="dem-pot" id="dem-pot" style="font-size:32px;margin:0;line-height:1.1">0</div></div>
     </div>
-    <div id="dem-timer-bar" style="height:5px;background:var(--c2);border-radius:99px;overflow:hidden">
+    <div id="dem-timer-bar" style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden">
       <div id="dem-timer-fill" style="height:100%;background:var(--neon);width:100%;border-radius:99px;transition:width 1s linear"></div>
     </div>
-    <div class="dem-pot" id="dem-pot">0</div>
     <div class="dem-grid" id="dem-grid"></div>
-    <button id="dem-encaisser" class="btn btn-p dem-encaisser" disabled>💰 ENCAISSER — 0 pts</button>
+    <button id="dem-encaisser" class="btn btn-p dem-encaisser" disabled style="padding:16px;font-size:17px">💰 ENCAISSER — 0 pts</button>
     <div id="dem-fb" style="font-size:13px;text-align:center;min-height:18px;color:var(--mute)"></div>
   </div>
 
