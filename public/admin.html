@@ -262,11 +262,6 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Escrime</div>
             <div class="type-desc">Piste · Phase 1 vitesse · Estocade finale</div>
           </div>
-          <div class="type-opt" id="type-assaut" onclick="selectType('assaut')">
-            <div class="type-ico">⚔️</div>
-            <div class="type-name">L'Assaut</div>
-            <div class="type-desc">Piste · Duel vs Admin · 10 cases</div>
-          </div>
           <div class="type-opt" id="type-tirarlarc" onclick="selectType('tirarlarc')">
             <div class="type-ico">🎯</div>
             <div class="type-name">Tir à l'Arc</div>
@@ -1580,7 +1575,6 @@ function checkReady(){
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
-  else if(currentType==='assaut') hasContent=assautQuestions.length>=1&&!!document.getElementById('assaut-finale-q')?.value.trim();
   else if(currentType==='assaut') hasContent=assautP1.length>=1&&!!document.getElementById('assaut-p2-q')?.value.trim();
   else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
   else if(currentType==='nagesync') hasContent=nsCouloirs.filter(c=>c.label).length>=1&&nsSportifs.filter(s=>s.nom).length>=1;
@@ -1796,24 +1790,28 @@ function renderAssautP1(){
     inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
     inQ.oninput=e=>{assautP1[i].q=e.target.value;checkReady();};
     const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center';
-    const inA=document.createElement('input');
-    inA.type='text';inA.value=q.a||'';inA.placeholder='Bonne réponse…';
-    inA.style.cssText='flex:2;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
-    inA.oninput=e=>{assautP1[i].a=e.target.value;};
-    const inW=document.createElement('input');
-    inW.type='text';inW.value=q.w||'';inW.placeholder='Mauvaise réponse…';
-    inW.style.cssText='flex:2;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
-    inW.oninput=e=>{assautP1[i].w=e.target.value;};
+    const isVrai=(q.a||'Vrai')==='Vrai';
+    const vfRow=document.createElement('div');vfRow.style.cssText='display:flex;gap:6px;margin-bottom:4px';
+    const btnV=document.createElement('button');btnV.textContent='✅ VRAI';
+    btnV.style.cssText='flex:1;padding:5px;border-radius:6px;border:2px solid '+(isVrai?'var(--neon)':'rgba(255,255,255,.1)')+';background:'+(isVrai?'rgba(212,255,0,.1)':'var(--c1)')+';color:'+(isVrai?'var(--neon)':'var(--mute)')+';font-size:11px;cursor:pointer;font-family:var(--ff)';
+    btnV.onclick=()=>{assautP1[i].a='Vrai';renderAssautP1();};
+    const btnF=document.createElement('button');btnF.textContent='❌ FAUX';
+    btnF.style.cssText='flex:1;padding:5px;border-radius:6px;border:2px solid '+(!isVrai?'var(--red)':'rgba(255,255,255,.1)')+';background:'+(!isVrai?'rgba(255,60,60,.1)':'var(--c1)')+';color:'+(!isVrai?'var(--red)':'var(--mute)')+';font-size:11px;cursor:pointer;font-family:var(--ff)';
+    btnF.onclick=()=>{assautP1[i].a='Faux';renderAssautP1();};
+    vfRow.append(btnV,btnF);
+    const inA=document.createElement('span');// dummy for row compat
+
     const inT=document.createElement('input');
     inT.type='number';inT.value=q.adminTime||3;inT.min=1;inT.max=30;inT.placeholder='Temps Admin (s)';
     inT.style.cssText='width:70px;background:var(--c1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
     inT.oninput=e=>{assautP1[i].adminTime=parseInt(e.target.value)||3;};
     const tLbl=document.createElement('span');tLbl.textContent='s Admin';tLbl.style.cssText='font-size:10px;color:var(--mute)';
-    row.append(inA,inW,inT,tLbl);
+    row.append(inA,inT,tLbl);
     const del=document.createElement('button');
     del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
     del.onclick=()=>{assautP1.splice(i,1);renderAssautP1();};
-    d.append(lbl,inQ,row,del);
+    const inA2=document.createElement('div');// placeholder
+    d.append(lbl,inQ,vfRow,row,del);
     list.appendChild(d);
   });
   checkReady();
@@ -1872,7 +1870,7 @@ function renderArcCibles(){
     const inVal=document.createElement('input');
     inVal.type='number';inVal.value=c.value||'';inVal.placeholder='Valeur exacte';
     inVal.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;checkReady();};
+    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;arcUpdateRanges(i);checkReady();};
     const inMax=document.createElement('input');
     inMax.type='number';inMax.value=c.max||100;inMax.placeholder='Max slider';
     inMax.style.cssText='flex:1;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
@@ -1881,16 +1879,33 @@ function renderArcCibles(){
     inTol.type='number';inTol.value=c.tolerance||'';inTol.placeholder='Tol.% (vide=auto)';
     inTol.min=1;inTol.max=50;
     inTol.style.cssText='width:80px;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:5px 6px;outline:none';
-    inTol.oninput=e=>{arcCibles[i].tolerance=parseInt(e.target.value)||null;};
+    inTol.oninput=e=>{arcCibles[i].tolerance=parseInt(e.target.value)||null;arcUpdateRanges(i);};
     row.append(inVal,inMax,inTol);
+    const rangeDiv=document.createElement('div');
+    rangeDiv.id='arc-range-'+i;
+    rangeDiv.style.cssText='font-size:10px;color:var(--mute);line-height:1.8';
     const del=document.createElement('button');
     del.textContent='🗑 Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;align-self:flex-start';
     del.onclick=()=>{arcCibles.splice(i,1);renderArcCibles();};
-    d.append(label,inStat,row,del);
+    d.append(label,inStat,row,rangeDiv,del);
+    setTimeout(()=>arcUpdateRanges(i),10);
     list.appendChild(d);
   });
   if(count)count.textContent=arcCibles.length+'/3 cibles';
   checkReady();
+}
+function arcUpdateRanges(i){
+  const c=arcCibles[i]; if(!c)return;
+  const el=document.getElementById('arc-range-'+i); if(!el)return;
+  const v=c.value||0; if(!v){el.textContent='';return;}
+  const tols={facile:c.tolerance||20,moyen:c.tolerance||8,difficile:c.tolerance||3};
+  const r11=Math.round(v*tols.facile/100);
+  const r22=Math.round(v*tols.moyen/100);
+  const r33=Math.round(v*tols.difficile/100);
+  el.innerHTML=
+    '🟢 11m (±'+tols.facile+'%) : <strong>'+(v-r11)+'</strong> → <strong>'+(v+r11)+'</strong><br>'+
+    '🟡 22m (±'+tols.moyen+'%) : <strong>'+(v-r22)+'</strong> → <strong>'+(v+r22)+'</strong><br>'+
+    '🔴 33m (±'+tols.difficile+'%) : <strong>'+(v-r33)+'</strong> → <strong>'+(v+r33)+'</strong>';
 }
 document.getElementById('btn-add-arc').onclick=()=>{
   if(arcCibles.length>=3)return alert('3 cibles max');
@@ -1952,7 +1967,7 @@ function renderNsSportifs(){
 }
 document.getElementById('btn-add-couloir').onclick=()=>{
   if(nsCouloirs.length>=5)return alert('5 couloirs max');
-  nsCouloirs.push({label:''});renderNsCouloirs();
+  nsCouloirs.push({label:''});renderNsCouloirs();renderNsSportifs();
 };
 document.getElementById('btn-add-sportif').onclick=()=>{
   if(nsSportifs.length>=5)return alert('5 sportifs max');
@@ -2900,7 +2915,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Assaut':currentType==='assaut'?'L\'Assaut':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Escrime':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
