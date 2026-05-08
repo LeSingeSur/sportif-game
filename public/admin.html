@@ -343,7 +343,26 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- TIR À L'ARC FIELDS -->
       <div id="tirarlarc-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          🎯 3 cibles · Difficile=33pts · Moyen=22pts · Facile=11pts · Bonus +1pt si 3/3 touchées
+          🎯 3 cibles · Le joueur choisit librement 11m/22m/33m · Bonus +1pt si 3/3 touchées
+        </div>
+        <!-- Tolérances globales -->
+        <div style="background:var(--c2);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--neon);letter-spacing:1px;margin-bottom:8px;font-weight:700">TOLÉRANCES PAR DISTANCE</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+              <label style="font-size:10px;color:var(--mute)">🟢 11m ±%</label>
+              <input type="number" id="arc-tol-facile" value="20" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+              <label style="font-size:10px;color:var(--mute)">🟡 22m ±%</label>
+              <input type="number" id="arc-tol-moyen" value="8" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+              <label style="font-size:10px;color:var(--mute)">🔴 33m ±%</label>
+              <input type="number" id="arc-tol-difficile" value="3" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(255,60,60,.3);color:var(--red);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
+            </div>
+          </div>
+          <div id="arc-esperance" style="margin-top:8px;font-size:11px;line-height:1.8;color:var(--mute)"></div>
         </div>
         <div id="arc-cibles-list" style="display:flex;flex-direction:column;gap:8px"></div>
         <button class="btn btn-s" id="btn-add-arc" style="margin-top:8px">➕ Ajouter une cible (max 3)</button>
@@ -1936,6 +1955,7 @@ function renderNsCouloirs(){
     d.append(lbl,inp,del);
     list.appendChild(d);
   });
+  checkReady();
 }
 function renderNsSportifs(){
   const list=document.getElementById('ns-sportifs-list');
