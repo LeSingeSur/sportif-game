@@ -6029,14 +6029,14 @@ function assautShowQ1(){
   const ch=document.getElementById('assaut-choices');
   if(!ch)return;
   ch.innerHTML='';
-  let choices=[{txt:q.a||'Vrai',correct:true},{txt:q.w||'Faux',correct:false}];
-  if(Math.random()>.5)choices.reverse();
-  choices.forEach(c=>{
-    const btn=document.createElement('button');
-    btn.className='biat-qcm-btn';btn.textContent=c.txt;
-    btn.onclick=()=>assautAnswerP1(c.correct,q.adminTime||3);
-    ch.appendChild(btn);
-  });
+  // Always V/F — no text choices
+  const btnV=document.createElement('button');
+  btnV.className='biat-qcm-btn';btnV.textContent='✅ VRAI';
+  btnV.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Vrai',q.adminTime||3);
+  const btnF=document.createElement('button');
+  btnF.className='biat-qcm-btn';btnF.textContent='❌ FAUX';
+  btnF.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Faux',q.adminTime||3);
+  ch.appendChild(btnV);ch.appendChild(btnF);
 }
 
 function assautAnswerP1(correct,adminTimeSec){
@@ -6206,7 +6206,7 @@ function arcChoixDistance(difficulty){
     <input type="range" id="arc-slider" min="0" max="${max}" value="${Math.round(max/2)}" 
       style="width:100%;accent-color:var(--neon)" 
       oninput="document.getElementById('arc-slider-val').textContent=this.value">
-    <div style="font-size:11px;color:var(--mute);text-align:center">Tolérance ±${Math.round(tolerance*100)}%</div>
+    <div style="font-size:11px;color:var(--mute);text-align:center">Tolérance ±${Math.round(tolerance*100)}% · Zone valide : ${Math.round(target*(1-tolerance))} — ${Math.round(target*(1+tolerance))}</div>
     <button onclick="arcTirer(${target},${maxPts},${tolerance},${max})" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">🏹 TIRER</button>`;
   zone.appendChild(d);
 }
