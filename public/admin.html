@@ -1800,25 +1800,7 @@ document.getElementById('btn-add-assaut-p1').onclick=()=>{
 });
 
 // ── TIR À L'ARC ADMIN ─────────────────────────────────────────────────────
-function arcUpdateEsperance(){
-  const t11=parseFloat(document.getElementById('arc-tol-facile')?.value)||20;
-  const t22=parseFloat(document.getElementById('arc-tol-moyen')?.value)||8;
-  const t33=parseFloat(document.getElementById('arc-tol-difficile')?.value)||3;
-  const e11=(11*(t11*2/100)).toFixed(1);
-  const e22=(22*(t22*2/100)).toFixed(1);
-  const e33=(33*(t33*2/100)).toFixed(1);
-  const ok11_22=parseFloat(e11)>parseFloat(e22);
-  const ok22_33=parseFloat(e22)>parseFloat(e33);
-  const el=document.getElementById('arc-esperance');
-  if(!el)return;
-  el.innerHTML=
-    '🟢 11m → espérance <strong style="color:var(--neon)">'+e11+' pts</strong> '+(ok11_22?'✅':'⚠️')+'<br>'+
-    '🟡 22m → espérance <strong style="color:#f59e0b">'+e22+' pts</strong> '+(ok22_33?'✅':'⚠️')+'<br>'+
-    '🔴 33m → espérance <strong style="color:var(--red)">'+e33+' pts</strong><br>'+
-    (!ok11_22||!ok22_33?'<span style="color:var(--red)">⚠️ Hiérarchie déséquilibrée — ajuste les %</span>':'<span style="color:var(--neon)">✅ Hiérarchie 11m > 22m > 33m</span>');
-}
-// Init on load
-setTimeout(()=>arcUpdateEsperance(),100);
+
 let arcCibles=[];
 const DIFF_PTS={facile:11,moyen:22,difficile:33};
 
@@ -1887,11 +1869,8 @@ function arcRenderRanges(i){
   const c=arcCibles[i]; if(!c)return;
   const el=document.getElementById('arc-range-'+i); if(!el)return;
   const v=c.value||0; if(!v){el.textContent='Entrez la valeur exacte pour voir les plages';return;}
-  // Use per-cible tolerance or fall back to global
-  const gt11=parseFloat(document.getElementById('arc-tol-facile')?.value)||20;
-  const gt22=parseFloat(document.getElementById('arc-tol-moyen')?.value)||8;
-  const gt33=parseFloat(document.getElementById('arc-tol-difficile')?.value)||3;
-  const t11=c.tol11||gt11; const t22=c.tol22||gt22; const t33=c.tol33||gt33;
+  // Use per-cible tolerance only (no global fallback — fields removed)
+  const t11=c.tol11||20; const t22=c.tol22||8; const t33=c.tol33||3;
   const r11=Math.round(v*t11/100); const r22=Math.round(v*t22/100); const r33=Math.round(v*t33/100);
   el.innerHTML=
     '🟢 11m (±'+t11+'%) : <strong style="color:var(--neon)">'+(v-r11)+'</strong> → <strong style="color:var(--neon)">'+(v+r11)+'</strong><br>'+
@@ -1902,7 +1881,7 @@ function arcRenderRanges(i){
 function arcUpdateRanges(i){arcRenderRanges(i);}
 document.getElementById('btn-add-arc').onclick=()=>{
   if(arcCibles.length>=3)return alert('3 cibles max');
-  arcCibles.push({stat:'',value:0,max:100,difficulty:'moyen'});
+  arcCibles.push({stat:'',value:0,max:100,tol11:null,tol22:null,tol33:null});
   renderArcCibles();
 };
 
