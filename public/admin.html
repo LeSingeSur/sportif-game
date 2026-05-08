@@ -1874,58 +1874,77 @@ function renderArcCibles(){
   list.innerHTML='';
   arcCibles.forEach((c,i)=>{
     const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px';
-    const diff=c.difficulty||'moyen';
-    const pts=DIFF_PTS[diff]||22;
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px';
+    // Label
     const label=document.createElement('div');
-    label.style.cssText='font-size:10px;color:var(--neon)';
-    label.textContent='Cible '+(i+1)+' · '+pts+' pts';
+    label.style.cssText='font-family:var(--fh);font-size:11px;color:var(--neon);letter-spacing:1px';
+    label.textContent='🎯 CIBLE '+(i+1);
+    // Stat
     const inStat=document.createElement('input');
-    inStat.type='text';inStat.value=c.stat||'';inStat.placeholder='Stat / Question (ex: Buts en carrière)…';
-    inStat.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inStat.type='text';inStat.value=c.stat||'';inStat.placeholder='Stat à deviner (ex: Buts en carrière)…';
+    inStat.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 10px;outline:none';
     inStat.oninput=e=>{arcCibles[i].stat=e.target.value;checkReady();};
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;gap:6px';
+    // Valeur + Max slider
+    const rowTop=document.createElement('div');rowTop.style.cssText='display:flex;gap:6px';
     const inVal=document.createElement('input');
     inVal.type='number';inVal.value=c.value||'';inVal.placeholder='Valeur exacte';
-    inVal.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;arcUpdateRanges(i);checkReady();};
+    inVal.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:6px 8px;outline:none';
+    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;arcRenderRanges(i);checkReady();};
     const inMax=document.createElement('input');
-    inMax.type='number';inMax.value=c.max||100;inMax.placeholder='Max slider';
-    inMax.style.cssText='flex:1;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inMax.type='number';inMax.value=c.max||'';inMax.placeholder='Max slider (ex: 2× la valeur)';
+    inMax.style.cssText='flex:1;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:6px 8px;outline:none';
     inMax.oninput=e=>{arcCibles[i].max=parseInt(e.target.value)||100;};
-    const inTol=document.createElement('input');
-    inTol.type='number';inTol.value=c.tolerance||'';inTol.placeholder='Tol.% (vide=auto)';
-    inTol.min=1;inTol.max=50;
-    inTol.style.cssText='width:80px;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:5px 6px;outline:none';
-    inTol.oninput=e=>{arcCibles[i].tolerance=parseInt(e.target.value)||null;arcUpdateRanges(i);};
-    row.append(inVal,inMax,inTol);
+    rowTop.append(inVal,inMax);
+    // 3 tolerance fields per distance
+    const tolTitle=document.createElement('div');
+    tolTitle.style.cssText='font-size:10px;color:var(--mute);margin-top:2px';
+    tolTitle.textContent='Écart accepté ± par distance (% de la valeur exacte)';
+    const tolRow=document.createElement('div');tolRow.style.cssText='display:flex;gap:6px';
+    [['facile','🟢 11m','var(--neon)','tol11'],['moyen','🟡 22m','#f59e0b','tol22'],['difficile','🔴 33m','var(--red)','tol33']].forEach(([key,lbl,col,field])=>{
+      const wrap=document.createElement('div');wrap.style.cssText='flex:1;display:flex;flex-direction:column;gap:2px';
+      const l=document.createElement('div');l.style.cssText='font-size:10px;color:'+col;l.textContent=lbl;
+      const inp=document.createElement('input');
+      inp.type='number';inp.value=c[field]||'';inp.placeholder='%';
+      inp.min=1;inp.max=50;
+      inp.style.cssText='width:100%;background:var(--c1);border:1px solid '+col.replace(')',', .4)').replace('var(','rgba(')+';color:'+col+';font-size:13px;font-weight:700;border-radius:6px;padding:5px 8px;outline:none';
+      inp.style.cssText='width:100%;background:var(--c1);border:none;color:'+col+';font-size:13px;font-weight:700;border-radius:6px;padding:5px 8px;outline:none';
+      inp.oninput=e=>{arcCibles[i][field]=parseInt(e.target.value)||null;arcRenderRanges(i);};
+      wrap.append(l,inp);tolRow.appendChild(wrap);
+    });
+    // Range preview
     const rangeDiv=document.createElement('div');
     rangeDiv.id='arc-range-'+i;
-    rangeDiv.style.cssText='font-size:10px;color:var(--mute);line-height:1.8';
+    rangeDiv.style.cssText='font-size:11px;color:var(--mute);line-height:2;background:var(--c1);border-radius:6px;padding:6px 10px';
+    rangeDiv.textContent='Entrez la valeur exacte pour voir les plages';
+    // Delete
     const del=document.createElement('button');
     del.textContent='🗑 Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;align-self:flex-start';
     del.onclick=()=>{arcCibles.splice(i,1);renderArcCibles();};
-    d.append(label,inStat,row,rangeDiv,del);
-    setTimeout(()=>arcUpdateRanges(i),10);
+    d.append(label,inStat,rowTop,tolTitle,tolRow,rangeDiv,del);
     list.appendChild(d);
+    setTimeout(()=>arcRenderRanges(i),10);
   });
   if(count)count.textContent=arcCibles.length+'/3 cibles';
   checkReady();
 }
-function arcUpdateRanges(i){
+
+function arcRenderRanges(i){
   const c=arcCibles[i]; if(!c)return;
   const el=document.getElementById('arc-range-'+i); if(!el)return;
-  const v=c.value||0; if(!v){el.textContent='';return;}
-  const tols={facile:c.tolerance||20,moyen:c.tolerance||8,difficile:c.tolerance||3};
-  const r11=Math.round(v*tols.facile/100);
-  const r22=Math.round(v*tols.moyen/100);
-  const r33=Math.round(v*tols.difficile/100);
+  const v=c.value||0; if(!v){el.textContent='Entrez la valeur exacte pour voir les plages';return;}
+  // Use per-cible tolerance or fall back to global
+  const gt11=parseFloat(document.getElementById('arc-tol-facile')?.value)||20;
+  const gt22=parseFloat(document.getElementById('arc-tol-moyen')?.value)||8;
+  const gt33=parseFloat(document.getElementById('arc-tol-difficile')?.value)||3;
+  const t11=c.tol11||gt11; const t22=c.tol22||gt22; const t33=c.tol33||gt33;
+  const r11=Math.round(v*t11/100); const r22=Math.round(v*t22/100); const r33=Math.round(v*t33/100);
   el.innerHTML=
-    '🟢 11m (±'+tols.facile+'%) : <strong>'+(v-r11)+'</strong> → <strong>'+(v+r11)+'</strong><br>'+
-    '🟡 22m (±'+tols.moyen+'%) : <strong>'+(v-r22)+'</strong> → <strong>'+(v+r22)+'</strong><br>'+
-    '🔴 33m (±'+tols.difficile+'%) : <strong>'+(v-r33)+'</strong> → <strong>'+(v+r33)+'</strong>';
+    '🟢 11m (±'+t11+'%) : <strong style="color:var(--neon)">'+(v-r11)+'</strong> → <strong style="color:var(--neon)">'+(v+r11)+'</strong><br>'+
+    '🟡 22m (±'+t22+'%) : <strong style="color:#f59e0b">'+(v-r22)+'</strong> → <strong style="color:#f59e0b">'+(v+r22)+'</strong><br>'+
+    '🔴 33m (±'+t33+'%) : <strong style="color:var(--red)">'+(v-r33)+'</strong> → <strong style="color:var(--red)">'+(v+r33)+'</strong>';
 }
+
+function arcUpdateRanges(i){arcRenderRanges(i);}
 document.getElementById('btn-add-arc').onclick=()=>{
   if(arcCibles.length>=3)return alert('3 cibles max');
   arcCibles.push({stat:'',value:0,max:100,difficulty:'moyen'});
@@ -2893,7 +2912,10 @@ document.getElementById('btn-save').onclick=async()=>{
     moyen:parseFloat(document.getElementById('arc-tol-moyen')?.value)||8,
     difficile:parseFloat(document.getElementById('arc-tol-difficile')?.value)||3
   }:{};
-  const arcCiblesData = currentType==='tirarlarc'?arcCibles:[];
+  const arcCiblesData = currentType==='tirarlarc'?arcCibles.map(c=>({
+    stat:c.stat||'',value:c.value||0,max:c.max||100,
+    tol11:c.tol11||null,tol22:c.tol22||null,tol33:c.tol33||null
+  })):[];
   const nsSyncData = currentType==='nagesync'?{couloirs:nsCouloirs,sportifs:nsSportifs}:{};
   const halteroArache = currentType==='haltero'?{
     sportif1:document.getElementById('ha-s1')?.value.trim()||'',

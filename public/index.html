@@ -6187,7 +6187,9 @@ function arcChoixDistance(difficulty){
   const c=cibles[ARC.cibleIdx];
   const maxPts=ARC_DIFF_PTS[difficulty];
   const tols=ARC.data.arcTolerances||{facile:20,moyen:8,difficile:3};
-  const tolerance=(tols[difficulty]||ARC_TOLERANCE[difficulty]*100)/100;
+  const perCible={facile:c.tol11,moyen:c.tol22,difficile:c.tol33};
+  const tolPct=perCible[difficulty]||tols[difficulty]||(ARC_TOLERANCE[difficulty]*100);
+  const tolerance=tolPct/100;
   const target=c.value;
   const max=c.max||Math.round(target*2);
   const zone=document.getElementById('arc-cible-zone');
@@ -6196,26 +6198,33 @@ function arcChoixDistance(difficulty){
   // Phase 2: slider
   const d=document.createElement('div');
   d.className='arc-cible';
-  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${difficulty.toUpperCase()} · ${maxPts} pts</div>
-    <div style="font-size:14px;font-weight:700;color:var(--txt)">${c.stat}</div>
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute)">
-      <span>0</span>
-      <span style="font-family:var(--fh);font-size:22px;color:var(--neon)" id="arc-slider-val">${Math.round(max/2)}</span>
-      <span>${max}</span>
+  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${difficulty==='facile'?'🟢 11m':difficulty==='moyen'?'🟡 22m':'🔴 33m'} · ${maxPts} pts</div>
+    <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px">${c.stat}</div>
+    <div style="text-align:center;margin-bottom:6px">
+      <span style="font-family:var(--fh);font-size:40px;color:var(--neon)" id="arc-slider-val">${Math.round(max/2)}</span>
     </div>
     <input type="range" id="arc-slider" min="0" max="${max}" value="${Math.round(max/2)}" 
-      style="width:100%;accent-color:var(--neon)" 
+      style="width:100%;accent-color:var(--neon);height:28px;cursor:pointer" 
       oninput="document.getElementById('arc-slider-val').textContent=this.value">
-    <div style="font-size:11px;color:var(--mute);text-align:center">Tolérance ±${Math.round(tolerance*100)}% · Zone valide : ${Math.round(target*(1-tolerance))} — ${Math.round(target*(1+tolerance))}</div>
-    <button onclick="arcTirer(${target},${maxPts},${tolerance},${max})" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">🏹 TIRER</button>`;
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:2px">
+      <span>0</span><span>${max}</span>
+    </div>
+    <div style="font-size:12px;color:var(--mute);text-align:center;margin-top:4px;background:var(--c2);border-radius:8px;padding:6px">
+      Zone valide : <strong style="color:var(--neon)">${Math.round(target*(1-tolerance))}</strong> → <strong style="color:var(--neon)">${Math.round(target*(1+tolerance))}</strong>
+      <span style="color:var(--mute)"> (±${Math.round(tolerance*100)}%)</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="document.getElementById('arc-slider').value=Math.max(0,parseInt(document.getElementById('arc-slider').value)-1);document.getElementById('arc-slider-val').textContent=document.getElementById('arc-slider').value" style="width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:20px;cursor:pointer">−</button>
+      <button onclick="arcTirer(${target},${maxPts},${tolerance},${max})" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:16px;letter-spacing:2px;height:44px">🏹 TIRER</button>
+      <button onclick="document.getElementById('arc-slider').value=Math.min(${max},parseInt(document.getElementById('arc-slider').value)+1);document.getElementById('arc-slider-val').textContent=document.getElementById('arc-slider').value" style="width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:20px;cursor:pointer">+</button>
+    </div>`;
   zone.appendChild(d);
 }
 
 function arcTirer(target,maxPts,tolerance,max){
   const val=parseInt(document.getElementById('arc-slider').value);
   const ecart=Math.abs(val-target);
-  const customTolPct=ARC.data.cibles?.[ARC.cibleIdx]?.tolerance;
-  const toler=customTolPct?Math.round(target*(customTolPct/100)):Math.round(target*tolerance);
+  const toler=Math.round(target*tolerance);
   const hit=ecart<=toler;
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
