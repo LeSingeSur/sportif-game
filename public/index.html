@@ -6288,8 +6288,14 @@ function setupNageSync(data){
 }
 
 function nsRender(){
-  const couloirs=NS.data.couloirs||[];
-  const sportifs=NS.data.sportifs||[];
+  const couloirs=NS.data?.couloirs||[];
+  const sportifs=NS.data?.sportifs||[];
+
+  if(!couloirs.length||!sportifs.length){
+    const fb=document.getElementById('ns-fb');
+    if(fb){fb.style.color='var(--red)';fb.textContent='Erreur : données manquantes. Contacte le Game Master.';}
+    return;
+  }
 
   // Render couloirs
   const coZone=document.getElementById('ns-couloirs-zone');
