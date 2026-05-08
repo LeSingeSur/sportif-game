@@ -359,6 +359,21 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
 #mf-zone{display:none;flex-direction:column;gap:10px}
+#arc-zone{display:none;flex-direction:column;gap:12px;width:100%}
+#assaut-zone{display:none;flex-direction:column;gap:10px;width:100%}
+.piste-case{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;transition:all .3s;font-family:var(--fh)}
+.piste-case.danger-joueur{background:rgba(255,60,60,.2);border-color:var(--red)}
+.piste-case.danger-admin{background:rgba(212,255,0,.1);border-color:var(--neon)}
+.piste-case.curseur{transform:scale(1.3);background:rgba(255,255,255,.15);border-color:#fff}
+.arc-cible{background:var(--c1);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;border:1px solid rgba(255,255,255,.06)}
+.arc-cible.hit{border-color:var(--neon);background:rgba(212,255,0,.05)}
+.arc-cible.miss{border-color:var(--red);opacity:.7}
+#ns-zone{display:none;flex-direction:column;gap:10px;width:100%}
+.ns-couloir{background:var(--c1);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;min-height:54px;display:flex;align-items:center;gap:10px;transition:all .2s}
+.ns-couloir.over{border-color:var(--cyan);background:rgba(0,229,200,.08)}
+.ns-couloir.correct{border-color:var(--neon);background:rgba(212,255,0,.06)}
+.ns-couloir.wrong{border-color:var(--red);background:rgba(255,60,60,.06)}
+.ns-sportif-card{background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:grab;text-align:center;user-select:none;-webkit-user-select:none;touch-action:none;transition:all .2s;display:inline-block}
 #haltero-zone{display:none;flex-direction:column;gap:10px;width:100%}
 .penta-step{display:flex;flex-direction:column;align-items:center;font-size:20px;color:var(--mute);opacity:0.3;transition:all .3s;font-family:var(--fh)}
 .ha-sportif-card{flex:1;padding:12px;border-radius:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s;font-family:var(--fh);font-size:13px;font-weight:800}
@@ -524,7 +539,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🎿</div><div class="gt-name">Biathlon</div></div>
       <div class="gt-item"><div class="gt-ico">🔗</div><div class="gt-name">Maillon Faible</div></div>
       <div class="gt-item"><div class="gt-ico">🏋️</div><div class="gt-name">Haltéro-Quiz</div></div>
-      <div class="gt-item"><div class="gt-ico">🏅</div><div class="gt-name">Pentathlon</div></div>
+      <div class="gt-item"><div class="gt-ico">⚔️</div><div class="gt-name">L'Escrime</div></div>
+      <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Tir à l'Arc</div></div>
+      <div class="gt-item"><div class="gt-ico">🏊</div><div class="gt-name">Natation</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -894,134 +911,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="btn btn-p" onclick="biatStartFromModal()" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ C'EST PARTI !</button>
     </div>
   </div>
-  <!-- PENTATHLON zone -->
-  <div id="pentathlon-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-
-    <!-- Stepper -->
-    <div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px" id="penta-stepper">
-      <div class="penta-step" id="ps-escrime">🤺<div style="font-size:8px">ESCRIME</div></div>
-      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
-      <div class="penta-step" id="ps-natation">🏊<div style="font-size:8px">NATATION</div></div>
-      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
-      <div class="penta-step" id="ps-equitation">🏇<div style="font-size:8px">ÉQUITATION</div></div>
-      <div style="width:12px;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-8px"></div>
-      <div class="penta-step" id="ps-laserrun">🔫<div style="font-size:8px">LASER-RUN</div></div>
-    </div>
-
-    <!-- Score courant -->
-    <div style="text-align:center;font-family:var(--fh);font-size:11px;color:var(--mute)">SCORE PENTATHLON</div>
-    <div style="text-align:center;font-family:var(--fh);font-size:36px;color:var(--neon)" id="penta-total-score">0</div>
-
-    <!-- ESCRIME -->
-    <div id="penta-escrime-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-      <div style="font-family:var(--fh);font-size:14px;color:var(--neon);text-align:center">🤺 ESCRIME</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 12px">
-        <div><div style="font-size:10px;color:var(--mute)">MULTIPLICATEUR</div><div style="font-family:var(--fh);font-size:24px;color:var(--neon)" id="esc-mult">×1</div><div style="font-size:11px;color:#f59e0b" id="esc-frozen"></div></div>
-        <div style="text-align:center"><div style="font-size:10px;color:var(--mute)">SCORE</div><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="esc-score-live">0 pts</div></div>
-        <div style="text-align:right"><div style="font-size:10px;color:var(--mute)">TOUCHE</div><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="esc-touche">1/5</div></div>
-      </div>
-      <div class="bj-theme" id="esc-question">…</div>
-      <div id="esc-choices" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button onclick="escRompre()" id="esc-rompre-btn" style="display:none;background:rgba(245,158,11,.15);border:1px solid #f59e0b;color:#f59e0b;border-radius:12px;padding:12px;font-family:var(--fh);font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px">⚔️ ROMPRE — Geler ×mult</button>
-      <div class="fb" id="esc-fb"></div>
-    </div>
-
-    <!-- NATATION -->
-    <div id="penta-natation-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-      <div style="font-family:var(--fh);font-size:14px;color:var(--cyan);text-align:center">🏊 NATATION — Les Couloirs</div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--cyan)" id="nat-timer">60</div></div>
-        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">RESTANTS</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="nat-remaining">5</div></div>
-      </div>
-      <div style="height:3px;background:var(--c2);border-radius:99px"><div id="nat-timer-bar" style="height:100%;background:var(--cyan);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
-      <!-- Couloirs — toutes les questions visibles -->
-      <div id="nat-couloirs" style="display:flex;flex-direction:column;gap:6px"></div>
-      <!-- Zone de réponse active -->
-      <div id="nat-active-zone" style="display:none;flex-direction:column;gap:8px;background:rgba(0,229,200,.06);border:1px solid rgba(0,229,200,.2);border-radius:12px;padding:12px">
-        <div style="font-size:10px;color:var(--cyan);letter-spacing:2px;font-family:var(--fh)" id="nat-active-label">COULOIR 1</div>
-        <div class="bj-theme" id="nat-question" style="margin:0">…</div>
-        <div class="ans-row">
-          <input type="text" class="ans-in" id="nat-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
-          <button class="chk-btn" onclick="natSubmit()">✓</button>
-        </div>
-      </div>
-      <button id="nat-btn-v" style="display:none"></button>
-      <button id="nat-btn-f" style="display:none"></button>
-      <div id="nat-input" style="display:none"></div>
-      <div class="fb" id="nat-fb"></div>
-    </div>
-
-    <!-- ÉQUITATION -->
-    <div id="penta-equitation-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-      <div style="font-family:var(--fh);font-size:14px;color:#f59e0b;text-align:center">🏇 ÉQUITATION</div>
-      <!-- Phase choix ordre -->
-      <div id="eq-choix-zone" style="display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:12px;color:var(--mute);text-align:center">Choisis l'ordre de tes obstacles avant de commencer</div>
-        <div id="eq-obstacles-list" style="display:flex;flex-direction:column;gap:6px"></div>
-        <button onclick="eqCommencer()" class="btn btn-p" style="font-family:var(--fh);margin-top:4px">🏇 COMMENCER LE PARCOURS</button>
-      </div>
-      <!-- Phase parcours -->
-      <div id="eq-parcours-zone" style="display:none;flex-direction:column;gap:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 12px">
-          <div><span style="font-size:10px;color:var(--mute)">OBSTACLE</span><div style="font-family:var(--fh);font-size:24px;color:#f59e0b" id="eq-obs-num">1/5</div></div>
-          <div id="eq-level-badge" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">MOYEN</div>
-        </div>
-        <div class="bj-theme" id="eq-question">…</div>
-        <div id="eq-choices" style="display:flex;flex-direction:column;gap:8px"></div>
-        <div class="ans-row" id="eq-input" style="display:none">
-          <input type="text" class="ans-in" id="eq-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false">
-          <button class="chk-btn" onclick="eqSubmit()">✓</button>
-        </div>
-        <div class="fb" id="eq-fb"></div>
-      </div>
-    </div>
-
-    <!-- LASER-RUN -->
-    <div id="penta-laserrun-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
-      <div style="font-family:var(--fh);font-size:14px;color:var(--red);text-align:center">🔫 LASER-RUN</div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:32px;color:var(--red)" id="lr-timer">60</div></div>
-        <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CYCLE</span><div style="font-family:var(--fh);font-size:24px;color:var(--txt)" id="lr-cycle">1/5</div></div>
-      </div>
-      <div style="height:3px;background:var(--c2);border-radius:99px"><div id="lr-timer-bar" style="height:100%;background:var(--red);border-radius:99px;width:100%;transition:width .5s linear"></div></div>
-      <div id="lr-phase-badge" style="text-align:center;font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute)">🏃 COURSE</div>
-      <div class="bj-theme" id="lr-question">…</div>
-      <div id="lr-vf-btns" style="display:flex;gap:10px">
-        <button onclick="lrAnswerVF('Vrai')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">✅ VRAI</button>
-        <button onclick="lrAnswerVF('Faux')" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);font-size:16px;font-weight:800;cursor:pointer">❌ FAUX</button>
-      </div>
-      <div id="lr-tir-input" style="display:none"></div>
-      <div id="lr-slider-zone" style="display:none;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute)">
-          <span>0</span><span style="font-family:var(--fh);font-size:18px;color:var(--neon)" id="lr-slider-val">50</span><span id="lr-slider-max">100</span>
-        </div>
-        <input type="range" id="lr-slider" min="0" max="100" value="50" style="width:100%;accent-color:var(--neon)" oninput="document.getElementById('lr-slider-val').textContent=this.value">
-        <button onclick="lrSubmitTir()" class="btn btn-p" style="font-family:var(--fh);font-size:15px">🎯 TIRER</button>
-      </div>
-      <div class="fb" id="lr-fb"></div>
-    </div>
-
-    <!-- Phase intro overlay -->
-    <div id="penta-phase-intro" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.88);z-index:9000;align-items:center;justify-content:center;padding:20px">
-      <div style="background:var(--c1);border-radius:18px;padding:20px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px">
-        <div style="text-align:center;font-size:40px" id="ppi-ico">🏅</div>
-        <div style="font-family:var(--fh);font-size:18px;text-align:center" id="ppi-title">ÉPREUVE</div>
-        <div id="ppi-rules" style="display:flex;flex-direction:column;gap:0"></div>
-        <button class="btn btn-p" id="ppi-btn" style="font-family:var(--fh);font-size:15px;letter-spacing:2px">▶ COMMENCER</button>
-      </div>
-    </div>
-
-    <!-- Résultat épreuve -->
-    <div id="penta-result-zone" style="display:none;flex-direction:column;gap:10px;text-align:center">
-      <div style="font-size:40px" id="penta-result-ico">🏅</div>
-      <div style="font-family:var(--fh);font-size:18px" id="penta-result-msg"></div>
-      <div style="font-size:12px;color:var(--mute)" id="penta-result-detail"></div>
-      <div id="penta-result-rules" style="text-align:left;margin-top:4px"></div>
-      <button class="btn btn-p" id="penta-result-btn" style="font-family:var(--fh)">Continuer →</button>
-    </div>
-
-  </div>
-
   <!-- HALTERO zone -->
   <div id="haltero-rules-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--c1);border-radius:18px;padding:20px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px">
@@ -1158,6 +1047,66 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
     </div>
     <div class="fb" id="halt-fb"></div>
+  </div>
+
+  <!-- ASSAUT zone -->
+  <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
+    <div style="background:var(--c1);border-radius:14px;padding:14px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:6px">
+        <span style="color:var(--red)">⚠️ DANGER</span>
+        <span style="font-family:var(--fh);font-size:11px;letter-spacing:2px">LA PISTE</span>
+        <span style="color:var(--red)">DANGER ⚠️</span>
+      </div>
+      <div style="position:relative;height:36px;background:var(--c2);border-radius:8px;overflow:hidden">
+        <div style="position:absolute;left:0;top:0;width:20%;height:100%;background:rgba(255,60,60,.25)"></div>
+        <div style="position:absolute;right:0;top:0;width:20%;height:100%;background:rgba(255,60,60,.15)"></div>
+        <div id="assaut-cursor" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;background:var(--neon);border-radius:50%;transition:left .5s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:center;font-size:14px;left:50%">🤺</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-top:4px">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><span style="font-size:10px;color:var(--mute)">POSITION</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="assaut-pos">5</div></div>
+      <div style="text-align:center;font-size:10px;color:var(--mute);font-family:var(--fh);letter-spacing:1px" id="assaut-phase-lbl">EN GARDE</div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="assaut-score">50</div></div>
+    </div>
+    <div id="assaut-timer-wrap" style="display:none;flex-direction:column;gap:4px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:10px;color:var(--mute)">TEMPS</span>
+        <span style="font-family:var(--fh);font-size:22px;color:var(--red)" id="assaut-timer">20</span>
+      </div>
+      <div style="height:4px;background:var(--c2);border-radius:99px"><div id="assaut-timer-bar" style="height:100%;background:var(--red);border-radius:99px;width:100%;transition:width 1s linear"></div></div>
+    </div>
+    <div class="bj-theme" id="assaut-question" style="display:none"></div>
+    <div id="assaut-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="assaut-start-btn-wrap" style="display:none">
+      <button class="btn btn-p" id="assaut-start-btn" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">⚔️ EN GARDE — PRÊT ? ALLEZ !</button>
+    </div>
+    <div class="fb" id="assaut-fb"></div>
+  </div>
+  <!-- TIR À L'ARC zone -->
+  <div id="arc-zone">
+    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🎯 TIR À L'ARC</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
+      <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="arc-score">0</div></div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CIBLE</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="arc-cible-num">1/3</div></div>
+    </div>
+    <div id="arc-cible-zone" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="fb" id="arc-fb"></div>
+  </div>
+
+  <!-- NAGE SYNC zone -->
+  <div id="ns-zone">
+    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🏊 Natation</div>
+    <div style="font-size:12px;color:var(--mute);text-align:center">Place chaque sportif dans le bon couloir</div>
+    <!-- Couloirs -->
+    <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:8px"></div>
+    <!-- Sportifs à placer -->
+    <div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-top:4px">SPORTIFS</div>
+    <div id="ns-sportifs-zone" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    <button class="btn btn-p" id="ns-valider-btn" onclick="nsValider()" style="display:none;font-family:var(--fh);margin-top:4px">✓ VALIDER</button>
+    <div class="fb" id="ns-fb"></div>
   </div>
 
   <!-- MAILLON FAIBLE rules modal -->
@@ -1872,12 +1821,19 @@ async function loadAthlete(){
     } else if(data.type==='maillonfaible'){
       document.getElementById('std-ans-area').style.display='none';
       setupMFMode(data);
+    } else if(data.type==='assaut'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupAssaut(data);
+        } else if(data.type==='tirarlarc'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupTirALArc(data);
+    } else if(data.type==='nagesync'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupNageSync(data);
     } else if(data.type==='haltero'){
       document.getElementById('std-ans-area').style.display='none';
       setupHalteroMode(data);
-    } else if(data.type==='pentathlon'){
-      document.getElementById('std-ans-area').style.display='none';
-      setupPentathlon(data);
+
     } else {
       G.max=data.wordCount; G.score=data.wordCount; G.total=data.wordCount;
       setScore(G.score,false);
@@ -1891,12 +1847,12 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','pentathlon-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
 
-const GAME_ICONS={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','pentathlon':'🏅'};
+const GAME_ICONS={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🎯','nagesync':'🏊','assaut':'⚔️','assaut':'⚔️'};
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
 
 // ── TEXT MODE ─────────────────────────────────────────────────────────────
@@ -4824,7 +4780,7 @@ async function loadLB(){
       }
     }catch(e){}
     lbAthletes.forEach((a,i)=>{
-      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','pentathlon':'🏅'};
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️'};
       const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
@@ -6019,549 +5975,439 @@ function haltFinish(){
   setVictoryIcon('haltero'); submitScore(score); show('sv');
 }
 
+
 // ══════════════════════════════════════════════════════════════════════════
-// PENTATHLON ARENA
+// L'ESCRIME (L'ASSAUT)
 // ══════════════════════════════════════════════════════════════════════════
-const PENTA={
-  data:null, phase:null, score:{escrime:0,natation:0,equitation:0,laserrun:0},
-  // Escrime
-  escIdx:0, escMult:1, escFrozenMult:0, escScore:0,
-  // Natation
-  natIdx:null, natAnswered:{}, natTimer:60, natTimerInt:null, natMaxTimer:60,
-  // Équitation
-  eqOrder:[], eqIdx:0,
-  // Laser-run
-  lrCycle:0, lrPhase:'vf', lrTimer:60, lrTimerInt:null, lrMaxTimer:60,
-  lrScore:0
-};
+const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false};
 
-const PENTA_PHASES=['escrime','natation','equitation','laserrun'];
-
-function normP(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
-function checkPentaAnswer(ans,correct){
-  const cv=(correct||'').split(';').map(s=>normP(s));
-  const a=normP(ans);
-  return cv.some(c=>a===c||c.split(/\s+/).some(w=>w===a&&w.length>=4)||a.split(/\s+/).some(w=>c.split(/\s+/).includes(w)&&w.length>=4));
-}
-
-function setupPentathlon(data){
-  PENTA.data=data; PENTA.phase=null;
-  PENTA.score={escrime:0,natation:0,equitation:0,laserrun:0};
-  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escBanked=0; PENTA.escDone=false;
-  PENTA.natIdx=0; PENTA.eqIdx=0; PENTA.lrCycle=0;
+function setupAssaut(data){
+  ASSAUT.data=data;ASSAUT.pos=5;ASSAUT.qIdx=0;ASSAUT.phase=1;
+  ASSAUT.done=false;clearInterval(ASSAUT.timerInt);
   hideAllZones();
-  document.getElementById('pentathlon-zone').style.display='flex';
-  pentaUpdateStep(null);
-  pentaUpdateTotal();
-  pentaShowRules();
+  document.getElementById('assaut-zone').style.display='flex';
+  assautUpdatePiste();
+  assautShowIntro();
 }
 
-function pentaShowRules(){
-  pentaShowResult('🏅 PENTATHLON ARENA',
-    '4 épreuves · 400 pts max\n🤺 Escrime (×mult + Rompre) · 🏊 Natation (couloirs, saisie libre) · 🏇 Équitation (ordre stratégique) · 🔫 Laser-Run (course + tir)',
-    'C\'EST PARTI !', ()=>pentaStartPhase('escrime'));
+function assautUpdatePiste(){
+  const pct=((ASSAUT.pos-1)/9)*100;
+  const cur=document.getElementById('assaut-cursor');
+  if(cur){cur.style.left=pct+'%';cur.style.background=ASSAUT.pos<=2?'var(--red)':'var(--neon)';}
+  const ep=document.getElementById('assaut-pos'); if(ep)ep.textContent=ASSAUT.pos;
+  const es=document.getElementById('assaut-score'); if(es)es.textContent=ASSAUT.pos*10;
 }
 
-function pentaUpdateStep(phase){
-  PENTA_PHASES.forEach(p=>{
-    const el=document.getElementById('ps-'+p);
-    if(!el)return;
-    el.style.opacity=p===phase?'1':'0.3';
-    el.style.color=p===phase?'var(--neon)':'var(--mute)';
-  });
+function assautShowIntro(){
+  const q=document.getElementById('assaut-question');if(q){q.style.display='block';q.innerHTML='<div style="font-size:12px;color:var(--mute);line-height:1.8">⚔️ <b style="color:var(--txt)">Phase 1</b> — 4 questions rapides. Bonne réponse ET plus rapide que l\'Admin = +1 case. Sinon −1.<br>⚔️ <b style="color:var(--red)">Phase 2</b> — L\'Estocade : 3 choix. Touche +2 · Neutre −1 · Piège −2<br>🏆 Score = position finale × 10</div>';}
+  const ch=document.getElementById('assaut-choices');if(ch)ch.innerHTML='';
+  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
+  const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='EN GARDE';
+  const fb=document.getElementById('assaut-fb');if(fb)fb.textContent='';
+  const sw=document.getElementById('assaut-start-btn-wrap');if(sw)sw.style.display='block';
+  const sb=document.getElementById('assaut-start-btn');
+  if(sb)sb.onclick=assautStartPhase1;
 }
 
-function pentaUpdateTotal(){
-  const total=Object.values(PENTA.score).reduce((a,b)=>a+b,0);
-  const el=document.getElementById('penta-total-score');
-  if(el)el.textContent=total;
-  setScore(total,false);
+function assautStartPhase1(){
+  const sw=document.getElementById('assaut-start-btn-wrap');if(sw)sw.style.display='none';
+  const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='PHASE 1 — DUEL';
+  assautShowQ1();
 }
 
-function pentaShowResult(ico,msg,detail,rulesList,btnTxt,onClick){
-  // Handle old 4-arg calls
-  if(typeof detail==='function'){onClick=rulesList;btnTxt=detail;rulesList=[];detail='';}
-  else if(typeof rulesList==='function'){onClick=btnTxt;btnTxt=rulesList;rulesList=[];} 
-  else if(!Array.isArray(rulesList)){onClick=rulesList;btnTxt=detail;detail='';rulesList=[];}
-  ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
-    const el=document.getElementById(id); if(el)el.style.display='none';
-  });
-  const rz=document.getElementById('penta-result-zone');
-  rz.style.display='flex';
-  document.getElementById('penta-result-ico').textContent=ico;
-  document.getElementById('penta-result-msg').textContent=msg;
-  document.getElementById('penta-result-detail').textContent=detail||'';
-  const rulesEl=document.getElementById('penta-result-rules');
-  if(rulesEl){
-    rulesEl.innerHTML='';
-    (rulesList||[]).forEach(r=>{
-      const d=document.createElement('div');
-      d.style.cssText='display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
-      d.innerHTML=`<div style="font-size:22px">${r.ico}</div><div><div style="font-weight:700;font-size:13px;color:var(--txt)">${r.name}</div><div style="font-size:12px;color:var(--mute)">${r.desc}</div></div>`;
-      rulesEl.appendChild(d);
-    });
+function assautShowQ1(){
+  const qs=ASSAUT.data.phase1||[];
+  if(ASSAUT.qIdx>=qs.length||ASSAUT.qIdx>=4||ASSAUT.pos<=2||ASSAUT.pos>=9){
+    assautStartPhase2();return;
   }
-  const btn=document.getElementById('penta-result-btn');
-  btn.textContent=btnTxt;
-  btn.onclick=onClick;
-}
-
-function pentaPhaseIntro(phase, onStart){
-  const intros={
-    escrime:{
-      ico:'🤺', title:'ESCRIME — 100 pts', color:'var(--neon)',
-      rules:[
-        '7 questions · 3 propositions par touche',
-        '✅ Bonne réponse → +20 pts × multiplicateur, mult +1 (max ×5)',
-        '💥 Touché → −10 pts fixes, multiplicateur remis à ×1',
-        '⚔️ ROMPRE → gèle ton multiplicateur · bonne réponse suivante repart du mult gelé +1',
-      ]
-    },
-    natation:{
-      ico:'🏊', title:'NATATION — 100 pts', color:'var(--cyan)',
-      rules:[
-        '5 questions affichées simultanément — choisis ton ordre !',
-        'Clique sur un couloir pour y répondre · 20 pts par bonne réponse',
-        'Timer global 60s · Chaque erreur coûte −5s',
-        'Commence par les questions que tu maîtrises le mieux',
-      ]
-    },
-    equitation:{
-      ico:'🏇', title:'ÉQUITATION — 100 pts', color:'#f59e0b',
-      rules:[
-        'Réorganise les 5 obstacles dans l\'ordre de ton choix',
-        'Coefficients croissants : ×1 → ×1.2 → ×1.5 → ×1.8 → ×2',
-        '💥 Chute = parcours arrêté · Tu gardes les points déjà marqués',
-        'Place tes obstacles faciles en fin de parcours pour plus de points… si tu y arrives !',
-      ]
-    },
-    laserrun:{
-      ico:'🔫', title:'LASER-RUN — 100 pts', color:'var(--red)',
-      rules:[
-        '5 cycles · Chaque cycle = Course (V/F) + Tir (curseur)',
-        '🏃 Course : Vrai ou Faux → 10 pts si correct',
-        '🎯 Tir : place le curseur sur la bonne valeur → 0 à 20 pts selon précision',
-        'Timer global 60s',
-      ]
-    }
-  };
-  const d=intros[phase];
-  const overlay=document.getElementById('penta-phase-intro');
-  if(!d||!overlay){onStart();return;}
-  overlay.style.display='flex';
-  document.getElementById('ppi-ico').textContent=d.ico;
-  const titleEl=document.getElementById('ppi-title');
-  titleEl.textContent=d.title;
-  titleEl.style.color=d.color;
-  const rulesList=document.getElementById('ppi-rules');
-  rulesList.innerHTML='';
-  d.rules.forEach(r=>{
-    const div=document.createElement('div');
-    div.style.cssText='font-size:13px;color:var(--mute);line-height:1.6;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)';
-    div.textContent=r;
-    rulesList.appendChild(div);
-  });
-  document.getElementById('ppi-btn').onclick=()=>{overlay.style.display='none';onStart();};
-}
-
-function pentaStartPhase(phase){
-  PENTA.phase=phase;
-  pentaUpdateStep(phase);
-  document.getElementById('penta-result-zone').style.display='none';
-  ['penta-escrime-zone','penta-natation-zone','penta-equitation-zone','penta-laserrun-zone'].forEach(id=>{
-    document.getElementById(id).style.display='none';
-  });
-  pentaPhaseIntro(phase,()=>{
-    document.getElementById('penta-'+phase+'-zone').style.display='flex';
-    if(phase==='escrime') escStart();
-    else if(phase==='natation') natStart();
-    else if(phase==='equitation') eqStart();
-    else if(phase==='laserrun') lrStart();
-  });
-}
-
-function pentaNextPhase(){
-  const idx=PENTA_PHASES.indexOf(PENTA.phase);
-  if(idx<PENTA_PHASES.length-1){
-    pentaStartPhase(PENTA_PHASES[idx+1]);
-  } else {
-    pentaFinish();
-  }
-}
-
-function pentaFinish(){
-  const total=Object.values(PENTA.score).reduce((a,b)=>a+b,0);
-  G.score=total; setScore(total,true);
-  const vSc=document.getElementById('v-sc'); if(vSc)vSc.textContent=total;
-  const vName=document.getElementById('v-name'); if(vName)vName.textContent='Pentathlon Arena';
-  const vSub=document.getElementById('v-sub');
-  if(vSub)vSub.textContent=`🤺${PENTA.score.escrime} · 🏊${PENTA.score.natation} · 🏇${PENTA.score.equitation} · 🔫${PENTA.score.laserrun}`;
-  setVictoryIcon('pentathlon'); submitScore(total); show('sv');
-}
-
-// ── ESCRIME ───────────────────────────────────────────────────────────────
-function escStart(){
-  PENTA.escIdx=0; PENTA.escMult=1; PENTA.escFrozenMult=0; PENTA.escScore=0;
-  escUpdateUI();
-  escShowQ();
-}
-
-function escUpdateUI(){
-  const el=document.getElementById('esc-mult');
-  if(el)el.textContent='×'+PENTA.escMult;
-  const frozen=document.getElementById('esc-frozen');
-  if(frozen)frozen.textContent=PENTA.escFrozenMult>0?'❄️ Gelé ×'+PENTA.escFrozenMult:'';
-  const scoreEl=document.getElementById('esc-score-live');
-  if(scoreEl)scoreEl.textContent=PENTA.escScore+' pts';
-  document.getElementById('esc-rompre-btn').style.display=PENTA.escMult>1?'block':'none';
-}
-
-function escShowQ(){
-  const qs=PENTA.data.pentathlon?.escrime?.questions||[];
-  const q=qs[PENTA.escIdx];
-  if(!q||PENTA.escIdx>=qs.length){escEnd();return;}
-  document.getElementById('esc-touche').textContent=(PENTA.escIdx+1)+'/'+qs.length;
-  document.getElementById('esc-question').textContent=q.q;
-  document.getElementById('esc-fb').textContent='';
-  escUpdateUI();
-  const ch=document.getElementById('esc-choices');
+  const q=qs[ASSAUT.qIdx];
+  ASSAUT.startTime=Date.now();
+  const qEl=document.getElementById('assaut-question');
+  if(qEl){qEl.style.display='block';qEl.textContent=q.q;}
+  const fb=document.getElementById('assaut-fb');
+  if(fb){fb.textContent='⚡ Plus vite que l\'Admin !';fb.style.color='var(--mute)';}
+  const ch=document.getElementById('assaut-choices');
+  if(!ch)return;
   ch.innerHTML='';
-  const wrong=(q.w||[]).filter(Boolean);
-  let choices=[q.a,...wrong.slice(0,2)]; // 3 propositions
-  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  let choices=[{txt:q.a||'Vrai',correct:true},{txt:q.w||'Faux',correct:false}];
+  if(Math.random()>.5)choices.reverse();
   choices.forEach(c=>{
     const btn=document.createElement('button');
-    btn.className='biat-qcm-btn'; btn.textContent=c;
-    btn.onclick=()=>escAnswer(c,q.a);
+    btn.className='biat-qcm-btn';btn.textContent=c.txt;
+    btn.onclick=()=>assautAnswerP1(c.correct,q.adminTime||3);
     ch.appendChild(btn);
   });
 }
 
-function escAnswer(ans,correct){
-  document.querySelectorAll('#esc-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
-  const ok=checkPentaAnswer(ans,correct);
-  const fb=document.getElementById('esc-fb');
-  if(ok){
-    const pts=20*PENTA.escMult;
-    PENTA.escScore=Math.min(100,PENTA.escScore+pts);
-    // Restore frozen mult if any, then increment
-    if(PENTA.escFrozenMult>0){
-      PENTA.escMult=PENTA.escFrozenMult+1;
-      PENTA.escFrozenMult=0;
-    } else {
-      PENTA.escMult=Math.min(PENTA.escMult+1,5);
-    }
-    fb.textContent='🤺 Touche ! +'+pts+' pts → ×'+PENTA.escMult+' ensuite';
-    fb.style.color='var(--neon)';
-    pentaUpdateTotal();
-  } else {
-    const loss=10;
-    PENTA.escScore=Math.max(0,PENTA.escScore-loss);
-    PENTA.escMult=1; PENTA.escFrozenMult=0;
-    fb.textContent='💥 Touché ! −'+loss+' pts · Multiplicateur ×1';
-    fb.style.color='var(--red)';
-    pentaUpdateTotal();
-  }
-  PENTA.escIdx++;
-  escUpdateUI();
-  setTimeout(()=>{fb.textContent='';
-    if(PENTA.escIdx>=(PENTA.data.pentathlon?.escrime?.questions||[]).length){escEnd();}
-    else escShowQ();
-  },900);
-}
-
-function escRompre(){
-  // Gèle le multiplicateur actuel — le joueur repart à ×1 mais récupère son mult gelé après la prochaine touche
-  PENTA.escFrozenMult=PENTA.escMult;
-  PENTA.escMult=1;
-  const fb=document.getElementById('esc-fb');
-  fb.textContent='⚔️ Rompu ! Mult ×'+PENTA.escFrozenMult+' gelé — bonne réponse = reprend depuis ×'+PENTA.escFrozenMult;
-  fb.style.color='#f59e0b';
-  escUpdateUI();
-  setTimeout(()=>{fb.textContent='';},1200);
-}
-
-function escEnd(){
-  PENTA.score.escrime=PENTA.escScore;
-  pentaUpdateTotal();
-  pentaShowResult('🤺',`Escrime terminée ! ${PENTA.score.escrime} pts`,'🏊 Natation →',()=>pentaNextPhase());
-}
-
-// ── NATATION — COULOIRS ──────────────────────────────────────────────────
-function natStart(){
-  PENTA.natIdx=null; // aucun couloir actif
-  PENTA.natAnswered={}; // {idx: true/false}
-  const timer=PENTA.data.pentathlon?.natation?.timer||60;
-  PENTA.natTimer=timer; PENTA.natMaxTimer=timer;
-  clearInterval(PENTA.natTimerInt);
-  natRenderCouloirs();
-  natStartTimer();
-}
-
-function natRenderCouloirs(){
-  const qs=PENTA.data.pentathlon?.natation?.questions||[];
-  const container=document.getElementById('nat-couloirs');
-  container.innerHTML='';
-  let remaining=0;
-  qs.forEach((q,i)=>{
-    const answered=PENTA.natAnswered[i];
-    if(answered===undefined) remaining++;
-    const div=document.createElement('div');
-    const isActive=PENTA.natIdx===i;
-    div.style.cssText=`display:flex;align-items:center;gap:10px;background:${isActive?'rgba(0,229,200,.1)':answered===true?'rgba(212,255,0,.06)':answered===false?'rgba(255,60,60,.06)':'var(--c2)'};border:1px solid ${isActive?'var(--cyan)':answered===true?'rgba(212,255,0,.3)':answered===false?'rgba(255,60,60,.3)':'rgba(255,255,255,.06)'};border-radius:10px;padding:10px 12px;cursor:${answered!==undefined?'default':'pointer'};transition:all .2s`;
-    const ico=answered===true?'✅':answered===false?'❌':'🏊';
-    div.innerHTML=`<div style="font-size:18px">${ico}</div><div style="flex:1;font-size:13px;color:${answered===undefined?'var(--txt)':'var(--mute)'}">${q.q}</div><div style="font-family:var(--fh);font-size:12px;color:${isActive?'var(--cyan)':'var(--mute)'}">20 pts</div>`;
-    if(answered===undefined) div.onclick=()=>natSelectCouloir(i);
-    container.appendChild(div);
-  });
-  const remEl=document.getElementById('nat-remaining');
-  if(remEl) remEl.textContent=remaining;
-  if(remaining===0){clearInterval(PENTA.natTimerInt);natEnd();}
-}
-
-function natSelectCouloir(idx){
-  PENTA.natIdx=idx;
-  const qs=PENTA.data.pentathlon?.natation?.questions||[];
-  const q=qs[idx];
-  document.getElementById('nat-active-zone').style.display='flex';
-  document.getElementById('nat-active-label').textContent='COULOIR '+(idx+1);
-  document.getElementById('nat-question').textContent=q.q;
-  document.getElementById('nat-in').value='';
-  document.getElementById('nat-fb').textContent='';
-  natRenderCouloirs();
-  setTimeout(()=>document.getElementById('nat-in').focus(),100);
-}
-
-function natStartTimer(){
-  clearInterval(PENTA.natTimerInt);
-  document.getElementById('nat-timer').textContent=PENTA.natTimer;
-  document.getElementById('nat-timer-bar').style.width='100%';
-  PENTA.natTimerInt=setInterval(()=>{
-    PENTA.natTimer--;
-    document.getElementById('nat-timer').textContent=PENTA.natTimer;
-    document.getElementById('nat-timer-bar').style.width=(PENTA.natTimer/PENTA.natMaxTimer*100)+'%';
-    if(PENTA.natTimer<=15)document.getElementById('nat-timer').style.color='var(--red)';
-    if(PENTA.natTimer<=0){clearInterval(PENTA.natTimerInt);natEnd();}
-  },1000);
-}
-
-function natSubmit(){
-  const ans=document.getElementById('nat-in').value.trim();
-  if(!ans||PENTA.natIdx===null)return;
-  const qs=PENTA.data.pentathlon?.natation?.questions||[];
-  const q=qs[PENTA.natIdx];
-  const ok=checkPentaAnswer(ans,q?.a||'');
-  const fb=document.getElementById('nat-fb');
-  if(ok){
-    PENTA.natAnswered[PENTA.natIdx]=true;
-    PENTA.score.natation=Math.min(100,PENTA.score.natation+20);
-    pentaUpdateTotal();
-    fb.textContent='✅ +20 pts';fb.style.color='var(--neon)';
-  } else {
-    PENTA.natAnswered[PENTA.natIdx]=false;
-    PENTA.natTimer=Math.max(0,PENTA.natTimer-5);
-    fb.textContent='❌ −5s';fb.style.color='var(--red)';
-  }
-  PENTA.natIdx=null;
+function assautAnswerP1(correct,adminTimeSec){
+  document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  const playerTime=(Date.now()-ASSAUT.startTime)/1000;
+  const faster=playerTime<=adminTimeSec;
+  const fb=document.getElementById('assaut-fb');
+  let move=0;
+  if(correct&&faster){move=1;if(fb){fb.textContent='🤺 Touche ! +1 case ('+playerTime.toFixed(1)+'s)';fb.style.color='var(--neon)';}}
+  else if(correct&&!faster){move=-1;if(fb){fb.textContent='✅ Juste mais trop lent −1 case';fb.style.color='#f59e0b';}}
+  else{move=-1;if(fb){fb.textContent='❌ Raté ! −1 case';fb.style.color='var(--red)';}}
+  ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
+  assautUpdatePiste();
+  ASSAUT.qIdx++;
   setTimeout(()=>{
-    fb.textContent='';
-    document.getElementById('nat-active-zone').style.display='none';
-    natRenderCouloirs();
-  },600);
+    if(fb)fb.textContent='';
+    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=4)assautStartPhase2();
+    else assautShowQ1();
+  },1200);
 }
 
-function natShowQ(){} // compat
-function natAnswer(ans){} // compat
-
-function natEnd(){
-  clearInterval(PENTA.natTimerInt);
-  PENTA.score.natation=Math.min(100,PENTA.score.natation);
-  pentaUpdateTotal();
-  pentaShowResult('🏊',`Natation terminée ! ${PENTA.score.natation} pts`,'🏇 Équitation →',()=>pentaNextPhase());
+function assautStartPhase2(){
+  clearInterval(ASSAUT.timerInt);
+  const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='⚔️ ESTOCADE !';
+  const ch=document.getElementById('assaut-choices');if(ch)ch.innerHTML='';
+  const fb=document.getElementById('assaut-fb');if(fb)fb.textContent='';
+  const qEl=document.getElementById('assaut-question');
+  if(qEl)qEl.textContent='⚔️ L\'ESTOCADE FINALE…';
+  setTimeout(assautShowEstocade,1500);
 }
 
-// ── ÉQUITATION ────────────────────────────────────────────────────────────
-function eqStart(){
-  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
-  PENTA.eqOrder=[...obs.map((_,i)=>i)];
-  PENTA.eqIdx=0;
-  document.getElementById('eq-choix-zone').style.display='flex';
-  document.getElementById('eq-parcours-zone').style.display='none';
-  eqRenderChoix();
-}
-
-function eqRenderChoix(){
-  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
-  const list=document.getElementById('eq-obstacles-list');
-  list.innerHTML='';
-  PENTA.eqOrder.forEach((obsIdx,pos)=>{
-    const o=obs[obsIdx];
-    const d=document.createElement('div');
-    d.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:8px;padding:8px 10px';
-    const lvColors={facile:'var(--neon)',moyen:'#f59e0b',difficile:'var(--red)'};
-    d.innerHTML=`<div style="font-family:var(--fh);font-size:12px;color:var(--mute)">${pos+1}</div>
-      <div style="flex:1;font-size:12px;color:var(--txt)">${o.q}</div>
-      <div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.3);color:${lvColors[o.level||'moyen']}">${o.level||'moyen'}</div>
-      <div style="display:flex;flex-direction:column;gap:2px">
-        ${pos>0?`<button onclick="eqMove(${pos},-1)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px 6px">▲</button>`:''}
-        ${pos<PENTA.eqOrder.length-1?`<button onclick="eqMove(${pos},1)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px 6px">▼</button>`:''}
-      </div>`;
-    list.appendChild(d);
+function assautShowEstocade(){
+  const p2=ASSAUT.data.phase2||{};
+  let timerSec=20;
+  if(ASSAUT.pos>=9)timerSec=25;
+  else if(ASSAUT.pos<=2)timerSec=15;
+  const qEl=document.getElementById('assaut-question');
+  if(qEl)qEl.textContent=p2.q||'?';
+  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='block';
+  const tEl=document.getElementById('assaut-timer');if(tEl)tEl.textContent=timerSec;
+  const tb=document.getElementById('assaut-timer-bar');if(tb)tb.style.width='100%';
+  const ch=document.getElementById('assaut-choices');
+  if(!ch)return;
+  ch.innerHTML='';
+  let choices=[{txt:p2.touche,type:'touche'},{txt:p2.neutre,type:'neutre'},{txt:p2.piege,type:'piege'}];
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  choices.forEach(c=>{
+    if(!c.txt)return;
+    const btn=document.createElement('button');
+    btn.className='biat-qcm-btn';btn.textContent=c.txt;
+    btn.onclick=()=>assautAnswerP2(c.type,timerSec);
+    ch.appendChild(btn);
   });
-}
-
-function eqMove(pos,dir){
-  const newPos=pos+dir;
-  if(newPos<0||newPos>=PENTA.eqOrder.length)return;
-  [PENTA.eqOrder[pos],PENTA.eqOrder[newPos]]=[PENTA.eqOrder[newPos],PENTA.eqOrder[pos]];
-  eqRenderChoix();
-}
-
-function eqCommencer(){
-  document.getElementById('eq-choix-zone').style.display='none';
-  document.getElementById('eq-parcours-zone').style.display='flex';
-  PENTA.eqIdx=0;
-  eqShowObstacle();
-}
-
-function eqShowObstacle(){
-  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
-  if(PENTA.eqIdx>=PENTA.eqOrder.length){eqEnd();return;}
-  const o=obs[PENTA.eqOrder[PENTA.eqIdx]];
-  document.getElementById('eq-obs-num').textContent=(PENTA.eqIdx+1)+'/'+PENTA.eqOrder.length;
-  const lvColors={facile:'var(--neon)',moyen:'#f59e0b',difficile:'var(--red)'};
-  const badge=document.getElementById('eq-level-badge');
-  const coeff2=EQ_COEFFS[PENTA.eqIdx]||1;
-  badge.textContent='×'+coeff2+' — '+(o.level||'moyen').toUpperCase();
-  badge.style.color=lvColors[o.level||'moyen'];
-  document.getElementById('eq-question').textContent=o.q;
-  document.getElementById('eq-fb').textContent='';
-  const ch=document.getElementById('eq-choices');
-  const inp=document.getElementById('eq-input');
-  // All équitation are open answer
-  ch.style.display='none'; inp.style.display='flex';
-  document.getElementById('eq-in').value='';
-  setTimeout(()=>document.getElementById('eq-in').focus(),100);
-}
-
-const EQ_COEFFS=[1,1.2,1.5,1.8,2]; // coefficient par position
-function eqSubmit(){
-  const ans=document.getElementById('eq-in').value.trim();
-  const obs=PENTA.data.pentathlon?.equitation?.obstacles||[];
-  const o=obs[PENTA.eqOrder[PENTA.eqIdx]];
-  const ok=checkPentaAnswer(ans,o.a);
-  const fb=document.getElementById('eq-fb');
-  const coeff=EQ_COEFFS[PENTA.eqIdx]||1;
-  if(ok){
-    const pts=Math.round(13.3*coeff); // 13.3 × (1+1.2+1.5+1.8+2) = 100pts
-    PENTA.score.equitation=Math.min(100,PENTA.score.equitation+pts);
-    pentaUpdateTotal();
-    fb.textContent='✅ Franchi ! +'+pts+' pts (×'+coeff+')';fb.style.color='var(--neon)';
-    PENTA.eqIdx++;
-    setTimeout(()=>{fb.textContent='';eqShowObstacle();},700);
-  } else {
-    // Garde les points déjà marqués
-    fb.textContent='💥 Chute ! Score conservé : '+PENTA.score.equitation+' pts';fb.style.color='var(--red)';
-    setTimeout(eqEnd,2000);
-  }
-}
-document.getElementById('eq-in').addEventListener('keydown',e=>{if(e.key==='Enter')eqSubmit();});
-document.getElementById('nat-in').addEventListener('keydown',e=>{if(e.key==='Enter')natSubmit();});
-
-function eqEnd(){
-  pentaUpdateTotal();
-  pentaShowResult('🏇',`Équitation terminée ! ${PENTA.score.equitation} pts`,'🔫 Laser-Run →',()=>pentaNextPhase());
-}
-
-// ── LASER-RUN ────────────────────────────────────────────────────────────
-function lrStart(){
-  PENTA.lrCycle=0; PENTA.lrPhase='vf'; PENTA.lrScore=0;
-  const timer=PENTA.data.pentathlon?.laserrun?.timer||60;
-  PENTA.lrTimer=timer; PENTA.lrMaxTimer=timer;
-  clearInterval(PENTA.lrTimerInt);
-  lrStartTimer();
-  lrShowCycle();
-}
-
-function lrStartTimer(){
-  clearInterval(PENTA.lrTimerInt);
-  PENTA.lrTimerInt=setInterval(()=>{
-    PENTA.lrTimer--;
-    document.getElementById('lr-timer').textContent=PENTA.lrTimer;
-    document.getElementById('lr-timer-bar').style.width=(PENTA.lrTimer/PENTA.lrMaxTimer*100)+'%';
-    if(PENTA.lrTimer<=15)document.getElementById('lr-timer').style.color='var(--red)';
-    if(PENTA.lrTimer<=0){clearInterval(PENTA.lrTimerInt);lrEnd();}
+  let t=timerSec;
+  ASSAUT.timerInt=setInterval(()=>{
+    t--;
+    if(tEl)tEl.textContent=t;
+    if(tb)tb.style.width=(t/timerSec*100)+'%';
+    if(t<=0){clearInterval(ASSAUT.timerInt);assautAnswerP2('neutre',timerSec);}
   },1000);
 }
 
-function lrShowCycle(){
-  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
-  if(PENTA.lrCycle>=cycles.length){clearInterval(PENTA.lrTimerInt);lrEnd();return;}
-  const c=cycles[PENTA.lrCycle];
-  document.getElementById('lr-cycle').textContent=(PENTA.lrCycle+1)+'/'+cycles.length;
-  document.getElementById('lr-fb').textContent='';
-  if(PENTA.lrPhase==='vf'){
-    document.getElementById('lr-phase-badge').textContent='🏃 COURSE';
-    document.getElementById('lr-phase-badge').style.color='var(--cyan)';
-    document.getElementById('lr-vf-btns').style.display='flex';
-    document.getElementById('lr-tir-input').style.display='none';
-    document.getElementById('lr-slider-zone').style.display='none';
-    document.getElementById('lr-question').textContent=c.vf?.q||'?';
-  } else {
-    document.getElementById('lr-phase-badge').textContent='🎯 TIR';
-    document.getElementById('lr-phase-badge').style.color='var(--red)';
-    document.getElementById('lr-vf-btns').style.display='none';
-    document.getElementById('lr-tir-input').style.display='none';
-    document.getElementById('lr-slider-zone').style.display='flex';
-    document.getElementById('lr-question').textContent=c.tir?.q||'?';
-    const max=parseInt(c.tir?.max||100);
-    const slider=document.getElementById('lr-slider');
-    slider.max=max; slider.min=0; slider.value=Math.round(max/2);
-    document.getElementById('lr-slider-val').textContent=slider.value;
-    document.getElementById('lr-slider-max').textContent=max;
-  }
+function assautAnswerP2(type,timerSec){
+  clearInterval(ASSAUT.timerInt);
+  document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
+  const fb=document.getElementById('assaut-fb');
+  let move=0;
+  if(type==='touche'){move=2;if(fb){fb.textContent='🎯 TOUCHE ! +2 cases';fb.style.color='var(--neon)';}}
+  else if(type==='neutre'){move=-1;if(fb){fb.textContent='🤺 Fer dans le vide. −1 case';fb.style.color='var(--mute)';}}
+  else{move=-2;if(fb){fb.textContent='🎭 SECONDE INTENTION ! −2 cases';fb.style.color='var(--red)';}}
+  ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
+  assautUpdatePiste();
+  setTimeout(assautFinish,1500);
 }
 
-function lrAnswerVF(ans){
-  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
-  const c=cycles[PENTA.lrCycle];
-  const ok=ans===(c.vf?.a||'Vrai');
-  const fb=document.getElementById('lr-fb');
-  if(ok){
-    PENTA.lrScore+=10;
-    fb.textContent='✅ Course passée !';fb.style.color='var(--neon)';
-  } else {
-    fb.textContent='❌ Raté';fb.style.color='var(--red)';
-  }
-  PENTA.lrPhase='tir';
-  setTimeout(()=>{fb.textContent='';lrShowCycle();},400);
+function assautFinish(){
+  if(ASSAUT.done)return;
+  ASSAUT.done=true;
+  clearInterval(ASSAUT.timerInt);
+  const score=ASSAUT.pos*10;
+  G.score=score;setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='L\'Escrime';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent='Position finale : case '+ASSAUT.pos+' · '+score+' pts';
+  setVictoryIcon('assaut');submitScore(score);show('sv');
 }
 
-function lrSubmitTir(){
-  const cycles=PENTA.data.pentathlon?.laserrun?.cycles||[];
-  const c=cycles[PENTA.lrCycle];
-  const target=parseInt(c.tir?.a)||0;
-  const val=parseInt(document.getElementById('lr-slider').value)||0;
+// ══════════════════════════════════════════════════════════════════════════
+// TIR À L'ARC
+// ══════════════════════════════════════════════════════════════════════════
+const ARC={data:null,cibleIdx:0,score:0,hits:0,done:false};
+const ARC_DIFF_PTS={facile:11,moyen:22,difficile:33};
+const ARC_TOLERANCE={facile:0.20,moyen:0.10,difficile:0.05};
+
+function setupTirALArc(data){
+  ARC.data=data; ARC.cibleIdx=0; ARC.score=0; ARC.hits=0; ARC.done=false;
+  hideAllZones();
+  document.getElementById('arc-zone').style.display='flex';
+  // Règles intro
+  arcShowIntro();
+}
+
+function arcShowIntro(){
+  const zone=document.getElementById('arc-cible-zone');
+  zone.innerHTML='';
+  const d=document.createElement('div');
+  d.style.cssText='background:var(--c1);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;text-align:center';
+  const cibles=ARC.data.cibles||[];
+  d.innerHTML=`<div style="font-size:32px">🎯</div>
+    <div style="font-family:var(--fh);font-size:18px;color:var(--neon)">TIR À L'ARC</div>
+    <div style="font-size:13px;color:var(--mute);line-height:1.7">
+      ${cibles.length} cible${cibles.length>1?'s':''} · Tu choisis ta distance avant de voir la valeur<br>
+      Plus tu vises loin → plus de points mais moins de tolérance<br>
+      <span style="color:#f59e0b">🎯 Facile: 11 pts · Moyen: 22 pts · Difficile: 33 pts</span><br>
+      Bonus +1 pt si toutes les cibles touchées !
+    </div>
+    <button class="btn btn-p" onclick="arcNextCible()" style="font-family:var(--fh);font-size:15px">▶ COMMENCER</button>`;
+  zone.appendChild(d);
+}
+
+function arcNextCible(){
+  const cibles=ARC.data.cibles||[];
+  if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
+  const c=cibles[ARC.cibleIdx];
+  document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
+  document.getElementById('arc-score').textContent=ARC.score;
+  document.getElementById('arc-fb').textContent='';
+  const zone=document.getElementById('arc-cible-zone');
+  zone.innerHTML='';
+
+  // Phase 1: choisir la distance
+  const d=document.createElement('div');
+  d.className='arc-cible';
+  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${c.stat}</div>
+    <div style="font-size:13px;color:var(--txt)">Choisis ta distance :</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="arcChoixDistance('facile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟢</span><span style="font-size:16px;font-weight:800;color:var(--neon)">11m</span><span style="font-size:11px;color:var(--mute)">11 pts</span></button>
+      <button onclick="arcChoixDistance('moyen')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟡</span><span style="font-size:16px;font-weight:800;color:var(--neon)">22m</span><span style="font-size:11px;color:var(--mute)">22 pts</span></button>
+      <button onclick="arcChoixDistance('difficile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🔴</span><span style="font-size:16px;font-weight:800;color:var(--neon)">33m</span><span style="font-size:11px;color:var(--mute)">33 pts</span></button>
+    </div>`;
+  zone.appendChild(d);
+}
+
+function arcChoixDistance(difficulty){
+  const cibles=ARC.data.cibles||[];
+  const c=cibles[ARC.cibleIdx];
+  const maxPts=ARC_DIFF_PTS[difficulty];
+  const tols=ARC.data.arcTolerances||{facile:20,moyen:8,difficile:3};
+  const tolerance=(tols[difficulty]||ARC_TOLERANCE[difficulty]*100)/100;
+  const target=c.value;
+  const max=c.max||Math.round(target*2);
+  const zone=document.getElementById('arc-cible-zone');
+  zone.innerHTML='';
+
+  // Phase 2: slider
+  const d=document.createElement('div');
+  d.className='arc-cible';
+  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${difficulty.toUpperCase()} · ${maxPts} pts</div>
+    <div style="font-size:14px;font-weight:700;color:var(--txt)">${c.stat}</div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute)">
+      <span>0</span>
+      <span style="font-family:var(--fh);font-size:22px;color:var(--neon)" id="arc-slider-val">${Math.round(max/2)}</span>
+      <span>${max}</span>
+    </div>
+    <input type="range" id="arc-slider" min="0" max="${max}" value="${Math.round(max/2)}" 
+      style="width:100%;accent-color:var(--neon)" 
+      oninput="document.getElementById('arc-slider-val').textContent=this.value">
+    <div style="font-size:11px;color:var(--mute);text-align:center">Tolérance ±${Math.round(tolerance*100)}%</div>
+    <button onclick="arcTirer(${target},${maxPts},${tolerance},${max})" class="btn btn-p" style="font-family:var(--fh);font-size:16px;letter-spacing:2px">🏹 TIRER</button>`;
+  zone.appendChild(d);
+}
+
+function arcTirer(target,maxPts,tolerance,max){
+  const val=parseInt(document.getElementById('arc-slider').value);
   const ecart=Math.abs(val-target);
-  const maxVal=parseInt(c.tir?.max||100);
-  const pts=ecart===0?20:ecart<=Math.round(maxVal*0.05)?15:ecart<=Math.round(maxVal*0.1)?10:ecart<=Math.round(maxVal*0.2)?5:0;
-  PENTA.lrScore+=pts;
-  const fb=document.getElementById('lr-fb');
-  if(pts===20) fb.textContent='🎯 Bullseye ! +20 pts';
-  else if(pts>0) fb.textContent='🎯 Proche ! +'+pts+' pts (écart: '+ecart+')';
-  else fb.textContent='❌ Manqué (écart: '+ecart+')';
-  fb.style.color=pts>=15?'var(--neon)':pts>0?'#f59e0b':'var(--mute)';
-  PENTA.lrPhase='vf';
-  PENTA.lrCycle++;
-  setTimeout(()=>{fb.textContent='';lrShowCycle();},600);
-}
-function lrAnswerTir(){lrSubmitTir();}
+  const customTolPct=ARC.data.cibles?.[ARC.cibleIdx]?.tolerance;
+  const toler=customTolPct?Math.round(target*(customTolPct/100)):Math.round(target*tolerance);
+  const hit=ecart<=toler;
+  const zone=document.getElementById('arc-cible-zone');
+  zone.innerHTML='';
 
-function lrEnd(){
-  clearInterval(PENTA.lrTimerInt);
-  PENTA.score.laserrun=Math.min(100,PENTA.lrScore);
-  pentaUpdateTotal();
-  pentaShowResult('🔫',`Laser-Run terminé ! ${PENTA.score.laserrun} pts`,'🏅 Voir mon score →',pentaFinish);
+  if(hit){
+    ARC.score+=maxPts;
+    ARC.hits++;
+  }
+
+  const d=document.createElement('div');
+  d.className='arc-cible '+(hit?'hit':'miss');
+  const pct=Math.round((1-Math.min(ecart/(target||1),1))*100);
+  d.innerHTML=`<div style="font-size:36px;text-align:center">${hit?'🎯':'💨'}</div>
+    <div style="font-family:var(--fh);font-size:18px;text-align:center;color:${hit?'var(--neon)':'var(--red)'}">
+      ${hit?'TOUCHÉ ! +'+maxPts+' pts':'MANQUÉ'}
+    </div>
+    <div style="font-size:13px;color:var(--mute);text-align:center">
+      Ta flèche : <strong style="color:var(--txt)">${val}</strong> · Valeur exacte : <strong style="color:var(--neon)">${target}</strong><br>
+      Écart : ${ecart} · Tolérance : ±${Math.round(target*tolerance)}
+    </div>
+    <div style="background:var(--c2);border-radius:99px;height:6px;overflow:hidden;margin-top:4px">
+      <div style="height:100%;background:${hit?'var(--neon)':'var(--red)'};width:${Math.min(100,pct)}%;transition:width .5s;border-radius:99px"></div>
+    </div>`;
+  const btn=document.createElement('button');
+  btn.className='btn btn-g';
+  btn.style.fontFamily='var(--fh)';
+  const cibles=ARC.data.cibles||[];
+  btn.textContent=ARC.cibleIdx+1<cibles.length?'Cible suivante →':'Voir mon score →';
+  btn.onclick=()=>{ARC.cibleIdx++;arcNextCible();};
+  d.appendChild(btn);
+  zone.appendChild(d);
+  document.getElementById('arc-score').textContent=ARC.score;
+}
+
+function arcFinish(){
+  if(ARC.done)return;
+  ARC.done=true;
+  const cibles=ARC.data.cibles||[];
+  const bonus=ARC.hits===cibles.length?1:0;
+  const score=Math.min(100,ARC.score+bonus);
+  G.score=score; setScore(score,true);
+  const vSc=document.getElementById('v-sc'); if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name'); if(vName)vName.textContent='Tir à l\'Arc';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent=ARC.hits+'/'+cibles.length+' cibles touchées'+(bonus?' · +1 bonus !':'');
+  setVictoryIcon('tirarlarc'); submitScore(score); show('sv');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// NAGE SYNCHRONISÉE
+// ══════════════════════════════════════════════════════════════════════════
+const NS={data:null,placement:{},done:false,essai:1,score:0,maxScore:100};
+
+function setupNageSync(data){
+  NS.data=data;NS.placement={};NS.done=false;NS.essai=1;NS.score=0;NS.maxScore=100;
+  hideAllZones();
+  document.getElementById('ns-zone').style.display='flex';
+  const fb=document.getElementById('ns-fb');
+  if(fb){fb.style.color='var(--mute)';fb.innerHTML='<div style="font-size:12px;line-height:1.8;margin-bottom:8px">🏊 Place chaque sportif dans le bon couloir.<br>✅ 20 pts par bonne association · 3 essais max<br>Essai 1: max 100 · Essai 2: max 75 · Essai 3: max 50</div>';}
+  nsRender();
+}
+
+function nsRender(){
+  const couloirs=NS.data.couloirs||[];
+  const sportifs=NS.data.sportifs||[];
+
+  // Render couloirs
+  const coZone=document.getElementById('ns-couloirs-zone');
+  coZone.innerHTML='';
+  couloirs.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='ns-couloir';
+    div.id='ns-couloir-'+i;
+    div.dataset.idx=i;
+    const label=document.createElement('div');
+    label.style.cssText='font-size:11px;color:var(--cyan);font-family:var(--fh);min-width:20px';
+    label.textContent=(i+1);
+    const cLabel=document.createElement('div');
+    cLabel.style.cssText='flex:1;font-size:12px;color:var(--mute)';
+    cLabel.textContent=c.label;
+    const placed=document.createElement('div');
+    placed.id='ns-placed-'+i;
+    placed.style.cssText='min-width:80px;text-align:right';
+    // Show placed sportif if any
+    const placedIdx=Object.entries(NS.placement).find(([si,ci])=>parseInt(ci)===i);
+    if(placedIdx){
+      const s=sportifs[parseInt(placedIdx[0])];
+      placed.innerHTML=`<span class="ns-sportif-card" style="cursor:pointer;font-size:12px" onclick="nsUnplace(${placedIdx[0]})">${s.nom} ✕</span>`;
+    }
+    div.append(label,cLabel,placed);
+    // Touch/click to place selected sportif
+    div.onclick=()=>nsPlacerDans(i);
+    coZone.appendChild(div);
+  });
+
+  // Render sportifs à placer (non encore placés)
+  const spZone=document.getElementById('ns-sportifs-zone');
+  spZone.innerHTML='';
+  const placed=new Set(Object.values(NS.placement).map(Number));
+  let allPlaced=true;
+  sportifs.forEach((s,i)=>{
+    if(NS.placement[i]!==undefined) return;
+    allPlaced=false;
+    const card=document.createElement('div');
+    card.className='ns-sportif-card';
+    card.id='ns-s-'+i;
+    card.textContent=s.nom;
+    card.dataset.idx=i;
+    card.onclick=()=>nsSelectSportif(i);
+    spZone.appendChild(card);
+  });
+
+  // Show valider button when all placed
+  document.getElementById('ns-valider-btn').style.display=allPlaced?'block':'none';
+  document.getElementById('ns-fb').textContent='';
+}
+
+let nsSelected=null;
+function nsSelectSportif(idx){
+  nsSelected=idx;
+  // Highlight selected
+  document.querySelectorAll('.ns-sportif-card').forEach(c=>c.style.borderColor='rgba(255,255,255,.1)');
+  const el=document.getElementById('ns-s-'+idx);
+  if(el)el.style.borderColor='var(--neon)';
+  document.getElementById('ns-fb').textContent='→ Maintenant clique sur le bon couloir';
+  document.getElementById('ns-fb').style.color='var(--mute)';
+}
+
+function nsPlacerDans(couloir){
+  if(nsSelected===null) return;
+  // Check if couloir already taken
+  const already=Object.entries(NS.placement).find(([si,ci])=>parseInt(ci)===couloir);
+  if(already){
+    // Unplace existing
+    delete NS.placement[parseInt(already[0])];
+  }
+  NS.placement[nsSelected]=couloir;
+  nsSelected=null;
+  nsRender();
+}
+
+function nsUnplace(sportifIdx){
+  delete NS.placement[sportifIdx];
+  nsSelected=null;
+  nsRender();
+}
+
+function nsValider(){
+  if(NS.done)return;
+  const sportifs=NS.data.sportifs||[];
+  let correct=0;
+  sportifs.forEach((s,i)=>{if(NS.placement[i]===s.correct)correct++;});
+  const total=sportifs.length;
+  const faults=total-correct;
+  const penalty=(NS.essai-1)*5;
+  const scoreCet=Math.max(0,correct*(20-penalty));
+  if(faults===0||NS.essai>=3){
+    NS.done=true;NS.score=scoreCet;
+    G.score=NS.score;setScore(NS.score,true);
+    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=NS.score;
+    const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
+    const vSub=document.getElementById('v-sub');
+    if(vSub)vSub.textContent=(faults===0?correct+'/'+total+' · Parfait !':correct+'/'+total+' · '+faults+' faute(s)')+' · '+NS.score+' pts';
+    setVictoryIcon('nagesync');submitScore(NS.score);show('sv');
+  } else {
+    const maxSuivant=total*(20-penalty);
+    const fb=document.getElementById('ns-fb');
+    if(fb){fb.style.color='var(--mute)';fb.innerHTML=`<strong>${correct}/${total}</strong> bonnes · <strong>${faults}</strong> erreur(s)<br>
+      <span style="font-size:12px">Score actuel : <strong style="color:var(--neon)">${scoreCet} pts</strong> · Max si continue : <strong style="color:#f59e0b">${maxSuivant} pts</strong></span><br>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="nsTerminer(${scoreCet})" class="btn btn-g" style="flex:1;font-family:var(--fh);font-size:12px">🛑 M'arrêter · ${scoreCet} pts</button>
+        <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:12px">▶ Essai ${NS.essai+1}/3</button>
+      </div>`;}
+  }
+}
+function nsTerminer(score){
+  NS.done=true;NS.score=score;G.score=score;setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Score conservé · '+score+' pts';
+  setVictoryIcon('nagesync');submitScore(score);show('sv');
+}
+function nsContinuer(){
+  NS.essai++;
+  const sportifs=NS.data.sportifs||[];
+  const newP={};
+  sportifs.forEach((s,i)=>{if(NS.placement[i]===s.correct)newP[i]=NS.placement[i];});
+  NS.placement=newP;
+  const fb=document.getElementById('ns-fb');
+  const pen=(NS.essai-1)*5;
+  if(fb){fb.textContent='Essai '+NS.essai+'/3 · Max : '+(sportifs.length*(20-pen))+' pts';fb.style.color='var(--mute)';}
+  nsSelected=null;nsRender();
 }
 
 // ── BOÎTE À IDÉES ──────────────────────────────────────────────────────────

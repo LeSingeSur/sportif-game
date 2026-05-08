@@ -257,10 +257,25 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
-          <div class="type-opt" id="type-pentathlon" onclick="selectType('pentathlon')">
-            <div class="type-ico">🏅</div>
-            <div class="type-name">Pentathlon</div>
-            <div class="type-desc">4 épreuves · 400 pts</div>
+          <div class="type-opt" id="type-assaut" onclick="selectType('assaut')">
+            <div class="type-ico">⚔️</div>
+            <div class="type-name">L'Escrime</div>
+            <div class="type-desc">Piste · Phase 1 vitesse · Estocade finale</div>
+          </div>
+          <div class="type-opt" id="type-assaut" onclick="selectType('assaut')">
+            <div class="type-ico">⚔️</div>
+            <div class="type-name">L'Assaut</div>
+            <div class="type-desc">Piste · Duel vs Admin · 10 cases</div>
+          </div>
+          <div class="type-opt" id="type-tirarlarc" onclick="selectType('tirarlarc')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Tir à l'Arc</div>
+            <div class="type-desc">3 cibles · Stats · Précision</div>
+          </div>
+          <div class="type-opt" id="type-nagesync" onclick="selectType('nagesync')">
+            <div class="type-ico">🏊</div>
+            <div class="type-name">Natation</div>
+            <div class="type-desc">5 sportifs · 5 couloirs</div>
           </div>
           <div class="type-opt" id="type-haltero" onclick="selectType('haltero')">
             <div class="type-ico">🏋️</div>
@@ -280,40 +295,80 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
       </div>
 
-      <!-- PENTATHLON FIELDS -->
-      <div id="pentathlon-fields" style="display:none">
-        <!-- ESCRIME -->
+      <!-- ASSAUT FIELDS -->
+      <div id="assaut-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          ⚔️ 4 questions Phase 1 (V/F ou 2 choix) + 1 Estocade finale (3 propositions dont 1 piège) · Piste 10 cases · Score = position finale ×10
+        </div>
+        <!-- Phase 1 -->
         <div class="field">
-          <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">🤺 ESCRIME — 100 pts · Multiplicateur + Rompre</div>
-          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">7 questions · 3 propositions · Bonne réponse = touche (+20pts×mult) · Erreur = −10pts + reset mult · ROMPRE = gèle le mult</div>
-          <div id="penta-escrime-list" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-s" id="btn-add-escrime" style="margin-top:6px">➕ Question</button>
+          <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">⚡ PHASE 1 — 4 questions de vitesse</div>
+          <span class="hint">Vrai/Faux ou 2 choix · Pas de timer · La vitesse relative décide</span>
+          <div id="assaut-q-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+          <button class="btn btn-s" id="btn-add-assaut-q" style="margin-top:8px">➕ Question (max 4)</button>
         </div>
-        <!-- NATATION -->
-        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
-          <div style="font-family:var(--fh);font-size:12px;color:var(--cyan);letter-spacing:2px;margin-bottom:6px">🏊 NATATION — 100 pts · Vrai/Faux chronométré</div>
-          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">Questions vrai/faux · Chaque erreur −5s · Timer global</div>
-          <label>Timer (secondes)</label>
-          <input type="number" id="penta-natation-timer" value="45" min="20" max="120" style="max-width:80px;margin-bottom:8px">
-          <div id="penta-natation-list" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-s" id="btn-add-natation" style="margin-top:6px">➕ Question V/F</button>
+        <!-- Estocade -->
+        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
+          <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:6px">🎯 ESTOCADE FINALE — La Seconde Intention</div>
+          <label>Question finale</label>
+          <input type="text" id="assaut-finale-q" placeholder="Question de l'Estocade…" style="margin-bottom:6px">
+          <label>✅ La Touche (bonne réponse)</label>
+          <input type="text" id="assaut-finale-touche" placeholder="Bonne réponse…" style="border:1px solid var(--neon);color:var(--neon);margin-bottom:6px">
+          <label>😐 Le Fer dans le vide (neutre)</label>
+          <input type="text" id="assaut-finale-neutre" placeholder="Mauvaise réponse neutre…" style="margin-bottom:6px">
+          <label>🪤 La Seconde Intention (piège)</label>
+          <input type="text" id="assaut-finale-piege" placeholder="Le piège conçu par le Maître d'Armes…" style="border:1px solid var(--red);color:var(--red)">
         </div>
-        <!-- ÉQUITATION -->
-        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
-          <div style="font-family:var(--fh);font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:6px">🏇 ÉQUITATION — 100 pts · Ordre stratégique</div>
-          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 obstacles · Le joueur choisit l'ordre avant de commencer · Erreur = chute, parcours arrêté</div>
-          <div id="penta-equitation-list" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-s" id="btn-add-equitation" style="margin-top:6px">➕ Obstacle</button>
+      </div>
+
+      <!-- ASSAUT FIELDS -->
+      <div id="assaut-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          ⚔️ 4 questions Vrai/Faux + 1 estocade finale QCM · Piste 10 cases · Score = position × 10
         </div>
-        <!-- LASER-RUN -->
-        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:12px">
-          <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:6px">🔫 LASER-RUN — 100 pts · Course + Tir alternés</div>
-          <div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);margin-bottom:8px">5 cycles · Chaque cycle = V/F (course) + question ouverte (tir) · Timer global 60s</div>
-          <label>Timer (secondes)</label>
-          <input type="number" id="penta-laserrun-timer" value="60" min="30" max="120" style="max-width:80px;margin-bottom:8px">
-          <div id="penta-laserrun-list" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="btn btn-s" id="btn-add-laserrun" style="margin-top:6px">➕ Cycle (V/F + Tir)</button>
+        <!-- Phase 1 -->
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PHASE 1 — DUEL DE VITESSE (4 questions)</div>
+        <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Pour chaque question : entrez le temps en secondes que l'Admin met à répondre (temps de référence)</div>
+        <div id="assaut-p1-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" id="btn-add-assaut-p1" style="margin-top:6px">➕ Question (max 4)</button>
+        <div style="border-top:1px solid rgba(255,255,255,.07);margin:12px 0"></div>
+        <!-- Phase 2 -->
+        <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:8px">PHASE 2 — L'ESTOCADE FINALE</div>
+        <label>Question finale</label>
+        <input type="text" id="assaut-p2-q" placeholder="La question de l'estocade…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;margin-bottom:8px;outline:none">
+        <label style="color:var(--neon)">✅ La Touche (bonne réponse)</label>
+        <input type="text" id="assaut-p2-touche" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
+        <label style="color:var(--mute)">🤺 Le Fer dans le Vide (neutre)</label>
+        <input type="text" id="assaut-p2-neutre" placeholder="Réponse neutre / mauvaise…" style="width:100%;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
+        <label style="color:var(--red)">🎭 La Seconde Intention (piège de l'Admin)</label>
+        <input type="text" id="assaut-p2-piege" placeholder="Le piège — réponse fausse très plausible…" style="width:100%;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
+        <div style="font-size:11px;color:var(--mute);font-style:italic">La Seconde Intention doit être une réponse fausse mais extrêmement crédible — c'est le piège psychologique de l'Admin.</div>
+      </div>
+
+      <!-- TIR À L'ARC FIELDS -->
+      <div id="tirarlarc-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎯 3 cibles · Difficile=33pts · Moyen=22pts · Facile=11pts · Bonus +1pt si 3/3 touchées
         </div>
+        <div id="arc-cibles-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" id="btn-add-arc" style="margin-top:8px">➕ Ajouter une cible (max 3)</button>
+        <div id="arc-count" style="font-size:11px;color:var(--mute);margin-top:4px">0/3 cibles</div>
+      </div>
+
+      <!-- NAGE SYNC FIELDS -->
+      <div id="nagesync-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🏊 5 couloirs (caractéristiques) + 5 sportifs à placer · 20 pts par bonne association
+        </div>
+        <label>Caractéristiques des couloirs (1 par ligne)</label>
+        <span class="hint">Ex: "France" ou "100m papillon" ou "5 titres"</span>
+        <div id="ns-couloirs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        <button class="btn btn-s" id="btn-add-couloir" style="margin-top:6px">➕ Couloir (max 5)</button>
+        <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+        <label>Sportifs (1 par ligne) + couloir correct</label>
+        <span class="hint">Le numéro du couloir (1-5) où ce sportif doit être placé</span>
+        <div id="ns-sportifs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        <button class="btn btn-s" id="btn-add-sportif" style="margin-top:6px">➕ Sportif (max 5)</button>
       </div>
 
       <!-- HALTERO FIELDS -->
@@ -1034,7 +1089,10 @@ function selectType(type){
   document.getElementById('biathlon-fields').style.display      = type==='biathlon'?'block':'none';
   document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
-  document.getElementById('pentathlon-fields').style.display    = type==='pentathlon'?'block':'none';
+  document.getElementById('assaut-fields').style.display       = type==='assaut'?'block':'none';
+  document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
+  document.getElementById('assaut-fields').style.display       = type==='assaut'?'block':'none';
+  document.getElementById('nagesync-fields').style.display     = type==='nagesync'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -1045,7 +1103,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='pentathlon';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -1236,6 +1294,24 @@ async function startEdit(id){
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
   }
+  if(a.type==='assaut'){
+    assautP1=[...(a.phase1||[])];
+    const p2=a.phase2||{};
+    ['assaut-p2-q','assaut-p2-touche','assaut-p2-neutre','assaut-p2-piege'].forEach((id,idx)=>{
+      const el=document.getElementById(id);
+      if(el)el.value=[p2.q,p2.touche,p2.neutre,p2.piege][idx]||'';
+    });
+    setTimeout(()=>renderAssautP1(),50);
+  }
+  if(a.type==='tirarlarc'){
+    arcCibles=[...(a.cibles||[])];
+    setTimeout(()=>renderArcCibles(),50);
+  }
+  if(a.type==='nagesync'){
+    nsCouloirs=[...(a.couloirs||[])];
+    nsSportifs=[...(a.sportifs||[])];
+    setTimeout(()=>{renderNsCouloirs();renderNsSportifs();},50);
+  }
   if(a.type==='haltero'){
     const ar=a.halteroArache||{};
     const ej=a.halteroEpaule||{};
@@ -1389,7 +1465,7 @@ function cancelEdit(){
   document.getElementById('grimpe-theme-in').value='';grimpeItems=[];if(typeof renderGrimpeItems==='function')renderGrimpeItems();
   if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value='';
   mfQuestions=[];renderMFQuestions();
-  pentaEscrimeQ=[];pentaNatationQ=[];pentaEquitationQ=[];pentaLaserrunQ=[];
+  assautQuestions=[];arcCibles=[];nsCouloirs=[];nsSportifs=[];
   haQuestions=[];hejQuestions=[];
   if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value='';
   if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value='';
@@ -1499,12 +1575,15 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='pentathlon') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
-  else if(currentType==='pentathlon') hasContent=pentaEscrimeQ.length>=1;
+  else if(currentType==='assaut') hasContent=assautQuestions.length>=1&&!!document.getElementById('assaut-finale-q')?.value.trim();
+  else if(currentType==='assaut') hasContent=assautP1.length>=1&&!!document.getElementById('assaut-p2-q')?.value.trim();
+  else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
+  else if(currentType==='nagesync') hasContent=nsCouloirs.filter(c=>c.label).length>=1&&nsSportifs.filter(s=>s.nom).length>=1;
   else if(currentType==='haltero'){
     const s1=document.getElementById('ha-s1');
     hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
@@ -1650,125 +1729,235 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
-// ── PENTATHLON ADMIN ──────────────────────────────────────────────────────
-let pentaEscrimeQ=[], pentaNatationQ=[], pentaEquitationQ=[], pentaLaserrunQ=[];
+// ── ASSAUT ADMIN ──────────────────────────────────────────────────────────
+let assautQuestions=[];
 
-function renderPentaList(items,containerId,renderFn){
-  const el=document.getElementById(containerId);
-  if(!el)return;
-  el.innerHTML='';
-  items.forEach((item,i)=>renderFn(item,i,el));
+function renderAssautQuestions(){
+  const list=document.getElementById('assaut-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  assautQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:10px;color:var(--neon)';
+    lbl.textContent='Q'+(i+1)+' Phase 1';
+    const inQ=document.createElement('input');
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question (V/F ou 2 choix)…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inQ.oninput=e=>{assautQuestions[i].q=e.target.value;checkReady();};
+    const inA=document.createElement('input');
+    inA.type='text';inA.value=q.a||'';inA.placeholder='Bonne réponse…';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
+    inA.oninput=e=>{assautQuestions[i].a=e.target.value;};
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='Mauvaise réponse (si 2 choix)…';
+    inW.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
+    inW.oninput=e=>{assautQuestions[i].w=e.target.value;};
+    const inT=document.createElement('input');
+    inT.type='number';inT.value=q.timing||0;inT.placeholder='Timing admin (ms) — 0=instantané';
+    inT.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
+    inT.oninput=e=>{assautQuestions[i].timing=parseInt(e.target.value)||0;};
+    const del=document.createElement('button');
+    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
+    del.onclick=()=>{assautQuestions.splice(i,1);renderAssautQuestions();};
+    d.append(lbl,inQ,inA,inW,inT,del);
+    list.appendChild(d);
+  });
   checkReady();
 }
 
-function pentaQDiv(content,onDelete){
-  const d=document.createElement('div');
-  d.style.cssText='background:var(--c2);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px';
-  d.innerHTML=content;
-  const del=document.createElement('button');
-  del.textContent='🗑'; del.onclick=onDelete;
-  del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-end';
-  d.appendChild(del);
-  return d;
-}
+document.getElementById('btn-add-assaut-q').onclick=()=>{
+  if(assautQuestions.length>=4)return alert('4 questions max');
+  assautQuestions.push({q:'',a:'',w:'',timing:0});
+  renderAssautQuestions();
+};
 
-function renderPentaEscrime(){
-  renderPentaList(pentaEscrimeQ,'penta-escrime-list',(q,i,el)=>{
+// Listeners pour checkReady
+['assaut-finale-q','assaut-finale-touche','assaut-finale-neutre','assaut-finale-piege'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
+
+// ── ASSAUT ADMIN ──────────────────────────────────────────────────────────
+let assautP1=[];
+
+function renderAssautP1(){
+  const list=document.getElementById('assaut-p1-list');
+  if(!list)return;
+  list.innerHTML='';
+  assautP1.forEach((q,i)=>{
     const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px';
-    const label=document.createElement('div');
-    label.style.cssText='font-size:10px;color:var(--neon);margin-bottom:2px';
-    label.textContent='Q'+(i+1)+' · Touche '+(i+1);
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:10px;color:var(--neon)';lbl.textContent='Q'+(i+1)+' · Phase 1';
     const inQ=document.createElement('input');
-    inQ.type='text'; inQ.value=q.q||''; inQ.placeholder='Question…';
-    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none';
-    inQ.oninput=e=>{pentaEscrimeQ[i].q=e.target.value;checkReady();};
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question Vrai/Faux ou 2 choix…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inQ.oninput=e=>{assautP1[i].q=e.target.value;checkReady();};
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center';
     const inA=document.createElement('input');
-    inA.type='text'; inA.value=q.a||''; inA.placeholder='Bonne réponse…';
-    inA.style.cssText='width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
-    inA.oninput=e=>{pentaEscrimeQ[i].a=e.target.value;checkReady();};
-    const inW1=document.createElement('input');
-    inW1.type='text'; inW1.value=(q.w&&q.w[0])||''; inW1.placeholder='Mauvaise réponse 1…';
-    inW1.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
-    inW1.oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[0]=e.target.value;};
-    const inW2=document.createElement('input');
-    inW2.type='text'; inW2.value=(q.w&&q.w[1])||''; inW2.placeholder='Mauvaise réponse 2…';
-    inW2.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none';
-    inW2.oninput=e=>{if(!pentaEscrimeQ[i].w)pentaEscrimeQ[i].w=['',''];pentaEscrimeQ[i].w[1]=e.target.value;};
+    inA.type='text';inA.value=q.a||'';inA.placeholder='Bonne réponse…';
+    inA.style.cssText='flex:2;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
+    inA.oninput=e=>{assautP1[i].a=e.target.value;};
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='Mauvaise réponse…';
+    inW.style.cssText='flex:2;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
+    inW.oninput=e=>{assautP1[i].w=e.target.value;};
+    const inT=document.createElement('input');
+    inT.type='number';inT.value=q.adminTime||3;inT.min=1;inT.max=30;inT.placeholder='Temps Admin (s)';
+    inT.style.cssText='width:70px;background:var(--c1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
+    inT.oninput=e=>{assautP1[i].adminTime=parseInt(e.target.value)||3;};
+    const tLbl=document.createElement('span');tLbl.textContent='s Admin';tLbl.style.cssText='font-size:10px;color:var(--mute)';
+    row.append(inA,inW,inT,tLbl);
     const del=document.createElement('button');
-    del.textContent='🗑 Supprimer'; del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px;align-self:flex-start';
-    del.onclick=()=>{pentaEscrimeQ.splice(i,1);renderPentaEscrime();};
-    d.append(label,inQ,inA,inW1,inW2,del);
-    el.appendChild(d);
+    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
+    del.onclick=()=>{assautP1.splice(i,1);renderAssautP1();};
+    d.append(lbl,inQ,row,del);
+    list.appendChild(d);
   });
+  checkReady();
 }
-function renderPentaNatation(){
-  renderPentaList(pentaNatationQ,'penta-natation-list',(q,i,el)=>{
-    const d=pentaQDiv(`
-      <div style="font-size:10px;color:var(--cyan)">Q${i+1} · 20 pts</div>
-      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
-      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--cyan);color:var(--cyan);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-    `,()=>{pentaNatationQ.splice(i,1);renderPentaNatation();});
-    const inputs=d.querySelectorAll('input');
-    inputs[0].oninput=e=>{pentaNatationQ[i].q=e.target.value;};
-    inputs[1].oninput=e=>{pentaNatationQ[i].a=e.target.value;};
-    el.appendChild(d);
-  });
-}
-function pentaNatSetA(i,v){pentaNatationQ[i].a=v;}
+document.getElementById('btn-add-assaut-p1').onclick=()=>{
+  if(assautP1.length>=4)return alert('4 questions max en Phase 1');
+  assautP1.push({q:'',a:'',w:'',adminTime:3});renderAssautP1();
+};
+['assaut-p2-q','assaut-p2-touche','assaut-p2-neutre','assaut-p2-piege'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
 
-function renderPentaEquitation(){
-  const levels=['facile','moyen','difficile'];
-  renderPentaList(pentaEquitationQ,'penta-equitation-list',(q,i,el)=>{
-    const lv=q.level||'moyen';
-    const d=pentaQDiv(`
-      <div style="font-size:10px;color:#f59e0b">Obstacle ${i+1}</div>
-      <input type="text" value="${(q.q||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none">
-      <input type="text" value="${(q.a||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid #f59e0b;color:#f59e0b;font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      <div style="display:flex;gap:4px;margin-top:2px">
-        ${levels.map(l=>`<button onclick="pentaEqSetL(${i},'${l}')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${lv===l?'#f59e0b':'rgba(255,255,255,.1)'};background:${lv===l?'rgba(245,158,11,.15)':'var(--c1)'};color:${lv===l?'#f59e0b':'var(--mute)'};font-size:10px;cursor:pointer">${l}</button>`).join('')}
-      </div>
-    `,()=>{pentaEquitationQ.splice(i,1);renderPentaEquitation();});
-    const inputs=d.querySelectorAll('input');
-    inputs[0].oninput=e=>{pentaEquitationQ[i].q=e.target.value;};
-    inputs[1].oninput=e=>{pentaEquitationQ[i].a=e.target.value;};
-    el.appendChild(d);
+// ── TIR À L'ARC ADMIN ─────────────────────────────────────────────────────
+function arcUpdateEsperance(){
+  const t11=parseFloat(document.getElementById('arc-tol-facile')?.value)||20;
+  const t22=parseFloat(document.getElementById('arc-tol-moyen')?.value)||8;
+  const t33=parseFloat(document.getElementById('arc-tol-difficile')?.value)||3;
+  const e11=(11*(t11*2/100)).toFixed(1);
+  const e22=(22*(t22*2/100)).toFixed(1);
+  const e33=(33*(t33*2/100)).toFixed(1);
+  const ok11_22=parseFloat(e11)>parseFloat(e22);
+  const ok22_33=parseFloat(e22)>parseFloat(e33);
+  const el=document.getElementById('arc-esperance');
+  if(!el)return;
+  el.innerHTML=
+    '🟢 11m → espérance <strong style="color:var(--neon)">'+e11+' pts</strong> '+(ok11_22?'✅':'⚠️')+'<br>'+
+    '🟡 22m → espérance <strong style="color:#f59e0b">'+e22+' pts</strong> '+(ok22_33?'✅':'⚠️')+'<br>'+
+    '🔴 33m → espérance <strong style="color:var(--red)">'+e33+' pts</strong><br>'+
+    (!ok11_22||!ok22_33?'<span style="color:var(--red)">⚠️ Hiérarchie déséquilibrée — ajuste les %</span>':'<span style="color:var(--neon)">✅ Hiérarchie 11m > 22m > 33m</span>');
+}
+// Init on load
+setTimeout(()=>arcUpdateEsperance(),100);
+let arcCibles=[];
+const DIFF_PTS={facile:11,moyen:22,difficile:33};
+
+function renderArcCibles(){
+  const list=document.getElementById('arc-cibles-list');
+  const count=document.getElementById('arc-count');
+  if(!list)return;
+  list.innerHTML='';
+  arcCibles.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px';
+    const diff=c.difficulty||'moyen';
+    const pts=DIFF_PTS[diff]||22;
+    const label=document.createElement('div');
+    label.style.cssText='font-size:10px;color:var(--neon)';
+    label.textContent='Cible '+(i+1)+' · '+pts+' pts';
+    const inStat=document.createElement('input');
+    inStat.type='text';inStat.value=c.stat||'';inStat.placeholder='Stat / Question (ex: Buts en carrière)…';
+    inStat.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inStat.oninput=e=>{arcCibles[i].stat=e.target.value;checkReady();};
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:6px';
+    const inVal=document.createElement('input');
+    inVal.type='number';inVal.value=c.value||'';inVal.placeholder='Valeur exacte';
+    inVal.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;checkReady();};
+    const inMax=document.createElement('input');
+    inMax.type='number';inMax.value=c.max||100;inMax.placeholder='Max slider';
+    inMax.style.cssText='flex:1;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inMax.oninput=e=>{arcCibles[i].max=parseInt(e.target.value)||100;};
+    const inTol=document.createElement('input');
+    inTol.type='number';inTol.value=c.tolerance||'';inTol.placeholder='Tol.% (vide=auto)';
+    inTol.min=1;inTol.max=50;
+    inTol.style.cssText='width:80px;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:5px 6px;outline:none';
+    inTol.oninput=e=>{arcCibles[i].tolerance=parseInt(e.target.value)||null;};
+    row.append(inVal,inMax,inTol);
+    const del=document.createElement('button');
+    del.textContent='🗑 Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;align-self:flex-start';
+    del.onclick=()=>{arcCibles.splice(i,1);renderArcCibles();};
+    d.append(label,inStat,row,del);
+    list.appendChild(d);
+  });
+  if(count)count.textContent=arcCibles.length+'/3 cibles';
+  checkReady();
+}
+document.getElementById('btn-add-arc').onclick=()=>{
+  if(arcCibles.length>=3)return alert('3 cibles max');
+  arcCibles.push({stat:'',value:0,max:100,difficulty:'moyen'});
+  renderArcCibles();
+};
+
+// ── NAGE SYNC ADMIN ────────────────────────────────────────────────────────
+let nsCouloirs=[], nsSportifs=[];
+
+function renderNsCouloirs(){
+  const list=document.getElementById('ns-couloirs-list');
+  if(!list)return;
+  list.innerHTML='';
+  nsCouloirs.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;gap:6px;align-items:center';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-family:var(--fh);font-size:11px;color:var(--cyan);min-width:22px';
+    lbl.textContent=(i+1);
+    const inp=document.createElement('input');
+    inp.type='text';inp.value=c.label||'';inp.placeholder='Ex: France ou 5 titres…';
+    inp.style.cssText='flex:1;background:var(--c1);border:1px solid rgba(0,229,200,.3);color:var(--txt);font-size:12px;border-radius:6px;padding:5px 8px;outline:none';
+    inp.oninput=e=>{nsCouloirs[i].label=e.target.value;checkReady();};
+    const del=document.createElement('button');
+    del.textContent='✕';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:13px';
+    del.onclick=()=>{nsCouloirs.splice(i,1);renderNsCouloirs();renderNsSportifs();};
+    d.append(lbl,inp,del);
+    list.appendChild(d);
   });
 }
-function pentaEqSetL(i,l){pentaEquitationQ[i].level=l;renderPentaEquitation();}
-
-function renderPentaLaserrun(){
-  renderPentaList(pentaLaserrunQ,'penta-laserrun-list',(q,i,el)=>{
-    const d=pentaQDiv(`
-      <div style="font-size:10px;color:var(--red)">Cycle ${i+1}</div>
-      <div style="font-size:9px;color:var(--mute)">🏃 COURSE (Vrai/Faux)</div>
-      <input type="text" value="${(q.vf?.q||'').replace(/"/g,'&quot;')}" placeholder="Affirmation course…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      <div style="display:flex;gap:6px">
-        <button id="plr-v-${i}" onclick="pentaLRSetVF(${i},'Vrai')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${(q.vf?.a||'Vrai')==='Vrai'?'var(--neon)':'rgba(255,255,255,.1)'};color:${(q.vf?.a||'Vrai')==='Vrai'?'var(--neon)':'var(--mute)'};background:var(--c1);font-size:10px;cursor:pointer">✅ VRAI</button>
-        <button id="plr-f-${i}" onclick="pentaLRSetVF(${i},'Faux')" style="flex:1;padding:4px;border-radius:5px;border:1px solid ${(q.vf?.a||'Vrai')==='Faux'?'var(--red)':'rgba(255,255,255,.1)'};color:${(q.vf?.a||'Vrai')==='Faux'?'var(--red)':'var(--mute)'};background:var(--c1);font-size:10px;cursor:pointer">❌ FAUX</button>
-      </div>
-      <div style="font-size:9px;color:var(--mute);margin-top:4px">🎯 TIR (question ouverte)</div>
-      <input type="text" value="${(q.tir?.q||'').replace(/"/g,'&quot;')}" placeholder="Question tir…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      <div style="display:flex;gap:4px">
-        <input type="text" value="${(q.tir?.a||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte (nombre)…" style="flex:2;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-        <input type="number" value="${q.tir?.max||100}" placeholder="Max slider" style="flex:1;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:3px 6px;outline:none">
-      </div>
-    `,()=>{pentaLaserrunQ.splice(i,1);renderPentaLaserrun();});
-    const inputs=d.querySelectorAll('input');
-    inputs[0].oninput=e=>{if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.q=e.target.value;};
-    inputs[1].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.q=e.target.value;};
-    inputs[2].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.a=e.target.value;};
-    if(inputs[3]) inputs[3].oninput=e=>{if(!pentaLaserrunQ[i].tir)pentaLaserrunQ[i].tir={};pentaLaserrunQ[i].tir.max=parseInt(e.target.value)||100;};
-    el.appendChild(d);
+function renderNsSportifs(){
+  const list=document.getElementById('ns-sportifs-list');
+  if(!list)return;
+  list.innerHTML='';
+  nsSportifs.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;gap:6px;align-items:center';
+    const inp=document.createElement('input');
+    inp.type='text';inp.value=s.nom||'';inp.placeholder='Nom du sportif…';
+    inp.style.cssText='flex:1;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:5px 8px;outline:none';
+    inp.oninput=e=>{nsSportifs[i].nom=e.target.value;checkReady();};
+    const sel=document.createElement('select');
+    sel.style.cssText='background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:6px;padding:4px 6px;outline:none;cursor:pointer';
+    for(let n=1;n<=Math.max(5,nsCouloirs.length);n++){
+      const opt=document.createElement('option');
+      opt.value=n-1;opt.textContent='Couloir '+n;
+      if(s.correct===n-1)opt.selected=true;
+      sel.appendChild(opt);
+    }
+    sel.onchange=e=>{nsSportifs[i].correct=parseInt(e.target.value);};
+    const del=document.createElement('button');
+    del.textContent='✕';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:13px';
+    del.onclick=()=>{nsSportifs.splice(i,1);renderNsSportifs();};
+    d.append(inp,sel,del);
+    list.appendChild(d);
   });
+  checkReady();
 }
-function pentaLRSetVF(i,v){if(!pentaLaserrunQ[i].vf)pentaLaserrunQ[i].vf={};pentaLaserrunQ[i].vf.a=v;renderPentaLaserrun();}
-
-// Boutons ajouter
-document.getElementById('btn-add-escrime').onclick=()=>{if(pentaEscrimeQ.length>=7)return;pentaEscrimeQ.push({q:'',a:'',w:['']});renderPentaEscrime();};
-document.getElementById('btn-add-natation').onclick=()=>{pentaNatationQ.push({q:'',a:'Vrai'});renderPentaNatation();};
-document.getElementById('btn-add-equitation').onclick=()=>{if(pentaEquitationQ.length>=5)return;pentaEquitationQ.push({q:'',a:'',level:'moyen'});renderPentaEquitation();};
-document.getElementById('btn-add-laserrun').onclick=()=>{if(pentaLaserrunQ.length>=5)return;pentaLaserrunQ.push({vf:{q:'',a:'Vrai'},tir:{q:'',a:''}});renderPentaLaserrun();};
+document.getElementById('btn-add-couloir').onclick=()=>{
+  if(nsCouloirs.length>=5)return alert('5 couloirs max');
+  nsCouloirs.push({label:''});renderNsCouloirs();
+};
+document.getElementById('btn-add-sportif').onclick=()=>{
+  if(nsSportifs.length>=5)return alert('5 sportifs max');
+  nsSportifs.push({nom:'',correct:0});renderNsSportifs();
+};
 
 // ── HALTERO ADMIN ─────────────────────────────────────────────────────────
 let haQuestions=[], hejQuestions=[];
@@ -2655,12 +2844,22 @@ document.getElementById('btn-save').onclick=async()=>{
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
   const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
   const mfQuestionsData = currentType==='maillonfaible'?mfQuestions:[];
-  const pentaData = currentType==='pentathlon'?{
-    escrime:{questions:pentaEscrimeQ},
-    natation:{questions:pentaNatationQ,timer:parseInt(document.getElementById('penta-natation-timer')?.value||45)},
-    equitation:{obstacles:pentaEquitationQ},
-    laserrun:{cycles:pentaLaserrunQ,timer:parseInt(document.getElementById('penta-laserrun-timer')?.value||60)}
+  const assautData = currentType==='assaut'?{
+    questions: assautQuestions,
+    finale: {
+      q: document.getElementById('assaut-finale-q')?.value.trim()||'',
+      touche: document.getElementById('assaut-finale-touche')?.value.trim()||'',
+      neutre: document.getElementById('assaut-finale-neutre')?.value.trim()||'',
+      piege: document.getElementById('assaut-finale-piege')?.value.trim()||''
+    }
   }:null;
+  const arcTolData = currentType==='tirarlarc'?{
+    facile:parseFloat(document.getElementById('arc-tol-facile')?.value)||20,
+    moyen:parseFloat(document.getElementById('arc-tol-moyen')?.value)||8,
+    difficile:parseFloat(document.getElementById('arc-tol-difficile')?.value)||3
+  }:{};
+  const arcCiblesData = currentType==='tirarlarc'?arcCibles:[];
+  const nsSyncData = currentType==='nagesync'?{couloirs:nsCouloirs,sportifs:nsSportifs}:{};
   const halteroArache = currentType==='haltero'?{
     sportif1:document.getElementById('ha-s1')?.value.trim()||'',
     sportif2:document.getElementById('ha-s2')?.value.trim()||'',
@@ -2701,7 +2900,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='pentathlon'?'Pentathlon Arena':rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Assaut':currentType==='assaut'?'L\'Assaut':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
@@ -2733,7 +2932,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,pentathlon:pentaData,biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
