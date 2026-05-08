@@ -1698,56 +1698,6 @@ document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
 // ── ASSAUT ADMIN ──────────────────────────────────────────────────────────
-let assautQuestions=[];
-
-function renderAssautQuestions(){
-  const list=document.getElementById('assaut-q-list');
-  if(!list)return;
-  list.innerHTML='';
-  assautQuestions.forEach((q,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px';
-    const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:10px;color:var(--neon)';
-    lbl.textContent='Q'+(i+1)+' Phase 1';
-    const inQ=document.createElement('input');
-    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question (V/F ou 2 choix)…';
-    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    inQ.oninput=e=>{assautQuestions[i].q=e.target.value;checkReady();};
-    const inA=document.createElement('input');
-    inA.type='text';inA.value=q.a||'';inA.placeholder='Bonne réponse…';
-    inA.style.cssText='width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
-    inA.oninput=e=>{assautQuestions[i].a=e.target.value;};
-    const inW=document.createElement('input');
-    inW.type='text';inW.value=q.w||'';inW.placeholder='Mauvaise réponse (si 2 choix)…';
-    inW.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
-    inW.oninput=e=>{assautQuestions[i].w=e.target.value;};
-    const inT=document.createElement('input');
-    inT.type='number';inT.value=q.timing||0;inT.placeholder='Timing admin (ms) — 0=instantané';
-    inT.style.cssText='width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:4px;padding:4px 8px;outline:none';
-    inT.oninput=e=>{assautQuestions[i].timing=parseInt(e.target.value)||0;};
-    const del=document.createElement('button');
-    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
-    del.onclick=()=>{assautQuestions.splice(i,1);renderAssautQuestions();};
-    d.append(lbl,inQ,inA,inW,inT,del);
-    list.appendChild(d);
-  });
-  checkReady();
-}
-
-document.getElementById('btn-add-assaut-q').onclick=()=>{
-  if(assautQuestions.length>=4)return alert('4 questions max');
-  assautQuestions.push({q:'',a:'',w:'',timing:0});
-  renderAssautQuestions();
-};
-
-// Listeners pour checkReady
-['assaut-finale-q','assaut-finale-touche','assaut-finale-neutre','assaut-finale-piege'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el)el.addEventListener('input',checkReady);
-});
-
-// ── ASSAUT ADMIN ──────────────────────────────────────────────────────────
 let assautP1=[];
 
 function renderAssautP1(){
