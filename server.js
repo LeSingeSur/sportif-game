@@ -276,12 +276,13 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'tirarlarc') {
     base.cibles = (athlete.cibles||[]).map(c=>({
       stat:c.stat||'', value:parseInt(c.value)||0, max:parseInt(c.max)||100,
-      tolerance:c.tolerance||null
+      tol11:c.tol11||null, tol22:c.tol22||null, tol33:c.tol33||null
     }));
+    base.arcTolerances = athlete.arcTolerances||{facile:20,moyen:8,difficile:3};
     base.maxScore = 100;
   } else if (athlete.type === 'nagesync') {
     base.couloirs = (athlete.couloirs||[]).map(c=>({label:c.label||''}));
-    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct||0}));
+    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:parseInt(s.correct)||0}));
     base.maxScore = 100;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
