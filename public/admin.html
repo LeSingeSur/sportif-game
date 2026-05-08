@@ -293,39 +293,13 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- ASSAUT FIELDS -->
       <div id="assaut-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          ⚔️ 4 questions Phase 1 (V/F ou 2 choix) + 1 Estocade finale (3 propositions dont 1 piège) · Piste 10 cases · Score = position finale ×10
+          ⚔️ 5 questions V/F Phase 1 + 1 Estocade finale · Piste 10 cases · Score = position × 10
         </div>
         <!-- Phase 1 -->
-        <div class="field">
-          <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">⚡ PHASE 1 — 4 questions de vitesse</div>
-          <span class="hint">Vrai/Faux ou 2 choix · Pas de timer · La vitesse relative décide</span>
-          <div id="assaut-q-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
-          <button class="btn btn-s" id="btn-add-assaut-q" style="margin-top:8px">➕ Question (max 4)</button>
-        </div>
-        <!-- Estocade -->
-        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
-          <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:6px">🎯 ESTOCADE FINALE — La Seconde Intention</div>
-          <label>Question finale</label>
-          <input type="text" id="assaut-finale-q" placeholder="Question de l'Estocade…" style="margin-bottom:6px">
-          <label>✅ La Touche (bonne réponse)</label>
-          <input type="text" id="assaut-finale-touche" placeholder="Bonne réponse…" style="border:1px solid var(--neon);color:var(--neon);margin-bottom:6px">
-          <label>😐 Le Fer dans le vide (neutre)</label>
-          <input type="text" id="assaut-finale-neutre" placeholder="Mauvaise réponse neutre…" style="margin-bottom:6px">
-          <label>🪤 La Seconde Intention (piège)</label>
-          <input type="text" id="assaut-finale-piege" placeholder="Le piège conçu par le Maître d'Armes…" style="border:1px solid var(--red);color:var(--red)">
-        </div>
-      </div>
-
-      <!-- ASSAUT FIELDS -->
-      <div id="assaut-fields" style="display:none">
-        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          ⚔️ 4 questions Vrai/Faux + 1 estocade finale QCM · Piste 10 cases · Score = position × 10
-        </div>
-        <!-- Phase 1 -->
-        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PHASE 1 — DUEL DE VITESSE (4 questions)</div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PHASE 1 — DUEL DE VITESSE (5 questions)</div>
         <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Pour chaque question : entrez le temps en secondes que l'Admin met à répondre (temps de référence)</div>
         <div id="assaut-p1-list" style="display:flex;flex-direction:column;gap:6px"></div>
-        <button class="btn btn-s" id="btn-add-assaut-p1" style="margin-top:6px">➕ Question (max 4)</button>
+        <button class="btn btn-s" id="btn-add-assaut-p1" style="margin-top:6px">➕ Question (max 5)</button>
         <div style="border-top:1px solid rgba(255,255,255,.07);margin:12px 0"></div>
         <!-- Phase 2 -->
         <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:8px">PHASE 2 — L'ESTOCADE FINALE</div>
@@ -343,26 +317,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- TIR À L'ARC FIELDS -->
       <div id="tirarlarc-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          🎯 3 cibles · Le joueur choisit librement 11m/22m/33m · Bonus +1pt si 3/3 touchées
-        </div>
-        <!-- Tolérances globales -->
-        <div style="background:var(--c2);border-radius:10px;padding:12px;margin-bottom:10px">
-          <div style="font-size:11px;color:var(--neon);letter-spacing:1px;margin-bottom:8px;font-weight:700">TOLÉRANCES PAR DISTANCE</div>
-          <div style="display:flex;gap:8px;align-items:flex-end">
-            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
-              <label style="font-size:10px;color:var(--mute)">🟢 11m ±%</label>
-              <input type="number" id="arc-tol-facile" value="20" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
-              <label style="font-size:10px;color:var(--mute)">🟡 22m ±%</label>
-              <input type="number" id="arc-tol-moyen" value="8" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;flex:1">
-              <label style="font-size:10px;color:var(--mute)">🔴 33m ±%</label>
-              <input type="number" id="arc-tol-difficile" value="3" min="1" max="50" oninput="arcUpdateEsperance()" style="background:var(--c1);border:1px solid rgba(255,60,60,.3);color:var(--red);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none;width:100%">
-            </div>
-          </div>
-          <div id="arc-esperance" style="margin-top:8px;font-size:11px;line-height:1.8;color:var(--mute)"></div>
+          🎯 3 cibles · Joueur choisit 11m/22m/33m · Écart ± par distance dans chaque cible · Bonus +1pt si 3/3
         </div>
         <div id="arc-cibles-list" style="display:flex;flex-direction:column;gap:8px"></div>
         <button class="btn btn-s" id="btn-add-arc" style="margin-top:8px">➕ Ajouter une cible (max 3)</button>
@@ -1836,7 +1791,7 @@ function renderAssautP1(){
   checkReady();
 }
 document.getElementById('btn-add-assaut-p1').onclick=()=>{
-  if(assautP1.length>=4)return alert('4 questions max en Phase 1');
+  if(assautP1.length>=5)return alert('5 questions max en Phase 1');
   assautP1.push({q:'',a:'',w:'',adminTime:3});renderAssautP1();
 };
 ['assaut-p2-q','assaut-p2-touche','assaut-p2-neutre','assaut-p2-piege'].forEach(id=>{
