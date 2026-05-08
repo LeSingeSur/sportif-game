@@ -234,7 +234,7 @@ app.get('/api/preview', (req, res) => {
     base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
     base.maxScore=100;
   } else if (athlete.type === 'tirarlarc') {
-    base.cibles = (athlete.cibles||[]).map(c=>({stat:c.stat||'',value:parseInt(c.value)||0,max:parseInt(c.max)||100,tolerance:c.tolerance||null}));
+    base.cibles = (athlete.cibles||[]).map(c=>({stat:c.stat||'',value:parseInt(c.value)||0,max:parseInt(c.max)||100,tol11:c.tol11||null,tol22:c.tol22||null,tol33:c.tol33||null}));
     base.maxScore = 100;
   } else if (athlete.type === 'assaut') {
     base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',adminTime:parseInt(q.adminTime)||3}));
