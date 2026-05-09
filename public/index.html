@@ -6157,10 +6157,16 @@ function arcShowIntro(){
     <div style="font-size:13px;color:var(--mute);line-height:1.7">
       ${cibles.length} cible${cibles.length>1?'s':''} · Tu choisis ta distance avant de voir la valeur<br>
       Plus tu vises loin → plus de points mais moins de tolérance<br>
-      <span style="color:#f59e0b">🎯 Facile: 11 pts · Moyen: 22 pts · Difficile: 33 pts</span><br>
+      <span style="color:#f59e0b">🎯 11m: 11 pts · 22m: 22 pts · 33m: 33 pts</span><br>
       Bonus +1 pt si toutes les cibles touchées !
-    </div>
-    <button class="btn btn-p" onclick="arcNextCible()" style="font-family:var(--fh);font-size:15px">▶ COMMENCER</button>`;
+    </div>`;
+  const btn=document.createElement('button');
+  btn.className='btn btn-p';
+  btn.style.fontFamily='var(--fh)';
+  btn.style.fontSize='15px';
+  btn.textContent='▶ COMMENCER';
+  btn.onclick=function(){arcNextCible();};
+  d.appendChild(btn);
   zone.appendChild(d);
 }
 
