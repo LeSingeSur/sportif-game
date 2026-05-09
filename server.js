@@ -217,43 +217,16 @@ app.get('/api/preview', (req, res) => {
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
   } else if (athlete.type === 'assaut') {
-    base.assaut = {
-      questions: (athlete.assaut?.questions||[]).map(q=>({
-        q:q.q||'', a:q.a||'', w:q.w||'', timing:parseInt(q.timing)||0
-      })),
-      finale: {
-        q: athlete.assaut?.finale?.q||'',
-        touche: athlete.assaut?.finale?.touche||'',
-        neutre: athlete.assaut?.finale?.neutre||'',
-        piege: athlete.assaut?.finale?.piege||''
-      }
-    };
-    base.maxScore = 100;
-  } else if (athlete.type === 'assaut') {
-    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',adminTime:parseInt(q.adminTime)||3}));
+    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'Vrai',adminTime:parseInt(q.adminTime)||3}));
     base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
     base.maxScore=100;
   } else if (athlete.type === 'tirarlarc') {
     base.cibles = (athlete.cibles||[]).map(c=>({stat:c.stat||'',value:parseInt(c.value)||0,max:parseInt(c.max)||100,tol11:c.tol11||null,tol22:c.tol22||null,tol33:c.tol33||null}));
+    base.arcTolerances = athlete.arcTolerances||{facile:20,moyen:8,difficile:3};
     base.maxScore = 100;
-  } else if (athlete.type === 'assaut') {
-    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',adminTime:parseInt(q.adminTime)||3}));
-    base.phase2 = {
-      q: athlete.phase2?.q||'',
-      touche: athlete.phase2?.touche||'',
-      neutre: athlete.phase2?.neutre||'',
-      piege: athlete.phase2?.piege||''
-    };
-    base.maxScore=100;
   } else if (athlete.type === 'nagesync') {
     base.couloirs = (athlete.couloirs||[]).map(c=>({label:c.label||''}));
-    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct||0}));
-    base.maxScore = 100;
-  } else if (athlete.type === 'assaut') {
-    base.assaut = {
-      questions: (athlete.assaut?.questions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',timing:parseInt(q.timing)||0})),
-      finale: {q:athlete.assaut?.finale?.q||'',touche:athlete.assaut?.finale?.touche||'',neutre:athlete.assaut?.finale?.neutre||'',piege:athlete.assaut?.finale?.piege||''}
-    };
+    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct!==undefined?s.correct:0}));
     base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
