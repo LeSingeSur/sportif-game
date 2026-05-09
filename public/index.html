@@ -6161,6 +6161,11 @@ function arcShowIntro(){
 
 function arcNextCible(){
   const cibles=ARC.data.cibles||[];
+  if(!cibles.length){
+    const zone=document.getElementById('arc-cible-zone');
+    if(zone)zone.innerHTML='<div style="color:var(--red);font-size:13px;padding:12px">⚠️ Ce jeu doit être reconfiguré par le Game Master.</div>';
+    return;
+  }
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
   const c=cibles[ARC.cibleIdx];
   document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
@@ -6259,7 +6264,7 @@ function arcFinish(){
   if(ARC.done)return;
   ARC.done=true;
   const cibles=ARC.data.cibles||[];
-  const bonus=ARC.hits===cibles.length?1:0;
+  const bonus=(ARC.hits===cibles.length&&cibles.length>0)?1:0;
   const score=Math.min(100,ARC.score+bonus);
   G.score=score; setScore(score,true);
   const vSc=document.getElementById('v-sc'); if(vSc)vSc.textContent=score;
