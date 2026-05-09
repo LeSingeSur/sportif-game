@@ -1119,6 +1119,16 @@ app.get('/api/admin/team-players', (req, res) => {
 
 // Classement équipes (public)
 // Endpoint de diagnostic équipes
+app.get('/api/debug/tirarlarc', (req, res) => {
+  const arcs = athletes.filter(a => a.type === 'tirarlarc');
+  res.json(arcs.map(a => ({
+    id: a.id,
+    answer: a.answer,
+    cibles: a.cibles,
+    arcTolerances: a.arcTolerances
+  })));
+});
+
 app.get('/api/debug/teams', (req, res) => {
   const {password}=req.query;
   if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
