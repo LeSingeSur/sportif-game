@@ -1279,7 +1279,16 @@ async function startEdit(id){
   if(a.type==='nagesync'){
     nsCouloirs=[...(a.couloirs||[])];
     nsSportifs=[...(a.sportifs||[])];
-    setTimeout(()=>{renderNsCouloirs();renderNsSportifs();},50);
+    setTimeout(()=>{
+      renderNsCouloirs();renderNsSportifs();
+      if(!nsCouloirs.length&&!nsSportifs.length){
+        const hint=document.createElement('div');
+        hint.style.cssText='background:rgba(255,60,60,.1);border:1px solid var(--red);border-radius:8px;padding:10px;font-size:12px;color:var(--red);margin-top:8px';
+        hint.innerHTML='⚠️ Ce jeu a été créé avec une ancienne version. Ressaisis les couloirs et sportifs ci-dessous puis republier.';
+        const fields=document.getElementById('nagesync-fields');
+        if(fields)fields.insertBefore(hint,fields.firstChild.nextSibling);
+      }
+    },50);
   }
   if(a.type==='haltero'){
     const ar=a.halteroArache||{};
@@ -1872,24 +1881,34 @@ function renderNsSportifs(){
     inp.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 10px;outline:none';
     inp.oninput=e=>{nsSportifs[i].nom=e.target.value;checkReady();};
     const row=document.createElement('div');
-    row.style.cssText='display:flex;gap:6px;align-items:center';
+    row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px';
     const lbl=document.createElement('span');
-    lbl.style.cssText='font-size:10px;color:var(--mute)';lbl.textContent='→ Couloir :';
-    const sel=document.createElement('select');
-    sel.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:5px 8px;outline:none;cursor:pointer';
-    for(let n=1;n<=Math.max(5,nsCouloirs.length);n++){
-      const opt=document.createElement('option');
-      opt.value=n-1;opt.textContent='Couloir '+n;
-      if(s.correct===n-1)opt.selected=true;
-      sel.appendChild(opt);
+    lbl.style.cssText='font-size:10px;color:var(--mute)';lbl.textContent='→ Couloir(s) :';
+    // Multiple checkboxes for each couloir
+    const cbWrap=document.createElement('div');
+    cbWrap.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
+    const maxCouloirs=Math.max(5,nsCouloirs.length);
+    const selectedCouloirs=Array.isArray(s.correct)?s.correct:[s.correct].filter(x=>x!==undefined);
+    for(let n=0;n<maxCouloirs;n++){
+      const label=document.createElement('label');
+      label.style.cssText='display:flex;align-items:center;gap:3px;cursor:pointer;background:var(--c1);border-radius:6px;padding:4px 8px;font-size:11px;color:'+(selectedCouloirs.includes(n)?'var(--neon)':'var(--mute)')+';border:1px solid '+(selectedCouloirs.includes(n)?'var(--neon)':'rgba(255,255,255,.1)');
+      const cb=document.createElement('input');
+      cb.type='checkbox';cb.checked=selectedCouloirs.includes(n);cb.style.cssText='accent-color:var(--neon)';
+      cb.onchange=()=>{
+        const cur=Array.isArray(nsSportifs[i].correct)?[...nsSportifs[i].correct]:[nsSportifs[i].correct].filter(x=>x!==undefined);
+        if(cb.checked){if(!cur.includes(n))cur.push(n);}
+        else{const idx=cur.indexOf(n);if(idx>-1)cur.splice(idx,1);}
+        nsSportifs[i].correct=cur.length===1?cur[0]:cur;
+        renderNsSportifs();
+      };
+      label.append(cb,document.createTextNode('C'+(n+1)));
+      cbWrap.appendChild(label);
     }
-    sel.onchange=e=>{nsSportifs[i].correct=parseInt(e.target.value);};
+    row.append(lbl,cbWrap);
     const del=document.createElement('button');
-    del.textContent='✕';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;font-weight:700';
+    del.textContent='✕ Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px;align-self:flex-start';
     del.onclick=()=>{nsSportifs.splice(i,1);renderNsSportifs();};
-    row.append(lbl,sel,del);
-    d.append(inp,row);
-    list.appendChild(d);
+    d.append(inp,row,del);
   });
   checkReady();
 }
