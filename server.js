@@ -246,6 +246,10 @@ app.get('/api/preview', (req, res) => {
       }
     };
     base.maxScore = 200;
+  } else if (athlete.type === 'assaut') {
+    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'Vrai',adminTime:parseInt(q.adminTime)||3}));
+    base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
+    base.maxScore=100;
   } else if (athlete.type === 'tirarlarc') {
     base.cibles = (athlete.cibles||[]).map(c=>({
       stat:c.stat||'', value:parseInt(c.value)||0, max:parseInt(c.max)||100,
