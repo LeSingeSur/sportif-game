@@ -6163,9 +6163,9 @@ function arcShowIntro(){
 
 function arcNextCible(){
   const cibles=ARC.data.cibles||[];
-  if(!cibles.length){
+  if(!cibles.length || !cibles[ARC.cibleIdx]?.value){
     const zone=document.getElementById('arc-cible-zone');
-    if(zone)zone.innerHTML='<div style="color:var(--red);font-size:13px;padding:12px">⚠️ Ce jeu doit être reconfiguré par le Game Master.</div>';
+    if(zone)zone.innerHTML='<div style="color:var(--red);font-size:13px;padding:12px">⚠️ Ce jeu doit être reconfiguré par le Game Master (valeurs manquantes).</div>';
     return;
   }
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
@@ -6179,12 +6179,18 @@ function arcNextCible(){
   // Phase 1: choisir la distance
   const d=document.createElement('div');
   d.className='arc-cible';
+  // Calculer les tolérances pour CETTE cible
+  const tolsGlobal=ARC.data.arcTolerances||{facile:20,moyen:8,difficile:3};
+  const t11=c.tol11||tolsGlobal.facile||20;
+  const t22=c.tol22||tolsGlobal.moyen||8;
+  const t33=c.tol33||tolsGlobal.difficile||3;
+
   d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${c.stat}</div>
     <div style="font-size:13px;color:var(--txt)">Choisis ta distance :</div>
     <div style="display:flex;gap:8px">
-      <button onclick="arcChoixDistance('facile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟢</span><span style="font-size:16px;font-weight:800;color:var(--neon)">11m</span><span style="font-size:11px;color:var(--mute)">11 pts</span></button>
-      <button onclick="arcChoixDistance('moyen')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟡</span><span style="font-size:16px;font-weight:800;color:var(--neon)">22m</span><span style="font-size:11px;color:var(--mute)">22 pts</span></button>
-      <button onclick="arcChoixDistance('difficile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🔴</span><span style="font-size:16px;font-weight:800;color:var(--neon)">33m</span><span style="font-size:11px;color:var(--mute)">33 pts</span></button>
+      <button onclick="arcChoixDistance('facile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟢</span><span style="font-size:16px;font-weight:800;color:var(--neon)">11m</span><span style="font-size:11px;color:var(--mute)">11 pts</span><span style="font-size:10px;color:var(--neon)">±${t11}%</span></button>
+      <button onclick="arcChoixDistance('moyen')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟡</span><span style="font-size:16px;font-weight:800;color:var(--neon)">22m</span><span style="font-size:11px;color:var(--mute)">22 pts</span><span style="font-size:10px;color:#f59e0b">±${t22}%</span></button>
+      <button onclick="arcChoixDistance('difficile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🔴</span><span style="font-size:16px;font-weight:800;color:var(--neon)">33m</span><span style="font-size:11px;color:var(--mute)">33 pts</span><span style="font-size:10px;color:var(--red)">±${t33}%</span></button>
     </div>`;
   zone.appendChild(d);
 }
@@ -6193,9 +6199,9 @@ function arcChoixDistance(difficulty){
   const cibles=ARC.data.cibles||[];
   const c=cibles[ARC.cibleIdx];
   const maxPts=ARC_DIFF_PTS[difficulty];
-  const tols=ARC.data.arcTolerances||{facile:20,moyen:8,difficile:3};
-  const perCible={facile:c.tol11,moyen:c.tol22,difficile:c.tol33};
-  const tolPct=perCible[difficulty]||tols[difficulty]||(ARC_TOLERANCE[difficulty]*100);
+  const tolsGlobal=ARC.data.arcTolerances||{facile:20,moyen:8,difficile:3};
+  const perCible={facile:c.tol11||tolsGlobal.facile||20, moyen:c.tol22||tolsGlobal.moyen||8, difficile:c.tol33||tolsGlobal.difficile||3};
+  const tolPct=perCible[difficulty];
   const tolerance=tolPct/100;
   const target=c.value;
   const max=c.max||Math.round(target*2);
