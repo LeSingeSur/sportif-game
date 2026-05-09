@@ -1275,8 +1275,8 @@ async function startEdit(id){
   if(a.type==='tirarlarc'){
     arcCibles=[...(a.cibles||[])].map(c=>({
       stat:c.stat||'',
-      value:parseInt(c.value)||0,
-      max:parseInt(c.max)||100,
+      value:c.value!==undefined&&c.value!==null?Number(c.value):0,
+      max:c.max!==undefined&&c.max!==null?Number(c.max):100,
       tol11:c.tol11||null,
       tol22:c.tol22||null,
       tol33:c.tol33||null
@@ -2828,7 +2828,9 @@ document.getElementById('btn-save').onclick=async()=>{
     difficile:parseFloat(document.getElementById('arc-tol-difficile')?.value)||3
   }:{};
   const arcCiblesData = currentType==='tirarlarc'?arcCibles.map(c=>({
-    stat:c.stat||'',value:parseInt(c.value)||0,max:parseInt(c.max)||100,
+    stat:c.stat||'',
+    value:c.value!==undefined&&c.value!==null?Number(c.value):0,
+    max:c.max!==undefined&&c.max!==null?Number(c.max):100,
     tol11:c.tol11||null,tol22:c.tol22||null,tol33:c.tol33||null
   })):[];
   const nsSyncData = currentType==='nagesync'?{couloirs:nsCouloirs,sportifs:nsSportifs}:{};
