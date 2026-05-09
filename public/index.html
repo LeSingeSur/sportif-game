@@ -6209,10 +6209,6 @@ function arcChoixDistance(difficulty){
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:2px">
       <span>0</span><span>${max}</span>
     </div>
-    <div style="font-size:12px;color:var(--mute);text-align:center;margin-top:4px;background:var(--c2);border-radius:8px;padding:6px">
-      Zone valide : <strong style="color:var(--neon)">${Math.round(target*(1-tolerance))}</strong> → <strong style="color:var(--neon)">${Math.round(target*(1+tolerance))}</strong>
-      <span style="color:var(--mute)"> (±${Math.round(tolerance*100)}%)</span>
-    </div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button onclick="document.getElementById('arc-slider').value=Math.max(0,parseInt(document.getElementById('arc-slider').value)-1);document.getElementById('arc-slider-val').textContent=document.getElementById('arc-slider').value" style="width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:20px;cursor:pointer">−</button>
       <button onclick="arcTirer(${target},${maxPts},${tolerance},${max})" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:16px;letter-spacing:2px;height:44px">🏹 TIRER</button>
@@ -6314,12 +6310,18 @@ function nsRender(){
     const placed=document.createElement('div');
     placed.id='ns-placed-'+i;
     placed.style.cssText='min-width:80px;text-align:right';
-    // Show placed sportif if any
-    const placedIdx=Object.entries(NS.placement).find(([si,ci])=>parseInt(ci)===i);
-    if(placedIdx){
-      const s=sportifs[parseInt(placedIdx[0])];
-      placed.innerHTML=`<span class="ns-sportif-card" style="cursor:pointer;font-size:12px" onclick="nsUnplace(${placedIdx[0]})">${s.nom} ✕</span>`;
-    }
+    // Show all placed sportifs in this couloir
+    const placedInCouloir=Object.entries(NS.placement).filter(([si,ci])=>parseInt(ci)===i);
+    placedInCouloir.forEach(([si])=>{
+      const s=sportifs[parseInt(si)];
+      if(!s)return;
+      const span=document.createElement('span');
+      span.className='ns-sportif-card';
+      span.style.cssText='cursor:pointer;font-size:11px;margin:2px';
+      span.textContent=s.nom+' ✕';
+      span.onclick=(e)=>{e.stopPropagation();nsUnplace(parseInt(si));};
+      placed.appendChild(span);
+    });
     div.append(label,cLabel,placed);
     // Touch/click to place selected sportif
     div.onclick=()=>nsPlacerDans(i);
@@ -6361,12 +6363,7 @@ function nsSelectSportif(idx){
 
 function nsPlacerDans(couloir){
   if(nsSelected===null) return;
-  // Check if couloir already taken
-  const already=Object.entries(NS.placement).find(([si,ci])=>parseInt(ci)===couloir);
-  if(already){
-    // Unplace existing
-    delete NS.placement[parseInt(already[0])];
-  }
+  // Allow multiple sportifs per couloir — just place without unplacing others
   NS.placement[nsSelected]=couloir;
   nsSelected=null;
   nsRender();
@@ -6382,7 +6379,10 @@ function nsValider(){
   if(NS.done)return;
   const sportifs=NS.data.sportifs||[];
   let correct=0;
-  sportifs.forEach((s,i)=>{if(NS.placement[i]===s.correct)correct++;});
+  sportifs.forEach((s,i)=>{
+    const validCouloirs=Array.isArray(s.correct)?s.correct:[s.correct];
+    if(validCouloirs.includes(NS.placement[i]))correct++;
+  });
   const total=sportifs.length;
   const faults=total-correct;
   const penalty=(NS.essai-1)*5;
