@@ -6163,13 +6163,11 @@ function arcShowIntro(){
 
 function arcNextCible(){
   const cibles=ARC.data.cibles||[];
-  if(!cibles.length || !cibles[ARC.cibleIdx]?.value){
-    const zone=document.getElementById('arc-cible-zone');
-    if(zone)zone.innerHTML='<div style="color:var(--red);font-size:13px;padding:12px">⚠️ Ce jeu doit être reconfiguré par le Game Master (valeurs manquantes).</div>';
-    return;
-  }
+  console.log('[ARC] cibles reçues:', JSON.stringify(cibles));
+  if(!cibles.length){arcFinish();return;}
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
   const c=cibles[ARC.cibleIdx];
+  console.log('[ARC] cible actuelle:', JSON.stringify(c));
   document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
   document.getElementById('arc-score').textContent=ARC.score;
   document.getElementById('arc-fb').textContent='';
