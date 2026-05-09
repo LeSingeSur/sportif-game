@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="theme-color" content="#6366f1">
     <title>Le Grand-Chelem ⚡ 10 jeux · 100 pts</title>
     <style>
@@ -1824,7 +1827,7 @@ async function loadAthlete(){
     } else if(data.type==='assaut'){
       document.getElementById('std-ans-area').style.display='none';
       setupAssaut(data);
-        } else if(data.type==='tirarlarc'){
+    } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
     } else if(data.type==='nagesync'){
@@ -6163,11 +6166,9 @@ function arcShowIntro(){
 
 function arcNextCible(){
   const cibles=ARC.data.cibles||[];
-  console.log('[ARC] cibles reçues:', JSON.stringify(cibles));
   if(!cibles.length){arcFinish();return;}
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
   const c=cibles[ARC.cibleIdx];
-  console.log('[ARC] cible actuelle:', JSON.stringify(c));
   document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
   document.getElementById('arc-score').textContent=ARC.score;
   document.getElementById('arc-fb').textContent='';
