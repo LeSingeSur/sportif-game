@@ -6498,13 +6498,14 @@ function nsValider(){
     if(vSub)vSub.textContent=(faults===0?correct+'/'+total+' · Parfait !':correct+'/'+total+' · '+faults+' faute(s)')+' · '+NS.score+' pts';
     setVictoryIcon('nagesync');submitScore(NS.score);show('sv');
   } else {
-    const maxSuivant=total*(20-penalty);
+    const penSuivant=NS.essai*5; // pénalité au prochain essai
+    const maxSuivant=total*(20-penSuivant);
     const fb=document.getElementById('ns-fb');
     if(fb){fb.style.color='var(--mute)';fb.innerHTML=`<strong>${correct}/${total}</strong> bonnes · <strong>${faults}</strong> erreur(s)<br>
       <span style="font-size:12px">Score actuel : <strong style="color:var(--neon)">${scoreCet} pts</strong> · Max si continue : <strong style="color:#f59e0b">${maxSuivant} pts</strong></span><br>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button onclick="nsTerminer(${scoreCet})" class="btn btn-g" style="flex:1;font-family:var(--fh);font-size:12px">🛑 M'arrêter · ${scoreCet} pts</button>
-        <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:12px">▶ Essai ${NS.essai+1}/3</button>
+        <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:12px">▶ Essai ${NS.essai+1}/3 +30s</button>
       </div>`;}
   }
 }
@@ -6520,11 +6521,29 @@ function nsContinuer(){
   NS.essai++;
   const sportifs=NS.data.sportifs||[];
   const newP={};
-  sportifs.forEach((s,i)=>{if(NS.placement[i]===s.correct)newP[i]=NS.placement[i];});
+  sportifs.forEach((s,i)=>{
+    const validCouloirs=Array.isArray(s.correct)?s.correct:[s.correct];
+    if(validCouloirs.includes(NS.placement[i]))newP[i]=NS.placement[i];
+  });
   NS.placement=newP;
-  const fb=document.getElementById('ns-fb');
+  // +30s au chrono
+  NS.nsTime=(NS.nsTime||0)+30;
+  const cEl=document.getElementById('ns-chrono');
+  const cBar=document.getElementById('ns-chrono-bar');
+  clearInterval(NS.chronoInt);
+  let t=30;
+  if(cEl)cEl.textContent=t;if(cEl)cEl.style.color='var(--neon)';
+  if(cBar)cBar.style.width='100%';
+  NS.chronoInt=setInterval(()=>{
+    t--;
+    if(cEl)cEl.textContent=t;
+    if(cBar)cBar.style.width=(t/30*100)+'%';
+    if(cEl)cEl.style.color=t<=10?'var(--red)':'var(--neon)';
+    if(t<=0){clearInterval(NS.chronoInt);if(!NS.done)nsValider();}
+  },1000);
   const pen=(NS.essai-1)*5;
-  if(fb){fb.textContent='Essai '+NS.essai+'/3 · Max : '+(sportifs.length*(20-pen))+' pts';fb.style.color='var(--mute)';}
+  const fb=document.getElementById('ns-fb');
+  if(fb){fb.innerHTML='<div style="font-size:12px;color:var(--mute)">Essai '+NS.essai+'/3 · Max : '+(sportifs.length*(20-pen))+' pts · Les bonnes réponses sont conservées</div>';}
   nsSelected=null;nsRender();
 }
 
