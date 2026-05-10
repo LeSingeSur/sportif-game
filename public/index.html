@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="theme-color" content="#6366f1">
-    <title>Le Grand-Chelem ⚡ 10 jeux · 100 pts</title>
+    <title>Le Grand-Chelem ⚡ 16 jeux · 100 pts</title>
     <style>
         :root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--primary:#6366f1;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:16px;--shadow:0 8px 32px rgba(0,0,0,0.4)}
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -524,7 +524,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 10 jeux · 100 pts à gagner ⚡</div>
+  <div class="logo-tag">⚡ 16 jeux · 100 pts à gagner ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -5982,11 +5982,11 @@ function haltFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // L'ESCRIME (L'ASSAUT)
 // ══════════════════════════════════════════════════════════════════════════
-const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false};
+const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false,parUsed:false};
 
 function setupAssaut(data){
   ASSAUT.data=data;ASSAUT.pos=5;ASSAUT.qIdx=0;ASSAUT.phase=1;
-  ASSAUT.done=false;clearInterval(ASSAUT.timerInt);
+  ASSAUT.done=false;ASSAUT.parUsed=false;clearInterval(ASSAUT.timerInt);
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Avance sur la piste · Phase 1 vitesse · Phase 2 estocade finale';
   hideAllZones();
   document.getElementById('assaut-zone').style.display='flex';
@@ -6014,6 +6014,7 @@ function assautShowIntro(){
 }
 
 function assautStartPhase1(){
+  ASSAUT.parUsed=false;
   const sw=document.getElementById('assaut-start-btn-wrap');if(sw)sw.style.display='none';
   const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='PHASE 1 — DUEL';
   assautShowQ1();
@@ -6025,41 +6026,86 @@ function assautShowQ1(){
     assautStartPhase2();return;
   }
   const q=qs[ASSAUT.qIdx];
-  ASSAUT.startTime=Date.now();
+  const total=Math.min(qs.length,5);
+
+  // Compteur
+  const pl=document.getElementById('assaut-phase-lbl');
+  if(pl)pl.textContent='Q'+(ASSAUT.qIdx+1)+'/'+total+' — DUEL';
+
+  // Info temps Admin avant de répondre
+  const fb=document.getElementById('assaut-fb');
+  if(fb){
+    fb.innerHTML='⏱ L\'Admin répond en <strong style="color:var(--neon)">'+( q.adminTime||3)+'s</strong> — sois plus rapide !';
+    fb.style.color='var(--mute)';
+  }
+
   const qEl=document.getElementById('assaut-question');
   if(qEl){qEl.style.display='block';qEl.textContent=q.q;}
-  const fb=document.getElementById('assaut-fb');
-  if(fb){fb.textContent='⚡ Plus vite que l\'Admin !';fb.style.color='var(--mute)';}
+
   const ch=document.getElementById('assaut-choices');
   if(!ch)return;
   ch.innerHTML='';
-  // Always V/F — no text choices
+
   const btnV=document.createElement('button');
   btnV.className='biat-qcm-btn';btnV.textContent='✅ VRAI';
   btnV.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Vrai',q.adminTime||3);
+
   const btnF=document.createElement('button');
   btnF.className='biat-qcm-btn';btnF.textContent='❌ FAUX';
   btnF.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Faux',q.adminTime||3);
+
+  // Bouton PARER — 1 seule fois
+  const btnP=document.createElement('button');
+  btnP.textContent='🛡️ PARER'+(ASSAUT.parUsed?' (utilisé)':'');
+  btnP.disabled=ASSAUT.parUsed;
+  btnP.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid '+(ASSAUT.parUsed?'rgba(255,255,255,.1)':'#f59e0b')+';background:'+(ASSAUT.parUsed?'var(--c2)':'rgba(245,158,11,.1)')+';color:'+(ASSAUT.parUsed?'var(--mute)':'#f59e0b')+';font-family:var(--fh);font-size:13px;cursor:'+(ASSAUT.parUsed?'not-allowed':'pointer')+';letter-spacing:1px;margin-top:4px';
+  btnP.onclick=()=>assautParer();
+
   ch.appendChild(btnV);ch.appendChild(btnF);
+  ch.appendChild(btnP);
+
+  ASSAUT.startTime=Date.now();
+}
+
+function assautParer(){
+  if(ASSAUT.parUsed)return;
+  ASSAUT.parUsed=true;
+  document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
+  const fb=document.getElementById('assaut-fb');
+  if(fb){fb.innerHTML='🛡️ Paré ! Tu passes cette question sans perdre de case.';fb.style.color='#f59e0b';}
+  ASSAUT.qIdx++;
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
+    else assautShowQ1();
+  },1000);
 }
 
 function assautAnswerP1(correct,adminTimeSec){
-  document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
   const playerTime=(Date.now()-ASSAUT.startTime)/1000;
   const faster=playerTime<=adminTimeSec;
   const fb=document.getElementById('assaut-fb');
   let move=0;
-  if(correct&&faster){move=1;if(fb){fb.textContent='🤺 Touche ! +1 case ('+playerTime.toFixed(1)+'s)';fb.style.color='var(--neon)';}}
-  else if(correct&&!faster){move=-1;if(fb){fb.textContent='✅ Juste mais trop lent −1 case';fb.style.color='#f59e0b';}}
-  else{move=-1;if(fb){fb.textContent='❌ Raté ! −1 case';fb.style.color='var(--red)';}}
+  if(correct&&faster){
+    move=1;
+    if(fb){fb.innerHTML='🤺 Touche ! +1 case · <span style="color:var(--neon)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--mute)">'+adminTimeSec+'s</span>';fb.style.color='var(--neon)';}
+  } else if(correct&&!faster){
+    move=-1;
+    if(fb){fb.innerHTML='✅ Juste mais trop lent −1 case · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span>';fb.style.color='#f59e0b';}
+  } else {
+    move=-1;
+    if(fb){fb.textContent='❌ Raté ! −1 case';fb.style.color='var(--red)';}
+  }
   ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
   assautUpdatePiste();
   ASSAUT.qIdx++;
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=4)assautStartPhase2();
+    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
     else assautShowQ1();
-  },1200);
+  },1500);
 }
 
 function assautStartPhase2(){
@@ -6142,7 +6188,9 @@ function setupTirALArc(data){
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta distance · Vise la bonne valeur · 3 cibles';
   hideAllZones();
   document.getElementById('arc-zone').style.display='flex';
-  // Règles intro
+  // Affiche les données brutes reçues pour debug
+  const fb=document.getElementById('arc-fb');
+  if(fb)fb.innerHTML='<div style="font-size:10px;color:lime;word-break:break-all">DATA:'+JSON.stringify(data).slice(0,300)+'</div>';
   arcShowIntro();
 }
 
