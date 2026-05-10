@@ -1109,6 +1109,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="text-align:center"><span style="font-family:var(--fh);font-size:22px;color:var(--red)" id="ns-chrono">60</span><div style="font-size:10px;color:var(--mute)">secondes</div></div>
     </div>
     <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="ns-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
+    <!-- Encart règles -->
+    <div id="ns-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--mute)">
+      🏊 Clique un sportif puis un couloir · <strong style="color:var(--txt)">20 pts</strong>/bonne assoc. · <strong style="color:var(--txt)">3 essais</strong><br>
+      Essai 1 = 20pts · Essai 2 = 15pts · Essai 3 = 10pts · Tu sais combien, pas lesquels
+    </div>
     <!-- Couloirs -->
     <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:8px"></div>
     <!-- Sportifs à placer -->
@@ -6478,6 +6483,7 @@ function nsUnplace(sportifIdx){
 
 function nsValider(){
   if(NS.done)return;
+  clearInterval(NS.chronoInt); // Stopper chrono pendant feedback
   const sportifs=NS.data.sportifs||[];
   let correct=0;
   sportifs.forEach((s,i)=>{
@@ -6490,7 +6496,6 @@ function nsValider(){
   const scoreCet=Math.max(0,correct*(20-penalty));
   if(faults===0||NS.essai>=3){
     NS.done=true;NS.score=scoreCet;
-    clearInterval(NS.chronoInt);
     G.score=NS.score;setScore(NS.score,true);
     const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=NS.score;
     const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
@@ -6498,15 +6503,28 @@ function nsValider(){
     if(vSub)vSub.textContent=(faults===0?correct+'/'+total+' · Parfait !':correct+'/'+total+' · '+faults+' faute(s)')+' · '+NS.score+' pts';
     setVictoryIcon('nagesync');submitScore(NS.score);show('sv');
   } else {
-    const penSuivant=NS.essai*5; // pénalité au prochain essai
+    // Cacher le jeu, afficher feedback centré
+    document.getElementById('ns-rules').style.display='none';
+    document.getElementById('ns-couloirs-zone').style.display='none';
+    document.getElementById('ns-sportifs-zone').style.display='none';
+    document.getElementById('ns-valider-btn').style.display='none';
+    const penSuivant=NS.essai*5;
     const maxSuivant=total*(20-penSuivant);
     const fb=document.getElementById('ns-fb');
-    if(fb){fb.style.color='var(--mute)';fb.innerHTML=`<strong>${correct}/${total}</strong> bonnes · <strong>${faults}</strong> erreur(s)<br>
-      <span style="font-size:12px">Score actuel : <strong style="color:var(--neon)">${scoreCet} pts</strong> · Max si continue : <strong style="color:#f59e0b">${maxSuivant} pts</strong></span><br>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button onclick="nsTerminer(${scoreCet})" class="btn btn-g" style="flex:1;font-family:var(--fh);font-size:12px">🛑 M'arrêter · ${scoreCet} pts</button>
-        <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:12px">▶ Essai ${NS.essai+1}/3 +30s</button>
-      </div>`;}
+    if(fb){
+      fb.style.cssText='display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 8px;gap:14px';
+      fb.innerHTML=`<div style="font-size:52px">${correct===0?'😬':correct>=total-1?'🎯':'⚡'}</div>
+        <div style="font-family:var(--fh);font-size:36px;color:var(--neon)">${correct}/${total}</div>
+        <div style="font-size:15px;color:var(--mute)">${faults} erreur${faults>1?'s':''} · Score actuel : <strong style="color:var(--neon)">${scoreCet} pts</strong></div>
+        <div style="font-size:13px;color:var(--mute);background:var(--c2);border-radius:8px;padding:8px 14px;width:100%">
+          Si tu continues → max <strong style="color:#f59e0b">${maxSuivant} pts</strong><br>
+          <span style="font-size:11px">Les bonnes réponses restent en place</span>
+        </div>
+        <div style="display:flex;gap:10px;width:100%">
+          <button onclick="nsTerminer(${scoreCet})" class="btn btn-g" style="flex:1;font-family:var(--fh);font-size:13px;padding:14px">🛑 Garder<br>${scoreCet} pts</button>
+          <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:13px;padding:14px">▶ Essai ${NS.essai+1}/3<br>+30s</button>
+        </div>`;
+    }
   }
 }
 function nsTerminer(score){
@@ -6526,14 +6544,18 @@ function nsContinuer(){
     if(validCouloirs.includes(NS.placement[i]))newP[i]=NS.placement[i];
   });
   NS.placement=newP;
-  // +30s au chrono
-  NS.nsTime=(NS.nsTime||0)+30;
+  // Réafficher le jeu
+  document.getElementById('ns-couloirs-zone').style.display='flex';
+  document.getElementById('ns-sportifs-zone').style.display='flex';
+  const fb=document.getElementById('ns-fb');
+  if(fb){fb.style.cssText='';fb.textContent='';}
+  // +30s chrono
+  let t=30;
   const cEl=document.getElementById('ns-chrono');
   const cBar=document.getElementById('ns-chrono-bar');
-  clearInterval(NS.chronoInt);
-  let t=30;
-  if(cEl)cEl.textContent=t;if(cEl)cEl.style.color='var(--neon)';
+  if(cEl){cEl.textContent=t;cEl.style.color='var(--neon)';}
   if(cBar)cBar.style.width='100%';
+  clearInterval(NS.chronoInt);
   NS.chronoInt=setInterval(()=>{
     t--;
     if(cEl)cEl.textContent=t;
@@ -6541,9 +6563,6 @@ function nsContinuer(){
     if(cEl)cEl.style.color=t<=10?'var(--red)':'var(--neon)';
     if(t<=0){clearInterval(NS.chronoInt);if(!NS.done)nsValider();}
   },1000);
-  const pen=(NS.essai-1)*5;
-  const fb=document.getElementById('ns-fb');
-  if(fb){fb.innerHTML='<div style="font-size:12px;color:var(--mute)">Essai '+NS.essai+'/3 · Max : '+(sportifs.length*(20-pen))+' pts · Les bonnes réponses sont conservées</div>';}
   nsSelected=null;nsRender();
 }
 
