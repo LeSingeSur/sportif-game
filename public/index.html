@@ -1093,16 +1093,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🎯 TIR À L'ARC</div>
     <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="arc-score">0</div></div>
+      <div style="text-align:center"><span style="font-family:var(--fh);font-size:22px;color:var(--red)" id="arc-chrono">60</span><div style="font-size:10px;color:var(--mute)">secondes</div></div>
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CIBLE</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="arc-cible-num">1/3</div></div>
     </div>
+    <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="arc-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <div id="arc-cible-zone" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="fb" id="arc-fb"></div>
   </div>
 
   <!-- NAGE SYNC zone -->
   <div id="ns-zone">
-    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🏊 Natation</div>
-    <div style="font-size:12px;color:var(--mute);text-align:center">Place chaque sportif dans le bon couloir</div>
+    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🏊 NATATION</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
+      <div style="font-size:12px;color:var(--mute)">Place chaque sportif<br>dans le bon couloir</div>
+      <div style="text-align:center"><span style="font-family:var(--fh);font-size:22px;color:var(--red)" id="ns-chrono">60</span><div style="font-size:10px;color:var(--mute)">secondes</div></div>
+    </div>
+    <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="ns-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <!-- Couloirs -->
     <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:8px"></div>
     <!-- Sportifs à placer -->
@@ -6003,7 +6009,11 @@ function assautUpdatePiste(){
 }
 
 function assautShowIntro(){
-  const q=document.getElementById('assaut-question');if(q){q.style.display='block';q.innerHTML='<div style="font-size:12px;color:var(--mute);line-height:1.8">⚔️ <b style="color:var(--txt)">Phase 1</b> — 4 questions rapides. Bonne réponse ET plus rapide que l\'Admin = +1 case. Sinon −1.<br>⚔️ <b style="color:var(--red)">Phase 2</b> — L\'Estocade : 3 choix. Touche +2 · Neutre −1 · Piège −2<br>🏆 Score = position finale × 10</div>';}
+  const q=document.getElementById('assaut-question');
+  if(q){
+    q.style.display='block';
+    q.innerHTML='<div style="font-size:12px;line-height:1.9;background:var(--c2);border-radius:10px;padding:12px"><div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:6px">⚔️ COMMENT JOUER</div><b style="color:var(--txt)">Phase 1 — 5 Vrai/Faux</b><br><span style="color:var(--mute)">Plus rapide que l\'Admin ET juste → +1 case<br>Trop lent ou faux → −1 case<br>🛡️ <strong style="color:#f59e0b">PARER</strong> : passe 1 question sans perdre (1× max)</span><br><br><b style="color:var(--txt)">Phase 2 — Estocade (3 choix)</b><br><span style="color:var(--mute)">✅ Bonne → +2 · 🤺 Neutre → −1 · 🎭 Piège Admin → −2</span><br><br><b style="color:var(--neon)">Score = position × 10 · Max 100 pts</b></div>';
+  }
   const ch=document.getElementById('assaut-choices');if(ch)ch.innerHTML='';
   const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
   const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='EN GARDE';
@@ -6179,18 +6189,27 @@ function assautFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // TIR À L'ARC
 // ══════════════════════════════════════════════════════════════════════════
-const ARC={data:null,cibleIdx:0,score:0,hits:0,done:false};
+const ARC={data:null,cibleIdx:0,score:0,hits:0,done:false,chronoInt:null};
 const ARC_DIFF_PTS={facile:11,moyen:22,difficile:33};
 const ARC_TOLERANCE={facile:0.20,moyen:0.10,difficile:0.05};
 
 function setupTirALArc(data){
   ARC.data=data; ARC.cibleIdx=0; ARC.score=0; ARC.hits=0; ARC.done=false;
-  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta distance · Vise la bonne valeur · 3 cibles';
+  if(ARC.chronoInt)clearInterval(ARC.chronoInt);
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta distance · Vise la bonne valeur · 60s';
   hideAllZones();
   document.getElementById('arc-zone').style.display='flex';
-  // Affiche les données brutes reçues pour debug
-  const fb=document.getElementById('arc-fb');
-  if(fb)fb.innerHTML='<div style="font-size:10px;color:lime;word-break:break-all">DATA:'+JSON.stringify(data).slice(0,300)+'</div>';
+  let t=60;
+  const cEl=document.getElementById('arc-chrono');
+  const cBar=document.getElementById('arc-chrono-bar');
+  if(cEl)cEl.textContent=t; if(cBar)cBar.style.width='100%';
+  ARC.chronoInt=setInterval(()=>{
+    t--;
+    if(cEl)cEl.textContent=t;
+    if(cBar)cBar.style.width=(t/60*100)+'%';
+    if(cEl)cEl.style.color=t<=10?'var(--red)':'var(--neon)';
+    if(t<=0){clearInterval(ARC.chronoInt);if(!ARC.done)arcFinish();}
+  },1000);
   arcShowIntro();
 }
 
@@ -6324,6 +6343,7 @@ function arcTirer(target,maxPts,tolerance,max){
 function arcFinish(){
   if(ARC.done)return;
   ARC.done=true;
+  clearInterval(ARC.chronoInt);
   const cibles=ARC.data.cibles||[];
   const bonus=(ARC.hits===cibles.length&&cibles.length>0)?1:0;
   const score=Math.min(100,ARC.score+bonus);
@@ -6338,15 +6358,29 @@ function arcFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // NAGE SYNCHRONISÉE
 // ══════════════════════════════════════════════════════════════════════════
-const NS={data:null,placement:{},done:false,essai:1,score:0,maxScore:100};
+const NS={data:null,placement:{},done:false,essai:1,score:0,maxScore:100,chronoInt:null};
 
 function setupNageSync(data){
   NS.data=data;NS.placement={};NS.done=false;NS.essai=1;NS.score=0;NS.maxScore=100;
-  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Place chaque sportif dans le bon couloir · 3 essais';
+  if(NS.chronoInt)clearInterval(NS.chronoInt);
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Place chaque sportif dans le bon couloir · 60s';
   hideAllZones();
   document.getElementById('ns-zone').style.display='flex';
+  // Règles
   const fb=document.getElementById('ns-fb');
-  if(fb){fb.style.color='var(--mute)';fb.innerHTML='<div style="font-size:12px;line-height:1.8;margin-bottom:8px">🏊 Place chaque sportif dans le bon couloir.<br>✅ 20 pts par bonne association · 3 essais max<br>Essai 1: max 100 · Essai 2: max 75 · Essai 3: max 50</div>';}
+  if(fb){fb.style.color='var(--mute)';fb.innerHTML='<div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.8;margin-bottom:4px">🏊 Clique un sportif puis un couloir pour le placer.<br>✅ <strong>20 pts</strong> par bonne assoc. · <strong>3 essais</strong> max<br>Essai 1 = 20pts · Essai 2 = 15pts · Essai 3 = 10pts<br>Après chaque essai : tu sais <em>combien</em> sont corrects, pas lesquels.</div>';}
+  // Chrono 60s
+  let t=60;
+  const cEl=document.getElementById('ns-chrono');
+  const cBar=document.getElementById('ns-chrono-bar');
+  if(cEl)cEl.textContent=t; if(cBar)cBar.style.width='100%';
+  NS.chronoInt=setInterval(()=>{
+    t--;
+    if(cEl)cEl.textContent=t;
+    if(cBar)cBar.style.width=(t/60*100)+'%';
+    if(cEl)cEl.style.color=t<=10?'var(--red)':'var(--neon)';
+    if(t<=0){clearInterval(NS.chronoInt);if(!NS.done)nsValider();}
+  },1000);
   nsRender();
 }
 
@@ -6456,6 +6490,7 @@ function nsValider(){
   const scoreCet=Math.max(0,correct*(20-penalty));
   if(faults===0||NS.essai>=3){
     NS.done=true;NS.score=scoreCet;
+    clearInterval(NS.chronoInt);
     G.score=NS.score;setScore(NS.score,true);
     const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=NS.score;
     const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
@@ -6475,6 +6510,7 @@ function nsValider(){
 }
 function nsTerminer(score){
   NS.done=true;NS.score=score;G.score=score;setScore(score,true);
+  clearInterval(NS.chronoInt);
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Score conservé · '+score+' pts';
