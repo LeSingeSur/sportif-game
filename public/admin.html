@@ -332,12 +332,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <label>Caractéristiques des couloirs (1 par ligne)</label>
         <span class="hint">Ex: "France" ou "100m papillon" ou "5 titres"</span>
         <div id="ns-couloirs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
-        <button class="btn btn-s" id="btn-add-couloir" style="margin-top:6px">➕ Couloir (max 5)</button>
+        <button class="btn btn-s" id="btn-add-couloir" style="margin-top:6px">➕ Couloir (max 8)</button>
         <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
         <label>Sportifs (1 par ligne) + couloir correct</label>
         <span class="hint">Le numéro du couloir (1-5) où ce sportif doit être placé</span>
         <div id="ns-sportifs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
-        <button class="btn btn-s" id="btn-add-sportif" style="margin-top:6px">➕ Sportif (max 5)</button>
+        <button class="btn btn-s" id="btn-add-sportif" style="margin-top:6px">➕ Sportif (max 10)</button>
       </div>
 
       <!-- HALTERO FIELDS -->
@@ -1894,20 +1894,26 @@ function renderNsSportifs(){
     // Multiple checkboxes for each couloir
     const cbWrap=document.createElement('div');
     cbWrap.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
-    const maxCouloirs=Math.max(5,nsCouloirs.length);
+    const maxCouloirs=Math.max(8,nsCouloirs.length);
     const selectedCouloirs=Array.isArray(s.correct)?s.correct:[s.correct].filter(x=>x!==undefined);
     for(let n=0;n<maxCouloirs;n++){
       const label=document.createElement('label');
       label.style.cssText='display:flex;align-items:center;gap:3px;cursor:pointer;background:var(--c1);border-radius:6px;padding:4px 8px;font-size:11px;color:'+(selectedCouloirs.includes(n)?'var(--neon)':'var(--mute)')+';border:1px solid '+(selectedCouloirs.includes(n)?'var(--neon)':'rgba(255,255,255,.1)');
       const cb=document.createElement('input');
       cb.type='checkbox';cb.checked=selectedCouloirs.includes(n);cb.style.cssText='accent-color:var(--neon)';
-      cb.onchange=()=>{
-        const cur=Array.isArray(nsSportifs[i].correct)?[...nsSportifs[i].correct]:[nsSportifs[i].correct].filter(x=>x!==undefined);
-        if(cb.checked){if(!cur.includes(n))cur.push(n);}
-        else{const idx=cur.indexOf(n);if(idx>-1)cur.splice(idx,1);}
-        nsSportifs[i].correct=cur.length===1?cur[0]:cur;
-        renderNsSportifs();
-      };
+      cb.onchange=(()=>{
+        const idx_i=i;
+        const idx_n=n;
+        return ()=>{
+          const cur=Array.isArray(nsSportifs[idx_i].correct)?[...nsSportifs[idx_i].correct]:[nsSportifs[idx_i].correct].filter(x=>x!==undefined&&x!==null);
+          if(cb.checked){if(!cur.includes(idx_n))cur.push(idx_n);}
+          else{const pos=cur.indexOf(idx_n);if(pos>-1)cur.splice(pos,1);}
+          nsSportifs[idx_i].correct=cur.length===1?cur[0]:cur;
+          // Update label style without full re-render
+          label.style.color=cb.checked?'var(--neon)':'var(--mute)';
+          label.style.borderColor=cb.checked?'var(--neon)':'rgba(255,255,255,.1)';
+        };
+      })();
       label.append(cb,document.createTextNode('C'+(n+1)));
       cbWrap.appendChild(label);
     }
@@ -1916,15 +1922,16 @@ function renderNsSportifs(){
     del.textContent='✕ Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px;align-self:flex-start';
     del.onclick=()=>{nsSportifs.splice(i,1);renderNsSportifs();};
     d.append(inp,row,del);
+    list.appendChild(d);
   });
   checkReady();
 }
 document.getElementById('btn-add-couloir').onclick=()=>{
-  if(nsCouloirs.length>=5)return alert('5 couloirs max');
+  if(nsCouloirs.length>=8)return alert('8 couloirs max');
   nsCouloirs.push({label:''});renderNsCouloirs();renderNsSportifs();
 };
 document.getElementById('btn-add-sportif').onclick=()=>{
-  if(nsSportifs.length>=5)return alert('5 sportifs max');
+  if(nsSportifs.length>=10)return alert('10 sportifs max');
   nsSportifs.push({nom:'',correct:0});renderNsSportifs();
 };
 
