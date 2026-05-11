@@ -6058,7 +6058,7 @@ function assautShowQ1(){
   const tw=document.getElementById('assaut-timer-wrap');
   const tEl=document.getElementById('assaut-timer');
   const tBar=document.getElementById('assaut-timer-bar');
-  const maxT=(q.adminTime||3)*3; // 3× le temps admin
+  const maxT=q.adminTime||3; // même durée que l'Admin
   if(tw)tw.style.display='block';
   if(tEl){tEl.textContent=maxT;tEl.style.color='var(--neon)';}
   if(tBar)tBar.style.width='100%';
@@ -6074,7 +6074,7 @@ function assautShowQ1(){
       const tw2=document.getElementById('assaut-timer-wrap');if(tw2)tw2.style.display='none';
       document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
       const fb2=document.getElementById('assaut-fb');
-      if(fb2){fb2.innerHTML='⏱ Temps écoulé ! −1 case';fb2.style.color='var(--red)';}
+      if(fb2){fb2.innerHTML='⚔️ Vous avez été touché ! Temps écoulé · −1 case';fb2.style.color='var(--red)';}
       ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos-1));
       assautUpdatePiste();
       ASSAUT.qIdx++;
@@ -6144,10 +6144,10 @@ function assautAnswerP1(correct,adminTimeSec){
     if(fb){fb.innerHTML='🤺 Touché ! +1 case · <span style="color:var(--neon)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--mute)">'+adminTimeSec+'s</span>';fb.style.color='var(--neon)';}
   } else if(correct&&!faster){
     move=-1;
-    if(fb){fb.innerHTML='👻 L\'escrimeur fantôme te touche ! Juste mais trop lent · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span> · −1 case';fb.style.color='#f59e0b';}
+    if(fb){fb.innerHTML='⚔️ Vous avez été touché ! Juste mais trop lent · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span> · −1 case';fb.style.color='var(--red)';}
   } else {
     move=-1;
-    if(fb){fb.innerHTML='👻 Touché par le fantôme ! Mauvaise réponse · −1 case';fb.style.color='var(--red)';}
+    if(fb){fb.innerHTML='⚔️ Vous avez été touché ! Mauvaise réponse · −1 case';fb.style.color='var(--red)';}
   }
   ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
   assautUpdatePiste();
