@@ -1063,7 +1063,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="position:relative;height:36px;background:var(--c2);border-radius:8px;overflow:hidden">
         <div style="position:absolute;left:0;top:0;width:20%;height:100%;background:rgba(255,60,60,.25)"></div>
         <div style="position:absolute;right:0;top:0;width:20%;height:100%;background:rgba(255,60,60,.15)"></div>
-        <div id="assaut-cursor" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:28px;height:28px;background:var(--neon);border-radius:50%;transition:left .5s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:center;font-size:14px;left:50%">🤺</div>
+        <div id="assaut-cursor" style="position:absolute;top:50%;transform:translate(-50%,-50%) scaleX(-1);width:28px;height:28px;background:var(--neon);border-radius:50%;transition:left .5s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;justify-content:center;font-size:14px;left:50%">🤺</div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-top:4px">
         <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
@@ -1111,8 +1111,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="ns-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <!-- Encart règles -->
     <div id="ns-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--mute)">
-      🏊 Clique un sportif puis un couloir · <strong style="color:var(--txt)">20 pts</strong>/bonne assoc. · <strong style="color:var(--txt)">3 essais</strong><br>
-      Essai 1 = 20pts · Essai 2 = 15pts · Essai 3 = 10pts · Tu sais combien, pas lesquels
+      🏊 Clique un sportif puis un couloir · <strong style="color:var(--txt)">100/nb sportifs</strong> pts/bonne · <strong style="color:var(--txt)">3 essais</strong><br>
+      Essai 1 = 100% · Essai 2 = −25% · Essai 3 = −50% · Tu sais combien, pas lesquels
     </div>
     <!-- Couloirs -->
     <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -5993,7 +5993,7 @@ function haltFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // L'ESCRIME (L'ASSAUT)
 // ══════════════════════════════════════════════════════════════════════════
-const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false,parUsed:false};
+const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false,parUsed:false,qTimerInt:null};
 
 function setupAssaut(data){
   ASSAUT.data=data;ASSAUT.pos=5;ASSAUT.qIdx=0;ASSAUT.phase=1;
@@ -6047,12 +6047,44 @@ function assautShowQ1(){
   const pl=document.getElementById('assaut-phase-lbl');
   if(pl)pl.textContent='Q'+(ASSAUT.qIdx+1)+'/'+total+' — DUEL';
 
-  // Info temps Admin avant de répondre
+  // Info temps Admin + chrono question
   const fb=document.getElementById('assaut-fb');
   if(fb){
-    fb.innerHTML='⏱ L\'Admin répond en <strong style="color:var(--neon)">'+( q.adminTime||3)+'s</strong> — sois plus rapide !';
+    fb.innerHTML='⏱ L\'Admin répond en <strong style="color:var(--neon)">'+(q.adminTime||3)+'s</strong> — sois plus rapide !';
     fb.style.color='var(--mute)';
   }
+
+  // Afficher timer-wrap avec chrono adaptatif (max 3× le temps admin)
+  const tw=document.getElementById('assaut-timer-wrap');
+  const tEl=document.getElementById('assaut-timer');
+  const tBar=document.getElementById('assaut-timer-bar');
+  const maxT=(q.adminTime||3)*3; // 3× le temps admin
+  if(tw)tw.style.display='block';
+  if(tEl){tEl.textContent=maxT;tEl.style.color='var(--neon)';}
+  if(tBar)tBar.style.width='100%';
+  clearInterval(ASSAUT.qTimerInt);
+  let qt=maxT;
+  ASSAUT.qTimerInt=setInterval(()=>{
+    qt--;
+    if(tEl)tEl.textContent=qt;
+    if(tBar)tBar.style.width=(qt/maxT*100)+'%';
+    if(tEl)tEl.style.color=qt<=3?'var(--red)':'var(--neon)';
+    if(qt<=0){
+      clearInterval(ASSAUT.qTimerInt);
+      const tw2=document.getElementById('assaut-timer-wrap');if(tw2)tw2.style.display='none';
+      document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
+      const fb2=document.getElementById('assaut-fb');
+      if(fb2){fb2.innerHTML='⏱ Temps écoulé ! −1 case';fb2.style.color='var(--red)';}
+      ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos-1));
+      assautUpdatePiste();
+      ASSAUT.qIdx++;
+      setTimeout(()=>{
+        if(fb2)fb2.textContent='';
+        if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
+        else assautShowQ1();
+      },1500);
+    }
+  },1000);
 
   const qEl=document.getElementById('assaut-question');
   if(qEl){qEl.style.display='block';qEl.textContent=q.q;}
@@ -6085,6 +6117,8 @@ function assautShowQ1(){
 function assautParer(){
   if(ASSAUT.parUsed)return;
   ASSAUT.parUsed=true;
+  clearInterval(ASSAUT.qTimerInt);
+  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
   document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
   document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
   const fb=document.getElementById('assaut-fb');
@@ -6098,6 +6132,8 @@ function assautParer(){
 }
 
 function assautAnswerP1(correct,adminTimeSec){
+  clearInterval(ASSAUT.qTimerInt);
+  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
   document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
   const playerTime=(Date.now()-ASSAUT.startTime)/1000;
   const faster=playerTime<=adminTimeSec;
@@ -6105,13 +6141,13 @@ function assautAnswerP1(correct,adminTimeSec){
   let move=0;
   if(correct&&faster){
     move=1;
-    if(fb){fb.innerHTML='🤺 Touche ! +1 case · <span style="color:var(--neon)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--mute)">'+adminTimeSec+'s</span>';fb.style.color='var(--neon)';}
+    if(fb){fb.innerHTML='🤺 Touché ! +1 case · <span style="color:var(--neon)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--mute)">'+adminTimeSec+'s</span>';fb.style.color='var(--neon)';}
   } else if(correct&&!faster){
     move=-1;
-    if(fb){fb.innerHTML='✅ Juste mais trop lent −1 case · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span>';fb.style.color='#f59e0b';}
+    if(fb){fb.innerHTML='👻 L\'escrimeur fantôme te touche ! Juste mais trop lent · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span> · −1 case';fb.style.color='#f59e0b';}
   } else {
     move=-1;
-    if(fb){fb.textContent='❌ Raté ! −1 case';fb.style.color='var(--red)';}
+    if(fb){fb.innerHTML='👻 Touché par le fantôme ! Mauvaise réponse · −1 case';fb.style.color='var(--red)';}
   }
   ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
   assautUpdatePiste();
@@ -6492,8 +6528,9 @@ function nsValider(){
   });
   const total=sportifs.length;
   const faults=total-correct;
-  const penalty=(NS.essai-1)*5;
-  const scoreCet=Math.max(0,correct*(20-penalty));
+  const ptsParReponse=Math.round(100/total);
+  const multiplier=1-(NS.essai-1)*0.25; // essai1=100%, essai2=75%, essai3=50%
+  const scoreCet=Math.round(correct*ptsParReponse*multiplier);
   if(faults===0||NS.essai>=3){
     NS.done=true;NS.score=scoreCet;
     G.score=NS.score;setScore(NS.score,true);
@@ -6508,8 +6545,10 @@ function nsValider(){
     document.getElementById('ns-couloirs-zone').style.display='none';
     document.getElementById('ns-sportifs-zone').style.display='none';
     document.getElementById('ns-valider-btn').style.display='none';
-    const penSuivant=NS.essai*5;
-    const maxSuivant=total*(20-penSuivant);
+    const multiplierSuivant=1-NS.essai*0.25; // essai suivant
+    const ptsParRepSuivant=Math.round(100/total);
+    const maxSuivant=Math.round(total*ptsParRepSuivant*multiplierSuivant);
+    const vautLaPeine=maxSuivant>scoreCet;
     const fb=document.getElementById('ns-fb');
     if(fb){
       fb.style.cssText='display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 8px;gap:14px';
@@ -6522,7 +6561,7 @@ function nsValider(){
         </div>
         <div style="display:flex;gap:10px;width:100%">
           <button onclick="nsTerminer(${scoreCet})" class="btn btn-g" style="flex:1;font-family:var(--fh);font-size:13px;padding:14px">🛑 Garder<br>${scoreCet} pts</button>
-          <button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:13px;padding:14px">▶ Essai ${NS.essai+1}/3<br>+30s</button>
+          ${vautLaPeine?`<button onclick="nsContinuer()" class="btn btn-p" style="flex:1;font-family:var(--fh);font-size:13px;padding:14px">▶ Essai ${NS.essai+1}/3<br>+30s</button>`:`<button disabled style="flex:1;font-family:var(--fh);font-size:12px;padding:14px;opacity:.4;background:var(--c2);border:none;border-radius:10px;color:var(--mute)">Inutile de rejouer<br>max ${maxSuivant} pts</button>`}
         </div>`;
     }
   }
