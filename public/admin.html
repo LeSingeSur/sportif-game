@@ -638,14 +638,42 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
         </div>
         <div class="field">
-          <label>🌡️ Échelle de chaleur — seuils personnalisables</label>
-          <div id="chaleur-config" style="margin:8px 0;display:flex;flex-direction:column;gap:6px"></div>
-          <div id="chaleur-preview" style="background:var(--c2);border-radius:12px;padding:12px;margin-top:6px;text-align:center;font-size:22px;transition:background .3s">
-            <span id="chaleur-prev-ico">🌡️</span> <span id="chaleur-prev-label" style="font-family:var(--fh);font-size:16px">CHAUD</span>
+          <label>🌡️ Seuils de chaleur — entrer les valeurs limites</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🧊</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#4fc3f7;width:60px">FROID</span>
+              <span style="font-size:11px;color:var(--mute)">à partir de</span>
+              <input type="number" id="cseuil-froid" min="0" step="1" value="" placeholder="ex: 100"
+                style="width:90px;background:var(--c1);border:1px solid #4fc3f755;color:#4fc3f7;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-froid-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🌤️</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#fff176;width:60px">TIÈDE</span>
+              <span style="font-size:11px;color:var(--mute)">à partir de</span>
+              <input type="number" id="cseuil-tiede" min="0" step="1" value="" placeholder="ex: 500"
+                style="width:90px;background:var(--c1);border:1px solid #fff17655;color:#fff176;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-tiede-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🌡️</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#ff9800;width:60px">CHAUD</span>
+              <span style="font-size:11px;color:var(--mute)">à partir de</span>
+              <input type="number" id="cseuil-chaud" min="0" step="1" value="" placeholder="ex: 1500"
+                style="width:90px;background:var(--c1);border:1px solid #ff980055;color:#ff9800;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-chaud-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🔥</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#ff4020;width:60px">BRÛLANT</span>
+              <span style="font-size:11px;color:var(--mute)">à partir de</span>
+              <input type="number" id="cseuil-brulant" min="0" step="1" value="" placeholder="ex: 1900"
+                style="width:90px;background:var(--c1);border:1px solid #ff402055;color:#ff4020;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-brulant-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
           </div>
-          <input type="range" id="chaleur-test-slider" min="0" max="100" value="75"
-            style="width:100%;accent-color:var(--neon);margin-top:8px;cursor:pointer">
-          <span class="hint">Glisse le curseur du bas pour tester l'échelle en temps réel.</span>
+          <span class="hint" style="margin-top:6px;display:block">⛄ GLACIAL = en dessous du seuil FROID · valeurs croissantes vers la cible</span>
         </div>
         <div class="field">
           <label>Tolérance ±</label>
@@ -2538,137 +2566,6 @@ function removeDemItem(i){
 });
 
 // Chaleur configurator — seuils des 5 niveaux (affichage uniquement, pas le score)
-// chaleurSeuils[i] = seuil min du niveau i (le joueur voit ce niveau si displayPrecision >= seuil)
-let chaleurSeuils = [0, 10, 40, 70, 90]; // GLACIAL, FROID, TIÈDE, CHAUD, BRÛLANT
-const CHALEUR_DEF = [
-  {ico:'⛄', label:'GLACIAL',  color:'#1565c0'},
-  {ico:'🧊', label:'FROID',    color:'#4fc3f7'},
-  {ico:'🌤️', label:'TIÈDE',    color:'#fff176'},
-  {ico:'🌡️', label:'CHAUD',    color:'#ff9800'},
-  {ico:'🔥', label:'BRÛLANT',  color:'#ff4020'},
-];
-
-function getChaleurTarget(){
-  const t=parseFloat(document.getElementById('prix-target-in').value);
-  return isNaN(t)||t<=0 ? null : t;
-}
-
-function seuilToDisplay(seuil, target){
-  // seuil = min/max ratio * 100 (ex: 90 = guess/target = 0.9)
-  // En valeur brute : guess = target * seuil/100 ou target * 100/seuil
-  if(!target) return (100-seuil).toFixed(0)+'% d\'écart';
-  // La valeur brute qui donne ce ratio : target * seuil/100 (en dessous) ou target * 100/seuil (au dessus)
-  // On affiche l'écart brut : target - target*seuil/100 = target*(1-seuil/100)
-  const ecartBrut = Math.round(target * (1 - seuil/100));
-  const unit = document.getElementById('prix-unit-in').value.trim();
-  return '±' + ecartBrut + (unit?' '+unit:'');
-}
-
-function seuilFromRawEcart(ecartBrut, target){
-  // Inverse : ratio = 1 - ecartBrut/target → seuil = (1 - ecartBrut/target)*100
-  return Math.round((1 - ecartBrut/target)*100);
-}
-
-function buildChaleurConfig(){
-  const target = getChaleurTarget();
-  const container=document.getElementById('chaleur-config');
-  container.innerHTML='';
-  chaleurSeuils.forEach((seuil,i)=>{
-    const def=CHALEUR_DEF[i];
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px';
-    const maxVal = i===4 ? 99 : (chaleurSeuils[i+1]-1);
-    const minVal = i===0 ? 0 : (chaleurSeuils[i-1]+1);
-    const displayVal = i===0 ? (target?'> ±'+Math.round(target*(1-chaleurSeuils[1]/100)):'loin') : seuilToDisplay(seuil, target);
-    row.innerHTML=`
-      <span style="font-size:18px;width:28px;text-align:center">${def.ico}</span>
-      <span style="font-family:var(--fh);font-size:11px;color:${def.color};width:56px">${def.label}</span>
-      <input type="range" min="${minVal}" max="${maxVal}" value="${seuil}" data-idx="${i}"
-        style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
-        ${i===0?'disabled':''}
-      >
-      <input type="number" id="cseuil-val-${i}" data-idx="${i}"
-        value="${target ? (target*(seuil/100)).toFixed(target>1000?0:1) : seuil}"
-        min="0" step="1"
-        style="width:52px;background:var(--c2);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 6px;font-size:11px;color:${i===0?'var(--mute)':'var(--txt)'};text-align:center"
-        ${i===0?'disabled':''}
-        class="chaleur-seuil-num"
-      >
-    `;
-    container.appendChild(row);
-    if(i>0){
-      row.querySelector('.chaleur-seuil-range').addEventListener('input', e=>{
-        const idx=parseInt(e.target.dataset.idx);
-        const val=parseInt(e.target.value);
-        chaleurSeuils[idx]=val;
-        // Only push the NEXT (higher) level up to avoid collision — never push down
-        if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
-        buildChaleurConfig();
-        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-      });
-      row.querySelector('.chaleur-seuil-num').addEventListener('change', e=>{
-        const idx=parseInt(e.target.dataset.idx);
-        const target2=getChaleurTarget();
-        let newSeuil;
-        if(target2){
-          // User typed a raw value — convert back to seuil %
-          const rawVal=parseFloat(e.target.value)||0;
-          newSeuil=(rawVal/target2)*100; // keep decimal for precision
-        } else {
-          newSeuil=parseInt(e.target.value)||0;
-        }
-        // Clamp between neighbours with 0.5 margin to avoid blocking
-        const minS=chaleurSeuils[idx-1]+0.5;
-        const maxS=idx<4?chaleurSeuils[idx+1]-0.5:99;
-        newSeuil=Math.max(minS, Math.min(maxS, newSeuil));
-        chaleurSeuils[idx]=newSeuil;
-        buildChaleurConfig();
-        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-      });
-    }
-  });
-}
-
-function updateChaleurPreview(pct){
-  const target = getChaleurTarget();
-  let lvl=CHALEUR_DEF[0];
-  chaleurSeuils.forEach((s,i)=>{if(pct>=s)lvl=CHALEUR_DEF[i];});
-  const prev=document.getElementById('chaleur-preview');
-  prev.style.background=lvl.color+'22';
-  prev.style.border='1px solid '+lvl.color+'55';
-  document.getElementById('chaleur-prev-ico').textContent=lvl.ico;
-  document.getElementById('chaleur-prev-label').style.color=lvl.color;
-  const unit = document.getElementById('prix-unit-in').value.trim();
-  if(target){
-    const ecartBrut = Math.round(target*(1-pct/100));
-    const guessEx   = Math.round(target*(pct/100));
-    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — écart ±${ecartBrut}${unit?' '+unit:''} (ex: ${guessEx})`;
-  } else {
-    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — ${(100-pct)}% d'écart`;
-  }
-}
-
-// Rebuild when target or unit changes
-document.getElementById('prix-target-in').addEventListener('input',()=>{
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-});
-document.getElementById('prix-unit-in').addEventListener('input',()=>{
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-});
-
-document.getElementById('chaleur-test-slider').addEventListener('input',e=>{
-  updateChaleurPreview(parseInt(e.target.value));
-});
-
-function selectPrixSensib(seuilsArr){
-  if(Array.isArray(seuilsArr)) chaleurSeuils=[...seuilsArr];
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-}
-buildChaleurConfig();
-updateChaleurPreview(75);
 
 // Coefficient preview
 document.getElementById('coeff-in').addEventListener('input', e=>{
@@ -2888,7 +2785,20 @@ document.getElementById('btn-save').onclick=async()=>{
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
-  const prixSensib=currentType==='prix'?chaleurSeuils:[0,10,40,70,90];
+  function getPrixSensib(){
+  const t=parseFloat(document.getElementById('prix-target-in')?.value)||1;
+  const v1=parseFloat(document.getElementById('cseuil-froid')?.value)||0;
+  const v2=parseFloat(document.getElementById('cseuil-tiede')?.value)||0;
+  const v3=parseFloat(document.getElementById('cseuil-chaud')?.value)||0;
+  const v4=parseFloat(document.getElementById('cseuil-brulant')?.value)||0;
+  return [0,
+    Math.round((v1/t)*100),
+    Math.round((v2/t)*100),
+    Math.round((v3/t)*100),
+    Math.round((v4/t)*100)
+  ];
+}
+const prixSensib=currentType==='prix'?getPrixSensib():[0,10,40,70,90];
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
