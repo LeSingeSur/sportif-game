@@ -327,7 +327,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- NAGE SYNC FIELDS -->
       <div id="nagesync-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          🏊 5 couloirs (caractéristiques) + 5 sportifs à placer · 20 pts par bonne association
+          🏊 Jusqu'à 10 couloirs + 10 sportifs · Score = 100/nb sportifs par bonne réponse · −25% par essai
         </div>
         <label>Caractéristiques des couloirs (1 par ligne)</label>
         <span class="hint">Ex: "France" ou "100m papillon" ou "5 titres"</span>
@@ -2588,7 +2588,7 @@ function buildChaleurConfig(){
         ${i===0?'disabled':''}
       >
       <input type="number" id="cseuil-val-${i}" data-idx="${i}"
-        value="${target ? Math.round(target*(seuil/100)) : seuil}"
+        value="${target ? (target*(seuil/100)).toFixed(target>1000?0:1) : seuil}"
         min="0" step="1"
         style="width:52px;background:var(--c2);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 6px;font-size:11px;color:${i===0?'var(--mute)':'var(--txt)'};text-align:center"
         ${i===0?'disabled':''}
@@ -2613,11 +2613,14 @@ function buildChaleurConfig(){
         if(target2){
           // User typed a raw value — convert back to seuil %
           const rawVal=parseFloat(e.target.value)||0;
-          newSeuil=Math.round((rawVal/target2)*100);
+          newSeuil=(rawVal/target2)*100; // keep decimal for precision
         } else {
           newSeuil=parseInt(e.target.value)||0;
         }
-        newSeuil=Math.max(chaleurSeuils[idx-1]+1, Math.min(idx<4?chaleurSeuils[idx+1]-1:99, newSeuil));
+        // Clamp between neighbours with 0.5 margin to avoid blocking
+        const minS=chaleurSeuils[idx-1]+0.5;
+        const maxS=idx<4?chaleurSeuils[idx+1]-0.5:99;
+        newSeuil=Math.max(minS, Math.min(maxS, newSeuil));
         chaleurSeuils[idx]=newSeuil;
         buildChaleurConfig();
         updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
