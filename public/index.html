@@ -2548,9 +2548,9 @@ function grimpePhysicsTick(){
   const dt=0.1;
   const sprintFactor=GP._sprintFactor||1;
   const p=grimpeSection(GP.cases);
-  // Vide la jauge selon la pente (accéléré en sprint)
-  const drain=GP_DRAIN_K*(1+p*0.5);
-  const elanFloor=(GP.watts/500)*GP_EFF;
+  // Drain beaucoup plus agressif — l'élan s'épuise vite sans réponse
+  const drain=GP_DRAIN_K*(2+p*0.8);
+  const elanFloor=0; // Plus d'élan minimum — le cycliste s'arrête sans réponse
   GP.elan=Math.max(elanFloor, GP.elan-drain*dt*sprintFactor);
   // Vitesse joueur (accélérée en sprint)
   const wF=Math.pow(Math.min(GP.watts,500)/500, 1/3);
