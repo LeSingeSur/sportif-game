@@ -2750,6 +2750,24 @@ function grimpeSprintFinish(){
   GP._sprintFactor=15;
 }
 
+function grimpeShowFound(){
+  const el=document.getElementById('ns-solution');
+  if(!el)return;
+  const found=GP.found||[];
+  const total=GP.totalAnswers||10;
+  const missed=total-found.length;
+  if(!found.length){el.style.display='none';return;}
+  let html2='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES TROUVÉES ('+found.length+'/'+total+')</div>';
+  html2+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+  found.forEach(r=>{
+    html2+=`<span style="font-size:12px;padding:3px 10px;border-radius:6px;background:rgba(212,255,0,.15);color:var(--neon)">${r}</span>`;
+  });
+  html2+='</div>';
+  if(missed>0) html2+=`<div style="font-size:11px;color:var(--mute)">${missed} réponse${missed>1?'s':''} non trouvée${missed>1?'s':''}</div>`;
+  el.innerHTML=html2;
+  el.style.display='block';
+}
+
 function grimpeFinish(reason){
   if(GP.done)return;
   GP.done=true;
@@ -2767,7 +2785,7 @@ function grimpeFinish(reason){
       document.getElementById('v-name').textContent="L'Alpe d’Huez";
       document.getElementById('v-sc').textContent=0;
       document.getElementById('v-sub').textContent='💥 3 erreurs — tu as chuté !';
-      show('sv');submitScore(0);
+      grimpeShowFound();show('sv');submitScore(0);
     },1000);
     return;
   }
@@ -2789,7 +2807,7 @@ function grimpeFinish(reason){
         document.getElementById('v-name').textContent="L'Alpe d’Huez";
         document.getElementById('v-sc').textContent=finalScore;
         document.getElementById('v-sub').textContent=distTxt+' · '+dopeTxt;
-        show('sv');if(finalScore>0)confetti();submitScore(finalScore);
+        grimpeShowFound();show('sv');if(finalScore>0)confetti();submitScore(finalScore);
       },1000);
     },2500);
     return;
@@ -2802,7 +2820,7 @@ function grimpeFinish(reason){
     document.getElementById('v-name').textContent="L'Alpe d'Huez";
     document.getElementById('v-sc').textContent=rawScore;
     document.getElementById('v-sub').textContent=distTxtFinal;
-    show('sv');if(rawScore>0)confetti();submitScore(rawScore);
+    grimpeShowFound();show('sv');if(rawScore>0)confetti();submitScore(rawScore);
   },1000);
 }
 
@@ -6580,26 +6598,20 @@ function nsShowSolution(){
   if(!sportifs.length){el.style.display='none';return;}
   let html='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">✅ SOLUTION</div>';
   couloirs.forEach((c,ci)=>{
-    const inCouloir=sportifs.filter((s,si)=>{
+    // Find sportifs whose correct answer includes this couloir
+    const inCouloir=sportifs.map((s,si)=>({s,si})).filter(({s})=>{
       const valids=Array.isArray(s.correct)?s.correct:[s.correct];
       return valids.includes(ci);
     });
-    if(!inCouloir.length)return; // skip empty couloirs
-    const playerCorrect=inCouloir.filter((s,_)=>{
-      const si=sportifs.indexOf(s);
-      const valids=Array.isArray(s.correct)?s.correct:[s.correct];
-      return valids.includes(NS.placement[si]);
-    });
+    if(!inCouloir.length)return;
     html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:6px 8px;background:var(--c1);border-radius:8px">
-      <div style="font-size:11px;color:var(--mute);min-width:80px;padding-top:2px">${c.label}</div>
+      <div style="font-size:11px;color:var(--mute);min-width:80px;padding-top:2px">${c.label||'Couloir '+(ci+1)}</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${inCouloir.map(s=>{
-          const si=sportifs.indexOf(s);
-          const correct=NS.placement[si]===ci||(Array.isArray(s.correct)&&s.correct.includes(NS.placement[si]));
-          // Check if player placed this sportif correctly
+        ${inCouloir.map(({s,si})=>{
+          const playerCouloir=NS.placement[si];
           const valids=Array.isArray(s.correct)?s.correct:[s.correct];
-          const playerPlaced=valids.includes(NS.placement[si]);
-          return `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:${playerPlaced?'rgba(212,255,0,.15)':'rgba(255,60,60,.15)'};color:${playerPlaced?'var(--neon)':'var(--red)'}">${s.nom}</span>`;
+          const ok=valids.includes(playerCouloir);
+          return `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:${ok?'rgba(212,255,0,.15)':'rgba(255,60,60,.15)'};color:${ok?'var(--neon)':'var(--red)'}">${s.nom}</span>`;
         }).join('')}
       </div>
     </div>`;
