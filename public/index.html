@@ -2377,10 +2377,10 @@ const GP = {
   cases:0, pogiCases:0, elan:0, watts:0,
   done:false, wrongTotal:0, wrongStreak:0, goodStreak:0,
   errPenalty:false, blockedUntil:0,
-  gelPending:false,
+  gelPending:false, gelCount:0, gelUsed:false,
   found:[], timerInt:null, physicsInt:null,
   startTime:0, questionStart:null, theme:'', totalAnswers:10,
-  epoCount:0,
+  epoCount:0, responseTimes:[], // track time per correct answer
   params:{},
 };
 
@@ -2486,6 +2486,7 @@ function setupGrimpeMode(data){
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
   GP.errPenalty=false; GP.blockedUntil=0;
   GP.gelPending=false; GP.epoCount=0; GP._sprintFactor=1; GP.gelCount=0;
+  GP.responseTimes=[]; GP.gelUsed=false;
   GP.found=[]; GP.theme=data.grimpeTheme||data.answer||''; GP.totalAnswers=data.grimpeAnswers||10;
   GP._sprintFactor=1;
   G.athleteName=GP.theme||"L'Alpe d'Huez";
@@ -2642,24 +2643,23 @@ async function submitGrimpeAnswer(){
     // Nouvelle mécanique: watts + élan
     GP.watts=Math.min(GP.watts+GP_BW, 500);
     GP.goodStreak++;GP.wrongStreak=0;
-    // Élan: aspiration selon streak, capé GP_ASP_CAP
-    const aspElan=Math.min(100+GP.goodStreak*GP_ASP_PER_STREAK, GP_ASP_CAP);
-    // Gel pending: bonus de cases direct (ignore la pente) — plus fort en haut
+    // Record response time for scoring
+    const respTime=GP.questionStart?(Date.now()-GP.questionStart)/1000:6;
     if(GP.gelPending){
-      const section=Math.min(Math.floor(GP.cases/10)+1,10);
-      // Higher section = bigger flat bonus (5 cases at bottom, 15 at top)
-      const gelBonus=Math.round(5 + section * 1.5);
-      GP.cases=Math.min(99,GP.cases+gelBonus);
-      GP.elan=GP_GEL_ELAN;
+      GP.responseTimes.push(respTime);
+      GP.gelUsed=true;
       GP.gelPending=false;
-      fb.textContent='🍬 GEL ! +'+gelBonus+' cases bonus !';fb.style.color='#ffdd00';
+      const gelBtn=document.getElementById('grimpe-gel-btn');
+      if(gelBtn)gelBtn.style.display='none';
+      fb.textContent='🍬 GEL ! Boost vitesse !';fb.style.color='#ffdd00';
     } else {
+      GP.responseTimes.push(respTime);
+      const aspElan=Math.min(100+GP.goodStreak*GP_ASP_PER_STREAK, GP_ASP_CAP);
       GP.elan=aspElan;
       const aspTxt=GP.goodStreak>1?' 🌬️×'+GP.goodStreak:'';
       fb.textContent='✅ En avant !'+aspTxt;fb.style.color='var(--neon)';
+      document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Série ×'+GP.goodStreak:'';
     }
-    grimpeFlashInput(true);
-    document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Série ×'+GP.goodStreak+' — élan '+(Math.round(aspElan))+'%':'';
     setTimeout(()=>{fb.textContent='';},1000);
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
@@ -2831,11 +2831,23 @@ function grimpeFinish(reason){
     return;
   }
 
-  const dist=Math.min(100,Math.round(GP.cases));
-  const foundRatio=GP.found.length/(GP.totalAnswers||10);
-  const rawScore=Math.min(100,Math.round(foundRatio*67 + dist*0.33));
-  const isWin=GP.cases>=100;
-  const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+GP.found.length+'/'+(GP.totalAnswers||10)+' réponses · '+dist+'/100 cases';
+  // Nouvelle formule: 67% bonnes réponses + 33% vitesse moyenne
+  const total=GP.totalAnswers||10;
+  const found=GP.found.length;
+  const times=[...GP.responseTimes]; // [{t, rank}] rank = 1-based answer number
+  // plafond(rank) = 4 + (rank/total)*6 → 4.6s for 1st, 10s for last
+  const vs=times.map((t,i)=>{
+    const rank=i+1;
+    const plafond=4+(rank/total)*6;
+    return Math.min(1, plafond/Math.max(t,0.1));
+  });
+  const scoreVitesse=vs.length>0?vs.reduce((a,b)=>a+b,0)/vs.length:0;
+  const scoreVitesseEffective=GP.gelUsed?1.0:scoreVitesse*(found/total);
+  const foundWithGel=GP.gelUsed?Math.min(total,found+(found<total?1:0)):found;
+  const rawScore=Math.min(100,Math.round(foundWithGel/total*67 + scoreVitesseEffective*33));
+  const isWin=foundWithGel>=total;
+  const avgT=times.length>0?(times.reduce((a,b)=>a+b,0)/times.length).toFixed(1):'—';
+  const distTxt=isWin?'🏆 Toutes les réponses !':'📍 '+found+'/'+total+' réponses · moy. '+avgT+'s';
 
   if(GP.epoCount>0){
     if(statusEl){statusEl.textContent='🧪 Contrôle antidopage...';statusEl.style.color='#ffdd00';}
@@ -2856,8 +2868,8 @@ function grimpeFinish(reason){
     return;
   }
 
-  if(statusEl){statusEl.textContent=isWin?'🏆 Victoire !':reason==='all_found'?'🏁 Toutes trouvées !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':reason==='all_found'?'var(--cyan)':'var(--orange)';}
-  const distTxtFinal=isWin?'🏆 Arrivé avant Pogacar !':reason==='all_found'?'🎯 Toutes les réponses trouvées ! '+rawScore+'/100 cases':distTxt;
+  if(statusEl){statusEl.textContent=isWin?'🏆 Toutes trouvées !':reason==='all_found'?'🏁 Toutes trouvées !':'🏁 Pogacar est arrivé !';statusEl.style.color=isWin?'var(--neon)':reason==='all_found'?'var(--cyan)':'var(--orange)';}
+  const distTxtFinal=distTxt;
   G.score=rawScore;setScore(rawScore,true);setVictoryIcon('grimpe');
   setTimeout(()=>{
     document.getElementById('v-name').textContent="L'Alpe d'Huez";
