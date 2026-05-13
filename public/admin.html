@@ -1462,6 +1462,17 @@ async function startEdit(id){
   document.getElementById('btn-save').scrollIntoView({behavior:'smooth'});
 }
 
+function selectPrixSensib(seuilsArr){
+  if(!Array.isArray(seuilsArr)||seuilsArr.length<5)return;
+  const t=parseFloat(document.getElementById('prix-target-in')?.value)||0;
+  if(!t)return;
+  const ids=['cseuil-froid','cseuil-tiede','cseuil-chaud','cseuil-brulant'];
+  ids.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el)el.value=Math.round(t*seuilsArr[i+1]/100)||'';
+  });
+}
+
 function cancelEdit(){
   editId=null; buzzClues=[];
   document.getElementById('coeff-in').value = 1;
@@ -1501,7 +1512,7 @@ function cancelEdit(){
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
   document.getElementById('prix-tolerance-in').value='0';
-  selectPrixSensib([0,10,40,70,90]);
+  if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
   ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
   selectTrappeCorrect(0);
@@ -2785,20 +2796,15 @@ document.getElementById('btn-save').onclick=async()=>{
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
-  function getPrixSensib(){
-  const t=parseFloat(document.getElementById('prix-target-in')?.value)||1;
-  const v1=parseFloat(document.getElementById('cseuil-froid')?.value)||0;
-  const v2=parseFloat(document.getElementById('cseuil-tiede')?.value)||0;
-  const v3=parseFloat(document.getElementById('cseuil-chaud')?.value)||0;
-  const v4=parseFloat(document.getElementById('cseuil-brulant')?.value)||0;
-  return [0,
-    Math.round((v1/t)*100),
-    Math.round((v2/t)*100),
-    Math.round((v3/t)*100),
-    Math.round((v4/t)*100)
-  ];
-}
-const prixSensib=currentType==='prix'?getPrixSensib():[0,10,40,70,90];
+  const prixSensib=(()=>{
+    if(currentType!=='prix')return[0,10,40,70,90];
+    const t=parseFloat(document.getElementById('prix-target-in')?.value)||1;
+    const v1=parseFloat(document.getElementById('cseuil-froid')?.value)||0;
+    const v2=parseFloat(document.getElementById('cseuil-tiede')?.value)||0;
+    const v3=parseFloat(document.getElementById('cseuil-chaud')?.value)||0;
+    const v4=parseFloat(document.getElementById('cseuil-brulant')?.value)||0;
+    return[0,Math.round((v1/t)*100),Math.round((v2/t)*100),Math.round((v3/t)*100),Math.round((v4/t)*100)];
+  })();
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
