@@ -208,7 +208,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-desc">Cumule sans dépasser</div>
           </div>
           <div class="type-opt" id="type-image" onclick="selectType('image')">
-            <div class="type-ico">🖼</div>
+            <div class="type-ico">📸</div>
             <div class="type-name">Image</div>
             <div class="type-desc">Photo masquée</div>
           </div>
@@ -218,7 +218,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-desc">Chrono dégressif</div>
           </div>
           <div class="type-opt" id="type-sportus" onclick="selectType('sportus')">
-            <div class="type-ico">🎯</div>
+            <div class="type-ico">🔡</div>
             <div class="type-name">Sportus</div>
             <div class="type-desc">Motus sportif</div>
           </div>
@@ -640,40 +640,41 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>🌡️ Seuils de chaleur — entrer les valeurs limites</label>
           <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Écart maximum accepté depuis la bonne réponse (ex: cible=2025, BRÛLANT=5 → accepte 2020 à 2030)</div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:16px">🧊</span>
-              <span style="font-family:var(--fh);font-size:11px;color:#4fc3f7;width:60px">FROID</span>
-              <span style="font-size:11px;color:var(--mute)">à partir de</span>
-              <input type="number" id="cseuil-froid" min="0" step="1" value="" placeholder="ex: 100"
+              <span style="font-family:var(--fh);font-size:11px;color:#4fc3f7;width:70px">FROID</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-froid" min="0" step="1" value="" placeholder="ex: 500"
                 style="width:90px;background:var(--c1);border:1px solid #4fc3f755;color:#4fc3f7;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
               <span id="cseuil-froid-unit" style="font-size:11px;color:var(--mute)"></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:16px">🌤️</span>
-              <span style="font-family:var(--fh);font-size:11px;color:#fff176;width:60px">TIÈDE</span>
-              <span style="font-size:11px;color:var(--mute)">à partir de</span>
-              <input type="number" id="cseuil-tiede" min="0" step="1" value="" placeholder="ex: 500"
+              <span style="font-family:var(--fh);font-size:11px;color:#fff176;width:70px">TIÈDE</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-tiede" min="0" step="1" value="" placeholder="ex: 200"
                 style="width:90px;background:var(--c1);border:1px solid #fff17655;color:#fff176;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
               <span id="cseuil-tiede-unit" style="font-size:11px;color:var(--mute)"></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:16px">🌡️</span>
-              <span style="font-family:var(--fh);font-size:11px;color:#ff9800;width:60px">CHAUD</span>
-              <span style="font-size:11px;color:var(--mute)">à partir de</span>
-              <input type="number" id="cseuil-chaud" min="0" step="1" value="" placeholder="ex: 1500"
+              <span style="font-family:var(--fh);font-size:11px;color:#ff9800;width:70px">CHAUD</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-chaud" min="0" step="1" value="" placeholder="ex: 50"
                 style="width:90px;background:var(--c1);border:1px solid #ff980055;color:#ff9800;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
               <span id="cseuil-chaud-unit" style="font-size:11px;color:var(--mute)"></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:16px">🔥</span>
-              <span style="font-family:var(--fh);font-size:11px;color:#ff4020;width:60px">BRÛLANT</span>
-              <span style="font-size:11px;color:var(--mute)">à partir de</span>
-              <input type="number" id="cseuil-brulant" min="0" step="1" value="" placeholder="ex: 1900"
+              <span style="font-family:var(--fh);font-size:11px;color:#ff4020;width:70px">BRÛLANT</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-brulant" min="0" step="1" value="" placeholder="ex: 10"
                 style="width:90px;background:var(--c1);border:1px solid #ff402055;color:#ff4020;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
               <span id="cseuil-brulant-unit" style="font-size:11px;color:var(--mute)"></span>
             </div>
           </div>
-          <span class="hint" style="margin-top:6px;display:block">⛄ GLACIAL = en dessous du seuil FROID · valeurs croissantes vers la cible</span>
+          <span class="hint" style="margin-top:6px;display:block">⛄ GLACIAL = écart > seuil FROID · Les seuils doivent être croissants : BRÛLANT &lt; CHAUD &lt; TIÈDE &lt; FROID</span>
         </div>
         <div class="field">
           <label>Tolérance ±</label>
@@ -996,6 +997,14 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 
 </div>
 <script>
+const ADMIN_GAME_ICONS={
+  blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
+  trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
+  grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
+  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️'
+};
+function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
+
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
 let adminPw='', selEmoji='🏆', editId=null, currentType='blackjack';
 let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
@@ -1194,7 +1203,7 @@ async function loadAthletes(){
     d.innerHTML=`
       <div class="ath-top">
         <div style="cursor:grab;font-size:18px;padding:0 6px;color:var(--mute);touch-action:none" class="drag-handle">⠿</div>
-        <div class="ath-ico">${a.emoji}</div>
+        <div class="ath-ico">${getGameIcon(a.type)}</div>
         <div class="ath-info">
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
           <div class="ath-meta">
@@ -2873,10 +2882,9 @@ async function loadAdminScores(){
     const athletes=await res.json();
     sel.innerHTML='';
     athletes.forEach((a,i)=>{
-      const typeLabel=a.type==='image'?'🖼':a.type==='buzz'?'⚡':'📝';
       const d=document.createElement('div');
       d.style.cssText='display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;cursor:pointer';
-      d.innerHTML=`<div style="font-size:20px">${a.emoji}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)} ${typeLabel}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
+      d.innerHTML=`<div style="font-size:20px">${getGameIcon(a.type)}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
       d.onclick=()=>showAthleteScores(a.id, a.answer||'Défi');
       sel.appendChild(d);
     });

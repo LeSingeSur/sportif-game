@@ -2386,7 +2386,7 @@ const GP = {
 
 // Paramètres physique élan
 const GP_VMAX=6, GP_DRAIN_K=8, GP_EFF=15, GP_ELAN_CAP=350;
-const GP_SW=5, GP_BW=85, GP_ASP_PER_STREAK=5, GP_ASP_CAP=160, GP_GEL_ELAN=240;
+const GP_SW=5, GP_BW=85, GP_ASP_PER_STREAK=5, GP_ASP_CAP=160, GP_GEL_ELAN=150;
 
 function grimpeSection(c){ return Math.min(Math.floor(c/10)+1,10); }
 function grimpeSlopeFactor(c){ const p=grimpeSection(c); return Math.max(0,1-p/15); }
@@ -2485,7 +2485,7 @@ function setupGrimpeMode(data){
   GP.cases=0; GP.pogiCases=0; GP.elan=0; GP.watts=GP_SW;
   GP.done=false; GP.wrongTotal=0; GP.wrongStreak=0; GP.goodStreak=0;
   GP.errPenalty=false; GP.blockedUntil=0;
-  GP.gelPending=false; GP.epoCount=0; GP._sprintFactor=1;
+  GP.gelPending=false; GP.epoCount=0; GP._sprintFactor=1; GP.gelCount=0;
   GP.found=[]; GP.theme=data.grimpeTheme||data.answer||''; GP.totalAnswers=data.grimpeAnswers||10;
   GP._sprintFactor=1;
   G.athleteName=GP.theme||"L'Alpe d'Huez";
@@ -2644,11 +2644,15 @@ async function submitGrimpeAnswer(){
     GP.goodStreak++;GP.wrongStreak=0;
     // Élan: aspiration selon streak, capé GP_ASP_CAP
     const aspElan=Math.min(100+GP.goodStreak*GP_ASP_PER_STREAK, GP_ASP_CAP);
-    // Gel pending: boost élan proportionnel à la pente
+    // Gel pending: bonus de cases direct (ignore la pente) — plus fort en haut
     if(GP.gelPending){
+      const section=Math.min(Math.floor(GP.cases/10)+1,10);
+      // Higher section = bigger flat bonus (5 cases at bottom, 15 at top)
+      const gelBonus=Math.round(5 + section * 1.5);
+      GP.cases=Math.min(99,GP.cases+gelBonus);
       GP.elan=GP_GEL_ELAN;
       GP.gelPending=false;
-      fb.textContent='🍬 GEL activé ! Boost élan !';fb.style.color='#ffdd00';
+      fb.textContent='🍬 GEL ! +'+gelBonus+' cases bonus !';fb.style.color='#ffdd00';
     } else {
       GP.elan=aspElan;
       const aspTxt=GP.goodStreak>1?' 🌬️×'+GP.goodStreak:'';
@@ -2723,9 +2727,11 @@ async function submitGrimpeAnswer(){
 }
 
 function grimpeActivateGel(){
-  if(GP.done||GP.gelPending)return;
+  if(GP.done||GP.gelPending||GP.gelCount>=1)return;
+  GP.gelCount++;
   GP.gelPending=true;
   const gelBtn=document.getElementById('grimpe-gel-btn');
+  if(gelBtn)gelBtn.style.display='none'; // used — gone
   if(gelBtn)gelBtn.style.display='none';
   document.getElementById('grimpe-streak').textContent='🍬 GEL PRÊT — réponds pour le boost !';
   const statusEl=document.getElementById('grimpe-status');
@@ -2827,7 +2833,7 @@ function grimpeFinish(reason){
 
   const dist=Math.min(100,Math.round(GP.cases));
   const foundRatio=GP.found.length/(GP.totalAnswers||10);
-  const rawScore=Math.min(100,Math.round(foundRatio*70 + dist*0.30));
+  const rawScore=Math.min(100,Math.round(foundRatio*67 + dist*0.33));
   const isWin=GP.cases>=100;
   const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+GP.found.length+'/'+(GP.totalAnswers||10)+' réponses · '+dist+'/100 cases';
 
