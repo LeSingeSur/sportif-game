@@ -745,18 +745,17 @@ app.post('/api/prix-check', (req, res) => {
 
   const target    = athlete.targetValue;
   const tolerance = athlete.prixTolerance || 0;
-  const seuils    = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0,10,40,70,90];
+  const seuils    = Array.isArray(athlete.prixSensibilite) ? athlete.prixSensibilite : [0, Infinity, Infinity, Infinity, Infinity];
   const g         = parseFloat(String(guess).replace(',', '.'));
   if (isNaN(g) || g < 0) return res.status(400).json({ error: 'Valeur invalide' });
 
-  const diff  = Math.abs(g - target);
-  const exact = diff <= tolerance;
-
-  // Score ET affichage : même formule min/max symétrique
-  const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
+  const diff      = Math.abs(g - target);
+  const exact     = diff <= tolerance;
   const direction = g < target - tolerance ? 'plus' : g > target + tolerance ? 'moins' : 'exact';
+  // precision = % for score calc (unchanged), seuils now in raw values
+  const precision = exact ? 100 : (Math.min(g, target) / Math.max(g, target)) * 100;
 
-  res.json({ exact, precision, displayPrecision: precision, seuils, direction, target: exact ? target : null, fullAnswer: athlete.answer });
+  res.json({ exact, precision, displayPrecision: diff, seuils, direction, target: exact ? target : null, fullAnswer: athlete.answer });
 });
 
 app.post('/api/admin/login', (req, res) => {
