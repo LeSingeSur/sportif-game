@@ -2834,18 +2834,19 @@ function grimpeFinish(reason){
   // Nouvelle formule: 67% bonnes réponses + 33% vitesse moyenne
   const total=GP.totalAnswers||10;
   const found=GP.found.length;
-  const times=[...GP.responseTimes]; // [{t, rank}] rank = 1-based answer number
-  // plafond(rank) = 4 + (rank/total)*6 → 4.6s for 1st, 10s for last
+  const times=[...GP.responseTimes];
+  // plafond(rank) = max(6, 4+rank) → 6,6,7,8,9,10,11,12,13,14s
   const vs=times.map((t,i)=>{
-    const rank=i+1;
-    const plafond=4+(rank/total)*6;
-    return Math.min(1, plafond/Math.max(t,0.1));
+    const plafond=Math.max(6,4+(i+1));
+    return Math.min(1,plafond/Math.max(t,0.1));
   });
   const scoreVitesse=vs.length>0?vs.reduce((a,b)=>a+b,0)/vs.length:0;
-  const scoreVitesseEffective=GP.gelUsed?1.0:scoreVitesse*(found/total);
-  const foundWithGel=GP.gelUsed?Math.min(total,found+(found<total?1:0)):found;
-  const rawScore=Math.min(100,Math.round(foundWithGel/total*67 + scoreVitesseEffective*33));
-  const isWin=foundWithGel>=total;
+  const scoreVitesseEffective=scoreVitesse*Math.sqrt(found/total);
+  const baseScore=Math.round(found/total*67 + scoreVitesseEffective*33);
+  // Gel = bonus max = value of 1 correct answer
+  const gelBonus=GP.gelUsed?Math.round(67/total):0;
+  const rawScore=Math.min(100,baseScore+gelBonus);
+  const isWin=found>=total;
   const avgT=times.length>0?(times.reduce((a,b)=>a+b,0)/times.length).toFixed(1):'—';
   const distTxt=isWin?'🏆 Toutes les réponses !':'📍 '+found+'/'+total+' réponses · moy. '+avgT+'s';
 
