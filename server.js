@@ -346,6 +346,17 @@ app.post('/api/admin/welcome-image', (req, res) => {
 });
 
 // -- LA GRIMPÉE ------------------------------------------------------------
+app.get('/api/grimpe-reveal', (req, res) => {
+  const { athleteId } = req.query;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'grimpe') return res.status(404).json({ error: 'Introuvable' });
+  const allGroups = (athlete.grimpeAnswersFull||[]).length
+    ? athlete.grimpeAnswersFull
+    : (athlete.grimpeAnswers||[]).map(a=>[a]);
+  // Return canonical answer (first item of each group)
+  res.json({ answers: allGroups.map(g=>g[0]) });
+});
+
 app.post('/api/grimpe-check', (req, res) => {
   const { athleteId, answer, found } = req.body;
   const athlete = athletes.find(a => String(a.id) === String(athleteId));
