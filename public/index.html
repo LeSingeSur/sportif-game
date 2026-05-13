@@ -2468,6 +2468,7 @@ function grimpeUpdateDisplay(){
 }
 
 function setupGrimpeMode(data){
+  const sol=document.getElementById('ns-solution');if(sol){sol.style.display='none';sol.innerHTML='';}
   const p=data.grimpeParams||{};
   GP.params={
     casesPerAnswer: p.casesPerAnswer||7,
@@ -2769,22 +2770,37 @@ function grimpeSprintFinish(){
   GP._sprintFactor=15;
 }
 
-function grimpeShowFound(){
+async function grimpeShowFound(){
   const el=document.getElementById('ns-solution');
   if(!el)return;
   const found=GP.found||[];
   const total=GP.totalAnswers||10;
-  const missed=total-found.length;
-  if(!found.length){el.style.display='none';return;}
-  let html2='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES TROUVÉES ('+found.length+'/'+total+')</div>';
-  html2+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
-  found.forEach(r=>{
-    html2+=`<span style="font-size:12px;padding:3px 10px;border-radius:6px;background:rgba(212,255,0,.15);color:var(--neon)">${r}</span>`;
-  });
-  html2+='</div>';
-  if(missed>0) html2+=`<div style="font-size:11px;color:var(--mute)">${missed} réponse${missed>1?'s':''} non trouvée${missed>1?'s':''}</div>`;
-  el.innerHTML=html2;
   el.style.display='block';
+  el.innerHTML='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES ('+found.length+'/'+total+')</div><div style="font-size:11px;color:var(--mute)">Chargement…</div>';
+
+  // Fetch all answers from server
+  try{
+    const res=await fetch('/api/grimpe-reveal?athleteId='+G.athleteId);
+    const data=await res.json();
+    const allAnswers=data.answers||[];
+    const foundNorm=found.map(f=>f.toLowerCase().trim());
+    let html='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES ('+found.length+'/'+total+')</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+    allAnswers.forEach(a=>{
+      const isFound=foundNorm.some(f=>f===a.toLowerCase().trim());
+      html+=`<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:${isFound?'rgba(212,255,0,.15)':'rgba(255,60,60,.15)'};color:${isFound?'var(--neon)':'var(--red)'}">${a}</span>`;
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){
+    // Fallback — just show found
+    let html='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES TROUVÉES ('+found.length+'/'+total+')</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+    found.forEach(r=>{html+=`<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(212,255,0,.15);color:var(--neon)">${r}</span>`;});
+    html+='</div>';
+    if(total-found.length>0)html+=`<div style="font-size:11px;color:var(--mute);margin-top:4px">${total-found.length} réponse(s) non trouvée(s)</div>`;
+    el.innerHTML=html;
+  }
 }
 
 function grimpeFinish(reason){
@@ -6446,6 +6462,8 @@ const NS={data:null,placement:{},done:false,essai:1,score:0,maxScore:100,chronoI
 function setupNageSync(data){
   NS.data=data;NS.placement={};NS.done=false;NS.essai=1;NS.score=0;NS.maxScore=100;
   if(NS.chronoInt)clearInterval(NS.chronoInt);
+  // Clear shared solution div
+  const sol=document.getElementById('ns-solution');if(sol){sol.style.display='none';sol.innerHTML='';}
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Place chaque sportif dans le bon couloir · 60s';
   hideAllZones();
   document.getElementById('ns-zone').style.display='flex';
