@@ -1440,6 +1440,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
   <div class="rank-badge" id="rank-badge">⏳ Envoi…</div>
+  <div id="ns-solution" style="display:none;width:100%;margin-top:8px;background:var(--c2);border-radius:12px;padding:12px;font-size:12px"></div>
   <div class="v-btns">
     <button class="btn btn-p" id="btn-next">▶&nbsp;&nbsp;Prochain défi</button>
     <button class="btn btn-s" id="btn-v-lb">🏆&nbsp;&nbsp;Voir le classement</button>
@@ -6451,7 +6452,7 @@ function nsRender(){
     label.style.cssText='font-size:11px;color:var(--cyan);font-family:var(--fh);min-width:20px';
     label.textContent=(i+1);
     const cLabel=document.createElement('div');
-    cLabel.style.cssText='flex:1;font-size:12px;color:var(--mute)';
+    cLabel.style.cssText='flex:1;font-size:13px;color:var(--txt);font-weight:600';
     cLabel.textContent=c.label;
     const placed=document.createElement('div');
     placed.id='ns-placed-'+i;
@@ -6542,6 +6543,7 @@ function nsValider(){
     const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
     const vSub=document.getElementById('v-sub');
     if(vSub)vSub.textContent=(faults===0?correct+'/'+total+' · Parfait !':correct+'/'+total+' · '+faults+' faute(s)')+' · '+NS.score+' pts';
+    nsShowSolution();
     setVictoryIcon('nagesync');submitScore(NS.score);show('sv');
   } else {
     // Cacher le jeu, afficher feedback centré
@@ -6570,12 +6572,49 @@ function nsValider(){
     }
   }
 }
+function nsShowSolution(){
+  const el=document.getElementById('ns-solution');
+  if(!el)return;
+  const couloirs=NS.data.couloirs||[];
+  const sportifs=NS.data.sportifs||[];
+  if(!sportifs.length){el.style.display='none';return;}
+  let html='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">✅ SOLUTION</div>';
+  couloirs.forEach((c,ci)=>{
+    const inCouloir=sportifs.filter((s,si)=>{
+      const valids=Array.isArray(s.correct)?s.correct:[s.correct];
+      return valids.includes(ci);
+    });
+    if(!inCouloir.length)return; // skip empty couloirs
+    const playerCorrect=inCouloir.filter((s,_)=>{
+      const si=sportifs.indexOf(s);
+      const valids=Array.isArray(s.correct)?s.correct:[s.correct];
+      return valids.includes(NS.placement[si]);
+    });
+    html+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:6px 8px;background:var(--c1);border-radius:8px">
+      <div style="font-size:11px;color:var(--mute);min-width:80px;padding-top:2px">${c.label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${inCouloir.map(s=>{
+          const si=sportifs.indexOf(s);
+          const correct=NS.placement[si]===ci||(Array.isArray(s.correct)&&s.correct.includes(NS.placement[si]));
+          // Check if player placed this sportif correctly
+          const valids=Array.isArray(s.correct)?s.correct:[s.correct];
+          const playerPlaced=valids.includes(NS.placement[si]);
+          return `<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:${playerPlaced?'rgba(212,255,0,.15)':'rgba(255,60,60,.15)'};color:${playerPlaced?'var(--neon)':'var(--red)'}">${s.nom}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+  el.style.display='block';
+}
+
 function nsTerminer(score){
   NS.done=true;NS.score=score;G.score=score;setScore(score,true);
   clearInterval(NS.chronoInt);
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Natation';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Score conservé · '+score+' pts';
+  nsShowSolution();
   setVictoryIcon('nagesync');submitScore(score);show('sv');
 }
 function nsContinuer(){
