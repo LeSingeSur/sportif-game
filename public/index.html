@@ -2825,9 +2825,11 @@ function grimpeFinish(reason){
     return;
   }
 
-  const rawScore=Math.min(100,Math.round(GP.cases));
+  const dist=Math.min(100,Math.round(GP.cases));
+  const foundRatio=GP.found.length/(GP.totalAnswers||10);
+  const rawScore=Math.min(100,Math.round(foundRatio*70 + dist*0.30));
   const isWin=GP.cases>=100;
-  const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+rawScore+'/100 cases';
+  const distTxt=isWin?'🏆 Arrivé avant Pogacar !':'📍 '+GP.found.length+'/'+(GP.totalAnswers||10)+' réponses · '+dist+'/100 cases';
 
   if(GP.epoCount>0){
     if(statusEl){statusEl.textContent='🧪 Contrôle antidopage...';statusEl.style.color='#ffdd00';}
