@@ -2061,7 +2061,7 @@ async function checkPrix(){
       setScore(newScore, true);
       document.getElementById('bar-f').style.width = newScore+'%';
 
-      updateChaleur(data.displayPrecision, data.direction);
+      updateChaleur(data.precision, data.direction, data.displayPrecision);
       addPrixHistoryItem(guess, data.displayPrecision, data.direction);
 
       if(newScore <= 0){
@@ -2132,17 +2132,21 @@ const CHALEUR_DEF = [
   {ico:'🎯', label:'JUSTE PRIX !', color:'#00e676', bg:'rgba(0,230,118,.18)'},
 ];
 
-function getChaleurLevel(pct, direction){
-  if(direction === 'exact' || pct >= 100) return CHALEUR_DEF[5];
-  const seuils = P.chaleurSeuils || [0,10,40,70,90];
-  let idx = 0;
-  seuils.forEach((s,i) => { if(pct >= s) idx = i; });
-  return CHALEUR_DEF[idx];
+function getChaleurLevel(diff, direction){
+  if(direction === 'exact') return CHALEUR_DEF[5];
+  const seuils = P.chaleurSeuils || [0, Infinity, Infinity, Infinity, Infinity];
+  // seuils[1..4] = max diff for each level (FROID, TIÈDE, CHAUD, BRÛLANT)
+  // smaller diff = hotter
+  if(seuils[4] !== undefined && diff <= seuils[4]) return CHALEUR_DEF[4]; // BRÛLANT
+  if(seuils[3] !== undefined && diff <= seuils[3]) return CHALEUR_DEF[3]; // CHAUD
+  if(seuils[2] !== undefined && diff <= seuils[2]) return CHALEUR_DEF[2]; // TIÈDE
+  if(seuils[1] !== undefined && diff <= seuils[1]) return CHALEUR_DEF[1]; // FROID
+  return CHALEUR_DEF[0]; // GLACIAL
 }
 
-function updateChaleur(precision, direction){
-  const pct = direction === 'exact' ? 100 : Math.floor(precision);
-  const lvl = getChaleurLevel(pct, direction);
+function updateChaleur(precision, direction, displayPrecision){
+  const diff = direction === 'exact' ? 0 : (displayPrecision !== undefined ? displayPrecision : precision);
+  const lvl = getChaleurLevel(diff, direction);
   const el  = document.getElementById('prix-chaleur');
   el.style.display     = 'flex';
   el.style.background  = lvl.bg;
@@ -2157,7 +2161,7 @@ function updateChaleur(precision, direction){
 
 function addPrixHistoryItem(guess, precision, direction){
   const hist = document.getElementById('prix-history');
-  const lvl  = getChaleurLevel(direction === 'exact' ? 100 : Math.floor(precision), direction);
+  const lvl  = getChaleurLevel(direction === 'exact' ? 0 : precision, direction);
   const unit = P.unit ? ` ${P.unit}` : '';
   const dirIcon = direction === 'exact' ? '🎯' : direction === 'plus' ? '⬆️' : '⬇️';
   const item = document.createElement('div');
