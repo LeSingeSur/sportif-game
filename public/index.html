@@ -2739,7 +2739,6 @@ function grimpeActivateGel(){
   GP.gelCount++;
   GP.gelPending=true;
   const gelBtn=document.getElementById('grimpe-gel-btn');
-  if(gelBtn)gelBtn.style.display='none'; // used — gone
   if(gelBtn)gelBtn.style.display='none';
   document.getElementById('grimpe-streak').textContent='🍬 GEL PRÊT — réponds pour le boost !';
   const statusEl=document.getElementById('grimpe-status');
@@ -6153,6 +6152,7 @@ function assautShowQ1(){
   let qt=maxT;
   ASSAUT.qTimerInt=setInterval(()=>{
     qt--;
+    if(ASSAUT.parUsed)return; // parer was used, ignore timer
     if(tEl)tEl.textContent=qt;
     if(tBar)tBar.style.width=(qt/maxT*100)+'%';
     if(tEl)tEl.style.color=qt<=3?'var(--red)':'var(--neon)';
