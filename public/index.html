@@ -163,7 +163,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 @keyframes pop{0%{transform:scale(.75);opacity:0}100%{transform:scale(1);opacity:1}}
 /* IMAGE MODE */
 .img-wrap{position:relative;width:100%;border-radius:16px;overflow:hidden;background:var(--c1);flex-shrink:0;touch-action:pan-y}
-.img-wrap img{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;user-select:none;-webkit-user-select:none;pointer-events:none}
+.img-wrap img{display:block;width:100%;height:auto;object-fit:contain;user-select:none;-webkit-user-select:none;pointer-events:none}
 .grid-overlay{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;display:grid}
 .tile{background:rgba(10,10,20,.92);border:1px solid rgba(255,255,255,.04);transition:opacity .2s;position:relative;overflow:hidden}
 .tile:not(.rev)::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;inset:0;background:linear-gradient(135deg,#181830,#0d0d1a)}
@@ -827,7 +827,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div>🌬️ <strong>Série de bonnes réponses</strong> → aspiration qui booste ta vitesse</div>
         <div>💉 <strong>EPO</strong> → boost puissant mais risqué · 🍬 <strong>GEL</strong> → boost élan sur la prochaine réponse</div>
         <div>⏱️ Réponds vite ! Le chrono repart à chaque question.</div>
-        <div style="background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.2);border-radius:8px;padding:8px 10px">📊 <strong>Score</strong> = cases parcourues sur 100 au moment où Pogacar arrive en haut.</div>
+        <div style="background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.2);border-radius:8px;padding:8px 10px">📊 <strong>Score</strong> = bonnes réponses (67%) + vitesse de réponse (33%). Répondre vite rapporte plus !</div>
       </div>
       <button id="grimpe-rules-ok" class="btn btn-p" style="margin-top:20px;width:100%;font-family:var(--fh);font-size:16px;letter-spacing:2px">▶ COMMENCER</button>
     </div>
@@ -2661,6 +2661,14 @@ async function submitGrimpeAnswer(){
       document.getElementById('grimpe-streak').textContent=GP.goodStreak>1?'🌬️ Série ×'+GP.goodStreak:'';
     }
     setTimeout(()=>{fb.textContent='';},1000);
+    // Live score estimate
+    (()=>{
+      const lv=GP.responseTimes.map((t,i)=>{const p=Math.max(6,4+(i+1));return Math.min(1,p/Math.max(t,0.1));});
+      const lsv=lv.length>0?lv.reduce((a,b)=>a+b,0)/lv.length:0;
+      const lsEff=lsv*Math.sqrt(GP.found.length/(GP.totalAnswers||10));
+      const ls=Math.min(100,Math.round(GP.found.length/(GP.totalAnswers||10)*67+lsEff*33));
+      G.score=ls;setScore(ls,false);
+    })();
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
       // Figer Pogacar immédiatement — le joueur a tout trouvé
@@ -6316,13 +6324,24 @@ const ARC_TOLERANCE={facile:0.20,moyen:0.10,difficile:0.05};
 function setupTirALArc(data){
   ARC.data=data; ARC.cibleIdx=0; ARC.score=0; ARC.hits=0; ARC.done=false;
   if(ARC.chronoInt)clearInterval(ARC.chronoInt);
-  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta distance · Vise la bonne valeur · 60s';
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta distance · Vise la bonne valeur · 60s/cible';
   hideAllZones();
   document.getElementById('arc-zone').style.display='flex';
+  // Reset chrono display
+  const cEl=document.getElementById('arc-chrono');
+  const cBar=document.getElementById('arc-chrono-bar');
+  if(cEl){cEl.textContent=60;cEl.style.color='var(--neon)';}
+  if(cBar)cBar.style.width='100%';
+  arcShowIntro();
+}
+
+function arcStartChrono(){
+  if(ARC.chronoInt)clearInterval(ARC.chronoInt);
   let t=60;
   const cEl=document.getElementById('arc-chrono');
   const cBar=document.getElementById('arc-chrono-bar');
-  if(cEl)cEl.textContent=t; if(cBar)cBar.style.width='100%';
+  if(cEl){cEl.textContent=t;cEl.style.color='var(--neon)';}
+  if(cBar)cBar.style.width='100%';
   ARC.chronoInt=setInterval(()=>{
     t--;
     if(cEl)cEl.textContent=t;
@@ -6330,7 +6349,6 @@ function setupTirALArc(data){
     if(cEl)cEl.style.color=t<=10?'var(--red)':'var(--neon)';
     if(t<=0){clearInterval(ARC.chronoInt);if(!ARC.done)arcFinish();}
   },1000);
-  arcShowIntro();
 }
 
 function arcShowIntro(){
@@ -6358,6 +6376,11 @@ function arcShowIntro(){
 }
 
 function arcNextCible(){
+  clearInterval(ARC.chronoInt); // stop chrono between cibles
+  const cEl=document.getElementById('arc-chrono');
+  const cBar=document.getElementById('arc-chrono-bar');
+  if(cEl){cEl.textContent=60;cEl.style.color='var(--mute)';}
+  if(cBar)cBar.style.width='100%';
   const cibles=ARC.data.cibles||[];
   if(!cibles.length){arcFinish();return;}
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
@@ -6388,6 +6411,7 @@ function arcNextCible(){
 }
 
 function arcChoixDistance(difficulty){
+  arcStartChrono(); // start 60s chrono for this cible
   const cibles=ARC.data.cibles||[];
   const c=cibles[ARC.cibleIdx];
   const maxPts=ARC_DIFF_PTS[difficulty];
@@ -6464,6 +6488,9 @@ function arcFinish(){
   if(ARC.done)return;
   ARC.done=true;
   clearInterval(ARC.chronoInt);
+  // Reset chrono display for clarity
+  const cEl=document.getElementById('arc-chrono');
+  if(cEl){cEl.textContent='—';cEl.style.color='var(--mute)';}
   const cibles=ARC.data.cibles||[];
   const bonus=(ARC.hits===cibles.length&&cibles.length>0)?1:0;
   const score=Math.min(100,ARC.score+bonus);
