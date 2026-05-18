@@ -5736,7 +5736,10 @@ function haltAracherEnd(){
   const d=HALT.data.halteroArache||{};
   const questions=d.questions||[];
   let errors=0;
-  HALT.aAnswers.forEach((ans,i)=>{ if(!ans||ans!==questions[i]?.answer) errors++; });
+  HALT.aAnswers.forEach((ans,i)=>{
+    console.log('Q'+i+' criterion:',questions[i]?.criterion,'expected:',questions[i]?.answer,'got:',ans,'ok:',(ans===questions[i]?.answer));
+    if(!ans||ans!==questions[i]?.answer) errors++;
+  });
   const success=errors===0;
 
   // Calcul score
@@ -6150,9 +6153,12 @@ function assautShowQ1(){
   if(tBar)tBar.style.width='100%';
   clearInterval(ASSAUT.qTimerInt);
   let qt=maxT;
+  ASSAUT.parerFired=false; // reset for this new question
+  let parerFired=false;
   ASSAUT.qTimerInt=setInterval(()=>{
+    if(ASSAUT.parerFired){parerFired=true;}
+    if(parerFired)return;
     qt--;
-    if(ASSAUT.parUsed)return; // parer was used, ignore timer
     if(tEl)tEl.textContent=qt;
     if(tBar)tBar.style.width=(qt/maxT*100)+'%';
     if(tEl)tEl.style.color=qt<=3?'var(--red)':'var(--neon)';
@@ -6204,6 +6210,7 @@ function assautShowQ1(){
 function assautParer(){
   if(ASSAUT.parUsed)return;
   ASSAUT.parUsed=true;
+  ASSAUT.parerFired=true; // signal to active timer
   clearInterval(ASSAUT.qTimerInt);
   const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
   document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
