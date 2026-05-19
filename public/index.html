@@ -5855,6 +5855,14 @@ function haltEpauleShowQ(){
     inputEl.style.display='none'; choicesEl.style.display='flex'; choicesEl.innerHTML='';
     const wrong=(q.wrong||[]).filter(Boolean);
     let choices=[q.answer,...wrong.slice(0,nChoices-1)];
+    // Si pas assez de leurres → mode saisie libre pour éviter auto-juste
+    if(choices.length<2){
+      choicesEl.style.display='none'; inputEl.style.display='flex';
+      document.getElementById('halt-epaule-in').value='';
+      document.getElementById('halt-epaule-in').focus();
+      haltEpauleStartTimer();
+      return;
+    }
     for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
     choices.forEach(c=>{
       const btn=document.createElement('button');
@@ -5890,14 +5898,11 @@ document.getElementById('halt-epaule-in').addEventListener('keydown',e=>{if(e.ke
 function haltEpauleAnswer(ans,correct){
   clearInterval(HALT.ejTimerInt);
   document.querySelectorAll('#halt-epaule-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
-  const cv=(correct||'').split(';').map(s=>s.trim().toLowerCase());
   const normH=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   const ansTrim=normH(ans);
-  const ok=ans!=='__TIMEOUT__'&&cv.some(c=>{
-    const nc=normH(c);
-    // Correspondance exacte ou mot entier contenu
-    return ansTrim===nc||nc.split(/\s+/).some(w=>w===ansTrim)||ansTrim.split(/\s+/).some(w=>nc.split(/\s+/).includes(w)&&w.length>=4);
-  });
+  const correctTrim=normH(correct||'');
+  // Comparaison exacte uniquement — pas de split par ; car réponse unique
+  const ok=ans!=='__TIMEOUT__'&&correctTrim.length>0&&ansTrim===correctTrim;
   const fb=document.getElementById('halt-epaule-fb');
   if(ok){
     fb.textContent='✅';fb.style.color='var(--neon)';
@@ -5997,13 +6002,10 @@ document.getElementById('halt-jete-in').addEventListener('keydown',e=>{if(e.key=
 function haltJeteAnswer(ans,correct){
   clearInterval(HALT.ejTimerInt);
   document.querySelectorAll('#halt-jete-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
-  const cv=(correct||'').split(';').map(s=>s.trim().toLowerCase());
   const normH2=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   const ansTrim2=normH2(ans);
-  const ok=ans!=='__TIMEOUT__'&&cv.some(c=>{
-    const nc=normH2(c);
-    return ansTrim2===nc||nc.split(/\s+/).some(w=>w===ansTrim2)||ansTrim2.split(/\s+/).some(w=>nc.split(/\s+/).includes(w)&&w.length>=4);
-  });
+  const correctTrim2=normH2(correct||'');
+  const ok=ans!=='__TIMEOUT__'&&correctTrim2.length>0&&ansTrim2===correctTrim2;
   document.getElementById('halt-jete-zone').style.display='none';
   document.getElementById('halt-epaule-result').style.display='flex';
   if(ok){
