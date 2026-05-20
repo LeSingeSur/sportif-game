@@ -1654,6 +1654,12 @@ function checkReady(){
   else if(currentType==='assaut') hasContent=assautP1.length>=1&&!!document.getElementById('assaut-p2-q')?.value.trim();
   else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
   else if(currentType==='nagesync') hasContent=true;
+  else if(currentType==='var'){
+    const txt=(document.getElementById('var-text-in')?.value||'').trim();
+    const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
+    const correct=(document.getElementById('var-correct-in')?.value||'').trim();
+    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txt.includes(wrong);
+  }
   else if(currentType==='haltero'){
     const s1=document.getElementById('ha-s1');
     hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
