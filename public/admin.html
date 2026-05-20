@@ -287,6 +287,30 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Biathlon</div>
             <div class="type-desc">Course + Tir</div>
           </div>
+          <div class="type-opt" id="type-var" onclick="selectType('var')">
+            <div class="type-ico">📺</div>
+            <div class="type-name">La VAR</div>
+            <div class="type-desc">Trouve l'erreur factuelle</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VAR FIELDS -->
+      <div id="var-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          📺 Un paragraphe avec une erreur factuelle cachée · Le joueur clique le segment faux + tape la correction · 50 pts par étape · −10 pts par erreur
+        </div>
+        <div class="field">
+          <label>Paragraphe (8-10 lignes, journalistique)</label>
+          <textarea id="var-text-in" placeholder="Ex: Le 12 juillet 1998, l'équipe de France..." style="min-height:120px;width:100%"></textarea>
+        </div>
+        <div class="field">
+          <label>Segment faux <span style="color:var(--mute);font-size:11px">(tel qu'il apparaît dans le texte)</span></label>
+          <input type="text" id="var-wrong-in" placeholder="Ex: 3-0">
+        </div>
+        <div class="field">
+          <label>Bonne réponse <span style="color:var(--mute);font-size:11px">(la correction)</span></label>
+          <input type="text" id="var-correct-in" placeholder="Ex: 3-2">
         </div>
       </div>
 
@@ -1001,7 +1025,7 @@ const ADMIN_GAME_ICONS={
   blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
   trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
   grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
-  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️'
+  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',var:'📺'
 };
 function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
 
@@ -1088,7 +1112,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1109,7 +1133,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut'||type==='var';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -1300,6 +1324,12 @@ async function startEdit(id){
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
   }
+  if(a.type==='var'){
+    document.getElementById('var-text-in').value=a.varText||'';
+    document.getElementById('var-wrong-in').value=a.varWrong||'';
+    document.getElementById('var-correct-in').value=a.varCorrect||'';
+    checkReady();
+  }
   if(a.type==='assaut'){
     assautP1=[...(a.phase1||[])];
     const p2=a.phase2||{};
@@ -1482,6 +1512,10 @@ function selectPrixSensib(seuilsArr){
   });
 }
 
+document.getElementById('var-text-in').addEventListener('input',checkReady);
+document.getElementById('var-wrong-in').addEventListener('input',checkReady);
+document.getElementById('var-correct-in').addEventListener('input',checkReady);
+
 function cancelEdit(){
   editId=null; buzzClues=[];
   document.getElementById('coeff-in').value = 1;
@@ -1521,6 +1555,9 @@ function cancelEdit(){
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
   document.getElementById('prix-tolerance-in').value='0';
+  document.getElementById('var-text-in').value='';
+  document.getElementById('var-wrong-in').value='';
+  document.getElementById('var-correct-in').value='';
   if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
   ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
@@ -2840,7 +2877,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{

@@ -524,7 +524,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 16 jeux · 100 pts à gagner ⚡</div>
+  <div class="logo-tag">⚡ 17 jeux · 100 pts à gagner ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -545,6 +545,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">⚔️</div><div class="gt-name">L'Escrime</div></div>
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Tir à l'Arc</div></div>
       <div class="gt-item"><div class="gt-ico">🏊</div><div class="gt-name">Natation</div></div>
+      <div class="gt-item"><div class="gt-ico">📺</div><div class="gt-name">La VAR</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -1053,6 +1054,30 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- ASSAUT zone -->
+  <!-- VAR ZONE -->
+  <div id="var-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
+    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">📺 LA VAR</div>
+    <div id="var-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.8">
+      📺 Lis le paragraphe et <strong style="color:var(--txt)">clique le segment faux</strong>.<br>
+      ✅ Trouver l'erreur = <strong style="color:var(--neon)">50 pts</strong> · Corriger = <strong style="color:var(--neon)">50 pts</strong><br>
+      ❌ −10 pts par mauvais clic ou mauvaise correction
+    </div>
+    <div id="var-score-display" style="display:flex;justify-content:space-between;background:var(--c2);border-radius:10px;padding:8px 14px">
+      <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">0</div></div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">PHASE</span><div style="font-family:var(--fh);font-size:16px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
+    </div>
+    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2;color:var(--txt)"></div>
+    <div id="var-fb" class="fb"></div>
+    <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:13px;color:var(--mute)">Tu as trouvé l'erreur ! Maintenant tape la correction :</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="var-in" placeholder="Ta correction…"
+          style="flex:1;background:var(--c1);border:2px solid var(--neon);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);outline:none">
+        <button class="btn btn-p" onclick="varSubmitCorrection()" style="font-family:var(--fh);font-size:14px;padding:0 20px">✓</button>
+      </div>
+    </div>
+  </div>
+
   <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="background:var(--c1);border-radius:14px;padding:14px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:6px">
@@ -1842,6 +1867,8 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='var'){
+      setupVarMode(data);
     } else if(data.type==='nagesync'){
       document.getElementById('std-ans-area').style.display='none';
       setupNageSync(data);
@@ -1885,7 +1912,8 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️'
+  'assaut':'⚔️',
+  'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
 
@@ -2370,6 +2398,138 @@ function finishBJ(finalScore, msg){
     show('sv'); confetti();
     submitScore(finalScore);
   },400);
+}
+
+// ── LA VAR MODE ───────────────────────────────────────────────────────────
+const VAR={data:null,score:0,phase:'identify',wrongSegment:'',identifyErrors:0,correctErrors:0,done:false};
+
+function tokenizeVarText(text){
+  // Split into clickable segments (numbers, dates, proper nouns, scores)
+  const segments=[];
+  const pattern=/(\d{1,2}\s+\w+\s+\d{4}|\d{4}|\d+[-–]\d+|\d+\s+à\s+\d+|[A-ZÀ-Ö][a-zà-öù]+(?:[-\s][A-ZÀ-Ö][a-zà-öù]+)*|\d+(?:[,.]\d+)?)/g;
+  let lastIdx=0,match;
+  while((match=pattern.exec(text))!==null){
+    if(match.index>lastIdx) segments.push({text:text.slice(lastIdx,match.index),clickable:false});
+    segments.push({text:match[0],clickable:true});
+    lastIdx=match.index+match[0].length;
+  }
+  if(lastIdx<text.length) segments.push({text:text.slice(lastIdx),clickable:false});
+  return segments;
+}
+
+function setupVarMode(data){
+  VAR.data=data; VAR.score=0; VAR.phase='identify';
+  VAR.identifyErrors=0; VAR.correctErrors=0; VAR.done=false;
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Lis le texte · Clique l\'erreur · Corrige-la';
+  hideAllZones();
+  document.getElementById('var-zone').style.display='flex';
+  document.getElementById('var-score').textContent='0';
+  document.getElementById('var-phase-lbl').textContent='Trouve l\'erreur';
+  document.getElementById('var-fb').textContent='';
+  document.getElementById('var-correct-zone').style.display='none';
+  document.getElementById('var-rules').style.display='block';
+  varRenderText();
+}
+
+function varRenderText(){
+  const el=document.getElementById('var-text-display');
+  if(!el)return;
+  const text=VAR.data.varText||'';
+  const segments=tokenizeVarText(text);
+  el.innerHTML='';
+  segments.forEach(seg=>{
+    if(!seg.clickable){
+      el.appendChild(document.createTextNode(seg.text));
+    } else {
+      const span=document.createElement('span');
+      span.textContent=seg.text;
+      span.style.cssText='cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.3);padding:1px 2px;border-radius:3px;transition:background .15s';
+      span.onmouseenter=()=>{if(!span.classList.contains('var-selected'))span.style.background='rgba(255,255,255,.08)';};
+      span.onmouseleave=()=>{if(!span.classList.contains('var-selected'))span.style.background='';};
+      span.onclick=()=>varClickSegment(seg.text,span);
+      el.appendChild(span);
+    }
+  });
+}
+
+function varClickSegment(segText,spanEl){
+  if(VAR.phase!=='identify'||VAR.done)return;
+  // Deselect previous
+  document.querySelectorAll('#var-text-display span').forEach(s=>{
+    s.classList.remove('var-selected');
+    s.style.background='';
+    s.style.color='';
+  });
+  // Select clicked
+  spanEl.classList.add('var-selected');
+  spanEl.style.background='rgba(212,255,0,.2)';
+  spanEl.style.color='var(--neon)';
+  // Check with server
+  fetch('/api/var-check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({athleteId:G.athleteId,phase:'identify',answer:segText})
+  }).then(r=>r.json()).then(d=>{
+    const fb=document.getElementById('var-fb');
+    if(d.ok){
+      VAR.wrongSegment=segText;
+      VAR.score+=50;
+      document.getElementById('var-score').textContent=VAR.score;
+      VAR.phase='correct';
+      document.getElementById('var-phase-lbl').textContent='Corrige l\'erreur';
+      document.getElementById('var-rules').style.display='none';
+      spanEl.style.background='rgba(255,60,60,.25)';
+      spanEl.style.color='var(--red)';
+      spanEl.style.textDecoration='line-through';
+      if(fb){fb.textContent='🎯 Erreur trouvée ! Tape la correction.';fb.style.color='var(--neon)';}
+      setTimeout(()=>{
+        if(fb)fb.textContent='';
+        document.getElementById('var-correct-zone').style.display='flex';
+        document.getElementById('var-in').focus();
+      },800);
+    } else {
+      VAR.identifyErrors++;
+      VAR.score=Math.max(0,VAR.score-10);
+      document.getElementById('var-score').textContent=VAR.score;
+      spanEl.classList.remove('var-selected');
+      spanEl.style.background='rgba(255,60,60,.15)';
+      spanEl.style.color='var(--red)';
+      setTimeout(()=>{spanEl.style.background='';spanEl.style.color='';},800);
+      if(fb){fb.textContent='❌ Ce n\'est pas ici · −10 pts';fb.style.color='var(--red)';}
+      setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    }
+  });
+}
+
+function varSubmitCorrection(){
+  if(VAR.phase!=='correct'||VAR.done)return;
+  const inp=document.getElementById('var-in');
+  const ans=(inp?.value||'').trim();
+  if(!ans)return;
+  fetch('/api/var-check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({athleteId:G.athleteId,phase:'correct',answer:ans})
+  }).then(r=>r.json()).then(d=>{
+    const fb=document.getElementById('var-fb');
+    if(d.ok){
+      VAR.score+=50;
+      VAR.done=true;
+      document.getElementById('var-score').textContent=VAR.score;
+      document.getElementById('var-correct-zone').style.display='none';
+      if(fb){fb.textContent='✅ Parfait ! Réponse : '+d.correct;fb.style.color='var(--neon)';}
+      G.score=VAR.score;setScore(VAR.score,true);
+      const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=VAR.score;
+      const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
+      const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Erreur trouvée et corrigée · '+VAR.score+' pts';
+      setVictoryIcon('var');submitScore(VAR.score);
+      setTimeout(()=>show('sv'),1500);
+    } else {
+      VAR.correctErrors++;
+      VAR.score=Math.max(0,VAR.score-10);
+      document.getElementById('var-score').textContent=VAR.score;
+      inp.value='';inp.style.borderColor='var(--red)';
+      setTimeout(()=>{inp.style.borderColor='var(--neon)';},600);
+      if(fb){fb.textContent='❌ Pas la bonne correction · −10 pts';fb.style.color='var(--red)';}
+      setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    }
+  });
 }
 
 // ── L'ALPE D'HUEZ MODE ────────────────────────────────────────────────────
