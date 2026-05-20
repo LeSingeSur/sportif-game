@@ -1889,7 +1889,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
@@ -2404,16 +2404,31 @@ function finishBJ(finalScore, msg){
 const VAR={data:null,score:0,phase:'identify',wrongSegment:'',identifyErrors:0,correctErrors:0,done:false};
 
 function tokenizeVarText(text){
-  // Split into clickable segments (numbers, dates, proper nouns, scores)
+  const STOP=new Set(['le','la','les','de','du','des','un','une','en','au','aux','et','ou','que','qui','il','elle','on','ils','elles','se','sa','son','ses','ce','cet','cette','ces','par','sur','sous','dans','avec','pour','sans','entre','vers','dont','ne','pas','plus','si','y','est','sont','a','ont','été','avoir','faire','même','très','bien','comme','tout','tous','leur','leurs']);
+  const parts=[];
+  const re=/([a-zA-ZÀ-ÿ]+(?:'[a-zA-ZÀ-ÿ]+)?|\d+(?:[.,]\d+)?|[^\w\s]|\s+)/g;
+  let mm;
+  while((mm=re.exec(text))!==null) parts.push(mm[0]);
   const segments=[];
-  const pattern=/(\d{1,2}\s+\w+\s+\d{4}|\d{4}|\d+[-–]\d+|\d+\s+à\s+\d+|[A-ZÀ-Ö][a-zà-öù]+(?:[-\s][A-ZÀ-Ö][a-zà-öù]+)*|\d+(?:[,.]\d+)?)/g;
-  let lastIdx=0,match;
-  while((match=pattern.exec(text))!==null){
-    if(match.index>lastIdx) segments.push({text:text.slice(lastIdx,match.index),clickable:false});
-    segments.push({text:match[0],clickable:true});
-    lastIdx=match.index+match[0].length;
+  let i=0;
+  while(i<parts.length){
+    const p=parts[i];
+    if(/^\s+$/.test(p)){i++;continue;}
+    const wordLow=p.toLowerCase().replace(/['']/g,"'").split("'")[0];
+    if(STOP.has(wordLow)){
+      let group=p; i++;
+      while(i<parts.length&&/^\s+$/.test(parts[i])){group+=parts[i];i++;}
+      if(i<parts.length&&!/^\s+$/.test(parts[i])&&!/^[.,;:!?]$/.test(parts[i])){group+=parts[i];i++;}
+      segments.push({text:group,clickable:true});
+    } else if(/^[.,;:!?()\[\]"«»]$/.test(p)){
+      if(segments.length>0) segments[segments.length-1].text+=p;
+      else segments.push({text:p,clickable:false});
+      i++;
+    } else {
+      segments.push({text:p,clickable:true});
+      i++;
+    }
   }
-  if(lastIdx<text.length) segments.push({text:text.slice(lastIdx),clickable:false});
   return segments;
 }
 
@@ -2443,7 +2458,7 @@ function varRenderText(){
     } else {
       const span=document.createElement('span');
       span.textContent=seg.text;
-      span.style.cssText='cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.3);padding:1px 2px;border-radius:3px;transition:background .15s';
+      span.style.cssText='cursor:pointer;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 4px;margin:0 1px;transition:background .15s,color .15s;display:inline-block';
       span.onmouseenter=()=>{if(!span.classList.contains('var-selected'))span.style.background='rgba(255,255,255,.08)';};
       span.onmouseleave=()=>{if(!span.classList.contains('var-selected'))span.style.background='';};
       span.onclick=()=>varClickSegment(seg.text,span);
