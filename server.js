@@ -228,6 +228,10 @@ app.get('/api/preview', (req, res) => {
     base.couloirs = (athlete.couloirs||[]).map(c=>({label:c.label||''}));
     base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct!==undefined?s.correct:0}));
     base.maxScore = 100;
+  } else if (athlete.type === 'var') {
+    base.varText  = athlete.varText || '';
+    base.varWrong = athlete.varWrong || '';
+    base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -355,6 +359,25 @@ app.get('/api/grimpe-reveal', (req, res) => {
     : (athlete.grimpeAnswers||[]).map(a=>[a]);
   // Return canonical answer (first item of each group)
   res.json({ answers: allGroups.map(g=>g[0]) });
+});
+
+// -- LA VAR -------------------------------------------------------------------
+app.post('/api/var-check', (req, res) => {
+  const { athleteId, phase, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'var') return res.status(404).json({ error: 'Introuvable' });
+  const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  if (phase === 'identify') {
+    // Player clicked a segment — check if it's the wrong one
+    const ok = norm(answer) === norm(athlete.varWrong);
+    res.json({ ok });
+  } else if (phase === 'correct') {
+    // Player typed the correction
+    const ok = norm(answer) === norm(athlete.varCorrect);
+    res.json({ ok, correct: ok ? athlete.varCorrect : null });
+  } else {
+    res.status(400).json({ error: 'Phase invalide' });
+  }
 });
 
 app.post('/api/grimpe-check', (req, res) => {
@@ -529,6 +552,10 @@ app.get('/api/athlete', (req, res) => {
     base.biatOrder         = athlete.biatOrder || [];
     base.maxScore = 200;
     console.log(`[BIATHLON-ATHLETE] QCM:${base.biatQCM.length} Sprint:${(athlete.biatSprintAnswers||[]).length} Order:${base.biatOrder.length}`);
+  } else if (athlete.type === 'var') {
+    base.varText  = athlete.varText || '';
+    base.varWrong = athlete.varWrong || '';
+    base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -891,6 +918,9 @@ app.post('/api/admin/athlete', (req, res) => {
     sportifs:           type === 'nagesync' ? (req.body.sportifs||[]) : undefined,
     halteroArache:      type === 'haltero' ? (req.body.halteroArache||{}) : undefined,
     halteroEpaule:      type === 'haltero' ? (req.body.halteroEpaule||{}) : undefined,
+    varText:            type === 'var' ? (req.body.varText||'').trim() : undefined,
+    varWrong:           type === 'var' ? (req.body.varWrong||'').trim() : undefined,
+    varCorrect:         type === 'var' ? (req.body.varCorrect||'').trim() : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
