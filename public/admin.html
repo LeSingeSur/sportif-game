@@ -1529,7 +1529,12 @@ function selectPrixSensib(seuilsArr){
   });
 }
 
-document.getElementById('var-text-in').addEventListener('input',checkReady);
+document.getElementById('var-text-in').addEventListener('input',()=>{
+  checkReady();
+  // Show correction fields as soon as text is entered
+  const txt=document.getElementById('var-text-in').value.trim();
+  if(txt.length>10) document.getElementById('var-chips-wrap').style.display='block';
+});
 document.getElementById('var-correct-in').addEventListener('input',checkReady);
 document.getElementById('var-wrong-in').addEventListener('input',checkReady);
 document.getElementById('var-correct-in').addEventListener('input',checkReady);

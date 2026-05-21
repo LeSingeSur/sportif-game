@@ -1869,6 +1869,7 @@ async function loadAthlete(){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
     } else if(data.type==='var'){
+      document.getElementById('std-ans-area').style.display='none';
       setupVarMode(data);
     } else if(data.type==='nagesync'){
       document.getElementById('std-ans-area').style.display='none';
@@ -2548,6 +2549,9 @@ function varSubmitCorrection(){
       const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=VAR.score;
       const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
       const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Erreur trouvée et corrigée · '+VAR.score+' pts';
+      // Clear any leftover stats from other games
+      ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+      const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
       setVictoryIcon('var');submitScore(VAR.score);
       setTimeout(()=>show('sv'),1500);
     } else {
