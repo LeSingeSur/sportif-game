@@ -307,7 +307,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div id="var-chips-wrap" style="display:none">
           <div class="field">
-            <label>Segments cliquables <span style="color:var(--mute);font-size:11px">Clique 2 segments adjacents pour les fusionner · Clique un segment seul pour le couper</span></label>
+            <label>Segments cliquables <span style="color:var(--mute);font-size:11px">1 clic = sélectionner · 2 clics = marquer comme faux · 2 adjacents = fusionner · clic ailleurs = séparer en mots</span></label>
             <div id="var-chips" style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--c1);border-radius:8px;min-height:40px"></div>
           </div>
           <div class="field">
@@ -1580,29 +1580,42 @@ function varRenderChips(){
 }
 
 function varChipClick(i){
+  const wrongVal=document.getElementById('var-wrong-in').value;
+  // If chip is already marked as wrong — deselect it
+  if(wrongVal===varChips[i].text){
+    document.getElementById('var-wrong-in').value='';
+    varSelectedIdx=null;
+    varRenderChips();
+    checkReady();
+    return;
+  }
   if(varSelectedIdx===null){
-    // First click — select for wrong OR prepare merge
     varSelectedIdx=i;
     varRenderChips();
   } else if(varSelectedIdx===i){
-    // Same chip clicked — mark as wrong segment
+    // Same chip clicked twice — mark as wrong segment
     document.getElementById('var-wrong-in').value=varChips[i].text;
     varSelectedIdx=null;
     varRenderChips();
     checkReady();
   } else if(Math.abs(varSelectedIdx-i)===1){
-    // Adjacent chip — merge
+    // Adjacent — merge
     const a=Math.min(varSelectedIdx,i);
     const b=Math.max(varSelectedIdx,i);
     varChips[a]={text:varChips[a].text+' '+varChips[b].text};
     varChips.splice(b,1);
     varSelectedIdx=null;
-    // Clear wrong if it was one of the merged chips
     document.getElementById('var-wrong-in').value='';
     varRenderChips();
   } else {
-    // Non-adjacent — deselect and select new
-    varSelectedIdx=i;
+    // Non-adjacent — split selected chip into individual words
+    const chip=varChips[varSelectedIdx];
+    const words=chip.text.trim().split(/\s+/);
+    if(words.length>1){
+      varChips.splice(varSelectedIdx,1,...words.map(w=>({text:w})));
+    }
+    varSelectedIdx=null;
+    document.getElementById('var-wrong-in').value='';
     varRenderChips();
   }
 }
