@@ -315,8 +315,17 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <input type="text" id="var-wrong-in" placeholder="Ex: 290 jours" readonly style="background:var(--c2)">
           </div>
           <div class="field">
-            <label>Bonne réponse <span style="color:var(--mute);font-size:11px">(la correction)</span></label>
-            <input type="text" id="var-correct-in" placeholder="Ex: 199 jours">
+            <label>Bonnes réponses acceptées <span style="color:var(--mute);font-size:11px">(séparées par ";" — ex: 199 jours;199)</span></label>
+            <input type="text" id="var-correct-in" placeholder="Ex: 199 jours;199">
+          </div>
+          <div class="field">
+            <label>Tolérance orthographe <span style="color:var(--mute);font-size:11px">(nb de caractères différents acceptés)</span></label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-s" onclick="varSetTol(0)" id="var-tol-0" style="flex:1">0 — Exact</button>
+              <button class="btn btn-s" onclick="varSetTol(1)" id="var-tol-1" style="flex:1">1 car.</button>
+              <button class="btn btn-s" onclick="varSetTol(2)" id="var-tol-2" style="flex:1">2 car.</button>
+            </div>
+            <input type="hidden" id="var-tol-in" value="1">
           </div>
         </div>
       </div>
@@ -1521,8 +1530,19 @@ function selectPrixSensib(seuilsArr){
 }
 
 document.getElementById('var-text-in').addEventListener('input',checkReady);
+document.getElementById('var-correct-in').addEventListener('input',checkReady);
 document.getElementById('var-wrong-in').addEventListener('input',checkReady);
 document.getElementById('var-correct-in').addEventListener('input',checkReady);
+
+function varSetTol(n){
+  document.getElementById('var-tol-in').value=n;
+  [0,1,2].forEach(i=>{
+    const btn=document.getElementById('var-tol-'+i);
+    if(btn)btn.style.background=i===n?'var(--neon)':'';;
+    if(btn)btn.style.color=i===n?'#000':'';
+  });
+}
+varSetTol(1); // default
 
 // ── VAR CHIP EDITOR ──────────────────────────────────────────────────────
 let varChips=[]; // array of {text, clickable}
@@ -2987,7 +3007,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
