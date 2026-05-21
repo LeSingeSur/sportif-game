@@ -368,16 +368,25 @@ app.post('/api/var-check', (req, res) => {
   const athlete = athletes.find(a => String(a.id) === String(athleteId));
   if (!athlete || athlete.type !== 'var') return res.status(404).json({ error: 'Introuvable' });
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const lev = (a,b) => {
+    const m=a.length,n=b.length;
+    const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);
+    return d[m][n];
+  };
+  const tol = athlete.varTol ?? 1;
   if (phase === 'identify') {
     const clickedNorm = norm(answer);
     const wrongNorm = norm(athlete.varWrong);
-    // Match if segment contains the wrong value OR equals it
     const ok = clickedNorm === wrongNorm || clickedNorm.includes(wrongNorm);
     res.json({ ok });
   } else if (phase === 'correct') {
-    // Player typed the correction
-    const ok = norm(answer) === norm(athlete.varCorrect);
-    res.json({ ok, correct: ok ? athlete.varCorrect : null });
+    const ansNorm = norm(answer);
+    // Support multiple correct answers separated by ;
+    const corrects = (athlete.varCorrect||'').split(';').map(s=>norm(s)).filter(Boolean);
+    const ok = corrects.some(c => lev(ansNorm, c) <= tol);
+    const canonical = ok ? athlete.varCorrect.split(';')[0].trim() : null;
+    res.json({ ok, correct: canonical });
   } else {
     res.status(400).json({ error: 'Phase invalide' });
   }
@@ -926,6 +935,7 @@ app.post('/api/admin/athlete', (req, res) => {
     varWrong:           type === 'var' ? (req.body.varWrong||'').trim() : undefined,
     varCorrect:         type === 'var' ? (req.body.varCorrect||'').trim() : undefined,
     varChips:           type === 'var' ? (req.body.varChips||[]) : undefined,
+    varTol:             type === 'var' ? (parseInt(req.body.varTol)||1) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
