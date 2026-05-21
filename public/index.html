@@ -1058,15 +1058,16 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div id="var-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">📺 LA VAR</div>
     <div id="var-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.8">
-      📺 Lis le paragraphe et <strong style="color:var(--txt)">clique le segment faux</strong>.<br>
-      ✅ Trouver l'erreur = <strong style="color:var(--neon)">50 pts</strong> · Corriger = <strong style="color:var(--neon)">50 pts</strong><br>
-      ❌ −10 pts par mauvais clic ou mauvaise correction
+      📺 Un texte sportif contient <strong style="color:var(--txt)">une erreur factuelle</strong>.<br>
+      👆 <strong style="color:var(--txt)">Clique le segment faux</strong> dans le texte · <strong style="color:var(--neon)">+50 pts</strong><br>
+      ✏️ <strong style="color:var(--txt)">Tape la correction</strong> · <strong style="color:var(--neon)">+50 pts</strong><br>
+      ❌ Chaque mauvais clic ou mauvaise correction · <strong style="color:var(--red)">−10 pts</strong>
     </div>
     <div id="var-score-display" style="display:flex;justify-content:space-between;background:var(--c2);border-radius:10px;padding:8px 14px">
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">0</div></div>
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">PHASE</span><div style="font-family:var(--fh);font-size:16px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
     </div>
-    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2;color:var(--txt)"></div>
+    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2.2;color:var(--txt);letter-spacing:0.01em"></div>
     <div id="var-fb" class="fb"></div>
     <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px">
       <div style="font-size:13px;color:var(--mute)">Tu as trouvé l'erreur ! Maintenant tape la correction :</div>
@@ -2465,9 +2466,9 @@ function varRenderText(){
     } else {
       const span=document.createElement('span');
       span.textContent=seg.text;
-      span.style.cssText='cursor:pointer;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 4px;margin:0 1px;transition:background .15s,color .15s;display:inline-block';
-      span.onmouseenter=()=>{if(!span.classList.contains('var-selected'))span.style.background='rgba(255,255,255,.08)';};
-      span.onmouseleave=()=>{if(!span.classList.contains('var-selected'))span.style.background='';};
+      span.style.cssText='cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:2px 6px;margin:1px 2px;transition:all .15s;display:inline-block;color:var(--txt);font-size:inherit';
+      span.onmouseenter=()=>{if(!span.classList.contains('var-selected'))span.style.background='rgba(212,255,0,.15)';span.style.borderColor='rgba(212,255,0,.4)';};
+      span.onmouseleave=()=>{if(!span.classList.contains('var-selected')){span.style.background='rgba(255,255,255,.08)';span.style.borderColor='rgba(255,255,255,.12)';}};
       span.onclick=()=>varClickSegment(seg.text,span);
       el.appendChild(span);
       if(useChips&&idx<segments.length-1) el.appendChild(document.createTextNode(' '));
@@ -2480,12 +2481,15 @@ function varClickSegment(segText,spanEl){
   // Deselect previous
   document.querySelectorAll('#var-text-display span').forEach(s=>{
     s.classList.remove('var-selected');
-    s.style.background='';
-    s.style.color='';
+    s.style.background='rgba(255,255,255,.08)';
+    s.style.borderColor='rgba(255,255,255,.12)';
+    s.style.color='var(--txt)';
+    s.style.textDecoration='';
   });
   // Select clicked
   spanEl.classList.add('var-selected');
   spanEl.style.background='rgba(212,255,0,.2)';
+  spanEl.style.borderColor='var(--neon)';
   spanEl.style.color='var(--neon)';
   // Check with server
   fetch('/api/var-check',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -2500,7 +2504,8 @@ function varClickSegment(segText,spanEl){
       VAR.phase='correct';
       document.getElementById('var-phase-lbl').textContent='Corrige l\'erreur';
       document.getElementById('var-rules').style.display='none';
-      spanEl.style.background='rgba(255,60,60,.25)';
+      spanEl.style.background='rgba(255,60,60,.2)';
+      spanEl.style.borderColor='var(--red)';
       spanEl.style.color='var(--red)';
       spanEl.style.textDecoration='line-through';
       if(fb){fb.textContent='🎯 Erreur trouvée ! Tape la correction.';fb.style.color='var(--neon)';}
@@ -2514,9 +2519,10 @@ function varClickSegment(segText,spanEl){
       VAR.score=Math.max(0,VAR.score-10);
       document.getElementById('var-score').textContent=VAR.score;
       spanEl.classList.remove('var-selected');
-      spanEl.style.background='rgba(255,60,60,.15)';
+      spanEl.style.background='rgba(255,60,60,.2)';
+      spanEl.style.borderColor='var(--red)';
       spanEl.style.color='var(--red)';
-      setTimeout(()=>{spanEl.style.background='';spanEl.style.color='';},800);
+      setTimeout(()=>{spanEl.style.background='rgba(255,255,255,.08)';spanEl.style.borderColor='rgba(255,255,255,.12)';spanEl.style.color='var(--txt)';},800);
       if(fb){fb.textContent='❌ Ce n\'est pas ici · −10 pts';fb.style.color='var(--red)';}
       setTimeout(()=>{if(fb)fb.textContent='';},1500);
     }
