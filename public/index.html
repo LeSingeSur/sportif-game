@@ -2450,9 +2450,16 @@ function varRenderText(){
   const el=document.getElementById('var-text-display');
   if(!el)return;
   const text=VAR.data.varText||'';
-  const segments=tokenizeVarText(text);
+  // Use admin-defined chips if available, else auto-tokenize
+  let segments;
+  if(VAR.data.varChips&&VAR.data.varChips.length>0){
+    segments=VAR.data.varChips.map(t=>({text:t,clickable:true}));
+  } else {
+    segments=tokenizeVarText(text);
+  }
   el.innerHTML='';
-  segments.forEach(seg=>{
+  const useChips=VAR.data.varChips&&VAR.data.varChips.length>0;
+  segments.forEach((seg,idx)=>{
     if(!seg.clickable){
       el.appendChild(document.createTextNode(seg.text));
     } else {
@@ -2463,6 +2470,7 @@ function varRenderText(){
       span.onmouseleave=()=>{if(!span.classList.contains('var-selected'))span.style.background='';};
       span.onclick=()=>varClickSegment(seg.text,span);
       el.appendChild(span);
+      if(useChips&&idx<segments.length-1) el.appendChild(document.createTextNode(' '));
     }
   });
 }

@@ -303,14 +303,21 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div class="field">
           <label>Paragraphe (8-10 lignes, journalistique)</label>
           <textarea id="var-text-in" placeholder="Ex: Le 12 juillet 1998, l'équipe de France..." style="min-height:120px;width:100%"></textarea>
+          <button class="btn btn-s" onclick="varGenerateChips()" style="margin-top:6px;width:100%">🔄 Générer les segments cliquables</button>
         </div>
-        <div class="field">
-          <label>Segment faux <span style="color:var(--mute);font-size:11px">(tel qu'il apparaît dans le texte)</span></label>
-          <input type="text" id="var-wrong-in" placeholder="Ex: 3-0">
-        </div>
-        <div class="field">
-          <label>Bonne réponse <span style="color:var(--mute);font-size:11px">(la correction)</span></label>
-          <input type="text" id="var-correct-in" placeholder="Ex: 3-2">
+        <div id="var-chips-wrap" style="display:none">
+          <div class="field">
+            <label>Segments cliquables <span style="color:var(--mute);font-size:11px">Clique 2 segments adjacents pour les fusionner · Clique un segment seul pour le couper</span></label>
+            <div id="var-chips" style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--c1);border-radius:8px;min-height:40px"></div>
+          </div>
+          <div class="field">
+            <label>Segment faux <span style="color:var(--mute);font-size:11px">(clique-le dans les segments ci-dessus)</span></label>
+            <input type="text" id="var-wrong-in" placeholder="Ex: 290 jours" readonly style="background:var(--c2)">
+          </div>
+          <div class="field">
+            <label>Bonne réponse <span style="color:var(--mute);font-size:11px">(la correction)</span></label>
+            <input type="text" id="var-correct-in" placeholder="Ex: 199 jours">
+          </div>
         </div>
       </div>
 
@@ -1516,6 +1523,89 @@ function selectPrixSensib(seuilsArr){
 document.getElementById('var-text-in').addEventListener('input',checkReady);
 document.getElementById('var-wrong-in').addEventListener('input',checkReady);
 document.getElementById('var-correct-in').addEventListener('input',checkReady);
+
+// ── VAR CHIP EDITOR ──────────────────────────────────────────────────────
+let varChips=[]; // array of {text, clickable}
+let varSelectedIdx=null; // index of first selected chip for merge
+
+function varTokenize(text){
+  const STOP=new Set(['le','la','les','de','du','des','un','une','en','au','aux','et','ou','que','qui','il','elle','on','ils','elles','se','sa','son','ses','ce','cet','cette','ces','par','sur','sous','dans','avec','pour','sans','entre','vers','dont','ne','pas','plus','si','y','est','sont','a','ont','été','avoir','faire','même','très','bien','comme','tout','tous','leur','leurs']);
+  const parts=[];
+  const re=/([a-zA-ZÀ-ÿ]+(?:'[a-zA-ZÀ-ÿ]+)?|\d+(?:[.,]\d+)?|[^\w\s]|\s+)/g;
+  let mm;
+  while((mm=re.exec(text))!==null) parts.push(mm[0]);
+  const segs=[];
+  let i=0;
+  while(i<parts.length){
+    const p=parts[i];
+    if(/^\s+$/.test(p)){i++;continue;}
+    const wordLow=p.toLowerCase().replace(/['']/g,"'").split("'")[0];
+    if(STOP.has(wordLow)){
+      let group=p;i++;
+      while(i<parts.length&&/^\s+$/.test(parts[i])){group+=parts[i];i++;}
+      if(i<parts.length&&!/^\s+$/.test(parts[i])&&!/^[.,;:!?]$/.test(parts[i])){group+=parts[i];i++;}
+      segs.push(group);
+    } else if(/^[.,;:!?()\[\]"«»\-]$/.test(p)){
+      if(segs.length>0) segs[segs.length-1]+=p; else segs.push(p);
+      i++;
+    } else {
+      segs.push(p);i++;
+    }
+  }
+  return segs;
+}
+
+function varGenerateChips(){
+  const text=document.getElementById('var-text-in').value.trim();
+  if(!text)return;
+  varChips=varTokenize(text).map(t=>({text:t}));
+  varSelectedIdx=null;
+  document.getElementById('var-wrong-in').value='';
+  document.getElementById('var-chips-wrap').style.display='block';
+  varRenderChips();
+}
+
+function varRenderChips(){
+  const el=document.getElementById('var-chips');
+  el.innerHTML='';
+  varChips.forEach((chip,i)=>{
+    const span=document.createElement('span');
+    span.textContent=chip.text;
+    const isWrong=document.getElementById('var-wrong-in').value===chip.text;
+    const isSelected=varSelectedIdx===i;
+    span.style.cssText=`display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid ${isWrong?'var(--red)':isSelected?'var(--neon)':'rgba(255,255,255,.15)'};background:${isWrong?'rgba(255,60,60,.2)':isSelected?'rgba(212,255,0,.15)':'var(--c2)'};color:${isWrong?'var(--red)':isSelected?'var(--neon)':'var(--txt)'};transition:all .15s`;
+    span.onclick=()=>varChipClick(i);
+    el.appendChild(span);
+  });
+}
+
+function varChipClick(i){
+  if(varSelectedIdx===null){
+    // First click — select for wrong OR prepare merge
+    varSelectedIdx=i;
+    varRenderChips();
+  } else if(varSelectedIdx===i){
+    // Same chip clicked — mark as wrong segment
+    document.getElementById('var-wrong-in').value=varChips[i].text;
+    varSelectedIdx=null;
+    varRenderChips();
+    checkReady();
+  } else if(Math.abs(varSelectedIdx-i)===1){
+    // Adjacent chip — merge
+    const a=Math.min(varSelectedIdx,i);
+    const b=Math.max(varSelectedIdx,i);
+    varChips[a]={text:varChips[a].text+' '+varChips[b].text};
+    varChips.splice(b,1);
+    varSelectedIdx=null;
+    // Clear wrong if it was one of the merged chips
+    document.getElementById('var-wrong-in').value='';
+    varRenderChips();
+  } else {
+    // Non-adjacent — deselect and select new
+    varSelectedIdx=i;
+    varRenderChips();
+  }
+}
 
 function cancelEdit(){
   editId=null; buzzClues=[];
@@ -2884,7 +2974,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
