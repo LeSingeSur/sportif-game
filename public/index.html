@@ -1067,13 +1067,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">0</div></div>
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">PHASE</span><div style="font-family:var(--fh);font-size:16px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
     </div>
-    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2.2;color:var(--txt);letter-spacing:0.01em"></div>
+    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2.2;color:var(--txt);letter-spacing:0.01em;padding-bottom:80px"></div>
     <div id="var-fb" class="fb"></div>
-    <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px">
+    <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px;position:sticky;bottom:8px;background:var(--bg);padding:10px 0;z-index:10">
       <div style="font-size:13px;color:var(--mute)">Tu as trouvé l'erreur ! Maintenant tape la correction :</div>
       <div style="display:flex;gap:8px">
         <input type="text" id="var-in" placeholder="Ta correction…"
-          style="flex:1;background:var(--c1);border:2px solid var(--neon);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);outline:none">
+          style="flex:1;background:var(--c1);border:2px solid var(--neon);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);outline:none"
+          onkeydown="if(event.key==='Enter')varSubmitCorrection()">
         <button class="btn btn-p" onclick="varSubmitCorrection()" style="font-family:var(--fh);font-size:14px;padding:0 20px">✓</button>
       </div>
     </div>
@@ -2406,11 +2407,13 @@ function finishBJ(finalScore, msg){
 const VAR={data:null,score:0,phase:'identify',wrongSegment:'',identifyErrors:0,correctErrors:0,done:false};
 
 function tokenizeVarText(text){
+  // Skip phonetic content in parentheses
+  const clean=text.replace(/\([^)]{3,80}\)/g,' ').replace(/\s+/g,' ');
   const STOP=new Set(['le','la','les','de','du','des','un','une','en','au','aux','et','ou','que','qui','il','elle','on','ils','elles','se','sa','son','ses','ce','cet','cette','ces','par','sur','sous','dans','avec','pour','sans','entre','vers','dont','ne','pas','plus','si','y','est','sont','a','ont','été','avoir','faire','même','très','bien','comme','tout','tous','leur','leurs']);
   const parts=[];
   const re=/([a-zA-ZÀ-ÿ]+(?:'[a-zA-ZÀ-ÿ]+)?|\d+(?:[.,]\d+)?|[^\w\s]|\s+)/g;
   let mm;
-  while((mm=re.exec(text))!==null) parts.push(mm[0]);
+  while((mm=re.exec(clean))!==null) parts.push(mm[0]);
   const segments=[];
   let i=0;
   while(i<parts.length){
