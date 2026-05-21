@@ -231,6 +231,7 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'var') {
     base.varText  = athlete.varText || '';
     base.varWrong = athlete.varWrong || '';
+    base.varChips = athlete.varChips || [];
     base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -368,8 +369,10 @@ app.post('/api/var-check', (req, res) => {
   if (!athlete || athlete.type !== 'var') return res.status(404).json({ error: 'Introuvable' });
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   if (phase === 'identify') {
-    // Player clicked a segment — check if it's the wrong one
-    const ok = norm(answer) === norm(athlete.varWrong);
+    const clickedNorm = norm(answer);
+    const wrongNorm = norm(athlete.varWrong);
+    // Match if segment contains the wrong value OR equals it
+    const ok = clickedNorm === wrongNorm || clickedNorm.includes(wrongNorm);
     res.json({ ok });
   } else if (phase === 'correct') {
     // Player typed the correction
@@ -555,6 +558,7 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'var') {
     base.varText  = athlete.varText || '';
     base.varWrong = athlete.varWrong || '';
+    base.varChips = athlete.varChips || [];
     base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -921,6 +925,7 @@ app.post('/api/admin/athlete', (req, res) => {
     varText:            type === 'var' ? (req.body.varText||'').trim() : undefined,
     varWrong:           type === 'var' ? (req.body.varWrong||'').trim() : undefined,
     varCorrect:         type === 'var' ? (req.body.varCorrect||'').trim() : undefined,
+    varChips:           type === 'var' ? (req.body.varChips||[]) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
