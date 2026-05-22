@@ -2315,12 +2315,8 @@ function toggleBJCard(key){
   const wasSelected=card.classList.contains('selected');
 
   if(wasSelected){
-    card.classList.remove('selected');
-    BJ.selected=BJ.selected.filter(k=>k!==key);
-    BJ.score-=val;
-    // Hide value again
-    const valEl=document.getElementById('bjval-'+key);
-    if(valEl) valEl.style.opacity='0';
+    // No deselection allowed — once clicked, it's final
+    return;
   } else {
     card.classList.add('selected');
     BJ.selected.push(key);
@@ -2520,7 +2516,7 @@ function varClickSegment(segText,spanEl){
       },800);
     } else {
       VAR.identifyErrors++;
-      VAR.score=Math.max(0,VAR.score-10);
+      VAR.score-=10;
       document.getElementById('var-score').textContent=VAR.score;
       spanEl.classList.remove('var-selected');
       spanEl.style.background='rgba(255,60,60,.2)';
@@ -2541,6 +2537,7 @@ function varSubmitCorrection(){
   fetch('/api/var-check',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({athleteId:G.athleteId,phase:'correct',answer:ans})
   }).then(r=>r.json()).then(d=>{
+    console.log('var-check correct response:',JSON.stringify(d),'ans:',ans,'athleteId:',G.athleteId);
     const fb=document.getElementById('var-fb');
     if(d.ok){
       VAR.score+=50;
@@ -2559,7 +2556,7 @@ function varSubmitCorrection(){
       setTimeout(()=>show('sv'),1500);
     } else {
       VAR.correctErrors++;
-      VAR.score=Math.max(0,VAR.score-10);
+      VAR.score-=10;
       document.getElementById('var-score').textContent=VAR.score;
       inp.value='';inp.style.borderColor='var(--red)';
       setTimeout(()=>{inp.style.borderColor='var(--neon)';},600);
