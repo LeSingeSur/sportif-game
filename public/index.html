@@ -1895,6 +1895,8 @@ async function loadAthlete(){
 const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  // Also hide fixed-position VAR correction zone
+  const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
 }
 
 const GAME_ICONS={
@@ -2540,19 +2542,19 @@ function varSubmitCorrection(){
     console.log('var-check correct response:',JSON.stringify(d),'ans:',ans,'athleteId:',G.athleteId);
     const fb=document.getElementById('var-fb');
     if(d.ok){
-      VAR.score+=50;
+      VAR.score=Math.max(0,VAR.score+50);
       VAR.done=true;
       document.getElementById('var-score').textContent=VAR.score;
       document.getElementById('var-correct-zone').style.display='none';
       if(fb){fb.textContent='✅ Parfait ! Réponse : '+d.correct;fb.style.color='var(--neon)';}
-      G.score=VAR.score;setScore(VAR.score,true);
-      const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=VAR.score;
+      const finalScore=Math.max(0,VAR.score);
+      G.score=finalScore;setScore(finalScore,true);
+      const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
       const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
-      const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Erreur trouvée et corrigée · '+VAR.score+' pts';
-      // Clear any leftover stats from other games
+      const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Erreur trouvée et corrigée · '+finalScore+' pts';
       ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
       const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
-      setVictoryIcon('var');submitScore(VAR.score);
+      setVictoryIcon('var');submitScore(finalScore);
       setTimeout(()=>show('sv'),1500);
     } else {
       VAR.correctErrors++;
