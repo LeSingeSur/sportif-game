@@ -2440,6 +2440,8 @@ function tokenizeVarText(text){
 function setupVarMode(data){
   VAR.data=data; VAR.score=0; VAR.phase='identify';
   VAR.identifyErrors=0; VAR.correctErrors=0; VAR.done=false;
+  VAR.identifyScore=0; // locked after phase 1
+  VAR.correctBonus=50; // starts at 50, reduced by errors
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Lis le texte · Clique l\'erreur · Corrige-la';
   hideAllZones();
   document.getElementById('var-zone').style.display='flex';
@@ -2503,6 +2505,8 @@ function varClickSegment(segText,spanEl){
     if(d.ok){
       VAR.wrongSegment=segText;
       VAR.score+=50;
+      VAR.identifyScore=VAR.score; // lock phase 1 score
+      VAR.correctBonus=50; // reset correction bonus
       G.score=VAR.score; setScore(VAR.score,false);
       document.getElementById('var-score').textContent=VAR.score;
       VAR.phase='correct';
@@ -2544,7 +2548,7 @@ function varSubmitCorrection(){
     console.log('var-check correct response:',JSON.stringify(d),'ans:',ans,'athleteId:',G.athleteId);
     const fb=document.getElementById('var-fb');
     if(d.ok){
-      VAR.score=Math.max(0,VAR.score+50);
+      VAR.score=Math.max(0,VAR.identifyScore+VAR.correctBonus);
       VAR.done=true;
       document.getElementById('var-score').textContent=VAR.score;
       document.getElementById('var-correct-zone').style.display='none';
@@ -2560,7 +2564,8 @@ function varSubmitCorrection(){
       setTimeout(()=>show('sv'),1500);
     } else {
       VAR.correctErrors++;
-      VAR.score-=10;
+      VAR.correctBonus=Math.max(0,VAR.correctBonus-10);
+      VAR.score=VAR.identifyScore+VAR.correctBonus;
       document.getElementById('var-score').textContent=VAR.score;
       inp.value='';inp.style.borderColor='var(--red)';
       setTimeout(()=>{inp.style.borderColor='var(--neon)';},600);
