@@ -333,25 +333,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- ASSAUT FIELDS -->
       <div id="assaut-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          ⚔️ 5 questions V/F Phase 1 + 1 Estocade finale · Piste 10 cases · Score = position × 10
+          ⚔️ 6 questions · 🤺 Touche +1 · ⚔️ Contre-attaque −1 · 🎭 Feinte −2 · 🛡️ 1 parade · Score = position × 10
         </div>
-        <!-- Phase 1 -->
-        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PHASE 1 — DUEL DE VITESSE (5 questions)</div>
-        <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Pour chaque question : entrez le temps en secondes que l'Admin met à répondre (temps de référence)</div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">5 QUESTIONS (3 choix chacune)</div>
         <div id="assaut-p1-list" style="display:flex;flex-direction:column;gap:6px"></div>
         <button class="btn btn-s" id="btn-add-assaut-p1" style="margin-top:6px">➕ Question (max 5)</button>
-        <div style="border-top:1px solid rgba(255,255,255,.07);margin:12px 0"></div>
-        <!-- Phase 2 -->
-        <div style="font-family:var(--fh);font-size:12px;color:var(--red);letter-spacing:2px;margin-bottom:8px">PHASE 2 — L'ESTOCADE FINALE</div>
-        <label>Question finale</label>
-        <input type="text" id="assaut-p2-q" placeholder="La question de l'estocade…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;margin-bottom:8px;outline:none">
-        <label style="color:var(--neon)">✅ La Touche (bonne réponse)</label>
-        <input type="text" id="assaut-p2-touche" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
-        <label style="color:var(--mute)">🤺 Le Fer dans le Vide (neutre)</label>
-        <input type="text" id="assaut-p2-neutre" placeholder="Réponse neutre / mauvaise…" style="width:100%;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
-        <label style="color:var(--red)">🎭 La Seconde Intention (piège de l'Admin)</label>
-        <input type="text" id="assaut-p2-piege" placeholder="Le piège — réponse fausse très plausible…" style="width:100%;background:var(--c1);border:1px solid var(--red);color:var(--red);font-size:12px;border-radius:6px;padding:6px 10px;margin-bottom:6px;outline:none">
-        <div style="font-size:11px;color:var(--mute);font-style:italic">La Seconde Intention doit être une réponse fausse mais extrêmement crédible — c'est le piège psychologique de l'Admin.</div>
       </div>
 
       <!-- TIR À L'ARC FIELDS -->
@@ -1349,11 +1335,6 @@ async function startEdit(id){
   }
   if(a.type==='assaut'){
     assautP1=[...(a.phase1||[])];
-    const p2=a.phase2||{};
-    ['assaut-p2-q','assaut-p2-touche','assaut-p2-neutre','assaut-p2-piege'].forEach((id,idx)=>{
-      const el=document.getElementById(id);
-      if(el)el.value=[p2.q,p2.touche,p2.neutre,p2.piege][idx]||'';
-    });
     setTimeout(()=>renderAssautP1(),50);
   }
   if(a.type==='tirarlarc'){
@@ -1779,7 +1760,7 @@ function checkReady(){
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
-  else if(currentType==='assaut') hasContent=assautP1.length>=1&&!!document.getElementById('assaut-p2-q')?.value.trim();
+  else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
   else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
   else if(currentType==='nagesync') hasContent=true;
   else if(currentType==='var'){
@@ -1942,49 +1923,42 @@ function renderAssautP1(){
   list.innerHTML='';
   assautP1.forEach((q,i)=>{
     const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px';
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px';
     const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:10px;color:var(--neon)';lbl.textContent='Q'+(i+1)+' · Phase 1';
+    lbl.style.cssText='font-size:10px;color:var(--neon)';lbl.textContent='Q'+(i+1)+'/6';
+    // Question
     const inQ=document.createElement('input');
-    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question Vrai/Faux ou 2 choix…';
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question…';
     inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
     inQ.oninput=e=>{assautP1[i].q=e.target.value;checkReady();};
-    const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center';
-    const isVrai=(q.a||'Vrai')==='Vrai';
-    const vfRow=document.createElement('div');vfRow.style.cssText='display:flex;gap:6px;margin-bottom:4px';
-    const btnV=document.createElement('button');btnV.textContent='✅ VRAI';
-    btnV.style.cssText='flex:1;padding:5px;border-radius:6px;border:2px solid '+(isVrai?'var(--neon)':'rgba(255,255,255,.1)')+';background:'+(isVrai?'rgba(212,255,0,.1)':'var(--c1)')+';color:'+(isVrai?'var(--neon)':'var(--mute)')+';font-size:11px;cursor:pointer;font-family:var(--ff)';
-    btnV.onclick=()=>{assautP1[i].a='Vrai';renderAssautP1();};
-    const btnF=document.createElement('button');btnF.textContent='❌ FAUX';
-    btnF.style.cssText='flex:1;padding:5px;border-radius:6px;border:2px solid '+(!isVrai?'var(--red)':'rgba(255,255,255,.1)')+';background:'+(!isVrai?'rgba(255,60,60,.1)':'var(--c1)')+';color:'+(!isVrai?'var(--red)':'var(--mute)')+';font-size:11px;cursor:pointer;font-family:var(--ff)';
-    btnF.onclick=()=>{assautP1[i].a='Faux';renderAssautP1();};
-    vfRow.append(btnV,btnF);
-    const inA=document.createElement('span');// dummy for row compat
-
-    const inT=document.createElement('input');
-    inT.type='number';inT.value=q.adminTime||3;inT.min=1;inT.max=30;inT.placeholder='Temps Admin (s)';
-    inT.style.cssText='width:70px;background:var(--c1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:11px;border-radius:4px;padding:4px 6px;outline:none';
-    inT.oninput=e=>{assautP1[i].adminTime=parseInt(e.target.value)||3;};
-    const tLbl=document.createElement('span');tLbl.textContent='s Admin';tLbl.style.cssText='font-size:10px;color:var(--mute)';
-    row.append(inA,inT,tLbl);
+    // Bonne réponse
+    const inA=document.createElement('input');
+    inA.type='text';inA.value=q.a||'';inA.placeholder='🤺 Touche — bonne réponse (+1 case)';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inA.oninput=e=>{assautP1[i].a=e.target.value;checkReady();};
+    // Mauvaise réponse
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='⚔️ Contre-attaque — mauvaise réponse (−1 case)';
+    inW.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,255,255,.1);color:var(--mute);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inW.oninput=e=>{assautP1[i].w=e.target.value;checkReady();};
+    // Piège
+    const inP=document.createElement('input');
+    inP.type='text';inP.value=q.p||'';inP.placeholder='🎭 Feinte (−2 cases) — réponse plausible mais fausse';
+    inP.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.3);color:var(--red);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inP.oninput=e=>{assautP1[i].p=e.target.value;checkReady();};
+    // Delete
     const del=document.createElement('button');
     del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
     del.onclick=()=>{assautP1.splice(i,1);renderAssautP1();};
-    const inA2=document.createElement('div');// placeholder
-    d.append(lbl,inQ,vfRow,row,del);
+    d.append(lbl,inQ,inA,inW,inP,del);
     list.appendChild(d);
   });
   checkReady();
 }
 document.getElementById('btn-add-assaut-p1').onclick=()=>{
-  if(assautP1.length>=5)return alert('5 questions max en Phase 1');
-  assautP1.push({q:'',a:'',w:'',adminTime:3});renderAssautP1();
+  if(assautP1.length>=6)return alert('6 questions max');
+  assautP1.push({q:'',a:'',w:'',p:''});renderAssautP1();
 };
-['assaut-p2-q','assaut-p2-touche','assaut-p2-neutre','assaut-p2-piege'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el)el.addEventListener('input',checkReady);
-});
-
 // ── TIR À L'ARC ADMIN ─────────────────────────────────────────────────────
 
 let arcCibles=[];
@@ -2913,13 +2887,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
   const mfQuestionsData = currentType==='maillonfaible'?mfQuestions:[];
   const assautData = currentType==='assaut'?{
-    phase1: assautP1,
-    phase2: {
-      q: document.getElementById('assaut-p2-q')?.value.trim()||'',
-      touche: document.getElementById('assaut-p2-touche')?.value.trim()||'',
-      neutre: document.getElementById('assaut-p2-neutre')?.value.trim()||'',
-      piege: document.getElementById('assaut-p2-piege')?.value.trim()||''
-    }
+    phase1: assautP1
   }:null;
   const arcTolData = currentType==='tirarlarc'?{
     facile:parseFloat(document.getElementById('arc-tol-facile')?.value)||20,

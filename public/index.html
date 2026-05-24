@@ -6467,91 +6467,65 @@ function assautStartPhase1(){
 
 function assautShowQ1(){
   const qs=ASSAUT.data.phase1||[];
-  if(ASSAUT.qIdx>=qs.length||ASSAUT.qIdx>=5||ASSAUT.pos<=2||ASSAUT.pos>=9){
-    assautStartPhase2();return;
-  }
+  if(ASSAUT.qIdx>=qs.length||ASSAUT.qIdx>=6){assautFinish();return;}
   const q=qs[ASSAUT.qIdx];
-  const total=Math.min(qs.length,5);
+  const total=Math.min(qs.length,6);
 
-  // Compteur
   const pl=document.getElementById('assaut-phase-lbl');
   if(pl)pl.textContent='Q'+(ASSAUT.qIdx+1)+'/'+total+' — DUEL';
-
-  // Info temps Admin + chrono question
   const fb=document.getElementById('assaut-fb');
-  if(fb){
-    fb.innerHTML='⏱ L\'Admin répond en <strong style="color:var(--neon)">'+(q.adminTime||3)+'s</strong> — sois plus rapide !';
-    fb.style.color='var(--mute)';
-  }
+  if(fb){fb.textContent='';fb.style.color='var(--mute)';}
+  const qEl=document.getElementById('assaut-q-text')||document.getElementById('assaut-question');
+  if(qEl){qEl.textContent=q.q||'';qEl.style.display='block';}
 
-  // Afficher timer-wrap avec chrono adaptatif (max 3× le temps admin)
-  const tw=document.getElementById('assaut-timer-wrap');
-  const tEl=document.getElementById('assaut-timer');
-  const tBar=document.getElementById('assaut-timer-bar');
-  const maxT=q.adminTime||3; // même durée que l'Admin
-  if(tw)tw.style.display='block';
-  if(tEl){tEl.textContent=maxT;tEl.style.color='var(--neon)';}
-  if(tBar)tBar.style.width='100%';
-  clearInterval(ASSAUT.qTimerInt);
-  let qt=maxT;
-  ASSAUT.parerFired=false; // reset for this new question
-  let parerFired=false;
-  ASSAUT.qTimerInt=setInterval(()=>{
-    if(ASSAUT.parerFired){parerFired=true;}
-    if(parerFired)return;
-    qt--;
-    if(tEl)tEl.textContent=qt;
-    if(tBar)tBar.style.width=(qt/maxT*100)+'%';
-    if(tEl)tEl.style.color=qt<=3?'var(--red)':'var(--neon)';
-    if(qt<=0){
-      clearInterval(ASSAUT.qTimerInt);
-      const tw2=document.getElementById('assaut-timer-wrap');if(tw2)tw2.style.display='none';
-      document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
-      const fb2=document.getElementById('assaut-fb');
-      if(fb2){fb2.innerHTML='⚔️ Vous avez été touché ! Temps écoulé · −1 case';fb2.style.color='var(--red)';}
-      ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos-1));
-      assautUpdatePiste();
-      ASSAUT.qIdx++;
-      setTimeout(()=>{
-        if(fb2)fb2.textContent='';
-        if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
-        else assautShowQ1();
-      },1500);
-    }
-  },1000);
-
-  const qEl=document.getElementById('assaut-question');
-  if(qEl){qEl.style.display='block';qEl.textContent=q.q;}
+  // 3 choix escrime + PARER
+  const choices=[
+    {txt:q.a||'',type:'touche'},       // bonne réponse = touche +1
+    {txt:q.w||'',type:'contre'},       // mauvaise = contre-attaque -1
+    {txt:q.p||'',type:'feinte'}        // feinte = piège -2
+  ].filter(c=>c.txt);
+  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
 
   const ch=document.getElementById('assaut-choices');
-  if(!ch)return;
-  ch.innerHTML='';
+  if(ch){
+    ch.innerHTML='';
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='biat-qcm-btn';
+      btn.textContent=c.txt;
+      btn.onclick=()=>{
+        document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+        assautAnswerP1(c.type);
+      };
+      ch.appendChild(btn);
+    });
+    // Bouton PARER
+    const btnP=document.createElement('button');
+    btnP.textContent=ASSAUT.parUsed?'🛡️ PARADE (utilisée)':'🛡️ PARADE — esquiver sans risque';
+    btnP.disabled=ASSAUT.parUsed;
+    btnP.style.cssText='width:100%!important;padding:10px;border-radius:10px;border:1px solid '+(ASSAUT.parUsed?'rgba(255,255,255,.1)':'#f59e0b')+';background:'+(ASSAUT.parUsed?'var(--c2)':'rgba(245,158,11,.1)')+';color:'+(ASSAUT.parUsed?'var(--mute)':'#f59e0b')+';font-family:var(--fh);font-size:13px;cursor:'+(ASSAUT.parUsed?'not-allowed':'pointer')+';letter-spacing:1px;margin-top:6px';
+    btnP.onclick=()=>assautParer();
+    ch.appendChild(btnP);
+  }
 
-  const btnV=document.createElement('button');
-  btnV.className='biat-qcm-btn';btnV.textContent='✅ VRAI';
-  btnV.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Vrai',q.adminTime||3);
-
-  const btnF=document.createElement('button');
-  btnF.className='biat-qcm-btn';btnF.textContent='❌ FAUX';
-  btnF.onclick=()=>assautAnswerP1((q.a||'Vrai')==='Faux',q.adminTime||3);
-
-  // Bouton PARER — 1 seule fois
-  const btnP=document.createElement('button');
-  btnP.textContent='🛡️ PARER'+(ASSAUT.parUsed?' (utilisé)':'');
-  btnP.disabled=ASSAUT.parUsed;
-  btnP.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid '+(ASSAUT.parUsed?'rgba(255,255,255,.1)':'#f59e0b')+';background:'+(ASSAUT.parUsed?'var(--c2)':'rgba(245,158,11,.1)')+';color:'+(ASSAUT.parUsed?'var(--mute)':'#f59e0b')+';font-family:var(--fh);font-size:13px;cursor:'+(ASSAUT.parUsed?'not-allowed':'pointer')+';letter-spacing:1px;margin-top:4px';
-  btnP.onclick=()=>assautParer();
-
-  ch.appendChild(btnV);ch.appendChild(btnF);
-  ch.appendChild(btnP);
-
-  ASSAUT.startTime=Date.now();
+  // Timer 20s
+  if(ASSAUT.qTimerInt)clearInterval(ASSAUT.qTimerInt);
+  ASSAUT.parerFired=false;
+  const tw=document.getElementById('assaut-timer-wrap');
+  const tEl=document.getElementById('assaut-timer');
+  if(tw)tw.style.display='block';
+  let qt=20;if(tEl)tEl.textContent=qt;
+  ASSAUT.qTimerInt=setInterval(()=>{
+    if(ASSAUT.parerFired)return;
+    qt--;if(tEl)tEl.textContent=qt;
+    if(qt<=0){clearInterval(ASSAUT.qTimerInt);assautAnswerP1('contre');}
+  },1000);
 }
 
 function assautParer(){
   if(ASSAUT.parUsed)return;
   ASSAUT.parUsed=true;
-  ASSAUT.parerFired=true; // signal to active timer
+  ASSAUT.parerFired=true;
   clearInterval(ASSAUT.qTimerInt);
   const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
   document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
@@ -6561,92 +6535,34 @@ function assautParer(){
   ASSAUT.qIdx++;
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
+    if(ASSAUT.qIdx>=6) assautFinish();
     else assautShowQ1();
   },1000);
 }
 
-function assautAnswerP1(correct,adminTimeSec){
+function assautAnswerP1(type){
   clearInterval(ASSAUT.qTimerInt);
   const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
-  document.querySelectorAll('#assaut-choices button').forEach(b=>b.disabled=true);
-  const playerTime=(Date.now()-ASSAUT.startTime)/1000;
-  const faster=playerTime<=adminTimeSec;
   const fb=document.getElementById('assaut-fb');
   let move=0;
-  if(correct&&faster){
+  if(type==='touche'){
     move=1;
-    if(fb){fb.innerHTML='🤺 Touché ! +1 case · <span style="color:var(--neon)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--mute)">'+adminTimeSec+'s</span>';fb.style.color='var(--neon)';}
-  } else if(correct&&!faster){
+    if(fb){fb.innerHTML='🤺 Touché ! +1 case';fb.style.color='var(--neon)';}
+  } else if(type==='contre'){
     move=-1;
-    if(fb){fb.innerHTML='⚔️ Vous avez été touché ! Juste mais trop lent · <span style="color:var(--red)">'+playerTime.toFixed(1)+'s</span> vs Admin <span style="color:var(--neon)">'+adminTimeSec+'s</span> · −1 case';fb.style.color='var(--red)';}
-  } else {
-    move=-1;
-    if(fb){fb.innerHTML='⚔️ Vous avez été touché ! Mauvaise réponse · −1 case';fb.style.color='var(--red)';}
+    if(fb){fb.innerHTML='⚔️ Contre-attaque ! −1 case';fb.style.color='var(--red)';}
+  } else if(type==='feinte'){
+    move=-2;
+    if(fb){fb.innerHTML='🎭 Feinte ! Tu es tombé dans le piège · −2 cases';fb.style.color='var(--red)';}
   }
   ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
   assautUpdatePiste();
   ASSAUT.qIdx++;
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    if(ASSAUT.pos<=2||ASSAUT.pos>=9||ASSAUT.qIdx>=5)assautStartPhase2();
+    if(ASSAUT.qIdx>=6) assautFinish();
     else assautShowQ1();
   },1500);
-}
-
-function assautStartPhase2(){
-  clearInterval(ASSAUT.timerInt);
-  const pl=document.getElementById('assaut-phase-lbl');if(pl)pl.textContent='⚔️ ESTOCADE !';
-  const ch=document.getElementById('assaut-choices');if(ch)ch.innerHTML='';
-  const fb=document.getElementById('assaut-fb');if(fb)fb.textContent='';
-  const qEl=document.getElementById('assaut-question');
-  if(qEl)qEl.textContent='⚔️ L\'ESTOCADE FINALE…';
-  setTimeout(assautShowEstocade,1500);
-}
-
-function assautShowEstocade(){
-  const p2=ASSAUT.data.phase2||{};
-  let timerSec=20;
-  if(ASSAUT.pos>=9)timerSec=25;
-  else if(ASSAUT.pos<=2)timerSec=15;
-  const qEl=document.getElementById('assaut-question');
-  if(qEl)qEl.textContent=p2.q||'?';
-  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='block';
-  const tEl=document.getElementById('assaut-timer');if(tEl)tEl.textContent=timerSec;
-  const tb=document.getElementById('assaut-timer-bar');if(tb)tb.style.width='100%';
-  const ch=document.getElementById('assaut-choices');
-  if(!ch)return;
-  ch.innerHTML='';
-  let choices=[{txt:p2.touche,type:'touche'},{txt:p2.neutre,type:'neutre'},{txt:p2.piege,type:'piege'}];
-  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
-  choices.forEach(c=>{
-    if(!c.txt)return;
-    const btn=document.createElement('button');
-    btn.className='biat-qcm-btn';btn.textContent=c.txt;
-    btn.onclick=()=>assautAnswerP2(c.type,timerSec);
-    ch.appendChild(btn);
-  });
-  let t=timerSec;
-  ASSAUT.timerInt=setInterval(()=>{
-    t--;
-    if(tEl)tEl.textContent=t;
-    if(tb)tb.style.width=(t/timerSec*100)+'%';
-    if(t<=0){clearInterval(ASSAUT.timerInt);assautAnswerP2('neutre',timerSec);}
-  },1000);
-}
-
-function assautAnswerP2(type,timerSec){
-  clearInterval(ASSAUT.timerInt);
-  document.querySelectorAll('#assaut-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
-  const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
-  const fb=document.getElementById('assaut-fb');
-  let move=0;
-  if(type==='touche'){move=2;if(fb){fb.textContent='🎯 TOUCHE ! +2 cases';fb.style.color='var(--neon)';}}
-  else if(type==='neutre'){move=-1;if(fb){fb.textContent='🤺 Fer dans le vide. −1 case';fb.style.color='var(--mute)';}}
-  else{move=-2;if(fb){fb.textContent='🎭 SECONDE INTENTION ! −2 cases';fb.style.color='var(--red)';}}
-  ASSAUT.pos=Math.max(1,Math.min(10,ASSAUT.pos+move));
-  assautUpdatePiste();
-  setTimeout(assautFinish,1500);
 }
 
 function assautFinish(){
