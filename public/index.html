@@ -524,7 +524,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 17 jeux · 100 pts à gagner ⚡</div>
+  <div class="logo-tag">⚡ 18 jeux · jusqu'à 200 pts ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -546,6 +546,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Tir à l'Arc</div></div>
       <div class="gt-item"><div class="gt-ico">🏊</div><div class="gt-name">Natation</div></div>
       <div class="gt-item"><div class="gt-ico">📺</div><div class="gt-name">La VAR</div></div>
+      <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -1054,6 +1055,26 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- ASSAUT zone -->
+  <!-- RVLF ZONE -->
+  <div id="rvlf-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
+      <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="rvlf-score">0</div></div>
+      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">CARTES</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="rvlf-cards">10</div></div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="rvlf-timer">30</div></div>
+    </div>
+    <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="rvlf-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
+    <!-- Jokers -->
+    <div style="display:flex;gap:8px">
+      <button id="rvlf-j1" onclick="rvlfJoker('lien')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">×2 pts si juste</span></button>
+      <button id="rvlf-j2" onclick="rvlfJoker('superposition')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⚡ SUPERPOS.<br><span style="font-size:9px;opacity:.7">2 univers</span></button>
+      <button id="rvlf-j3" onclick="rvlfJoker('balise')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
+    </div>
+    <div id="rvlf-q-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
+    <div id="rvlf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="rvlf-fb" class="fb" style="text-align:center;font-size:14px"></div>
+    <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE POSÉE — Checkpoint actif</div>
+  </div>
+
   <!-- VAR ZONE -->
   <div id="var-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">📺 LA VAR</div>
@@ -1877,6 +1898,8 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='rvlf'){
+      setupRvlf(data);
     } else if(data.type==='var'){
       document.getElementById('std-ans-area').style.display='none';
       setupVarMode(data);
@@ -1900,7 +1923,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -1925,7 +1948,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️',
+  'assaut':'⚔️','rvlf':'⏳',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -2707,6 +2730,294 @@ function varSubmitCorrection(){
       setTimeout(()=>{if(fb)fb.textContent='';},1500);
     }
   });
+}
+
+// ── RETOUR VERS LE FUTUR ──────────────────────────────────────────────────
+const RVLF={
+  data:null, qIdx:0, score:0, done:false,
+  cardsLeft:10, timerInt:null,
+  jokers:{lien:true, superposition:true, balise:true},
+  balise:null, // {score, jokers, qIdx}
+  lienPending:false, // lien activated, waiting for next Q
+  superPending:false,
+  superQA:null, superQB:null, superAnswered:0, superOk:false
+};
+
+function setupRvlf(data){
+  RVLF.data=data; RVLF.qIdx=0; RVLF.score=0; RVLF.done=false;
+  RVLF.cardsLeft=10; RVLF.timerInt=null;
+  RVLF.jokers={lien:true,superposition:true,balise:true};
+  RVLF.balise=null; RVLF.lienPending=false;
+  RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
+  hideAllZones();
+  document.getElementById('rvlf-zone').style.display='flex';
+  rvlfUpdateUI();
+  rvlfShowQuestion();
+}
+
+function rvlfUpdateUI(){
+  document.getElementById('rvlf-score').textContent=RVLF.score;
+  document.getElementById('rvlf-cards').textContent=RVLF.cardsLeft;
+  // Joker buttons
+  ['lien','superposition','balise'].forEach((j,idx)=>{
+    const btn=document.getElementById('rvlf-j'+(idx+1));
+    if(!btn)return;
+    const used=!RVLF.jokers[j];
+    btn.style.opacity=used?'0.3':'1';
+    btn.disabled=used||RVLF.done;
+  });
+  const bInfo=document.getElementById('rvlf-balise-info');
+  if(bInfo)bInfo.style.display=RVLF.balise?'block':'none';
+}
+
+function rvlfStartTimer(){
+  if(RVLF.timerInt)clearInterval(RVLF.timerInt);
+  let t=30;
+  const tEl=document.getElementById('rvlf-timer');
+  const bar=document.getElementById('rvlf-timer-bar');
+  const update=()=>{
+    const col=t<=5?'var(--red)':t<=10?'var(--orange)':'var(--neon)';
+    if(tEl){tEl.textContent=t;tEl.style.color=col;}
+    if(bar)bar.style.width=(t/30*100)+'%';
+  };
+  update();
+  RVLF.timerInt=setInterval(()=>{
+    t--;update();
+    if(t<=0){clearInterval(RVLF.timerInt);rvlfTimeout();}
+  },1000);
+}
+
+function rvlfStopTimer(){
+  if(RVLF.timerInt)clearInterval(RVLF.timerInt);
+  RVLF.timerInt=null;
+}
+
+function rvlfShowQuestion(){
+  if(RVLF.qIdx>=10||RVLF.done){rvlfFinish();return;}
+  const qs=RVLF.data.rvlfQuestions||[];
+  const q=qs[RVLF.qIdx];
+  if(!q){rvlfFinish();return;}
+  RVLF.cardsLeft=10-RVLF.qIdx;
+  rvlfUpdateUI();
+  const qEl=document.getElementById('rvlf-q-display');
+  if(qEl)qEl.textContent=q.q||'?';
+  // Build choices
+  const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
+  for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  const ch=document.getElementById('rvlf-choices');
+  if(ch){
+    ch.innerHTML='';
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='biat-qcm-btn';btn.textContent=c.txt;
+      btn.onclick=()=>{
+        rvlfStopTimer();
+        document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+        rvlfAnswer(c.correct);
+      };
+      ch.appendChild(btn);
+    });
+  }
+  document.getElementById('rvlf-fb').textContent='';
+  rvlfStartTimer();
+}
+
+function rvlfAnswer(correct){
+  RVLF.qIdx++;
+  if(RVLF.lienPending){
+    RVLF.lienPending=false;
+    if(correct){
+      RVLF.score+=40; // double points
+      const fb=document.getElementById('rvlf-fb');
+      if(fb){fb.textContent='🔗 LIEN ! +40 pts (×2) !';fb.style.color='#ffc800';}
+      setTimeout(rvlfNext,1200);
+    } else {
+      rvlfGameOver('🔗 Lien brisé — Game Over !');
+    }
+    return;
+  }
+  if(correct){
+    RVLF.score+=20;
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='✅ +20 pts';fb.style.color='var(--neon)';}
+    setTimeout(rvlfNext,800);
+  } else {
+    // Check balise
+    if(RVLF.balise){
+      rvlfActivateBalise();
+    } else {
+      rvlfGameOver('💥 Mauvaise réponse — Game Over !');
+    }
+  }
+}
+
+function rvlfNext(){
+  rvlfUpdateUI();
+  if(RVLF.qIdx>=10){rvlfFinish();return;}
+  rvlfShowQuestion();
+}
+
+function rvlfTimeout(){
+  // Timeout = mauvaise réponse
+  document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+  if(RVLF.balise){rvlfActivateBalise();}
+  else{rvlfGameOver('⏱️ Temps écoulé — Game Over !');}
+}
+
+function rvlfGameOver(msg){
+  RVLF.done=true;
+  rvlfStopTimer();
+  RVLF.score=0;
+  const fb=document.getElementById('rvlf-fb');
+  if(fb){fb.textContent=msg;fb.style.color='var(--red)';}
+  document.getElementById('rvlf-choices').innerHTML='';
+  G.score=0;setScore(0,true);
+  setTimeout(()=>{
+    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=0;
+    const vName=document.getElementById('v-name');if(vName)vName.textContent='Retour vers le Futur';
+    const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Game Over · '+msg;
+    ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+    const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+    setVictoryIcon('rvlf');submitScore(0);show('sv');
+  },1500);
+}
+
+function rvlfFinish(){
+  RVLF.done=true;
+  rvlfStopTimer();
+  G.score=RVLF.score;setScore(RVLF.score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=RVLF.score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Retour vers le Futur';
+  const perfect=RVLF.score===200;
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(perfect?'🏆 PERFECT ! ':'📊 ')+RVLF.score+'/200 pts';
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('rvlf');submitScore(RVLF.score);
+  if(RVLF.score>0)setTimeout(()=>show('sv'),500);
+  else setTimeout(()=>show('sv'),500);
+}
+
+// ── JOKERS ────────────────────────────────────────────────────────────────
+function rvlfJoker(type){
+  if(RVLF.done||!RVLF.jokers[type])return;
+  RVLF.jokers[type]=false;
+  rvlfStopTimer();
+  document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+
+  if(type==='lien'){
+    // Skip current question, link to next
+    RVLF.lienPending=true;
+    RVLF.qIdx++; // consume current card
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🔗 LIEN activé ! Question mise en attente. Prochaine question…';fb.style.color='#ffc800';}
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      rvlfShowQuestion();
+    },1200);
+  }
+
+  else if(type==='superposition'){
+    // Show 2 questions simultaneously
+    const qs=RVLF.data.rvlfQuestions||[];
+    RVLF.superQA=qs[RVLF.qIdx]; // current
+    RVLF.superQB=qs[RVLF.qIdx+1]; // next
+    RVLF.qIdx+=2; // consume 2 cards
+    RVLF.superAnswered=0; RVLF.superOk=false;
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='⚡ SUPERPOSITION ! 2 univers parallèles…';fb.style.color='#64c8ff';}
+    setTimeout(()=>rvlfShowSuper(),1000);
+  }
+
+  else if(type==='balise'){
+    // Set checkpoint
+    RVLF.balise={score:RVLF.score, jokers:{...RVLF.jokers}, qIdx:RVLF.qIdx};
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='⏱️ BALISE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
+    rvlfUpdateUI();
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      // Resume question
+      rvlfShowQuestion();
+    },1000);
+  }
+}
+
+function rvlfShowSuper(){
+  if(!RVLF.superQA&&!RVLF.superQB){rvlfNext();return;}
+  const ch=document.getElementById('rvlf-choices');
+  const qEl=document.getElementById('rvlf-q-display');
+  ch.innerHTML='';
+  // Show both questions as labelled sections
+  let html='';
+  [RVLF.superQA,RVLF.superQB].filter(Boolean).forEach((q,idx)=>{
+    html+=`<div style="background:var(--c2);border-radius:8px;padding:8px 10px;margin-bottom:4px">
+      <div style="font-size:10px;color:${idx===0?'#64c8ff':'#ff64c8'};font-family:var(--fh);margin-bottom:4px">UNIVERS ${idx===0?'A':'B'}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:6px">${q.q}</div>
+      <div style="display:flex;gap:6px" id="super-choices-${idx}"></div>
+    </div>`;
+  });
+  ch.innerHTML=html;
+  if(qEl)qEl.textContent='⚡ Réponds aux deux univers';
+
+  [RVLF.superQA,RVLF.superQB].filter(Boolean).forEach((q,idx)=>{
+    const cEl=document.getElementById('super-choices-'+idx);
+    if(!cEl)return;
+    const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
+    for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.style.cssText='flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--c1);color:var(--txt);font-size:12px;cursor:pointer';
+      btn.textContent=c.txt;
+      btn.onclick=()=>{
+        // Disable this universe's buttons
+        cEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+        if(c.correct){
+          btn.style.background='rgba(212,255,0,.2)';btn.style.color='var(--neon)';
+          RVLF.superOk=true;
+        } else {
+          btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';
+        }
+        RVLF.superAnswered++;
+        if(RVLF.superAnswered>=(RVLF.superQA&&RVLF.superQB?2:1)){
+          rvlfSuperResolve();
+        }
+      };
+      cEl.appendChild(btn);
+    });
+  });
+  rvlfStartTimer();
+}
+
+function rvlfSuperResolve(){
+  rvlfStopTimer();
+  const fb=document.getElementById('rvlf-fb');
+  if(RVLF.superOk){
+    RVLF.score+=20; // only 20 pts even if both correct
+    if(fb){fb.textContent='⚡ Au moins un univers survit ! +20 pts (max 180 désormais)';fb.style.color='#64c8ff';}
+    setTimeout(rvlfNext,1500);
+  } else {
+    if(RVLF.balise){rvlfActivateBalise();}
+    else{rvlfGameOver('⚡ Les deux univers s\'effondrent — Game Over !');}
+  }
+}
+
+function rvlfActivateBalise(){
+  rvlfStopTimer();
+  const saved=RVLF.balise;
+  RVLF.score=saved.score;
+  RVLF.jokers={...saved.jokers, balise:false}; // balise spent
+  // qIdx stays advanced — cards are lost
+  RVLF.balise=null;
+  RVLF.lienPending=false;
+  const fb=document.getElementById('rvlf-fb');
+  const cardsLost=RVLF.qIdx-saved.qIdx;
+  if(fb){fb.textContent='⏱️ BALISE activée ! Retour à '+saved.score+' pts · '+cardsLost+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
+  rvlfUpdateUI();
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    rvlfShowQuestion();
+  },2000);
 }
 
 // ── L'ALPE D'HUEZ MODE ────────────────────────────────────────────────────

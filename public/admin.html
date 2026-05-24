@@ -292,7 +292,22 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">La VAR</div>
             <div class="type-desc">Trouve l'erreur factuelle</div>
           </div>
+          <div class="type-opt" id="type-rvlf" onclick="selectType('rvlf')">
+            <div class="type-ico">⏳</div>
+            <div class="type-name">Retour vers le Futur</div>
+            <div class="type-desc">10 questions · Jokers temporels</div>
+          </div>
         </div>
+      </div>
+
+      <!-- RVLF FIELDS -->
+      <div id="rvlf-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          ⏳ 10 questions · 1 bonne / 1 fausse · 20 pts/bonne · 30s/question · 3 jokers temporels · 1 mauvaise = Game Over
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">10 QUESTIONS (exactement)</div>
+        <div id="rvlf-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" id="btn-add-rvlf-q" style="margin-top:8px">➕ Question (max 10)</button>
       </div>
 
       <!-- VAR FIELDS -->
@@ -1114,7 +1129,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var','rvlf'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1126,6 +1141,7 @@ function selectType(type){
   document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
   document.getElementById('nagesync-fields').style.display     = type==='nagesync'?'block':'none';
   document.getElementById('var-fields').style.display          = type==='var'?'block':'none';
+  document.getElementById('rvlf-fields').style.display         = type==='rvlf'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -1136,7 +1152,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut'||type==='var';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut'||type==='var'||type==='rvlf';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -1326,6 +1342,10 @@ async function startEdit(id){
     if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
+  if(a.type==='rvlf'){
+    rvlfQuestions=[...(a.rvlfQuestions||[])];
+    setTimeout(()=>renderRvlfQuestions(),50);
   }
   if(a.type==='var'){
     document.getElementById('var-text-in').value=a.varText||'';
@@ -1626,6 +1646,45 @@ function varChipClick(i){
   }
 }
 
+// ── RVLF ADMIN ──────────────────────────────────────────────────────────
+let rvlfQuestions=[];
+function renderRvlfQuestions(){
+  const list=document.getElementById('rvlf-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  rvlfQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:10px;color:var(--neon);font-family:var(--fh)';
+    lbl.textContent='CARTE '+(i+1)+'/10';
+    const inQ=document.createElement('input');
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:6px 8px;outline:none';
+    inQ.oninput=e=>{rvlfQuestions[i].q=e.target.value;checkReady();};
+    const inA=document.createElement('input');
+    inA.type='text';inA.value=q.a||'';inA.placeholder='✅ Bonne réponse';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inA.oninput=e=>{rvlfQuestions[i].a=e.target.value;checkReady();};
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='❌ Mauvaise réponse (leurre plausible)';
+    inW.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.2);color:var(--red);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inW.oninput=e=>{rvlfQuestions[i].w=e.target.value;checkReady();};
+    const del=document.createElement('button');
+    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
+    del.onclick=()=>{rvlfQuestions.splice(i,1);renderRvlfQuestions();};
+    d.append(lbl,inQ,inA,inW,del);
+    list.appendChild(d);
+  });
+  const btn=document.getElementById('btn-add-rvlf-q');
+  if(btn)btn.style.display=rvlfQuestions.length>=10?'none':'block';
+  checkReady();
+}
+document.getElementById('btn-add-rvlf-q').onclick=()=>{
+  if(rvlfQuestions.length>=10)return;
+  rvlfQuestions.push({q:'',a:'',w:''});renderRvlfQuestions();
+};
+
 function cancelEdit(){
   editId=null; buzzClues=[];
   document.getElementById('coeff-in').value = 1;
@@ -1668,6 +1727,7 @@ function cancelEdit(){
   document.getElementById('var-text-in').value='';
   document.getElementById('var-wrong-in').value='';
   document.getElementById('var-correct-in').value='';
+  rvlfQuestions=[];renderRvlfQuestions();
   if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
   ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
@@ -1763,6 +1823,9 @@ function checkReady(){
   else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
   else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
   else if(currentType==='nagesync') hasContent=true;
+  else if(currentType==='rvlf'){
+    hasContent=rvlfQuestions.length===10&&rvlfQuestions.every(q=>q.q&&q.a&&q.w);
+  }
   else if(currentType==='var'){
     const txt=(document.getElementById('var-text-in')?.value||'').trim();
     const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
@@ -2980,7 +3043,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
