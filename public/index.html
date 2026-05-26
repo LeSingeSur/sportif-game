@@ -1079,7 +1079,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Jokers -->
     <div style="display:flex;gap:8px">
       <button id="rvlf-j1" onclick="rvlfJoker('lien')" ontouchstart="rvlfJokerHold('lien')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('lien')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">2 cartes, +40 pts</span></button>
-      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" ontouchstart="rvlfJokerHold('schrodinger')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('schrodinger')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 univers</span></button>
+      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" ontouchstart="rvlfJokerHold('schrodinger')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('schrodinger')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 réalité</span></button>
       <button id="rvlf-j3" onclick="rvlfJoker('balise')" ontouchstart="rvlfJokerHold('balise')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('balise')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
     </div>
     <div id="rvlf-q-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
@@ -2753,7 +2753,7 @@ const RVLF_JOKER_INFO={
   schrodinger:{
     color:'#64c8ff',
     title:'🐱 SCHRÖDINGER',
-    text:'Active ce joker et chaque question se dédouble jusqu\'à la fin. Tu réponds aux 2 univers séparément. 2 justes → +30 pts. 1 juste → +20 pts. 0 juste → Game Over. Si un univers meurt, il reste grisé mais continue de brûler une carte par tour.'
+    text:'Active ce joker et chaque question se dédouble jusqu\'à la fin. Tu réponds aux 2 réalité séparément. 2 justes → +30 pts. 1 juste → +20 pts. 0 juste → Game Over. Si un réalité meurt, il reste grisé mais continue de brûler une carte par tour.'
   },
   balise:{
     color:'#ff64c8',
@@ -2794,7 +2794,7 @@ const RVLF={
   balise:null,
   lienPending:false,
   superActive:false,
-  deadUniverse:null,
+  deadRéalitée:null,
   superQA:null, superQB:null, superAnswered:0, superOk:false
 };
 
@@ -2802,7 +2802,7 @@ function setupRvlf(data){
   RVLF.data=data; RVLF.qIdx=0; RVLF.score=0; RVLF.done=false;
   RVLF.cardsLeft=10; RVLF.timerInt=null;
   RVLF.jokers={lien:true,schrodinger:true,balise:true};
-  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadUniverse=null;
+  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadRéalitée=null;
   RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
@@ -2831,6 +2831,14 @@ function rvlfUpdateUI(){
 }
 
 function rvlfStartTimer(){
+  if(RVLF.data?.rvlfNoTimer){
+    // No timer — hide bar and display
+    const tEl=document.getElementById('rvlf-timer');
+    const bar=document.getElementById('rvlf-timer-bar');
+    if(tEl){tEl.textContent='∞';tEl.style.color='var(--mute)';}
+    if(bar)bar.style.width='100%';
+    return;
+  }
   if(RVLF.timerInt)clearInterval(RVLF.timerInt);
   let t=30;
   const tEl=document.getElementById('rvlf-timer');
@@ -2924,6 +2932,7 @@ function rvlfNext(){
 }
 
 function rvlfTimeout(){
+  if(RVLF.data?.rvlfNoTimer)return; // no timeout in no-timer mode
   // Timeout = mauvaise réponse
   document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
   if(RVLF.balise){rvlfActivateBalise();}
@@ -3035,7 +3044,7 @@ function rvlfJoker(type){
     // Disable schrodinger button permanently
     const btn=document.getElementById('rvlf-j2');if(btn){btn.style.opacity='0.3';btn.disabled=true;}
     // Update tip
-    const tip=document.getElementById('game-tip');if(tip)tip.textContent='⚡ Mode Schrödinger — 2 univers parallèles';
+    const tip=document.getElementById('game-tip');if(tip)tip.textContent='⚡ Mode Schrödinger — 2 réalité parallèles';
     rvlfStopTimer();
     setTimeout(()=>{
       if(fb)fb.textContent='';
@@ -3060,16 +3069,16 @@ function rvlfJoker(type){
 function rvlfShowSuper(qA,qB){
   const ch=document.getElementById('rvlf-choices');
   const qEl=document.getElementById('rvlf-q-display');
-  if(qEl)qEl.textContent=RVLF.deadUniverse!==null?'🐱 Un univers a disparu — l\'autre continue':'🐱 Réponds aux deux univers';
+  if(qEl)qEl.textContent=RVLF.deadRéalitée!==null?'🐱 Une réalité a disparu — l\'autre continue':'🐱 Réponds aux deux réalité';
   ch.innerHTML='';
   let answered=0; let okCount=0;
-  const neededAnswers=RVLF.deadUniverse!==null?1:2;
+  const neededAnswers=RVLF.deadRéalitée!==null?1:2;
   [qA,qB].forEach((q,idx)=>{
     const color=idx===0?'#64c8ff':'#ff64c8';
-    const isDead=RVLF.deadUniverse===idx;
+    const isDead=RVLF.deadRéalitée===idx;
     const div=document.createElement('div');
     div.style.cssText=`background:var(--c2);border:1px solid ${isDead?'rgba(255,255,255,.05)':color+'33'};border-radius:10px;padding:10px;margin-bottom:6px;opacity:${isDead?'0.35':'1'}`;
-    div.innerHTML=`<div style="font-size:10px;color:${isDead?'var(--mute)':color};font-family:var(--fh);margin-bottom:4px">UNIVERS ${idx===0?'A':'B'}${isDead?' — 💀 DÉTRUIT':''}</div>
+    div.innerHTML=`<div style="font-size:10px;color:${isDead?'var(--mute)':color};font-family:var(--fh);margin-bottom:4px">RÉALITÉ ${idx===0?'A':'B'}${isDead?' — 💀 DÉTRUIT':''}</div>
       <div style="font-size:13px;font-weight:700;color:${isDead?'var(--mute)':'var(--txt)'};margin-bottom:8px">${q.q}</div>
       <div style="display:flex;gap:6px" id="super-ch-${idx}"></div>`;
     ch.appendChild(div);
@@ -3099,8 +3108,8 @@ function rvlfShowSuper(qA,qB){
           okCount++;
         } else {
           btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';
-          // This universe dies next turn
-          RVLF.deadUniverse=idx;
+          // This réalitée dies next turn
+          RVLF.deadRéalitée=idx;
         }
         answered++;
         if(answered>=neededAnswers){
@@ -3111,13 +3120,13 @@ function rvlfShowSuper(qA,qB){
             RVLF.score+=pts;
             rvlfUpdateUI();
             if(okCount===1&&neededAnswers===2){
-              rvlfShowInfo(null,'💀 Un univers s\'est effondré. Il restera affiché grisé — mais continue de brûler 1 carte par tour. L\'univers survivant continue.','#ff6060');
+              rvlfShowInfo(null,'💀 Une réalité s\'est effondré. Il restera affiché grisé — mais continue de brûler 1 carte par tour. L\'réalité survivant continue.','#ff6060');
             }
-            if(fb){fb.textContent=okCount===2?'🐱 2 univers survivent ! +30 pts':'🐱 1 univers survit ! +20 pts';fb.style.color='#64c8ff';}
+            if(fb){fb.textContent=okCount===2?'🐱 2 réalité survivent ! +30 pts':'🐱 1 réalité survit ! +20 pts';fb.style.color='#64c8ff';}
             setTimeout(rvlfNext,okCount===1&&neededAnswers===2?2200:1200);
           } else {
             if(RVLF.balise){setTimeout(()=>rvlfActivateBalise(),600);}
-            else{setTimeout(()=>rvlfGameOver('🐱 Les deux univers s\'effondrent !'),600);}
+            else{setTimeout(()=>rvlfGameOver('🐱 Les deux réalité s\'effondrent !'),600);}
           }
         }
       };
