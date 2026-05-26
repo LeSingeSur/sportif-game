@@ -1078,9 +1078,18 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="rvlf-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <!-- Jokers -->
     <div style="display:flex;gap:8px">
-      <button id="rvlf-j1" onclick="rvlfJoker('lien')" ontouchstart="rvlfJokerHold('lien')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('lien')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">2 cartes, +40 pts</span></button>
-      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" ontouchstart="rvlfJokerHold('schrodinger')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('schrodinger')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 réalité</span></button>
-      <button id="rvlf-j3" onclick="rvlfJoker('balise')" ontouchstart="rvlfJokerHold('balise')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('balise')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j1" onclick="rvlfJoker('lien')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN</button>
+        <button onclick="rvlfShowInfo('lien')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(255,200,0,.2);background:none;color:rgba(255,200,0,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER</button>
+        <button onclick="rvlfShowInfo('schrodinger')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(100,200,255,.2);background:none;color:rgba(100,200,255,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j3" onclick="rvlfJoker('balise')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE</button>
+        <button onclick="rvlfShowInfo('balise')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(255,100,200,.2);background:none;color:rgba(255,100,200,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
     </div>
     <div id="rvlf-q-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
     <div id="rvlf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -3253,25 +3262,19 @@ function rvlfJoker(type){
   }
 
   else if(type==='balise'){
-    // qIdx is already incremented by showNormal/showSuper when balise is posed
-    // Save pre-increment qIdx so restore can show the same question
-    const savedQIdx=RVLF.superActive?RVLF.qIdx-2:RVLF.qIdx-1;
     RVLF.balise={
       score:RVLF.score,
       jokers:{...RVLF.jokers},
-      qIdx:savedQIdx,
       superActive:RVLF.superActive,
       deadUniverse:RVLF.deadUniverse,
       currentQA:RVLF.currentQA,
-      currentQB:RVLF.currentQB
+      currentQB:RVLF.currentQB,
+      qIdxNext:RVLF.qIdx // next unplayed card
     };
     const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
+    if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée !';fb.style.color='#ff64c8';}
     rvlfUpdateUI();
-    setTimeout(()=>{
-      if(fb)fb.textContent='';
-      rvlfShowQuestion();
-    },1000);
+    setTimeout(()=>{if(fb&&fb.textContent==='⏱️ BALISE TEMPORELLE posée !')fb.textContent='';},1200);
   }
 }
 
@@ -3349,31 +3352,34 @@ function rvlfShowSuper(qA,qB){
 function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
-  const cardsLost=RVLF.qIdx-(saved.qIdx+(saved.superActive?2:1));
-  // Restore full state
+  const cardsLost=RVLF.qIdx-saved.qIdxNext;
+  // Restore score, jokers, super state
   RVLF.score=saved.score;
   RVLF.jokers={...saved.jokers, balise:false};
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
-  RVLF.qIdx=saved.qIdx; // ← restore qIdx so next question is correct
+  // Restore qIdx to what it was when balise was posed
+  RVLF.qIdx=saved.qIdxNext;
   RVLF.currentQA=saved.currentQA||null;
   RVLF.currentQB=saved.currentQB||null;
   RVLF.balise=null;
   RVLF.lienPending=false;
   const fb=document.getElementById('rvlf-fb');
-  if(fb){fb.textContent='⏱️ BALISE activée ! Retour à '+saved.score+' pts · '+cardsLost+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
+  if(fb){fb.textContent='⏱️ BALISE ! Retour à '+saved.score+' pts · '+Math.max(0,cardsLost)+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
   rvlfUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    // Re-show exact same questions as when balise was set
+    // Show exact same questions as when balise was posed
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
-      RVLF.qIdx+=2; // re-consume the 2 super cards
+      // qIdx already set to qIdxNext (after the 2 consumed cards)
+      // Just re-show the saved questions directly
       RVLF.currentQA=saved.currentQA;
       RVLF.currentQB=saved.currentQB;
       rvlfShowSuper(saved.currentQA, saved.currentQB);
     } else if(saved.currentQA){
-      // rvlfShowNormal will increment qIdx itself
-      RVLF.currentQA=saved.currentQA;
+      // rvlfShowNormal will increment qIdx by 1
+      // But qIdx is already at qIdxNext, so we need to go back 1
+      RVLF.qIdx--;
       rvlfShowNormal(saved.currentQA);
     } else {
       rvlfShowQuestion();
