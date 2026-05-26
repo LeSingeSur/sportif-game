@@ -579,6 +579,7 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'rvlf') {
     base.rvlfQuestions = (athlete.rvlfQuestions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||''}));
+    base.rvlfNoTimer = !!athlete.rvlfNoTimer;
     base.maxScore = 200;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
