@@ -3110,19 +3110,22 @@ function rvlfJoker(type){
   if(type==='lien'){
     const qs=RVLF.data.rvlfQuestions||[];
     if(RVLF.superActive){
-      // Lien in Schrödinger: each reality gets 2 linked questions
-      // Réalité A: qIdx + qIdx+1, Réalité B: qIdx+2 + qIdx+3
-      const qA1=qs[RVLF.qIdx], qA2=qs[RVLF.qIdx+1];
-      const qB1=qs[RVLF.qIdx+2], qB2=qs[RVLF.qIdx+3];
+      // Lien in Schrödinger: current questions already displayed + 1 new card per reality
+      // Réalité A: currentQA (displayed) + qs[qIdx] (next for A)
+      // Réalité B: currentQB (displayed) + qs[qIdx+1] (next for B)
+      const qA1=RVLF.currentQA;
+      const qA2=qs[RVLF.qIdx];
+      const qB1=RVLF.currentQB;
+      const qB2=qs[RVLF.qIdx+1];
       if(!qA1||!qA2){
         RVLF.jokers.lien=true;
         const fb=document.getElementById('rvlf-fb');
         if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
         rvlfStartTimer();return;
       }
-      // Consume cards
-      const cardsAvail=[qA1,qA2,qB1,qB2].filter(Boolean).length;
-      RVLF.qIdx+=cardsAvail;
+      // Consume only the new cards (currentQA/QB already consumed)
+      const newCards=[qA2,qB2].filter(Boolean).length;
+      RVLF.qIdx+=newCards;
       rvlfStopTimer();
       rvlfShowInfo(null,'🔗 Chaque réalité reçoit 2 questions liées. Choisis une question dans chaque réalité. Juste → les deux de cette réalité comptent (+40 pts). Faux → cette réalité s\'effondre.','#ffc800');
       const qEl=document.getElementById('rvlf-q-display');
@@ -3248,17 +3251,31 @@ function rvlfJoker(type){
 
   else if(type==='schrodinger'){
     RVLF.superActive=true;
-    const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⚡ SCHRÖDINGER activée ! Chaque question se dédouble jusqu\'à la fin.';fb.style.color='#64c8ff';}
-    // Disable schrodinger button permanently
     const btn=document.getElementById('rvlf-j2');if(btn){btn.style.opacity='0.3';btn.disabled=true;}
-    // Update tip
-    const tip=document.getElementById('game-tip');if(tip)tip.textContent='⚡ Mode Schrödinger — 2 réalité parallèles';
+    const tip=document.getElementById('game-tip');if(tip)tip.textContent='🐱 Mode Schrödinger — 2 réalités parallèles';
     rvlfStopTimer();
+    // Get the current question already displayed + next card
+    const qs=RVLF.data.rvlfQuestions||[];
+    const qCurrent=RVLF.currentQA; // already displayed, card already consumed
+    const qNext=qs[RVLF.qIdx];     // next card, not yet consumed
+    if(!qCurrent||!qNext){
+      // Not enough cards — just continue in super mode from next question
+      const fb=document.getElementById('rvlf-fb');
+      if(fb){fb.textContent='🐱 SCHRÖDINGER activé !';fb.style.color='#64c8ff';}
+      setTimeout(()=>{if(fb)fb.textContent='';rvlfShowQuestion();},1000);
+      return;
+    }
+    // Consume the next card (current already consumed by rvlfShowNormal)
+    RVLF.qIdx++;
+    RVLF.currentQB=qNext;
+    // Save for balise
+    const savedQA=RVLF.currentQA; const savedQB=RVLF.currentQB;
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🐱 SCHRÖDINGER ! Les deux réalités s\'ouvrent…';fb.style.color='#64c8ff';}
     setTimeout(()=>{
       if(fb)fb.textContent='';
-      rvlfShowQuestion(); // restart current question in super mode
-    },1200);
+      rvlfShowSuper(savedQA, savedQB);
+    },800);
   }
 
   else if(type==='balise'){
