@@ -2796,6 +2796,7 @@ const RVLF={
   lienPending:false,
   superActive:false,
   deadUniverse:null,
+  currentQA:null, currentQB:null, // questions currently displayed in super mode
   superQA:null, superQB:null, superAnswered:0, superOk:false
 };
 
@@ -2986,10 +2987,12 @@ function rvlfShowQuestion(){
     if(!qB){
       // Only 1 card left — play normally
       RVLF.superActive=false;
+      RVLF.currentQA=qA; RVLF.currentQB=null;
       rvlfShowNormal(qA);
       return;
     }
     RVLF.qIdx+=2; // consume 2 cards
+    RVLF.currentQA=qA; RVLF.currentQB=qB; // save for balise restore
     RVLF.cardsLeft=10-RVLF.qIdx;
     rvlfUpdateUI();
     rvlfShowSuper(qA,qB);
@@ -3001,6 +3004,7 @@ function rvlfShowQuestion(){
 }
 
 function rvlfShowNormal(q){
+  RVLF.currentQA=q; RVLF.currentQB=null;
   RVLF.cardsLeft=10-RVLF.qIdx;
   const panel=document.getElementById('rvlf-info-panel');
   if(panel)panel.style.display='none';
@@ -3255,8 +3259,9 @@ function rvlfJoker(type){
       qIdx:RVLF.qIdx,
       superActive:RVLF.superActive,
       deadUniverse:RVLF.deadUniverse,
-      // Save next questions so they don't change on restore
-      savedQIdx:RVLF.qIdx
+      savedQIdx:RVLF.qIdx,
+      currentQA:RVLF.currentQA,
+      currentQB:RVLF.currentQB
     };
     const fb=document.getElementById('rvlf-fb');
     if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
@@ -3346,7 +3351,6 @@ function rvlfActivateBalise(){
   RVLF.jokers={...saved.jokers, balise:false};
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
-  // qIdx stays advanced — cards are lost
   RVLF.balise=null;
   RVLF.lienPending=false;
   const fb=document.getElementById('rvlf-fb');
@@ -3355,7 +3359,18 @@ function rvlfActivateBalise(){
   rvlfUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    rvlfShowQuestion();
+    // Restore saved questions instead of piching new ones
+    if(saved.superActive&&saved.currentQA&&saved.currentQB){
+      RVLF.currentQA=saved.currentQA;
+      RVLF.currentQB=saved.currentQB;
+      rvlfShowSuper(saved.currentQA, saved.currentQB);
+    } else if(saved.currentQA){
+      RVLF.currentQA=saved.currentQA;
+      RVLF.currentQB=null;
+      rvlfShowNormal(saved.currentQA);
+    } else {
+      rvlfShowQuestion();
+    }
   },2000);
 }
 
@@ -7130,16 +7145,19 @@ function assautShowQ1(){
 
   // 3 choix escrime + PARER
   const choices=[
-    {txt:q.a||'',type:'touche'},       // bonne réponse = touche +1
-    {txt:q.w||'',type:'contre'},       // mauvaise = contre-attaque -1
-    {txt:q.p||'',type:'feinte'}        // feinte = piège -2
+    {txt:q.a||'',type:'touche'},
+    {txt:q.w||'',type:'contre'},
+    {txt:q.p||q.w||'',type:'feinte'}  // fallback sur w si p vide
   ].filter(c=>c.txt);
-  for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  // Dédoublonner si feinte = contre
+  const unique=choices.filter((c,i,arr)=>arr.findIndex(x=>x.txt===c.txt)===i);
+  const shuffled=[...unique];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
 
   const ch=document.getElementById('assaut-choices');
   if(ch){
     ch.innerHTML='';
-    choices.forEach(c=>{
+    shuffled.forEach(c=>{
       const btn=document.createElement('button');
       btn.className='biat-qcm-btn';
       btn.textContent=c.txt;
