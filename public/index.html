@@ -3025,6 +3025,34 @@ function rvlfShowQuestion(){
   rvlfShowNormal(q);
 }
 
+function rvlfRenderQuestion(q){
+  // Display a question without consuming a card (used by balise restore)
+  RVLF.currentQA=q; RVLF.currentQB=null;
+  const panel=document.getElementById('rvlf-info-panel');
+  if(panel)panel.style.display='none';
+  rvlfUpdateUI();
+  const qEl=document.getElementById('rvlf-q-display');
+  if(qEl)qEl.textContent=q.q||'?';
+  const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
+  for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  const ch=document.getElementById('rvlf-choices');
+  if(ch){
+    ch.innerHTML='';
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='biat-qcm-btn';btn.textContent=c.txt;
+      btn.onclick=()=>{
+        rvlfStopTimer();
+        document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+        rvlfAnswer(c.correct);
+      };
+      ch.appendChild(btn);
+    });
+  }
+  document.getElementById('rvlf-fb').textContent='';
+  rvlfStartTimer();
+}
+
 function rvlfShowNormal(q){
   RVLF.qIdx++; // consume card immediately
   RVLF.currentQA=q; RVLF.currentQB=null;
@@ -3386,10 +3414,11 @@ function rvlfActivateBalise(){
   const saved=RVLF.balise;
   const cardsLost=RVLF.qIdx-saved.qIdxNext;
   RVLF.score=saved.score;
-  RVLF.jokers={...saved.jokers, balise:false}; // restore jokers, balise spent
+  RVLF.jokers={...saved.jokers, balise:false};
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
-  RVLF.qIdx=saved.qIdxNext;
+  // qIdx stays advanced — cards between balise and error are permanently lost
+  // We only re-show the saved questions visually
   RVLF.currentQA=saved.currentQA||null;
   RVLF.currentQB=saved.currentQB||null;
   RVLF.balise=null;
@@ -3400,12 +3429,10 @@ function rvlfActivateBalise(){
   setTimeout(()=>{
     if(fb)fb.textContent='';
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
-      RVLF.currentQA=saved.currentQA;
-      RVLF.currentQB=saved.currentQB;
       rvlfShowSuper(saved.currentQA,saved.currentQB);
     } else if(saved.currentQA){
-      RVLF.qIdx--;
-      rvlfShowNormal(saved.currentQA);
+      // Render directly without consuming a card (qIdx stays advanced)
+      rvlfRenderQuestion(saved.currentQA);
     } else {
       rvlfShowQuestion();
     }
