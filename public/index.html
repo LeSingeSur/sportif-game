@@ -3252,15 +3252,15 @@ function rvlfJoker(type){
       return;
     }
     // Normal lien (no Schrödinger)
-    const qCurrent=qs[RVLF.qIdx];
-    const qNext=qs[RVLF.qIdx+1];
+    const qCurrent=RVLF.currentQA; // already displayed, card already consumed
+    const qNext=qs[RVLF.qIdx];     // next card not yet consumed
     if(!qCurrent||!qNext){
       RVLF.jokers.lien=true;
       const fb=document.getElementById('rvlf-fb');
       if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
       rvlfStartTimer();return;
     }
-    RVLF.qIdx+=2;
+    RVLF.qIdx+=1; // consume only the next card (current already consumed)
     rvlfStopTimer();
     rvlfShowInfo(null,'🔗 Choisis la question dont tu es le plus sûr et réponds. <strong style="color:#ffc800">Juste → +40 pts</strong> (les deux résolues). <strong style="color:var(--red)">Faux → Game Over</strong> (les deux tombent).','#ffc800');
     const qEl=document.getElementById('rvlf-q-display');
