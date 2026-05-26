@@ -1057,6 +1057,19 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <!-- ASSAUT zone -->
   <!-- RVLF ZONE -->
   <div id="rvlf-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
+
+    <!-- Panneau règles initial -->
+    <div id="rvlf-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">⏳ RETOUR VERS LE FUTUR</div>
+      10 questions · 30s chacune · <strong style="color:var(--txt)">1 mauvaise réponse = Game Over</strong><br>
+      ✅ Bonne réponse → <strong style="color:var(--neon)">+20 pts</strong> · Score parfait : <strong style="color:var(--neon)">200 pts</strong><br>
+      <div style="margin-top:6px;font-size:11px">3 jokers à usage unique — appuie longtemps pour les détails</div>
+      <button onclick="document.getElementById('rvlf-rules').style.display='none'" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
+    </div>
+
+    <!-- Panneau contextuel joker/événement -->
+    <div id="rvlf-info-panel" style="display:none;border-radius:10px;padding:12px;font-size:12px;line-height:1.7"></div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="rvlf-score">0</div></div>
       <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">CARTES</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="rvlf-cards">10</div></div>
@@ -1065,14 +1078,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="rvlf-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <!-- Jokers -->
     <div style="display:flex;gap:8px">
-      <button id="rvlf-j1" onclick="rvlfJoker('lien')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">×2 pts si juste</span></button>
-      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 univers</span></button>
-      <button id="rvlf-j3" onclick="rvlfJoker('balise')" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
+      <button id="rvlf-j1" onclick="rvlfJoker('lien')" ontouchstart="rvlfJokerHold('lien')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('lien')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">2 cartes, +40 pts</span></button>
+      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" ontouchstart="rvlfJokerHold('schrodinger')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('schrodinger')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 univers</span></button>
+      <button id="rvlf-j3" onclick="rvlfJoker('balise')" ontouchstart="rvlfJokerHold('balise')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('balise')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
     </div>
     <div id="rvlf-q-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
     <div id="rvlf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
     <div id="rvlf-fb" class="fb" style="text-align:center;font-size:14px"></div>
-    <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE POSÉE — Checkpoint actif</div>
+    <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE TEMPORELLE — Checkpoint actif</div>
   </div>
 
   <!-- VAR ZONE -->
@@ -2732,6 +2745,48 @@ function varSubmitCorrection(){
   });
 }
 
+const RVLF_JOKER_INFO={
+  lien:{
+    color:'#ffc800',
+    title:'🔗 LE LIEN',
+    text:'La question actuelle et la suivante s\'affichent côte à côte. Tu choisis celle dont tu es le plus sûr et tu réponds. Juste → +40 pts (les deux résolues). Faux → Game Over. 2 cartes consommées pour 1 réponse.'
+  },
+  schrodinger:{
+    color:'#64c8ff',
+    title:'🐱 SCHRÖDINGER',
+    text:'Active ce joker et chaque question se dédouble jusqu\'à la fin. Tu réponds aux 2 univers séparément. 2 justes → +30 pts. 1 juste → +20 pts. 0 juste → Game Over. Si un univers meurt, il reste grisé mais continue de brûler une carte par tour.'
+  },
+  balise:{
+    color:'#ff64c8',
+    title:'⏱️ BALISE TEMPORELLE',
+    text:'Pose un checkpoint maintenant. Si tu réponds faux plus tard, tu reviens automatiquement ici : score restauré, jokers récupérés. Mais toutes les cartes jouées entre la balise et l\'erreur sont définitivement perdues.'
+  }
+};
+
+let _rvlfHoldTimer=null;
+
+function rvlfJokerHold(type){
+  _rvlfHoldTimer=setTimeout(()=>rvlfShowInfo(type),500);
+}
+function rvlfJokerRelease(){
+  if(_rvlfHoldTimer){clearTimeout(_rvlfHoldTimer);_rvlfHoldTimer=null;}
+}
+
+function rvlfShowInfo(type,text,color){
+  const panel=document.getElementById('rvlf-info-panel');
+  if(!panel)return;
+  const info=type&&RVLF_JOKER_INFO[type]?RVLF_JOKER_INFO[type]:{color:color||'var(--mute)',title:'',text:text||''};
+  panel.style.cssText=`display:block;border-radius:10px;padding:12px;font-size:12px;line-height:1.7;background:rgba(${hexToRgb(info.color)},.08);border:1px solid rgba(${hexToRgb(info.color)},.3);color:var(--txt)`;
+  panel.innerHTML=`<div style="font-family:var(--fh);font-size:12px;color:${info.color};margin-bottom:6px">${info.title}</div>${info.text}
+    <div style="text-align:right;margin-top:8px"><button onclick="document.getElementById('rvlf-info-panel').style.display='none'" style="background:none;border:none;color:var(--mute);font-size:11px;cursor:pointer">✕ Fermer</button></div>`;
+}
+
+function hexToRgb(hex){
+  // Convert #ffc800 or css var to rgb string for rgba()
+  const map={'#ffc800':'255,200,0','#64c8ff':'100,200,255','#ff64c8':'255,100,200','var(--neon)':'212,255,0','var(--red)':'255,60,60','var(--orange)':'255,150,0'};
+  return map[hex]||'255,255,255';
+}
+
 // ── RETOUR VERS LE FUTUR ──────────────────────────────────────────────────
 const RVLF={
   data:null, qIdx:0, score:0, done:false,
@@ -2740,6 +2795,7 @@ const RVLF={
   balise:null,
   lienPending:false,
   superActive:false,
+  deadUniverse:null,
   superQA:null, superQB:null, superAnswered:0, superOk:false
 };
 
@@ -2747,7 +2803,7 @@ function setupRvlf(data){
   RVLF.data=data; RVLF.qIdx=0; RVLF.score=0; RVLF.done=false;
   RVLF.cardsLeft=10; RVLF.timerInt=null;
   RVLF.jokers={lien:true,schrodinger:true,balise:true};
-  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false;
+  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadUniverse=null;
   RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
@@ -2820,6 +2876,8 @@ function rvlfShowQuestion(){
 
 function rvlfShowNormal(q){
   RVLF.cardsLeft=10-RVLF.qIdx;
+  const panel=document.getElementById('rvlf-info-panel');
+  if(panel)panel.style.display='none';
   rvlfUpdateUI();
   const qEl=document.getElementById('rvlf-q-display');
   if(qEl)qEl.textContent=q.q||'?';
@@ -2922,6 +2980,7 @@ function rvlfJoker(type){
     // Consume the next card too
     RVLF.qIdx++;
     rvlfStopTimer();
+    rvlfShowInfo(null,'🔗 Choisis la question dont tu es le plus sûr et réponds. <strong style="color:#ffc800">Juste → +40 pts</strong> (les deux résolues). <strong style="color:var(--red)">Faux → Game Over</strong> (les deux tombent).','#ffc800');
     const qEl=document.getElementById('rvlf-q-display');
     if(qEl)qEl.textContent='🔗 LIEN — Choisis la question à laquelle répondre :';
     const fb=document.getElementById('rvlf-fb');
@@ -2998,17 +3057,30 @@ function rvlfJoker(type){
 function rvlfShowSuper(qA,qB){
   const ch=document.getElementById('rvlf-choices');
   const qEl=document.getElementById('rvlf-q-display');
-  if(qEl)qEl.textContent='⚡ Réponds aux deux univers — 1 juste = survie';
+  if(qEl)qEl.textContent=RVLF.deadUniverse!==null?'🐱 Un univers a disparu — l\'autre continue':'🐱 Réponds aux deux univers';
   ch.innerHTML='';
   let answered=0; let okCount=0;
+  const neededAnswers=RVLF.deadUniverse!==null?1:2;
   [qA,qB].forEach((q,idx)=>{
     const color=idx===0?'#64c8ff':'#ff64c8';
+    const isDead=RVLF.deadUniverse===idx;
     const div=document.createElement('div');
-    div.style.cssText=`background:var(--c2);border:1px solid ${color}33;border-radius:10px;padding:10px;margin-bottom:6px`;
-    div.innerHTML=`<div style="font-size:10px;color:${color};font-family:var(--fh);margin-bottom:4px">UNIVERS ${idx===0?'A':'B'}</div>
-      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:8px">${q.q}</div>
+    div.style.cssText=`background:var(--c2);border:1px solid ${isDead?'rgba(255,255,255,.05)':color+'33'};border-radius:10px;padding:10px;margin-bottom:6px;opacity:${isDead?'0.35':'1'}`;
+    div.innerHTML=`<div style="font-size:10px;color:${isDead?'var(--mute)':color};font-family:var(--fh);margin-bottom:4px">UNIVERS ${idx===0?'A':'B'}${isDead?' — 💀 DÉTRUIT':''}</div>
+      <div style="font-size:13px;font-weight:700;color:${isDead?'var(--mute)':'var(--txt)'};margin-bottom:8px">${q.q}</div>
       <div style="display:flex;gap:6px" id="super-ch-${idx}"></div>`;
     ch.appendChild(div);
+    if(isDead){
+      // Show greyed out buttons, not clickable
+      const cEl=div.querySelector(`#super-ch-${idx}`);
+      [q.a,q.w].forEach(txt=>{
+        const btn=document.createElement('button');
+        btn.style.cssText='flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);font-size:12px;cursor:not-allowed';
+        btn.textContent=txt;btn.disabled=true;
+        cEl.appendChild(btn);
+      });
+      return;
+    }
     const cEl=div.querySelector(`#super-ch-${idx}`);
     const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
     for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
@@ -3018,18 +3090,28 @@ function rvlfShowSuper(qA,qB){
       btn.textContent=c.txt;
       btn.onclick=()=>{
         cEl.querySelectorAll('button').forEach(b=>b.disabled=true);
-        if(c.correct){btn.style.background=`rgba(${idx===0?'100,200,255':'255,100,200'},.2)`;btn.style.color=color;okCount++;}
-        else{btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';}
+        if(c.correct){
+          btn.style.background=`rgba(${idx===0?'100,200,255':'255,100,200'},.2)`;
+          btn.style.color=color;
+          okCount++;
+        } else {
+          btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';
+          // This universe dies next turn
+          RVLF.deadUniverse=idx;
+        }
         answered++;
-        if(answered>=2){
+        if(answered>=neededAnswers){
           rvlfStopTimer();
           const fb=document.getElementById('rvlf-fb');
           if(okCount>=1){
-            const pts=okCount===2?30:20;
+            const pts=neededAnswers===2?(okCount===2?30:20):20;
             RVLF.score+=pts;
             rvlfUpdateUI();
+            if(okCount===1&&neededAnswers===2){
+              rvlfShowInfo(null,'💀 Un univers s\'est effondré. Il restera affiché grisé — mais continue de brûler 1 carte par tour. L\'univers survivant continue.','#ff6060');
+            }
             if(fb){fb.textContent=okCount===2?'🐱 2 univers survivent ! +30 pts':'🐱 1 univers survit ! +20 pts';fb.style.color='#64c8ff';}
-            setTimeout(rvlfNext,1200);
+            setTimeout(rvlfNext,okCount===1&&neededAnswers===2?2200:1200);
           } else {
             if(RVLF.balise){setTimeout(()=>rvlfActivateBalise(),600);}
             else{setTimeout(()=>rvlfGameOver('🐱 Les deux univers s\'effondrent !'),600);}
