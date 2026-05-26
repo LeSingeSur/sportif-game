@@ -236,6 +236,7 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'rvlf') {
     // Send questions without revealing correct answer
     base.rvlfQuestions = (athlete.rvlfQuestions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||''}));
+    base.rvlfNoTimer = !!athlete.rvlfNoTimer;
     base.maxScore = 200;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -947,6 +948,7 @@ app.post('/api/admin/athlete', (req, res) => {
     varChips:           type === 'var' ? (req.body.varChips||[]) : undefined,
     varTol:             type === 'var' ? (parseInt(req.body.varTol)||1) : undefined,
     rvlfQuestions:      type === 'rvlf' ? (req.body.rvlfQuestions||[]) : undefined,
+    rvlfNoTimer:        type === 'rvlf' ? !!req.body.rvlfNoTimer : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
