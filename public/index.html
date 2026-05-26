@@ -1064,7 +1064,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       10 questions · 30s chacune · <strong style="color:var(--txt)">1 mauvaise réponse = Game Over</strong><br>
       ✅ Bonne réponse → <strong style="color:var(--neon)">+20 pts</strong> · Score parfait : <strong style="color:var(--neon)">200 pts</strong><br>
       <div style="margin-top:6px;font-size:11px">3 jokers à usage unique — appuie longtemps pour les détails</div>
-      <button onclick="document.getElementById('rvlf-rules').style.display='none'" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
+      <button onclick="document.getElementById('rvlf-rules').style.display='none';rvlfShowQuestion();" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
     </div>
 
     <!-- Panneau contextuel joker/événement -->
@@ -2496,8 +2496,7 @@ function setupVarMode(data){
   document.getElementById('var-rules').style.display='block';
   const skipBtn=document.getElementById('var-skip-btn');if(skipBtn)skipBtn.style.display='block';
   varRenderText();
-  varStartTimer(varTimeoutIdentify);
-}
+  varStartTimer(varTimeoutIdentify);}
 
 function varRenderText(){
   const el=document.getElementById('var-text-display');
@@ -2808,8 +2807,12 @@ function setupRvlf(data){
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
   document.getElementById('rvlf-zone').style.display='flex';
+  document.getElementById('rvlf-rules').style.display='block';
+  document.getElementById('rvlf-q-display').textContent='';
+  document.getElementById('rvlf-choices').innerHTML='';
+  document.getElementById('rvlf-fb').textContent='';
   rvlfUpdateUI();
-  rvlfShowQuestion();
+  // Timer starts only when player clicks "C'EST PARTI"
 }
 
 function rvlfUpdateUI(){
@@ -3007,9 +3010,9 @@ function rvlfJoker(type){
             ch.querySelectorAll('button').forEach(b=>b.disabled=true);
             if(c.correct){
               btn.style.background='rgba(212,255,0,.2)';btn.style.color='var(--neon)';
-              RVLF.score+=20;
+              RVLF.score+=40;
               const fb2=document.getElementById('rvlf-fb');
-              if(fb2){fb2.textContent='🔗 LIEN ! +20 pts — les deux questions résolues !';fb2.style.color='#ffc800';}
+              if(fb2){fb2.textContent='🔗 LIEN ! +40 pts — les deux questions résolues !';fb2.style.color='#ffc800';}
               rvlfUpdateUI();
               setTimeout(rvlfNext,1200);
             } else {
