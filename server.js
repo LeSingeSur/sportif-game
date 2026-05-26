@@ -217,7 +217,7 @@ app.get('/api/preview', (req, res) => {
     base.answer          = athlete.repliqueAuthor || athlete.answer || '';
     base.maxScore = 100;
   } else if (athlete.type === 'assaut') {
-    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'Vrai',adminTime:parseInt(q.adminTime)||3}));
+    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',p:q.p||''}));
     base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
     base.maxScore=100;
   } else if (athlete.type === 'tirarlarc') {
@@ -257,7 +257,7 @@ app.get('/api/preview', (req, res) => {
     };
     base.maxScore = 200;
   } else if (athlete.type === 'assaut') {
-    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'Vrai',adminTime:parseInt(q.adminTime)||3}));
+    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',p:q.p||''}));
     base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
     base.maxScore=100;
   } else if (athlete.type === 'tirarlarc') {
@@ -626,7 +626,7 @@ app.get('/api/athlete', (req, res) => {
     base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct!==undefined?s.correct:0}));
     base.maxScore = 100;
   } else if (athlete.type === 'assaut') {
-    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'Vrai',adminTime:parseInt(q.adminTime)||3}));
+    base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',p:q.p||''}));
     base.phase2 = {q:athlete.phase2?.q||'',touche:athlete.phase2?.touche||'',neutre:athlete.phase2?.neutre||'',piege:athlete.phase2?.piege||''};
     base.maxScore = 100;
   } else {
