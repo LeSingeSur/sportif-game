@@ -1063,7 +1063,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">⏳ RETOUR VERS LE FUTUR</div>
       10 questions · 30s chacune · <strong style="color:var(--txt)">1 mauvaise réponse = Game Over</strong><br>
       ✅ Bonne réponse → <strong style="color:var(--neon)">+20 pts</strong> · Score parfait : <strong style="color:var(--neon)">200 pts</strong><br>
-      <div style="margin-top:6px;font-size:11px">3 jokers à usage unique — appuie longtemps pour les détails</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--mute);line-height:1.8">
+        🔗 <strong style="color:#ffc800">LIEN</strong> — Q actuelle + suivante. Réponds à 1 pour les 2. Juste → +40 pts. Faux → Game Over.<br>
+        🐱 <strong style="color:#64c8ff">SCHRÖDINGER</strong> — 2 questions en // jusqu'à la fin. 2 justes → +30 · 1 juste → +20 · 0 → Game Over.<br>
+        ⏱️ <strong style="color:#ff64c8">BALISE</strong> — Checkpoint. Si erreur → score + jokers restaurés. Toutes les cartes jouées après la pose = perdues.
+      </div>
       <button onclick="document.getElementById('rvlf-rules').style.display='none';rvlfShowQuestion();" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
     </div>
 
@@ -3381,32 +3385,25 @@ function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
   const cardsLost=RVLF.qIdx-saved.qIdxNext;
-  // Restore score, jokers, super state
   RVLF.score=saved.score;
-  RVLF.jokers={...saved.jokers, balise:false};
+  RVLF.jokers={...saved.jokers, balise:false}; // restore jokers, balise spent
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
-  // Restore qIdx to what it was when balise was posed
   RVLF.qIdx=saved.qIdxNext;
   RVLF.currentQA=saved.currentQA||null;
   RVLF.currentQB=saved.currentQB||null;
   RVLF.balise=null;
   RVLF.lienPending=false;
   const fb=document.getElementById('rvlf-fb');
-  if(fb){fb.textContent='⏱️ BALISE ! Retour à '+saved.score+' pts · '+Math.max(0,cardsLost)+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
+  if(fb){fb.textContent='⏱️ BALISE ! Score restauré à '+saved.score+' pts · '+Math.max(0,cardsLost)+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
   rvlfUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    // Show exact same questions as when balise was posed
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
-      // qIdx already set to qIdxNext (after the 2 consumed cards)
-      // Just re-show the saved questions directly
       RVLF.currentQA=saved.currentQA;
       RVLF.currentQB=saved.currentQB;
-      rvlfShowSuper(saved.currentQA, saved.currentQB);
+      rvlfShowSuper(saved.currentQA,saved.currentQB);
     } else if(saved.currentQA){
-      // rvlfShowNormal will increment qIdx by 1
-      // But qIdx is already at qIdxNext, so we need to go back 1
       RVLF.qIdx--;
       rvlfShowNormal(saved.currentQA);
     } else {
