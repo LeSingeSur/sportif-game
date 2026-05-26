@@ -1086,6 +1086,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="rvlf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
     <div id="rvlf-fb" class="fb" style="text-align:center;font-size:14px"></div>
     <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE TEMPORELLE — Checkpoint actif</div>
+    <button id="rvlf-stop-btn" onclick="rvlfStop()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:var(--mute);font-size:12px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important;margin-top:4px">🏁 Arrêter et garder mes points ({{score}} pts)</button>
   </div>
 
   <!-- VAR ZONE -->
@@ -2794,7 +2795,7 @@ const RVLF={
   balise:null,
   lienPending:false,
   superActive:false,
-  deadRéalitée:null,
+  deadUniverse:null,
   superQA:null, superQB:null, superAnswered:0, superOk:false
 };
 
@@ -2802,7 +2803,7 @@ function setupRvlf(data){
   RVLF.data=data; RVLF.qIdx=0; RVLF.score=0; RVLF.done=false;
   RVLF.cardsLeft=10; RVLF.timerInt=null;
   RVLF.jokers={lien:true,schrodinger:true,balise:true};
-  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadRéalitée=null;
+  RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadUniverse=null;
   RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
@@ -2817,7 +2818,9 @@ function setupRvlf(data){
 
 function rvlfUpdateUI(){
   document.getElementById('rvlf-score').textContent=RVLF.score;
-  document.getElementById('rvlf-cards').textContent=RVLF.cardsLeft;
+  document.getElementById('rvlf-cards').textContent=Math.max(0,10-RVLF.qIdx);
+  const stopBtn=document.getElementById('rvlf-stop-btn');
+  if(stopBtn)stopBtn.textContent='🏁 Arrêter et garder mes points ('+RVLF.score+' pts)';
   // Joker buttons
   ['lien','schrodinger','balise'].forEach((j,idx)=>{
     const btn=document.getElementById('rvlf-j'+(idx+1));
@@ -2858,6 +2861,118 @@ function rvlfStartTimer(){
 function rvlfStopTimer(){
   if(RVLF.timerInt)clearInterval(RVLF.timerInt);
   RVLF.timerInt=null;
+}
+
+function rvlfStop(){
+  if(RVLF.done)return;
+  RVLF.done=true;
+  rvlfStopTimer();
+  const finalScore=Math.max(0,RVLF.score);
+  G.score=finalScore;setScore(finalScore,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Retour vers le Futur';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🏁 Arrêt volontaire · '+finalScore+' pts sur 200';
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('rvlf');submitScore(finalScore);show('sv');
+}
+
+function rvlfShowLienInSuper(lienRealite, qLien1, qLien2, qNormal, colors, labels){
+  // lienRealite: 0=A has lien, 1=B has lien
+  // qLien1+qLien2: the two linked questions in that reality
+  // qNormal: the normal question in the other reality
+  const normalRealite=lienRealite===0?1:0;
+  const ch=document.getElementById('rvlf-choices');
+  const qEl=document.getElementById('rvlf-q-display');
+  if(qEl)qEl.textContent='🔗 Réponds aux 3 questions';
+  ch.innerHTML='';
+  let answered=0;
+  let lienOk=false;
+  let normalOk=false;
+  const neededNormal=RVLF.deadUniverse===normalRealite?0:1;
+  const totalNeeded=1+neededNormal; // lien counts as 1 answer
+
+  // Show linked reality (2 questions, pick one)
+  if(RVLF.deadUniverse!==lienRealite){
+    const lienDiv=document.createElement('div');
+    lienDiv.style.cssText=`background:var(--c2);border:2px solid ${colors[lienRealite]}55;border-radius:10px;padding:10px;margin-bottom:6px`;
+    lienDiv.innerHTML=`<div style="font-size:10px;color:${colors[lienRealite]};font-family:var(--fh);margin-bottom:4px">🔗 ${labels[lienRealite]} — LIEN (choisis une)</div>`;
+    ch.appendChild(lienDiv);
+    [qLien1,qLien2].filter(Boolean).forEach((q,qi)=>{
+      const qDiv=document.createElement('div');
+      qDiv.style.cssText='background:var(--c1);border-radius:8px;padding:8px;margin-bottom:4px';
+      qDiv.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:6px">Q${qi+1}: ${q.q}</div><div style="display:flex;gap:6px" id="lien-super-${qi}"></div>`;
+      lienDiv.appendChild(qDiv);
+      const cEl=qDiv.querySelector(`#lien-super-${qi}`);
+      const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
+      for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+      choices.forEach(c=>{
+        const btn=document.createElement('button');
+        btn.style.cssText='flex:1;padding:7px;border-radius:7px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:12px;cursor:pointer';
+        btn.textContent=c.txt;
+        btn.onclick=()=>{
+          // Disable all lien buttons
+          lienDiv.querySelectorAll('button').forEach(b=>b.disabled=true);
+          if(c.correct){btn.style.background=`rgba(${lienRealite===0?'100,200,255':'255,100,200'},.2)`;btn.style.color=colors[lienRealite];lienOk=true;}
+          else{btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';RVLF.deadUniverse=lienRealite;}
+          answered++;
+          if(answered>=totalNeeded) resolveLienSuper();
+        };
+        cEl.appendChild(btn);
+      });
+    });
+  } else {
+    // Lien reality already dead - count as answered
+    answered++;
+  }
+
+  // Show normal reality
+  if(qNormal&&RVLF.deadUniverse!==normalRealite){
+    const normDiv=document.createElement('div');
+    normDiv.style.cssText=`background:var(--c2);border:1px solid ${colors[normalRealite]}33;border-radius:10px;padding:10px;margin-bottom:6px`;
+    normDiv.innerHTML=`<div style="font-size:10px;color:${colors[normalRealite]};font-family:var(--fh);margin-bottom:4px">${labels[normalRealite]} — Normal</div>
+      <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:8px">${qNormal.q}</div>
+      <div style="display:flex;gap:6px" id="lien-super-norm"></div>`;
+    ch.appendChild(normDiv);
+    const nEl=normDiv.querySelector('#lien-super-norm');
+    const choices=[{txt:qNormal.a,correct:true},{txt:qNormal.w,correct:false}];
+    for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.style.cssText='flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:var(--c1);color:var(--txt);font-size:12px;cursor:pointer';
+      btn.textContent=c.txt;
+      btn.onclick=()=>{
+        nEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+        if(c.correct){btn.style.background=`rgba(${normalRealite===0?'100,200,255':'255,100,200'},.2)`;btn.style.color=colors[normalRealite];normalOk=true;}
+        else{btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';RVLF.deadUniverse=normalRealite;}
+        answered++;
+        if(answered>=totalNeeded) resolveLienSuper();
+      };
+      btn.appendChild(document.createTextNode(''));
+      nEl.appendChild(btn);
+    });
+  } else if(!qNormal){
+    answered++; // no normal question available
+  }
+
+  function resolveLienSuper(){
+    rvlfStopTimer();
+    const anyOk=lienOk||normalOk;
+    const fb=document.getElementById('rvlf-fb');
+    if(anyOk){
+      let pts=0;
+      if(lienOk)pts+=40; // lien gives 40 for 2 cards
+      if(normalOk)pts+=20;
+      RVLF.score+=pts;
+      rvlfUpdateUI();
+      if(fb){fb.textContent=`🔗 +${pts} pts`;fb.style.color='#ffc800';}
+      setTimeout(rvlfNext,1500);
+    } else {
+      if(RVLF.balise){setTimeout(()=>rvlfActivateBalise(),600);}
+      else{setTimeout(()=>rvlfGameOver('Game Over — toutes les réalités se sont effondrées !'),600);}
+    }
+  }
+  rvlfStartTimer();
 }
 
 function rvlfShowQuestion(){
@@ -2981,22 +3096,60 @@ function rvlfJoker(type){
 
   if(type==='lien'){
     const qs=RVLF.data.rvlfQuestions||[];
-    const qCurrent=qs[RVLF.qIdx-1]; // already displayed (current question before joker)
-    const qNext=qs[RVLF.qIdx];      // next card
-    if(!qNext){
+    if(RVLF.superActive){
+      // In Schrödinger: apply lien to one reality, normal question to the other
+      // Need 3 cards: qA_lien + qA_next (linked) + qB_normal
+      const qA1=qs[RVLF.qIdx];
+      const qA2=qs[RVLF.qIdx+1];
+      const qB=qs[RVLF.qIdx+2];
+      if(!qA1||!qA2){
+        RVLF.jokers.lien=true;
+        const fb=document.getElementById('rvlf-fb');
+        if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
+        rvlfStartTimer();return;
+      }
+      RVLF.qIdx+=qB?3:2;
+      rvlfStopTimer();
+      rvlfShowInfo(null,'🔗 Choisis dans quelle réalité appliquer le Lien. Dans cette réalité, 2 questions liées s\'affichent — tu réponds à une pour les deux. L\'autre réalité joue normalement.','#ffc800');
+      const qEl=document.getElementById('rvlf-q-display');
+      if(qEl)qEl.textContent='🔗 LIEN en mode Schrödinger — Choisis la réalité :';
+      const ch=document.getElementById('rvlf-choices');
+      if(ch){
+        ch.innerHTML='';
+        const colors=['#64c8ff','#ff64c8'];
+        const labels=['RÉALITÉ A','RÉALITÉ B'];
+        // Show which reality to apply lien to
+        [0,1].forEach(rIdx=>{
+          if(RVLF.deadUniverse===rIdx)return; // skip dead reality
+          const btn=document.createElement('button');
+          btn.style.cssText=`width:100%!important;padding:10px;border-radius:10px;border:1px solid ${colors[rIdx]}55;background:rgba(${rIdx===0?'100,200,255':'255,100,200'},.08);color:${colors[rIdx]};font-family:var(--fh);font-size:13px;cursor:pointer;margin-bottom:6px`;
+          btn.textContent=`🔗 Appliquer le Lien à ${labels[rIdx]}`;
+          btn.onclick=()=>{
+            ch.querySelectorAll('button').forEach(b=>b.disabled=true);
+            rvlfShowLienInSuper(rIdx, qA1, qA2, qB, colors, labels);
+          };
+          ch.appendChild(btn);
+        });
+      }
+      rvlfStartTimer();
+      return;
+    }
+    // Normal lien (no Schrödinger)
+    const qCurrent=qs[RVLF.qIdx];
+    const qNext=qs[RVLF.qIdx+1];
+    if(!qCurrent||!qNext){
       RVLF.jokers.lien=true;
       const fb=document.getElementById('rvlf-fb');
-      if(fb){fb.textContent='🔗 Pas de question suivante disponible.';fb.style.color='var(--mute)';}
+      if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
       rvlfStartTimer();return;
     }
-    // Consume the next card too
-    RVLF.qIdx++;
+    RVLF.qIdx+=2;
     rvlfStopTimer();
     rvlfShowInfo(null,'🔗 Choisis la question dont tu es le plus sûr et réponds. <strong style="color:#ffc800">Juste → +40 pts</strong> (les deux résolues). <strong style="color:var(--red)">Faux → Game Over</strong> (les deux tombent).','#ffc800');
     const qEl=document.getElementById('rvlf-q-display');
     if(qEl)qEl.textContent='🔗 LIEN — Choisis la question à laquelle répondre :';
     const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='Si juste → +20 pts (les deux comptent) · Si faux → Game Over';fb.style.color='#ffc800';}
+    if(fb){fb.textContent='';}
     const ch=document.getElementById('rvlf-choices');
     if(ch){
       ch.innerHTML='';
@@ -3053,14 +3206,20 @@ function rvlfJoker(type){
   }
 
   else if(type==='balise'){
-    // Set checkpoint
-    RVLF.balise={score:RVLF.score, jokers:{...RVLF.jokers}, qIdx:RVLF.qIdx};
+    RVLF.balise={
+      score:RVLF.score,
+      jokers:{...RVLF.jokers},
+      qIdx:RVLF.qIdx,
+      superActive:RVLF.superActive,
+      deadUniverse:RVLF.deadUniverse,
+      // Save next questions so they don't change on restore
+      savedQIdx:RVLF.qIdx
+    };
     const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⏱️ BALISE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
+    if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
     rvlfUpdateUI();
     setTimeout(()=>{
       if(fb)fb.textContent='';
-      // Resume question
       rvlfShowQuestion();
     },1000);
   }
@@ -3069,13 +3228,13 @@ function rvlfJoker(type){
 function rvlfShowSuper(qA,qB){
   const ch=document.getElementById('rvlf-choices');
   const qEl=document.getElementById('rvlf-q-display');
-  if(qEl)qEl.textContent=RVLF.deadRéalitée!==null?'🐱 Une réalité a disparu — l\'autre continue':'🐱 Réponds aux deux réalité';
+  if(qEl)qEl.textContent=RVLF.deadUniverse!==null?'🐱 Une réalité a disparu — l\'autre continue':'🐱 Réponds aux deux réalités';
   ch.innerHTML='';
   let answered=0; let okCount=0;
-  const neededAnswers=RVLF.deadRéalitée!==null?1:2;
+  const neededAnswers=RVLF.deadUniverse!==null?1:2;
   [qA,qB].forEach((q,idx)=>{
     const color=idx===0?'#64c8ff':'#ff64c8';
-    const isDead=RVLF.deadRéalitée===idx;
+    const isDead=RVLF.deadUniverse===idx;
     const div=document.createElement('div');
     div.style.cssText=`background:var(--c2);border:1px solid ${isDead?'rgba(255,255,255,.05)':color+'33'};border-radius:10px;padding:10px;margin-bottom:6px;opacity:${isDead?'0.35':'1'}`;
     div.innerHTML=`<div style="font-size:10px;color:${isDead?'var(--mute)':color};font-family:var(--fh);margin-bottom:4px">RÉALITÉ ${idx===0?'A':'B'}${isDead?' — 💀 DÉTRUIT':''}</div>
@@ -3109,7 +3268,7 @@ function rvlfShowSuper(qA,qB){
         } else {
           btn.style.background='rgba(255,60,60,.2)';btn.style.color='var(--red)';
           // This réalitée dies next turn
-          RVLF.deadRéalitée=idx;
+          RVLF.deadUniverse=idx;
         }
         answered++;
         if(answered>=neededAnswers){
@@ -3141,7 +3300,9 @@ function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
   RVLF.score=saved.score;
-  RVLF.jokers={...saved.jokers, balise:false}; // balise spent
+  RVLF.jokers={...saved.jokers, balise:false};
+  RVLF.superActive=saved.superActive||false;
+  RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
   // qIdx stays advanced — cards are lost
   RVLF.balise=null;
   RVLF.lienPending=false;
@@ -6954,13 +7115,14 @@ function assautShowQ1(){
     ch.appendChild(btnP);
   }
 
-  // Timer 20s
+  // Timer décroissant : Q1=20s, Q2=18s, Q3=16s... min 6s
   if(ASSAUT.qTimerInt)clearInterval(ASSAUT.qTimerInt);
   ASSAUT.parerFired=false;
   const tw=document.getElementById('assaut-timer-wrap');
   const tEl=document.getElementById('assaut-timer');
   if(tw)tw.style.display='block';
-  let qt=20;if(tEl)tEl.textContent=qt;
+  let qt=Math.max(6, 20 - ASSAUT.qIdx * 2);
+  if(tEl)tEl.textContent=qt;
   ASSAUT.qTimerInt=setInterval(()=>{
     if(ASSAUT.parerFired)return;
     qt--;if(tEl)tEl.textContent=qt;
