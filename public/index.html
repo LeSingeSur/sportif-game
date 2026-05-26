@@ -3286,12 +3286,13 @@ function rvlfJoker(type){
       deadUniverse:RVLF.deadUniverse,
       currentQA:RVLF.currentQA,
       currentQB:RVLF.currentQB,
-      qIdxNext:RVLF.qIdx // next unplayed card
+      qIdxNext:RVLF.qIdx
     };
     const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée !';fb.style.color='#ff64c8';}
+    if(fb){fb.textContent='⏱️ BALISE posée — continue à jouer !';fb.style.color='#ff64c8';}
     rvlfUpdateUI();
-    setTimeout(()=>{if(fb&&fb.textContent==='⏱️ BALISE TEMPORELLE posée !')fb.textContent='';},1200);
+    // Don't stop timer, don't re-render — player stays on current question
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
   }
 }
 
