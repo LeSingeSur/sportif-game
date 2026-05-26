@@ -3347,26 +3347,32 @@ function rvlfShowSuper(qA,qB){
 function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
+  const cardsLost=RVLF.qIdx-saved.qIdx;
+  // Restore full state
   RVLF.score=saved.score;
   RVLF.jokers={...saved.jokers, balise:false};
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
+  RVLF.qIdx=saved.qIdx; // ← restore qIdx so next question is correct
+  RVLF.currentQA=saved.currentQA||null;
+  RVLF.currentQB=saved.currentQB||null;
   RVLF.balise=null;
   RVLF.lienPending=false;
   const fb=document.getElementById('rvlf-fb');
-  const cardsLost=RVLF.qIdx-saved.qIdx;
   if(fb){fb.textContent='⏱️ BALISE activée ! Retour à '+saved.score+' pts · '+cardsLost+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
   rvlfUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    // Restore saved questions instead of piching new ones
+    // Re-show exact same questions as when balise was set
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
+      // Re-consume the 2 cards
+      RVLF.qIdx+=2;
       RVLF.currentQA=saved.currentQA;
       RVLF.currentQB=saved.currentQB;
       rvlfShowSuper(saved.currentQA, saved.currentQB);
     } else if(saved.currentQA){
+      RVLF.qIdx++;
       RVLF.currentQA=saved.currentQA;
-      RVLF.currentQB=null;
       rvlfShowNormal(saved.currentQA);
     } else {
       rvlfShowQuestion();
@@ -7112,7 +7118,7 @@ function assautShowIntro(){
   const q=document.getElementById('assaut-question');
   if(q){
     q.style.display='block';
-    q.innerHTML='<div style="font-size:12px;line-height:1.9;background:var(--c2);border-radius:10px;padding:12px"><div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:6px">⚔️ COMMENT JOUER</div><b style="color:var(--txt)">Phase 1 — 5 Vrai/Faux</b><br><span style="color:var(--mute)">Plus rapide que l\'Admin ET juste → +1 case<br>Trop lent ou faux → −1 case<br>🛡️ <strong style="color:#f59e0b">PARER</strong> : passe 1 question sans perdre (1× max)</span><br><br><b style="color:var(--txt)">Phase 2 — Estocade (3 choix)</b><br><span style="color:var(--mute)">✅ Bonne → +2 · 🤺 Neutre → −1 · 🎭 Piège Admin → −2</span><br><br><b style="color:var(--neon)">Score = position × 10 · Max 100 pts</b></div>';
+    q.innerHTML='<div style="font-size:12px;line-height:1.9;background:var(--c2);border-radius:10px;padding:12px"><div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:6px">⚔️ COMMENT JOUER</div><b style="color:var(--txt)">6 questions · 3 choix par question</b><br><span style="color:var(--mute)">🤺 <strong style="color:var(--neon)">Touche</strong> → +1 case · ⚔️ <strong style="color:var(--mute)">Contre-attaque</strong> → −1 case · 🎭 <strong style="color:var(--red)">Feinte</strong> → −2 cases</span><br><span style="color:var(--mute)">🛡️ <strong style="color:#f59e0b">PARADE</strong> : passe 1 question sans perdre (1× max)</span><br><span style="color:var(--mute)">⏱️ Timer décroissant : 20s Q1 → 10s Q6</span><br><br><b style="color:var(--neon)">Score = position × 10 · Départ case 5 · Max 100 pts</b></div>';
   }
   const ch=document.getElementById('assaut-choices');if(ch)ch.innerHTML='';
   const tw=document.getElementById('assaut-timer-wrap');if(tw)tw.style.display='none';
@@ -7144,13 +7150,17 @@ function assautShowQ1(){
   if(qEl){qEl.textContent=q.q||'';qEl.style.display='block';}
 
   // 3 choix escrime + PARER
-  const choices=[
-    {txt:q.a||'',type:'touche'},
-    {txt:q.w||'',type:'contre'},
-    {txt:q.p||q.w||'',type:'feinte'}  // fallback sur w si p vide
-  ].filter(c=>c.txt);
-  // Dédoublonner si feinte = contre
-  const unique=choices.filter((c,i,arr)=>arr.findIndex(x=>x.txt===c.txt)===i);
+  const allChoices=[
+    {txt:(q.a||'').trim(),type:'touche'},
+    {txt:(q.w||'').trim(),type:'contre'},
+    {txt:(q.p||'').trim(),type:'feinte'}
+  ];
+  // Keep only non-empty and deduplicated
+  const seen=new Set();
+  const unique=allChoices.filter(c=>{
+    if(!c.txt||seen.has(c.txt))return false;
+    seen.add(c.txt);return true;
+  });
   const shuffled=[...unique];
   for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
 
