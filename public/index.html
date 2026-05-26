@@ -2814,7 +2814,16 @@ function setupRvlf(data){
   RVLF.cardsLeft=10; RVLF.timerInt=null;
   RVLF.jokers={lien:true,schrodinger:true,balise:true};
   RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadUniverse=null;
+  RVLF.currentQA=null; RVLF.currentQB=null;
   RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
+  // Reset joker button styles
+  ['rvlf-j1','rvlf-j2','rvlf-j3'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.style.opacity='1';btn.disabled=false;}
+  });
+  // Reset info panel
+  const panel=document.getElementById('rvlf-info-panel');if(panel)panel.style.display='none';
+  const bInfo=document.getElementById('rvlf-balise-info');if(bInfo)bInfo.style.display='none';
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
   document.getElementById('rvlf-zone').style.display='flex';
@@ -3104,6 +3113,23 @@ function rvlfFinish(){
 function rvlfJoker(type){
   if(RVLF.done||!RVLF.jokers[type])return;
   RVLF.jokers[type]=false;
+  // Balise doesn't interrupt the game — only save state silently
+  if(type==='balise'){
+    RVLF.balise={
+      score:RVLF.score,
+      jokers:{...RVLF.jokers},
+      superActive:RVLF.superActive,
+      deadUniverse:RVLF.deadUniverse,
+      currentQA:RVLF.currentQA,
+      currentQB:RVLF.currentQB,
+      qIdxNext:RVLF.qIdx
+    };
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='⏱️ BALISE posée — continue à jouer !';fb.style.color='#ff64c8';}
+    rvlfUpdateUI();
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    return; // don't stop timer, don't disable buttons
+  }
   rvlfStopTimer();
   document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
 
@@ -3278,22 +3304,6 @@ function rvlfJoker(type){
     },800);
   }
 
-  else if(type==='balise'){
-    RVLF.balise={
-      score:RVLF.score,
-      jokers:{...RVLF.jokers},
-      superActive:RVLF.superActive,
-      deadUniverse:RVLF.deadUniverse,
-      currentQA:RVLF.currentQA,
-      currentQB:RVLF.currentQB,
-      qIdxNext:RVLF.qIdx
-    };
-    const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⏱️ BALISE posée — continue à jouer !';fb.style.color='#ff64c8';}
-    rvlfUpdateUI();
-    // Don't stop timer, don't re-render — player stays on current question
-    setTimeout(()=>{if(fb)fb.textContent='';},1500);
-  }
 }
 
 function rvlfShowSuper(qA,qB){
