@@ -1072,7 +1072,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
     <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="rvlf-score">0</div></div>
-      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">CARTES</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="rvlf-cards">10</div></div>
+      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">QUESTION</span><div style="font-family:var(--fh);font-size:22px;color:var(--txt)" id="rvlf-cards">0<span style="font-size:14px;color:var(--mute)">/10</span></div></div>
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="rvlf-timer">30</div></div>
     </div>
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="rvlf-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
@@ -2819,7 +2819,8 @@ function setupRvlf(data){
 
 function rvlfUpdateUI(){
   document.getElementById('rvlf-score').textContent=RVLF.score;
-  document.getElementById('rvlf-cards').textContent=Math.max(0,10-RVLF.qIdx);
+  const cardsEl=document.getElementById('rvlf-cards');
+  if(cardsEl)cardsEl.innerHTML=RVLF.qIdx+'<span style="font-size:14px;color:var(--mute)">/10</span>';
   const stopBtn=document.getElementById('rvlf-stop-btn');
   if(stopBtn)stopBtn.textContent='🏁 Arrêter et garder mes points ('+RVLF.score+' pts)';
   // Joker buttons
@@ -2987,7 +2988,6 @@ function rvlfShowQuestion(){
     if(!qB){
       // Only 1 card left — play normally
       RVLF.superActive=false;
-      RVLF.currentQA=qA; RVLF.currentQB=null;
       rvlfShowNormal(qA);
       return;
     }
@@ -3004,6 +3004,7 @@ function rvlfShowQuestion(){
 }
 
 function rvlfShowNormal(q){
+  RVLF.qIdx++; // consume card immediately
   RVLF.currentQA=q; RVLF.currentQB=null;
   RVLF.cardsLeft=10-RVLF.qIdx;
   const panel=document.getElementById('rvlf-info-panel');
@@ -3022,7 +3023,6 @@ function rvlfShowNormal(q){
       btn.onclick=()=>{
         rvlfStopTimer();
         document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
-        RVLF.qIdx++;
         rvlfAnswer(c.correct);
       };
       ch.appendChild(btn);
@@ -3253,13 +3253,15 @@ function rvlfJoker(type){
   }
 
   else if(type==='balise'){
+    // qIdx is already incremented by showNormal/showSuper when balise is posed
+    // Save pre-increment qIdx so restore can show the same question
+    const savedQIdx=RVLF.superActive?RVLF.qIdx-2:RVLF.qIdx-1;
     RVLF.balise={
       score:RVLF.score,
       jokers:{...RVLF.jokers},
-      qIdx:RVLF.qIdx,
+      qIdx:savedQIdx,
       superActive:RVLF.superActive,
       deadUniverse:RVLF.deadUniverse,
-      savedQIdx:RVLF.qIdx,
       currentQA:RVLF.currentQA,
       currentQB:RVLF.currentQB
     };
@@ -3347,7 +3349,7 @@ function rvlfShowSuper(qA,qB){
 function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
-  const cardsLost=RVLF.qIdx-saved.qIdx;
+  const cardsLost=RVLF.qIdx-(saved.qIdx+(saved.superActive?2:1));
   // Restore full state
   RVLF.score=saved.score;
   RVLF.jokers={...saved.jokers, balise:false};
@@ -3365,13 +3367,12 @@ function rvlfActivateBalise(){
     if(fb)fb.textContent='';
     // Re-show exact same questions as when balise was set
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
-      // Re-consume the 2 cards
-      RVLF.qIdx+=2;
+      RVLF.qIdx+=2; // re-consume the 2 super cards
       RVLF.currentQA=saved.currentQA;
       RVLF.currentQB=saved.currentQB;
       rvlfShowSuper(saved.currentQA, saved.currentQB);
     } else if(saved.currentQA){
-      RVLF.qIdx++;
+      // rvlfShowNormal will increment qIdx itself
       RVLF.currentQA=saved.currentQA;
       rvlfShowNormal(saved.currentQA);
     } else {
