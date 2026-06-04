@@ -292,12 +292,52 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">La VAR</div>
             <div class="type-desc">Trouve l'erreur factuelle</div>
           </div>
+          <div class="type-opt" id="type-escalade" onclick="selectType('escalade')">
+            <div class="type-ico">🧗</div>
+            <div class="type-name">L'Escalade</div>
+            <div class="type-desc">Voie facile/difficile · Crochet · Switch</div>
+          </div>
+          <div class="type-opt" id="type-plongee" onclick="selectType('plongee')">
+            <div class="type-ico">🤿</div>
+            <div class="type-name">La Plongée</div>
+            <div class="type-desc">O2 · Trésors · Remontée</div>
+          </div>
           <div class="type-opt" id="type-rvlf" onclick="selectType('rvlf')">
             <div class="type-ico">⏳</div>
             <div class="type-name">Retour vers le Futur</div>
             <div class="type-desc">10 questions · Jokers temporels</div>
           </div>
         </div>
+      </div>
+
+      
+      
+      <!-- ESCALADE FIELDS -->
+      <div id="escalade-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🧗 8 questions · Voie facile (15pts→12pts) · Voie difficile (25pts→20pts) · 1 crochet · Switch après Q4 · 30s/question
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">THÈME DU JEU</div>
+        <input type="text" id="escalade-theme" placeholder="Ex: Cyclisme, Football, Tennis…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;margin-bottom:12px;outline:none">
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">8 QUESTIONS</div>
+        <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Chaque question a une version facile et une version difficile (optionnelle — si vide = même question)</div>
+        <div id="escalade-q-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        <button class="btn btn-s" id="btn-add-escalade-q" style="margin-top:8px">➕ Question (max 8)</button>
+      </div>
+
+      <!-- PLONGÉE FIELDS -->
+      <div id="plongee-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🤿 5 paliers · descente + remontée · 1000 O2 · Score = trésors ramenés vivants
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PARAMÈTRES O2</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Base (O2/s)</label><input type="number" id="plongee-o2base" value="6" min="1" max="30" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par trésor (O2/s)</label><input type="number" id="plongee-o2treasure" value="1" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par erreur (O2/s)</label><input type="number" id="plongee-o2error" value="2" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">5 PALIERS (descente + remontée)</div>
+        <div id="plongee-paliers-list" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
       <!-- RVLF FIELDS -->
@@ -1133,7 +1173,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var','rvlf'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1146,6 +1186,8 @@ function selectType(type){
   document.getElementById('nagesync-fields').style.display     = type==='nagesync'?'block':'none';
   document.getElementById('var-fields').style.display          = type==='var'?'block':'none';
   document.getElementById('rvlf-fields').style.display         = type==='rvlf'?'block':'none';
+  document.getElementById('plongee-fields').style.display      = type==='plongee'?'block':'none';
+  document.getElementById('escalade-fields').style.display    = type==='escalade'?'block':'none';
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -1346,6 +1388,18 @@ async function startEdit(id){
     if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
+  if(a.type==='escalade'){
+    escaladeQuestions=[...(a.escaladeQuestions||[])];
+    const et=document.getElementById('escalade-theme');if(et)et.value=a.escaladeTheme||'';
+    setTimeout(()=>renderEscaladeQuestions(),50);
+  }
+  if(a.type==='plongee'){
+    plongeePaliers=[...(a.plongeePaliers||[])];
+    document.getElementById('plongee-o2base').value=a.plongeeO2Base||8;
+    document.getElementById('plongee-o2treasure').value=a.plongeeO2Treasure||1;
+    document.getElementById('plongee-o2error').value=a.plongeeO2Error||2;
+    setTimeout(()=>renderPlongeePaliers(),50);
   }
   if(a.type==='rvlf'){
     rvlfQuestions=[...(a.rvlfQuestions||[])];
@@ -1652,6 +1706,92 @@ function varChipClick(i){
   }
 }
 
+// ── ESCALADE ADMIN ────────────────────────────────────────────────────────
+let escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',asDifficileList:'',nbRequired:1}));
+
+function renderEscaladeQuestions(){
+  const list=document.getElementById('escalade-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  escaladeQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-family:var(--fh);font-size:11px;color:var(--neon)';
+    hdr.textContent='QUESTION '+(i+1)+'/8';
+    // Facile
+    const fLbl=document.createElement('div');fLbl.style.cssText='font-size:10px;color:#64c8ff';fLbl.textContent='🟢 Voie FACILE (15 pts)';
+    const fqIn=document.createElement('input');fqIn.type='text';fqIn.value=q.qFacile||'';fqIn.placeholder='Question version facile…';
+    fqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    fqIn.oninput=e=>{escaladeQuestions[i].qFacile=e.target.value;checkReady();};
+    const faIn=document.createElement('input');faIn.type='text';faIn.value=q.aFacile||'';faIn.placeholder='✅ Réponse facile';
+    faIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    faIn.oninput=e=>{escaladeQuestions[i].aFacile=e.target.value;checkReady();};
+    // Difficile (optionnel)
+    const dLbl=document.createElement('div');dLbl.style.cssText='font-size:10px;color:#ff6633';dLbl.textContent='🔴 Voie DIFFICILE (25 pts) — optionnel, si vide = même question';
+    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=q.qDifficile||'';dqIn.placeholder='Question version difficile (inversée/enrichie)…';
+    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    dqIn.oninput=e=>{escaladeQuestions[i].qDifficile=e.target.value;};
+    const daIn=document.createElement('input');daIn.type='text';daIn.value=q.aDifficile||'';daIn.placeholder='✅ Réponse(s) difficile — séparer par ";" si plusieurs';
+    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:#ff9966;font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    daIn.oninput=e=>{escaladeQuestions[i].aDifficile=e.target.value;};
+    // Nb required if multiple answers
+    const nbRow=document.createElement('div');nbRow.style.cssText='display:flex;gap:8px;align-items:center';
+    const nbLbl=document.createElement('span');nbLbl.style.cssText='font-size:10px;color:var(--mute)';nbLbl.textContent='Réponses requises (si plusieurs):';
+    const nbIn=document.createElement('input');nbIn.type='number';nbIn.min=1;nbIn.max=10;nbIn.value=q.nbRequired||1;
+    nbIn.style.cssText='width:50px;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none;text-align:center';
+    nbIn.oninput=e=>{escaladeQuestions[i].nbRequired=parseInt(e.target.value)||1;};
+    nbRow.append(nbLbl,nbIn);
+    d.append(hdr,fLbl,fqIn,faIn,dLbl,dqIn,daIn,nbRow);
+    list.appendChild(d);
+  });
+  const btn=document.getElementById('btn-add-escalade-q');
+  if(btn)btn.style.display='none'; // always 8 questions
+  checkReady();
+}
+// Auto-render
+setTimeout(()=>renderEscaladeQuestions(),150);
+document.getElementById('escalade-theme').addEventListener('input',checkReady);
+
+// ── PLONGÉE ADMIN ─────────────────────────────────────────────────────────
+const PLONGEE_TRESOR=[10,20,35,55,80];
+let plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
+
+function renderPlongeePaliers(){
+  const list=document.getElementById('plongee-paliers-list');
+  if(!list)return;
+  list.innerHTML='';
+  const depths=['20m','40m','60m','80m','100m'];
+  plongeePaliers.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;justify-content:space-between;align-items:center';
+    hdr.innerHTML=`<span style="font-family:var(--fh);font-size:12px;color:var(--neon)">PALIER ${i+1} — ${depths[i]}</span><span style="font-size:11px;color:#ffc800">💰 ${p.tresor} pts</span>`;
+    // Down question
+    const dqLbl=document.createElement('div');dqLbl.style.cssText='font-size:10px;color:#64c8ff';dqLbl.textContent='⬇️ Question descente';
+    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=p.qDown||'';dqIn.placeholder='Question pour descendre à ce palier…';
+    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    dqIn.oninput=e=>{plongeePaliers[i].qDown=e.target.value;checkReady();};
+    const daIn=document.createElement('input');daIn.type='text';daIn.value=p.aDown||'';daIn.placeholder='✅ Réponse…';
+    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    daIn.oninput=e=>{plongeePaliers[i].aDown=e.target.value;checkReady();};
+    // Up question
+    const uqLbl=document.createElement('div');uqLbl.style.cssText='font-size:10px;color:#ff9966';uqLbl.textContent='⬆️ Question remontée';
+    const uqIn=document.createElement('input');uqIn.type='text';uqIn.value=p.qUp||'';uqIn.placeholder='Question pour remonter depuis ce palier…';
+    uqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,150,100,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    uqIn.oninput=e=>{plongeePaliers[i].qUp=e.target.value;checkReady();};
+    const uaIn=document.createElement('input');uaIn.type='text';uaIn.value=p.aUp||'';uaIn.placeholder='✅ Réponse…';
+    uaIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    uaIn.oninput=e=>{plongeePaliers[i].aUp=e.target.value;checkReady();};
+    d.append(hdr,dqLbl,dqIn,daIn,uqLbl,uqIn,uaIn);
+    list.appendChild(d);
+  });
+  checkReady();
+}
+// Auto-render on load
+setTimeout(()=>renderPlongeePaliers(),100);
+
 // ── RVLF ADMIN ──────────────────────────────────────────────────────────
 let rvlfQuestions=[];
 function renderRvlfQuestions(){
@@ -1735,6 +1875,11 @@ function cancelEdit(){
   document.getElementById('var-correct-in').value='';
   rvlfQuestions=[];renderRvlfQuestions();
   const rvlfCb=document.getElementById('rvlf-notimer');if(rvlfCb)rvlfCb.checked=false;
+  plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
+  renderPlongeePaliers();
+  escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',nbRequired:1}));
+  renderEscaladeQuestions();
+  const et=document.getElementById('escalade-theme');if(et)et.value='';
   if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
   ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
@@ -1830,6 +1975,12 @@ function checkReady(){
   else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
   else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
   else if(currentType==='nagesync') hasContent=true;
+  else if(currentType==='escalade'){
+    hasContent=escaladeQuestions.length===8&&escaladeQuestions.every(q=>q.qFacile&&q.aFacile)&&!!document.getElementById('escalade-theme')?.value.trim();
+  }
+  else if(currentType==='plongee'){
+    hasContent=plongeePaliers.length===5&&plongeePaliers.every(p=>p.qDown&&p.aDown&&p.qUp&&p.aUp);
+  }
   else if(currentType==='rvlf'){
     hasContent=rvlfQuestions.length===10&&rvlfQuestions.every(q=>q.q&&q.a&&q.w);
     const btn=document.getElementById('btn-add-rvlf-q');
@@ -2625,7 +2776,7 @@ function parseBJAnswers(){
   const lines=raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
   const obj={};
   lines.forEach(l=>{
-    const m=l.match(/^(.+?)=(\d+)$/);
+    const m=l.match(/^(.+?)\s*=\s*(\d+)$/);
     if(m) obj[m[1].trim()]=parseInt(m[2]);
   });
   return {obj, count:Object.keys(obj).length};
@@ -3054,7 +3205,13 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined,
+  plongeePaliers:currentType==='plongee'?plongeePaliers:undefined,
+  plongeeO2Base:currentType==='plongee'?parseInt(document.getElementById('plongee-o2base')?.value||8):undefined,
+  plongeeO2Treasure:currentType==='plongee'?parseInt(document.getElementById('plongee-o2treasure')?.value||1):undefined,
+  plongeeO2Error:currentType==='plongee'?parseInt(document.getElementById('plongee-o2error')?.value||2):undefined,
+  escaladeQuestions:currentType==='escalade'?escaladeQuestions:undefined,
+  escaladeTheme:currentType==='escalade'?document.getElementById('escalade-theme')?.value.trim():undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
