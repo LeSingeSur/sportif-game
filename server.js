@@ -245,6 +245,7 @@ app.get('/api/preview', (req, res) => {
       tresor:p.tresor||0
     }));
     base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeTol = athlete.plongeeTol||1;
     base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
     base.maxScore = 200;
@@ -255,6 +256,7 @@ app.get('/api/preview', (req, res) => {
       nbRequired:q.nbRequired||1
     }));
     base.escaladeTheme = athlete.escaladeTheme||'';
+    base.escaladeTol = athlete.escaladeTol||1;
     base.maxScore = 200;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -613,6 +615,7 @@ app.get('/api/athlete', (req, res) => {
       tresor:p.tresor||0
     }));
     base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeTol = athlete.plongeeTol||1;
     base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
     base.maxScore = 200;
@@ -999,6 +1002,8 @@ app.post('/api/admin/athlete', (req, res) => {
     plongeeO2Error:     type === 'plongee' ? (parseInt(req.body.plongeeO2Error)||2) : undefined,
     escaladeQuestions:  type === 'escalade' ? (req.body.escaladeQuestions||[]) : undefined,
     escaladeTheme:      type === 'escalade' ? (req.body.escaladeTheme||'').trim() : undefined,
+    escaladeTol:        type === 'escalade' ? (parseInt(req.body.escaladeTol)||1) : undefined,
+    plongeeTol:         type === 'plongee' ? (parseInt(req.body.plongeeTol)||1) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
