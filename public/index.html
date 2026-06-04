@@ -1091,15 +1091,30 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
 
     <!-- Paroi visuelle -->
-    <div style="position:relative;width:100%;height:200px;background:linear-gradient(180deg,#1a0a00 0%,#2d1500 50%,#1a0a00 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(255,100,50,.2)">
-      <!-- Prises visuelles -->
-      <div id="escalade-wall-prises" style="position:absolute;inset:0"></div>
-      <!-- Grimpeur -->
-      <div id="escalade-climber" style="position:absolute;font-size:24px;transition:bottom .8s ease,left .3s;z-index:3;bottom:5%;left:50%;transform:translateX(-50%)">🧗</div>
-      <!-- Crochet marker -->
-      <div id="escalade-crochet-marker" style="display:none;position:absolute;font-size:18px;z-index:2">🪝</div>
+    <div style="position:relative;width:100%;height:260px;background:linear-gradient(180deg,#87CEEB 0%,#b0d4e8 8%,#c8a882 15%,#b8976a 30%,#a07850 50%,#8a6240 70%,#6b4a2e 85%,#4a3020 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+      <!-- Ciel + nuages -->
+      <div style="position:absolute;top:0;left:0;right:0;height:8%;background:linear-gradient(180deg,#87CEEB,#b0d4e8);z-index:1">
+        <div style="position:absolute;top:2px;left:15%;font-size:14px;opacity:.8">☁️</div>
+        <div style="position:absolute;top:1px;right:20%;font-size:10px;opacity:.6">☁️</div>
+      </div>
       <!-- Sommet -->
-      <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:20px">🏔️</div>
+      <div style="position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:22px;z-index:3">🏔️</div>
+      <!-- Texture rocher — strates -->
+      <div style="position:absolute;left:0;right:0;top:15%;height:2px;background:rgba(255,255,255,.08)"></div>
+      <div style="position:absolute;left:0;right:0;top:28%;height:1px;background:rgba(0,0,0,.15)"></div>
+      <div style="position:absolute;left:0;right:0;top:44%;height:2px;background:rgba(255,255,255,.06)"></div>
+      <div style="position:absolute;left:0;right:0;top:58%;height:1px;background:rgba(0,0,0,.1)"></div>
+      <div style="position:absolute;left:0;right:0;top:72%;height:2px;background:rgba(255,255,255,.05)"></div>
+      <!-- Voie colorée selon difficulté -->
+      <div id="escalade-route-line" style="position:absolute;left:50%;top:8%;bottom:0;width:3px;transform:translateX(-50%);background:linear-gradient(180deg,rgba(100,200,255,.6),rgba(100,200,255,.1));z-index:1"></div>
+      <!-- Prises -->
+      <div id="escalade-wall-prises" style="position:absolute;inset:0;z-index:2"></div>
+      <!-- Corde -->
+      <div id="escalade-rope" style="position:absolute;left:50%;width:2px;background:rgba(255,220,100,.6);transform:translateX(-50%);z-index:3;top:8%;transition:height .8s ease"></div>
+      <!-- Crochet marker -->
+      <div id="escalade-crochet-marker" style="display:none;position:absolute;font-size:16px;z-index:4">🪝</div>
+      <!-- Grimpeur -->
+      <div id="escalade-climber" style="position:absolute;font-size:26px;transition:bottom .8s ease;z-index:5;bottom:5%;left:50%;transform:translateX(-50%)">🧗</div>
     </div>
 
     <!-- Question -->
@@ -1335,6 +1350,28 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CIBLE</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="arc-cible-num">1/3</div></div>
     </div>
     <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="arc-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
+
+    <!-- Cible SVG animée -->
+    <div id="arc-target-wrap" style="display:none;align-items:center;justify-content:center;position:relative;height:160px">
+      <svg id="arc-svg-target" width="150" height="150" viewBox="0 0 150 150" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">
+        <circle cx="75" cy="75" r="72" fill="#fff" stroke="#ccc" stroke-width="1"/>
+        <circle cx="75" cy="75" r="60" fill="#000"/>
+        <circle cx="75" cy="75" r="48" fill="#00bfff"/>
+        <circle cx="75" cy="75" r="36" fill="#ff3333"/>
+        <circle cx="75" cy="75" r="24" fill="#ff3333"/>
+        <circle cx="75" cy="75" r="12" fill="#ffdd00"/>
+        <!-- Cross hairs -->
+        <line x1="75" y1="3" x2="75" y2="20" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="75" y1="130" x2="75" y2="147" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="3" y1="75" x2="20" y2="75" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="130" y1="75" x2="147" y2="75" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+      </svg>
+      <!-- Flèche animée -->
+      <div id="arc-arrow" style="display:none;position:absolute;font-size:24px;transform:rotate(-45deg);transition:all .4s ease-out">🏹</div>
+      <!-- Distance badge -->
+      <div id="arc-dist-badge" style="display:none;position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:var(--neon);font-family:var(--fh);font-size:11px;padding:2px 8px;border-radius:99px"></div>
+    </div>
+
     <div id="arc-cible-zone" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="fb" id="arc-fb"></div>
   </div>
@@ -2081,10 +2118,10 @@ async function loadAthlete(){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
     } else if(data.type==='escalade'){
+      document.getElementById('std-ans-area').style.display='none';
       setupEscalade(data);
     } else if(data.type==='plongee'){
-      setupPlongee(data);
-    } else if(data.type==='plongee'){
+      document.getElementById('std-ans-area').style.display='none';
       setupPlongee(data);
     } else if(data.type==='rvlf'){
       setupRvlf(data);
@@ -3141,7 +3178,11 @@ function escaladeFall(msg){
   ESC.done=true;
   escaladeStopTimer();
   const climber=document.getElementById('escalade-climber');
-  if(climber){climber.textContent='😱';climber.style.bottom='5%';}
+  if(climber){
+    climber.textContent='😱';
+    climber.style.transition='bottom 1s ease-in';
+    climber.style.bottom='5%';
+  }
   if(ESC.crochetUsed){
     // Bounce back to crochet position
     ESC.score=ESC.crochetScore;
@@ -3165,13 +3206,13 @@ function escaladeUseCrochet(){
   ESC.crochetQIdx=ESC.qIdx;
   const cb=document.getElementById('escalade-crochet-btn');if(cb)cb.style.display='none';
   const ci=document.getElementById('escalade-crochet-info');if(ci)ci.style.display='block';
-  // Show marker on wall
+  // Show marker on wall at climber position
   const marker=document.getElementById('escalade-crochet-marker');
   const climber=document.getElementById('escalade-climber');
   if(marker&&climber){
     marker.style.display='block';
     marker.style.bottom=climber.style.bottom;
-    marker.style.left=(parseInt(climber.style.left||50)-5)+'%';
+    marker.style.left='calc(50% + 16px)';
   }
   const fb=document.getElementById('escalade-fb');
   if(fb){fb.textContent='🪝 Crochet posé ! Points réduits mais sécurisé à '+ESC.score+' pts';fb.style.color='#ffc800';}
@@ -3208,24 +3249,39 @@ function escaladeFinish(zero=false){
 
 function escaladeUpdateClimber(){
   const climber=document.getElementById('escalade-climber');
+  const rope=document.getElementById('escalade-rope');
   if(!climber)return;
-  const pct=5+(ESC.qIdx/8)*85;
+  const pct=5+(ESC.qIdx/8)*82;
   climber.style.bottom=pct+'%';
+  if(rope){
+    const wallH=260;
+    const ropeHeight=wallH*((100-pct-8)/100);
+    rope.style.height=Math.max(0,ropeHeight)+'px';
+  }
 }
 
 function escaladeInitWall(){
   const wall=document.getElementById('escalade-wall-prises');
   if(!wall)return;
   wall.innerHTML='';
-  // Add rock texture prises
-  for(let i=0;i<20;i++){
-    const p=document.createElement('div');
-    const size=Math.random()*8+4;
-    const left=Math.random()*88+2;
-    const bottom=Math.random()*88+2;
-    const col=Math.random()>0.5?'rgba(255,100,50,.3)':'rgba(150,80,30,.4)';
-    p.style.cssText=`position:absolute;width:${size}px;height:${size/2}px;border-radius:3px;background:${col};left:${left}%;bottom:${bottom}%`;
-    wall.appendChild(p);
+  const colors=['#ff6633','#ff9944','#cc4422','#ff8855','#dd5533'];
+  for(let q=0;q<8;q++){
+    const bottom=8+(q/8)*82;
+    const numHolds=2+Math.floor(Math.random()*2);
+    for(let h=0;h<numHolds;h++){
+      const p=document.createElement('div');
+      const size=Math.random()*10+8;
+      const left=15+Math.random()*70;
+      const col=colors[Math.floor(Math.random()*colors.length)];
+      p.style.cssText=`position:absolute;width:${size}px;height:${size*0.6}px;border-radius:50% 50% 40% 40%;background:${col};left:${left}%;bottom:${bottom}%;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.3);transform:rotate(${Math.random()*30-15}deg)`;
+      wall.appendChild(p);
+    }
+  }
+  // Route line color by difficulty
+  const routeLine=document.getElementById('escalade-route-line');
+  if(routeLine){
+    const col=ESC.route==='facile'?'rgba(100,200,255,.5)':'rgba(255,100,50,.5)';
+    routeLine.style.background=`linear-gradient(180deg,${col},rgba(255,255,255,.05))`;
   }
 }
 
@@ -8138,6 +8194,9 @@ function arcNextCible(){
   document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
   document.getElementById('arc-score').textContent=ARC.score;
   document.getElementById('arc-fb').textContent='';
+  // Hide target until distance chosen
+  const wrap=document.getElementById('arc-target-wrap');
+  if(wrap)wrap.style.display='none';
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
 
@@ -8161,7 +8220,18 @@ function arcNextCible(){
 }
 
 function arcChoixDistance(difficulty){
-  arcStartChrono(); // start 60s chrono for this cible
+  arcStartChrono();
+  // Show animated target
+  const wrap=document.getElementById('arc-target-wrap');
+  if(wrap)wrap.style.display='flex';
+  const badge=document.getElementById('arc-dist-badge');
+  if(badge){
+    badge.style.display='block';
+    badge.textContent=difficulty==='facile'?'🟢 11m':difficulty==='moyen'?'🟡 22m':'🔴 33m';
+  }
+  // Hide arrow on new cible
+  const arrow=document.getElementById('arc-arrow');
+  if(arrow)arrow.style.display='none';
   const cibles=ARC.data.cibles||[];
   const c=cibles[ARC.cibleIdx];
   const maxPts=ARC_DIFF_PTS[difficulty];
@@ -8204,17 +8274,50 @@ function arcTirer(target,maxPts,tolerance,max){
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
 
-  if(hit){
-    ARC.score+=maxPts;
-    ARC.hits++;
+  // Animate arrow flying to target
+  const arrow=document.getElementById('arc-arrow');
+  const svg=document.getElementById('arc-svg-target');
+  if(arrow&&svg){
+    // Calculate where on target the arrow lands
+    const pctOff=Math.min(1,ecart/(target||1));
+    const radius=65*pctOff; // 0=bullseye, 65=edge
+    const angle=Math.random()*Math.PI*2;
+    const cx=75+radius*Math.cos(angle);
+    const cy=75+radius*Math.sin(angle);
+    // Convert SVG coords to percent of container
+    const svgRect=svg.getBoundingClientRect();
+    const wrapRect=document.getElementById('arc-target-wrap').getBoundingClientRect();
+    const leftPct=((svgRect.left-wrapRect.left)+(cx/150)*svgRect.width)/wrapRect.width*100;
+    const topPct=((svgRect.top-wrapRect.top)+(cy/150)*svgRect.height)/wrapRect.height*100;
+    // Start from outside right
+    arrow.style.display='block';
+    arrow.style.right='auto';
+    arrow.style.left='110%';
+    arrow.style.top='50%';
+    arrow.style.transform='rotate(-45deg)';
+    setTimeout(()=>{
+      arrow.style.left=leftPct+'%';
+      arrow.style.top=topPct+'%';
+      arrow.style.transform='rotate(-45deg) scale(0.8)';
+    },50);
+    // Add impact mark on SVG
+    setTimeout(()=>{
+      const mark=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      mark.setAttribute('cx',cx);mark.setAttribute('cy',cy);
+      mark.setAttribute('r','4');
+      mark.setAttribute('fill',hit?'#ffdd00':'#ffffff');
+      mark.setAttribute('stroke','#000');mark.setAttribute('stroke-width','1');
+      svg.appendChild(mark);
+    },450);
   }
+
+  if(hit){ARC.score+=maxPts;ARC.hits++;}
 
   const d=document.createElement('div');
   d.className='arc-cible '+(hit?'hit':'miss');
   const pct=Math.round((1-Math.min(ecart/(target||1),1))*100);
-  d.innerHTML=`<div style="font-size:36px;text-align:center">${hit?'🎯':'💨'}</div>
-    <div style="font-family:var(--fh);font-size:18px;text-align:center;color:${hit?'var(--neon)':'var(--red)'}">
-      ${hit?'TOUCHÉ ! +'+maxPts+' pts':'MANQUÉ'}
+  d.innerHTML=`<div style="font-family:var(--fh);font-size:18px;text-align:center;color:${hit?'var(--neon)':'var(--red)'}">
+      ${hit?'🎯 TOUCHÉ ! +'+maxPts+' pts':'💨 MANQUÉ'}
     </div>
     <div style="font-size:13px;color:var(--mute);text-align:center">
       Ta flèche : <strong style="color:var(--txt)">${val}</strong> · Valeur exacte : <strong style="color:var(--neon)">${target}</strong><br>
@@ -8228,7 +8331,15 @@ function arcTirer(target,maxPts,tolerance,max){
   btn.style.fontFamily='var(--fh)';
   const cibles=ARC.data.cibles||[];
   btn.textContent=ARC.cibleIdx+1<cibles.length?'Cible suivante →':'Voir mon score →';
-  btn.onclick=()=>{ARC.cibleIdx++;arcNextCible();};
+  btn.onclick=()=>{
+    // Reset arrow and clear marks
+    const arrow2=document.getElementById('arc-arrow');if(arrow2)arrow2.style.display='none';
+    const svgEl=document.getElementById('arc-svg-target');
+    if(svgEl)svgEl.querySelectorAll('circle[fill="#ffdd00"], circle[fill="#ffffff"]').forEach(c=>{
+      if(c.getAttribute('r')==='4')c.remove();
+    });
+    ARC.cibleIdx++;arcNextCible();
+  };
   d.appendChild(btn);
   zone.appendChild(d);
   document.getElementById('arc-score').textContent=ARC.score;
