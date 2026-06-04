@@ -238,6 +238,24 @@ app.get('/api/preview', (req, res) => {
     base.rvlfQuestions = (athlete.rvlfQuestions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||''}));
     base.rvlfNoTimer = !!athlete.rvlfNoTimer;
     base.maxScore = 200;
+  } else if (athlete.type === 'plongee') {
+    base.plongeePaliers = (athlete.plongeePaliers||[]).map(p=>({
+      qDown:p.qDown||'',aDown:p.aDown||'',
+      qUp:p.qUp||'',aUp:p.aUp||'',
+      tresor:p.tresor||0
+    }));
+    base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
+    base.plongeeO2Error = athlete.plongeeO2Error||2;
+    base.maxScore = 200;
+  } else if (athlete.type === 'escalade') {
+    base.escaladeQuestions = (athlete.escaladeQuestions||[]).map(q=>({
+      qFacile:q.qFacile||'',aFacile:q.aFacile||'',
+      qDifficile:q.qDifficile||'',aDifficile:q.aDifficile||'',
+      nbRequired:q.nbRequired||1
+    }));
+    base.escaladeTheme = athlete.escaladeTheme||'';
+    base.maxScore = 200;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -416,13 +434,20 @@ app.post('/api/grimpe-check', (req, res) => {
   if(!normAns) return res.json({ correct: false, reason: 'empty' });
   const alreadyFound = (found||[]).map(norm);
   if(alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
-  // Vérifier contre toutes les variantes (grimpeAnswersFull) ou grimpeAnswers
   const allGroups = (athlete.grimpeAnswersFull||[]).length
     ? athlete.grimpeAnswersFull
     : (athlete.grimpeAnswers||[]).map(a=>[a]);
-  const correct = allGroups.some(group => group.some(a => lev(norm(a), normAns) <= 1));
-  // Retourner la forme principale (premier élément du groupe)
-  const matchedGroup = correct ? allGroups.find(group => group.some(a => lev(norm(a), normAns) <= 1)) : null;
+  // Dynamic tolerance: 1 for short answers, 2 for longer
+  const tol = normAns.length <= 5 ? 1 : 2;
+  const matches = (a) => {
+    const na = norm(a);
+    if(lev(na, normAns) <= tol) return true;
+    // Split BEFORE normalizing to get individual words
+    const words = a.split(/[\s\-]+/).map(norm).filter(w=>w.length>=3);
+    return words.some(w => lev(w, normAns) <= 1);
+  };
+  const correct = allGroups.some(group => group.some(a => matches(a)));
+  const matchedGroup = correct ? allGroups.find(group => group.some(a => matches(a))) : null;
   res.json({ correct, total: (athlete.grimpeAnswers||[]).length, answer: matchedGroup?matchedGroup[0]:null });
 });
 
@@ -580,6 +605,24 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'rvlf') {
     base.rvlfQuestions = (athlete.rvlfQuestions||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||''}));
     base.rvlfNoTimer = !!athlete.rvlfNoTimer;
+    base.maxScore = 200;
+  } else if (athlete.type === 'plongee') {
+    base.plongeePaliers = (athlete.plongeePaliers||[]).map(p=>({
+      qDown:p.qDown||'',aDown:p.aDown||'',
+      qUp:p.qUp||'',aUp:p.aUp||'',
+      tresor:p.tresor||0
+    }));
+    base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
+    base.plongeeO2Error = athlete.plongeeO2Error||2;
+    base.maxScore = 200;
+  } else if (athlete.type === 'escalade') {
+    base.escaladeQuestions = (athlete.escaladeQuestions||[]).map(q=>({
+      qFacile:q.qFacile||'',aFacile:q.aFacile||'',
+      qDifficile:q.qDifficile||'',aDifficile:q.aDifficile||'',
+      nbRequired:q.nbRequired||1
+    }));
+    base.escaladeTheme = athlete.escaladeTheme||'';
     base.maxScore = 200;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -852,7 +895,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -866,11 +909,11 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -950,6 +993,12 @@ app.post('/api/admin/athlete', (req, res) => {
     varTol:             type === 'var' ? (parseInt(req.body.varTol)||1) : undefined,
     rvlfQuestions:      type === 'rvlf' ? (req.body.rvlfQuestions||[]) : undefined,
     rvlfNoTimer:        type === 'rvlf' ? !!req.body.rvlfNoTimer : undefined,
+    plongeePaliers:     type === 'plongee' ? (req.body.plongeePaliers||[]) : undefined,
+    plongeeO2Base:      type === 'plongee' ? (parseInt(req.body.plongeeO2Base)||6) : undefined,
+    plongeeO2Treasure:  type === 'plongee' ? (parseInt(req.body.plongeeO2Treasure)||1) : undefined,
+    plongeeO2Error:     type === 'plongee' ? (parseInt(req.body.plongeeO2Error)||2) : undefined,
+    escaladeQuestions:  type === 'escalade' ? (req.body.escaladeQuestions||[]) : undefined,
+    escaladeTheme:      type === 'escalade' ? (req.body.escaladeTheme||'').trim() : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
