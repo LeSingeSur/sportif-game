@@ -265,6 +265,7 @@ app.get('/api/preview', (req, res) => {
     base.rouletteChambers = athlete.rouletteChambers||6;
     base.rouletteBullet = athlete.rouletteBullet||4;
     base.rouletteTol = athlete.rouletteTol||1;
+    base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -642,6 +643,7 @@ app.get('/api/athlete', (req, res) => {
     base.rouletteChambers = athlete.rouletteChambers||6;
     base.rouletteBullet = athlete.rouletteBullet||4;
     base.rouletteTol = athlete.rouletteTol||1;
+    base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -1026,6 +1028,7 @@ app.post('/api/admin/athlete', (req, res) => {
     rouletteChambers:   type === 'roulette' ? (parseInt(req.body.rouletteChambers)||6) : undefined,
     rouletteBullet:     type === 'roulette' ? (parseInt(req.body.rouletteBullet)||4) : undefined,
     rouletteTol:        type === 'roulette' ? (parseInt(req.body.rouletteTol)||1) : undefined,
+    rouletteSeed:       type === 'roulette' ? (parseInt(req.body.rouletteSeed)||Date.now()) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
