@@ -181,7 +181,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .reveal-btn:disabled{opacity:.3;cursor:not-allowed}
 
 /* ── BUZZ CHRONO MODE ──────────────────────────────────────────────────── */
-#buzz-zone{display:none;flex-direction:column;gap:12px;padding:14px 14px 100px;background:radial-gradient(ellipse at top,#1a0a2a 0%,#0a0518 70%);border-radius:16px;border:1px solid rgba(180,100,255,.12)}
+#buzz-zone{display:none;flex-direction:column;gap:12px;padding:14px 14px 100px;background:#0a0518;border-radius:16px;border:1px solid rgba(180,100,255,.15);position:relative;overflow:hidden}
+#buzz-zone::before{content:'';position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:80px;background:radial-gradient(ellipse,rgba(180,100,255,.3) 0%,transparent 70%);pointer-events:none}
+#buzz-zone::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(180deg,transparent,rgba(180,100,255,.08));pointer-events:none}
 @media(min-width:600px){#buzz-zone{padding-bottom:14px}}
 .buzz-score-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;margin:4px auto 0;width:120px;height:120px;border-radius:50%;border:4px solid rgba(212,255,0,.15);background:var(--c1);position:relative}
 .buzz-score-ring svg{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
@@ -257,7 +259,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .kbd-key.present{background:#f0c000;color:#07070f}
 .kbd-key.absent{background:#1a1a2a;color:#333}
 /* ── LE JUSTE PRIX MODE ───────────────────────────────────────────────── */
-#prix-zone{display:none;flex-direction:column;gap:16px;background:radial-gradient(ellipse at top,#0a2a1a 0%,#051508 70%);border-radius:16px;padding:14px;border:1px solid rgba(0,230,118,.12)}
+#prix-zone{display:none;flex-direction:column;gap:16px;background:#051508;border-radius:16px;padding:14px;border:2px dashed rgba(0,230,118,.25);position:relative}
+#prix-zone::before{content:'💲';position:absolute;top:-14px;right:14px;font-size:28px;filter:drop-shadow(0 0 8px rgba(0,230,118,.5));background:#051508;padding:0 6px}
 .prix-question{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px 16px;text-align:center}
 .prix-question-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
 .prix-question-txt{font-family:var(--fh);font-size:26px;letter-spacing:1px;color:var(--txt);line-height:1.2}
@@ -356,14 +359,16 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .bj-card.selected .bj-card-val{color:var(--neon)}
 .bj-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
 @keyframes bj-bust{0%{transform:scale(1)}20%{transform:scale(1.04)}40%{transform:scale(.97)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
-#scout-zone{display:none;flex-direction:column;gap:14px;background:radial-gradient(ellipse at top,#0a1525 0%,#05080f 70%);border-radius:16px;padding:14px;border:1px solid rgba(0,200,255,.1)}
+#scout-zone{display:none;flex-direction:column;gap:14px;background:#05080f;border-radius:16px;padding:14px;border:1px solid rgba(0,200,255,.15);position:relative;background-image:repeating-linear-gradient(180deg,transparent 0,transparent 28px,rgba(0,200,255,.04) 28px,rgba(0,200,255,.04) 29px)}
+#scout-zone::before{content:'🔎';position:absolute;top:-14px;left:14px;font-size:28px;filter:drop-shadow(0 0 10px rgba(0,200,255,.5));background:#05080f;padding:0 6px}
 .scout-score-big{font-family:var(--fh);font-size:56px;text-align:center;color:var(--neon);line-height:1;transition:color .3s}
 .scout-score-big.penalty{color:var(--red);animation:sc-pulse .3s ease}
 .scout-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* LA GRIMPÉE */
 #grimpe-zone{display:none;flex-direction:column;gap:6px}
 #biathlon-zone{display:none;flex-direction:column;gap:10px}
-#mf-zone{display:none;flex-direction:column;gap:10px;background:radial-gradient(ellipse at top,#2a0a0a 0%,#150505 70%);border-radius:16px;padding:14px;border:1px solid rgba(255,80,80,.12)}
+#mf-zone{display:none;flex-direction:column;gap:10px;background:#150505;border-radius:16px;padding:14px;border:1px solid rgba(255,80,80,.18);position:relative}
+#mf-zone::before{content:'🔗';position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:30px;filter:drop-shadow(0 0 12px rgba(255,80,80,.5));background:#150505;padding:0 8px}
 #arc-zone{display:none;flex-direction:column;gap:12px;width:100%}
 #assaut-zone{display:none;flex-direction:column;gap:10px;width:100%}
 .piste-case{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;transition:all .3s;font-family:var(--fh)}
@@ -443,7 +448,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .scout-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:16px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s}
 .scout-in:focus{border-color:var(--neon)}
 /* LA RÉPLIQUE CULTE */
-#replique-zone{display:none;flex-direction:column;gap:14px;background:radial-gradient(ellipse at top,#2a1a0a 0%,#150d05 70%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,80,.12)}
+#replique-zone{display:none;flex-direction:column;gap:14px;background:linear-gradient(180deg,#1a0a05 0%,#0a0503 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,80,.15);position:relative}
+#replique-zone::before{content:'🎙️';position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:36px;filter:drop-shadow(0 0 12px rgba(255,180,80,.5));background:#0a0503;padding:0 12px;border-radius:50%;z-index:2}
 .replique-amorce{background:var(--c1);border-radius:var(--r);padding:18px;font-size:15px;font-style:italic;color:var(--txt);text-align:center;line-height:1.7;border-left:4px solid var(--neon)}
 .replique-mode-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .replique-mode-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 8px;cursor:pointer;text-align:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
@@ -746,7 +752,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- LA TRAPPE zone -->
-  <div id="trappe-zone" style="display:none;flex-direction:column;gap:12px;background:radial-gradient(ellipse at top,#1a1525 0%,#0a0815 70%);border-radius:16px;padding:14px;border:1px solid rgba(150,120,255,.12)">
+  <div id="trappe-zone" style="display:none;flex-direction:column;gap:12px;background:#0a0815;border-radius:16px;padding:14px;border:1px solid rgba(150,120,255,.18);position:relative">
     <div id="trappe-timer-bar" style="height:6px;background:var(--c2);border-radius:99px;overflow:hidden">
       <div id="trappe-timer-fill" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear;border-radius:99px"></div>
     </div>
@@ -1660,6 +1666,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- LA RÉPLIQUE CULTE zone -->
   <div id="replique-zone">
+    <!-- Journalist banner -->
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.4);border:1px solid rgba(255,180,80,.2);border-radius:12px;padding:10px 12px;margin-top:6px">
+      <div style="font-size:32px">📰</div>
+      <div style="flex:1;font-size:11px;color:rgba(255,180,80,.7);line-height:1.5;font-style:italic">
+        <div style="font-family:var(--fh);font-size:10px;letter-spacing:2px;color:rgba(255,180,80,.5);margin-bottom:2px">CONFÉRENCE DE PRESSE</div>
+        Un journaliste a posé une question…
+      </div>
+    </div>
     <!-- Global timer (starts when mode chosen) -->
     <div id="replique-global-timer-bar" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -4339,111 +4353,110 @@ function grimpeDrawProfile(){
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
 
-  // Aerial view — green mountain terrain seen from above/side angle
-  const bg=ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#1a3a1a'); bg.addColorStop(0.5,'#2a4a2a'); bg.addColorStop(1,'#3a5a3a');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  // Sky gradient (dawn over the Alps)
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#1a1a3e'); sky.addColorStop(0.4,'#2a2a5a'); sky.addColorStop(0.8,'#4a3a3a'); sky.addColorStop(1,'#3a2a1a');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
-  // Winding road (the iconic Alpe d'Huez switchbacks) - aerial perspective
-  const roadY=H*0.5;
-  const amp=H*0.28;
-  // Road shadow
+  // Distant mountain silhouette
   ctx.beginPath();
-  ctx.lineWidth=22; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineCap='round';
-  for(let x=0;x<=W;x+=3){
+  ctx.moveTo(0,H*0.55);
+  for(let x=0;x<=W;x+=4){
     const t=x/W;
-    const y=roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5)+3;
+    const y=H*0.55-Math.sin(t*Math.PI*1.5+1)*H*0.18-Math.sin(t*Math.PI*4)*H*0.04;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle='#1a1f2e'; ctx.fill();
+
+  // Mid mountain layer
+  ctx.beginPath();
+  ctx.moveTo(0,H*0.7);
+  for(let x=0;x<=W;x+=4){
+    const t=x/W;
+    const y=H*0.7-Math.sin(t*Math.PI*2.2)*H*0.15;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle='#2a1f1a'; ctx.fill();
+
+  // Climbing profile — rising road from left to top-right
+  // This gives the SENSE of climbing because the road goes UP
+  const startY=H*0.92, endY=H*0.18;
+  ctx.beginPath();
+  ctx.lineWidth=14; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineCap='round';
+  for(let x=0;x<=W;x+=2){
+    const t=x/W;
+    // Steeper at end (real climb profile)
+    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
     if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke();
+
   // Road surface
   ctx.beginPath();
-  ctx.lineWidth=18; ctx.strokeStyle='#3a3a40'; ctx.lineCap='round';
-  for(let x=0;x<=W;x+=3){
+  ctx.lineWidth=11; ctx.strokeStyle='#3a3540'; ctx.lineCap='round';
+  for(let x=0;x<=W;x+=2){
     const t=x/W;
-    const y=roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5);
+    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
     if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke();
-  // Center dashes
+
+  // Road dashes
   ctx.beginPath();
-  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.setLineDash([6,8]);
-  for(let x=0;x<=W;x+=3){
+  ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,200,.4)'; ctx.setLineDash([6,8]);
+  for(let x=0;x<=W;x+=2){
     const t=x/W;
-    const y=roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5);
+    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
     if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke(); ctx.setLineDash([]);
 
-  // Section markers along road with % gradient
+  // Section markers (% labels) on road, varying with gradient
+  const sections=GP.params?.sections||[1,4,7,9,11,8,6,9,11,13];
   for(let s=1;s<=10;s++){
     const t=(s-0.5)/10;
     const x=t*W;
-    const y=roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5);
-    ctx.fillStyle='rgba(255,255,255,.5)'; ctx.font='bold 8px monospace';
-    ctx.fillText(s+'%',x-6,y-12);
+    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
+    const p=sections[s-1]||s;
+    const color=p>=11?'#ff4444':p>=8?'#ffaa00':p>=5?'#ffee44':'#aaffaa';
+    ctx.fillStyle=color; ctx.font='bold 9px monospace';
+    ctx.fillText(p+'%',x-7,y-10);
   }
 
-  // Trees scattered (aerial dots)
-  for(let i=0;i<25;i++){
-    const tx=(i*37)%W;
-    const ty=(i*53)%H;
-    const t=tx/W;
-    const roadAtX=roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5);
-    if(Math.abs(ty-roadAtX)>20){
-      ctx.fillStyle=`rgba(${20+Math.random()*30},${60+Math.random()*40},${20+Math.random()*20},.6)`;
-      ctx.beginPath(); ctx.arc(tx,ty,2+Math.random()*2,0,Math.PI*2); ctx.fill();
-    }
-  }
+  // Finish line at top right
+  const fx=W-12, fy=startY+(endY-startY)*Math.pow(1,1.3);
+  ctx.fillStyle='#fff'; ctx.font='16px serif'; ctx.fillText('🏁',fx-4,fy+5);
 
-  // Player position glow
-  const pt=GP.cases/100;
-  const px=pt*W;
-  const py=roadY+Math.sin(pt*Math.PI*4)*amp*(1-pt*0.5);
-  ctx.beginPath();
-  const pGlow=ctx.createRadialGradient(px,py,0,px,py,14);
-  pGlow.addColorStop(0,'rgba(0,255,136,.5)'); pGlow.addColorStop(1,'transparent');
-  ctx.fillStyle=pGlow; ctx.arc(px,py,14,0,Math.PI*2); ctx.fill();
-
-  // Pogi position glow
-  const ppt=GP.pogiCases/100;
-  const ppx=ppt*W;
-  const ppy=roadY+Math.sin(ppt*Math.PI*4)*amp*(1-ppt*0.5);
-  ctx.beginPath();
-  const pgGlow=ctx.createRadialGradient(ppx,ppy,0,ppx,ppy,12);
-  pgGlow.addColorStop(0,'rgba(255,102,0,.5)'); pgGlow.addColorStop(1,'transparent');
-  ctx.fillStyle=pgGlow; ctx.arc(ppx,ppy,12,0,Math.PI*2); ctx.fill();
-
-  // Finish line at end
-  const ft=1, fx=W-8;
-  const fy=roadY+Math.sin(ft*Math.PI*4)*amp*(1-ft*0.5);
-  ctx.fillStyle='#fff'; ctx.font='14px serif'; ctx.fillText('🏁',fx-8,fy+5);
+  // KOM badge top-right corner
+  ctx.fillStyle='rgba(255,200,0,.15)'; ctx.fillRect(W-50,4,46,16);
+  ctx.fillStyle='#ffc800'; ctx.font='bold 9px monospace'; ctx.fillText('1850m',W-46,15);
 }
 
 function grimpeUpdateRiders(){
   const cv=document.getElementById('grimpe-canvas');
   if(!cv)return;
   const W=cv.width,H=cv.height;
-  const roadY=H*0.5, amp=H*0.28;
+  const startY=H*0.92, endY=H*0.18;
   const riderEl=document.getElementById('grimpe-rider');
   const pogiEl=document.getElementById('grimpe-pogi');
-  // Convert canvas coords to % of displayed element
   const profile=document.getElementById('grimpe-profile');
   const dispW=profile?profile.offsetWidth:W;
   const dispH=profile?profile.offsetHeight:H;
   if(riderEl){
     const t=Math.min(1,GP.cases/100);
     const x=t*dispW;
-    const y=(roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5))/H*dispH;
+    const y=(startY+(endY-startY)*Math.pow(t,1.3))/H*dispH;
     riderEl.style.left=Math.min(x,dispW-28)+'px';
-    riderEl.style.bottom=(dispH-y-14)+'px';
+    riderEl.style.bottom=(dispH-y-16)+'px';
   }
   if(pogiEl){
     const t=Math.min(1,GP.pogiCases/100);
     const x=t*dispW;
-    const y=(roadY+Math.sin(t*Math.PI*4)*amp*(1-t*0.5))/H*dispH;
+    const y=(startY+(endY-startY)*Math.pow(t,1.3))/H*dispH;
     pogiEl.style.left=Math.min(x,dispW-28)+'px';
-    pogiEl.style.bottom=(dispH-y-12)+'px';
+    pogiEl.style.bottom=(dispH-y-14)+'px';
   }
 }
 
@@ -8162,13 +8175,19 @@ function rouletteStart(){
   document.getElementById('roulette-gun-area').style.display='flex';
   const txt=(RR.data.rouletteText||'').trim();
   const pct=RR.data.roulettePct||40;
+  const seed=RR.data.rouletteSeed||1;
   const tokens=txt.split(/(\s+)/);
-  const realWordIndices=[];
-  tokens.forEach((t,i)=>{if(t.trim().length>0)realWordIndices.push(i);});
-  const total=realWordIndices.length;
+  // Collect real words with their token index
+  const realPos=[];
+  tokens.forEach((t,i)=>{if(t.trim().length>0)realPos.push(i);});
+  const total=realPos.length;
   const visibleCount=Math.round(total*pct/100);
-  const visibleSet=new Set();
-  for(let i=0;i<visibleCount;i++)visibleSet.add(i);
+  // Seeded mulberry32 shuffle (same as admin)
+  let s=seed;
+  const rng=()=>{let t=s+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};
+  const order=realPos.map((_,i)=>i);
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  const visibleSet=new Set(order.slice(0,visibleCount)); // indices into realPos
   let wi=0;
   RR.wordsState=tokens.map(t=>{
     if(!t.trim())return{token:t,type:'space',visible:true};
