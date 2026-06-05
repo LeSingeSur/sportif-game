@@ -1203,7 +1203,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="plongee-q" style="background:rgba(0,20,40,.9);border:1px solid rgba(0,150,255,.3);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;margin-top:8px;min-height:52px;display:flex;align-items:center;justify-content:center"></div>
 
     <!-- Input réponse -->
-    <div style="display:flex;gap:8px;margin-top:8px">
+    <div id="plongee-input-wrap" style="display:none;gap:8px;margin-top:8px">
       <input type="text" id="plongee-in" placeholder="Ta réponse…" style="flex:1;min-width:0;background:rgba(0,20,40,.9);border:1px solid rgba(0,150,255,.4);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none" onkeydown="if(event.key==='Enter')plongeeSubmit()">
       <button onclick="plongeeSubmit()" style="width:48px!important;height:48px;flex-shrink:0;background:#0066cc;color:#fff;border:none;border-radius:var(--r);font-size:20px;cursor:pointer">✓</button>
     </div>
@@ -3100,6 +3100,7 @@ function escaladeShowQuestion(){
   document.getElementById('escalade-in').value='';
   document.getElementById('escalade-fb').textContent='';
   document.getElementById('escalade-in').focus();
+  document.getElementById('escalade-in').focus();
 
   // Update crochet button
   const cb=document.getElementById('escalade-crochet-btn');
@@ -3300,6 +3301,9 @@ function setupPlongee(data){
   hideAllZones();
   document.getElementById('plongee-zone').style.display='flex';
   document.getElementById('plongee-rules').style.display='block';
+  // Reset input visibility
+  const inpWrap=document.getElementById('plongee-input-wrap');
+  if(inpWrap)inpWrap.style.display='none';
   plongeeInitBubbles();
   plongeeUpdateUI();
   // Timer and game start on "PLONGER" button click
@@ -3367,7 +3371,7 @@ function plongeeShowDescendChoice(){
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-fb').textContent='';
   // Show input area hidden
-  document.getElementById('plongee-in').parentElement.style.display='none';
+  document.getElementById('plongee-input-wrap').style.display='none';
 
   if(PL.currentPalier===0){
     // At submarine — show first descent question
@@ -3422,7 +3426,7 @@ function plongeeAskDown(targetPalier){
   });
   const qEl=document.getElementById('plongee-q');
   if(qEl)qEl.textContent=`⬇️ P${targetPalier} : ${p.qDown}`;
-  document.getElementById('plongee-in').parentElement.style.display='flex';
+  document.getElementById('plongee-input-wrap').style.display='flex';
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-in').focus();
   PL.waitingAnswer={type:'down', targetPalier, answer:p.aDown};
@@ -3443,7 +3447,7 @@ function plongeeAskUp(fromPalier){
   });
   const qEl=document.getElementById('plongee-q');
   if(qEl)qEl.textContent=`⬆️ P${fromPalier}→P${fromPalier-1} : ${p.qUp}`;
-  document.getElementById('plongee-in').parentElement.style.display='flex';
+  document.getElementById('plongee-input-wrap').style.display='flex';
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-in').focus();
   PL.waitingAnswer={type:'up', fromPalier, answer:p.aUp};
@@ -3475,7 +3479,7 @@ function plongeeSkipWithTreasure(treasureIdx, palier){
   const fb=document.getElementById('plongee-fb');
   if(fb){fb.textContent=`🪙 Trésor sacrifié — question passée !`;fb.style.color='#ffc800';}
   document.getElementById('plongee-skip-area').style.display='none';
-  document.getElementById('plongee-in').parentElement.style.display='none';
+  document.getElementById('plongee-input-wrap').style.display='none';
   G.score=PL.score;setScore(PL.score,false);
   setTimeout(()=>{
     if(fb)fb.textContent='';
@@ -3492,6 +3496,8 @@ function plongeeSubmit(){
   if(!ans)return;
   const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   const lev=(a,b)=>{const m=a.length,n=b.length;const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];};
+  const ansNorm=norm(ans);
+  const correctAnswers=[norm(PL.waitingAnswer.answer)];
   const correct=correctAnswers.some(c=>lev(c,ansNorm)<=(PL.data.plongeeTol||1));
   const fb=document.getElementById('plongee-fb');
   if(correct){
@@ -3499,14 +3505,14 @@ function plongeeSubmit(){
     if(PL.waitingAnswer.type==='down'){
       PL.currentPalier=PL.waitingAnswer.targetPalier;
       plongeeUpdateUI();
-      document.getElementById('plongee-in').parentElement.style.display='none';
+      document.getElementById('plongee-input-wrap').style.display='none';
       PL.waitingAnswer=false;
       setTimeout(()=>{if(fb)fb.textContent='';plongeeShowDescendChoice();},800);
     } else {
       const from=PL.waitingAnswer.fromPalier;
       PL.currentPalier=from-1;
       plongeeUpdateUI();
-      document.getElementById('plongee-in').parentElement.style.display='none';
+      document.getElementById('plongee-input-wrap').style.display='none';
       document.getElementById('plongee-skip-area').style.display='none';
       PL.waitingAnswer=false;
       setTimeout(()=>{
@@ -8191,12 +8197,13 @@ function arcNextCible(){
   if(!cibles.length){arcFinish();return;}
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
   const c=cibles[ARC.cibleIdx];
-  document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
-  document.getElementById('arc-score').textContent=ARC.score;
-  document.getElementById('arc-fb').textContent='';
   // Hide target until distance chosen
   const wrap=document.getElementById('arc-target-wrap');
   if(wrap)wrap.style.display='none';
+  // Reset arrow
+  const arrow=document.getElementById('arc-arrow');
+  if(arrow)arrow.style.display='none';
+  document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
 
