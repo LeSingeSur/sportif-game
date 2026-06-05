@@ -1223,7 +1223,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','assaut','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1231,7 +1231,9 @@ function selectType(type){
   document.getElementById('biathlon-fields').style.display      = type==='biathlon'?'block':'none';
   document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
-  document.getElementById('assaut-fields').style.display       = type==='assaut'?'block':'none';
+  const assautF=document.getElementById('assaut-fields');if(assautF)assautF.style.display='none';
+  document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
+  if(type==='roulette')setTimeout(()=>roulettePreview(),50);
   document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
   document.getElementById('nagesync-fields').style.display     = type==='nagesync'?'block':'none';
   document.getElementById('var-fields').style.display          = type==='var'?'block':'none';
@@ -2100,7 +2102,10 @@ function checkReady(){
     const txt=(document.getElementById('var-text-in')?.value||'').trim();
     const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
     const correct=(document.getElementById('var-correct-in')?.value||'').trim();
-    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txt.includes(wrong);
+    // Normalize whitespace for the includes check
+    const txtNorm=txt.replace(/\s+/g,' ');
+    const wrongNorm=wrong.replace(/\s+/g,' ');
+    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txtNorm.includes(wrongNorm);
   }
   else if(currentType==='haltero'){
     const s1=document.getElementById('ha-s1');
