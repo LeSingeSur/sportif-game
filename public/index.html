@@ -425,7 +425,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .biat-slot{background:rgba(0,20,60,.4);border:1px dashed rgba(100,200,255,.2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mute);min-height:48px;display:flex;align-items:center;gap:10px}
 .biat-slot.filled{border-color:#64c8ff;color:#64c8ff;background:rgba(100,200,255,.06);cursor:pointer}
 /* GRIMPE — Modern clean mountain */
-.grimpe-profile{position:relative;height:140px;background:linear-gradient(180deg,#0a0a1a 0%,#0d1530 60%,#1a1a0a 100%);border-radius:14px;overflow:hidden;margin:4px 0;border:1px solid rgba(212,255,0,.1)}
+.grimpe-profile{position:relative;height:150px;background:linear-gradient(180deg,#0a0a1a 0%,#0d1530 60%,#1a1a0a 100%);border-radius:14px;overflow:hidden;margin:4px 0;border:1px solid rgba(212,255,0,.1)}
 .grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
 .grimpe-timer-bar{height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
 .grimpe-timer-fill{height:100%;background:var(--neon);border-radius:99px;transition:width 1s linear}
@@ -1104,13 +1104,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="escalade-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
 
-    <!-- Voie + crochet info -->
-    <div style="display:flex;gap:8px;align-items:stretch">
-      <div id="escalade-route-badge" style="padding:8px 14px;border-radius:10px;font-family:var(--fh);font-size:12px;display:flex;align-items:center">🟢 FACILE</div>
-      <button id="escalade-crochet-btn" onclick="escaladeUseCrochet()" style="flex:1;padding:10px 12px;border-radius:10px;border:2px solid rgba(255,200,0,.6);background:rgba(255,200,0,.12);color:#ffc800;font-family:var(--fh);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">🪝 POSER LE CROCHET</button>
-      <div id="escalade-crochet-info" style="display:none;flex:1;padding:10px 12px;border-radius:10px;background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.3);font-size:12px;color:#ffc800;text-align:center;font-family:var(--fh)">🪝 Crochet posé</div>
+    <!-- Voie badge (compact, top) -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="escalade-route-badge" style="padding:5px 12px;border-radius:8px;font-family:var(--fh);font-size:11px;background:rgba(0,200,80,.1);border:1px solid rgba(0,200,80,.3);color:#00c850">🟢 FACILE</div>
+      <div id="escalade-crochet-info" style="display:none;padding:5px 12px;border-radius:8px;font-size:11px;color:#ffc800;background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.3);font-family:var(--fh)">🪝 Crochet posé</div>
     </div>
-    <button id="escalade-switch-btn" onclick="escaladeSwitchRoute()" style="display:none;width:100%!important;padding:12px;border-radius:10px;border:2px solid rgba(255,100,50,.6);background:rgba(255,100,50,.12);color:#ff6633;font-family:var(--fh);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px">🔀 PASSER EN VOIE DIFFICILE (+points)</button>
 
     <!-- Paroi visuelle -->
     <div style="position:relative;width:100%;height:260px;background:linear-gradient(180deg,#87CEEB 0%,#b0d4e8 8%,#c8a882 15%,#b8976a 30%,#a07850 50%,#8a6240 70%,#6b4a2e 85%,#4a3020 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
@@ -1151,6 +1149,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button onclick="escaladeSubmit()" style="width:48px!important;height:48px;flex-shrink:0;background:var(--neon);color:#000;border:none;border-radius:var(--r);font-size:20px;cursor:pointer">✓</button>
     </div>
     <div id="escalade-fb" class="fb" style="text-align:center;font-size:13px"></div>
+
+    <!-- Crochet + Switch — sous l'input, bien visibles -->
+    <button id="escalade-crochet-btn" onclick="escaladeUseCrochet()" style="width:100%!important;padding:13px;border-radius:12px;border:2px solid rgba(255,200,0,.7);background:rgba(255,200,0,.1);color:#ffc800;font-family:var(--fh);font-size:15px;cursor:pointer;font-weight:800;letter-spacing:1px">🪝 POSER LE CROCHET — sauvegarde ma position</button>
+    <button id="escalade-switch-btn" onclick="escaladeSwitchRoute()" style="display:none;width:100%!important;padding:13px;border-radius:12px;border:2px solid rgba(255,100,50,.7);background:rgba(255,100,50,.1);color:#ff6633;font-family:var(--fh);font-size:15px;font-weight:800;cursor:pointer;letter-spacing:1px">🔀 PASSER EN VOIE DIFFICILE (+points)</button>
   </div>
 
   <!-- PLONGÉE ZONE -->
@@ -1248,19 +1250,39 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- RVLF ZONE -->
-  <div id="rvlf-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
+  <div id="rvlf-zone" style="display:none;flex-direction:column;gap:12px;width:100%;background:linear-gradient(180deg,#000510 0%,#000a1f 50%,#050010 100%);border-radius:16px;padding:14px;border:1px solid rgba(100,200,255,.15);position:relative;overflow:hidden">
+
+    <!-- DeLorean background visual -->
+    <div style="position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden">
+      <!-- Stars -->
+      <div style="position:absolute;top:8px;left:8%;width:2px;height:2px;background:#fff;border-radius:50%;opacity:.6"></div>
+      <div style="position:absolute;top:15px;left:25%;width:1px;height:1px;background:#fff;border-radius:50%;opacity:.5"></div>
+      <div style="position:absolute;top:5px;left:55%;width:2px;height:2px;background:#fff;border-radius:50%;opacity:.7"></div>
+      <div style="position:absolute;top:20px;right:15%;width:1px;height:1px;background:#fff;border-radius:50%;opacity:.4"></div>
+      <div style="position:absolute;top:12px;right:35%;width:2px;height:2px;background:#a0d8ff;border-radius:50%;opacity:.5"></div>
+      <!-- Lightning streaks -->
+      <div style="position:absolute;top:0;left:30%;width:1px;height:60px;background:linear-gradient(180deg,transparent,rgba(100,200,255,.4),transparent);transform:skewX(-20deg)"></div>
+      <div style="position:absolute;top:10px;right:25%;width:1px;height:40px;background:linear-gradient(180deg,transparent,rgba(255,150,50,.3),transparent);transform:skewX(15deg)"></div>
+      <!-- DeLorean silhouette in the corner -->
+      <div style="position:absolute;bottom:10px;right:8px;font-size:32px;opacity:.12;transform:scaleX(-1)">🚗</div>
+      <!-- Time display style "88mph" -->
+      <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);font-family:'Courier New',monospace;font-size:10px;color:rgba(255,100,0,.4);letter-spacing:2px">88 MPH</div>
+    </div>
+
+    <!-- Content on top of background -->
+    <div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:12px">
 
     <!-- Panneau règles initial -->
-    <div id="rvlf-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
-      <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">⏳ RETOUR VERS LE FUTUR</div>
+    <div id="rvlf-rules" style="background:rgba(0,10,30,.8);border:1px solid rgba(100,200,255,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:13px;color:#64c8ff;margin-bottom:8px;letter-spacing:2px">⚡ RETOUR VERS LE FUTUR</div>
       10 questions · 30s chacune · <strong style="color:var(--txt)">1 mauvaise réponse = Game Over</strong><br>
       ✅ Bonne réponse → <strong style="color:var(--neon)">+20 pts</strong> · Score parfait : <strong style="color:var(--neon)">200 pts</strong><br>
       <div style="margin-top:6px;font-size:11px;color:var(--mute);line-height:1.8">
         🔗 <strong style="color:#ffc800">LIEN</strong> — Q actuelle + suivante. Réponds à 1 pour les 2. Juste → +40 pts. Faux → Game Over.<br>
         🐱 <strong style="color:#64c8ff">SCHRÖDINGER</strong> — 2 questions en // jusqu'à la fin. 2 justes → +30 · 1 juste → +20 · 0 → Game Over.<br>
-        ⏱️ <strong style="color:#ff64c8">BALISE</strong> — Checkpoint. Si erreur → score + jokers restaurés. Toutes les cartes jouées après la pose = perdues.
+        ⏱️ <strong style="color:#ff64c8">BALISE</strong> — Checkpoint. Si erreur → score + jokers restaurés.
       </div>
-      <button onclick="document.getElementById('rvlf-rules').style.display='none';rvlfShowQuestion();" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
+      <button onclick="document.getElementById('rvlf-rules').style.display='none';rvlfShowQuestion();" style="margin-top:10px;width:100%!important;background:linear-gradient(90deg,#0066cc,#0044aa);color:#64c8ff;border:1px solid #64c8ff;border-radius:8px;padding:10px;font-family:var(--fh);font-size:13px;cursor:pointer;letter-spacing:2px">🚗 RETOUR VERS LE FUTUR →</button>
     </div>
 
     <!-- Panneau contextuel joker/événement -->
@@ -1292,7 +1314,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="rvlf-fb" class="fb" style="text-align:center;font-size:14px"></div>
     <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE TEMPORELLE — Checkpoint actif</div>
     <button id="rvlf-stop-btn" onclick="rvlfStop()" style="background:rgba(255,200,0,.1);border:1px solid rgba(255,200,0,.4);color:#ffc800;font-size:13px;font-family:var(--fh);border-radius:var(--r);padding:12px;cursor:pointer;width:100%!important;margin-top:4px;letter-spacing:0.5px">🏁 Arrêter et garder mes points (0 pts)</button>
-  </div>
+    </div><!-- end content wrapper -->
+  </div><!-- end rvlf-zone -->
 
   <!-- VAR ZONE -->
   <div id="var-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0a0a1a 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
@@ -4353,110 +4376,130 @@ function grimpeDrawProfile(){
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
 
-  // Sky gradient (dawn over the Alps)
-  const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,'#1a1a3e'); sky.addColorStop(0.4,'#2a2a5a'); sky.addColorStop(0.8,'#4a3a3a'); sky.addColorStop(1,'#3a2a1a');
+  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*Math.pow(t,1.2)+Math.sin(t*Math.PI*6)*2;
+
+  // Sky
+  const sky=ctx.createLinearGradient(0,0,0,H*0.5);
+  sky.addColorStop(0,'#0a0e22'); sky.addColorStop(1,'#1a2a50');
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
-  // Distant mountain silhouette
+  // Snowy peak center background
   ctx.beginPath();
-  ctx.moveTo(0,H*0.55);
-  for(let x=0;x<=W;x+=4){
-    const t=x/W;
-    const y=H*0.55-Math.sin(t*Math.PI*1.5+1)*H*0.18-Math.sin(t*Math.PI*4)*H*0.04;
-    ctx.lineTo(x,y);
-  }
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
-  ctx.fillStyle='#1a1f2e'; ctx.fill();
+  ctx.moveTo(W*0.3,H*0.48); ctx.lineTo(W*0.52,H*0.06); ctx.lineTo(W*0.74,H*0.48);
+  ctx.closePath(); ctx.fillStyle='#1e2840'; ctx.fill();
+  // Snow cap
+  ctx.beginPath();
+  ctx.moveTo(W*0.42,H*0.21); ctx.lineTo(W*0.52,H*0.06); ctx.lineTo(W*0.62,H*0.21);
+  ctx.lineTo(W*0.57,H*0.24); ctx.lineTo(W*0.52,H*0.17); ctx.lineTo(W*0.47,H*0.24);
+  ctx.closePath(); ctx.fillStyle='#d0e4f5'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(W*0.52,H*0.06); ctx.lineTo(W*0.545,H*0.16); ctx.lineTo(W*0.52,H*0.15);
+  ctx.closePath(); ctx.fillStyle='#ffffff'; ctx.fill();
+  // Side peaks
+  [[0.08,0.26,0.30],[0.70,0.20,0.94]].forEach(([x1,ph,x2])=>{
+    ctx.beginPath(); ctx.moveTo(W*x1,H*0.48); ctx.lineTo(W*(x1+(x2-x1)*0.5),H*(0.48-ph)); ctx.lineTo(W*x2,H*0.48);
+    ctx.closePath(); ctx.fillStyle='#171f32'; ctx.fill();
+    const mx=W*(x1+(x2-x1)*0.5), my=H*(0.48-ph);
+    ctx.beginPath(); ctx.moveTo(mx-5,my+H*0.035); ctx.lineTo(mx,my); ctx.lineTo(mx+5,my+H*0.035);
+    ctx.closePath(); ctx.fillStyle='#a0bcd4'; ctx.fill();
+  });
 
-  // Mid mountain layer
-  ctx.beginPath();
-  ctx.moveTo(0,H*0.7);
-  for(let x=0;x<=W;x+=4){
-    const t=x/W;
-    const y=H*0.7-Math.sin(t*Math.PI*2.2)*H*0.15;
-    ctx.lineTo(x,y);
-  }
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
-  ctx.fillStyle='#2a1f1a'; ctx.fill();
+  // Mountain terrain flanking road (far layer)
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for(let x=0;x<=W;x+=3){const t=x/W; ctx.lineTo(x,roadY(t)-H*0.07-Math.sin(t*Math.PI*2.2)*H*0.05);}
+  ctx.lineTo(W,H); ctx.closePath();
+  ctx.fillStyle='#182c12'; ctx.fill();
 
-  // Climbing profile — rising road from left to top-right
-  // This gives the SENSE of climbing because the road goes UP
-  const startY=H*0.92, endY=H*0.18;
-  ctx.beginPath();
-  ctx.lineWidth=14; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineCap='round';
-  for(let x=0;x<=W;x+=2){
-    const t=x/W;
-    // Steeper at end (real climb profile)
-    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
-    if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  }
+  // Near terrain (directly bordering road)
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for(let x=0;x<=W;x+=3){const t=x/W; ctx.lineTo(x,roadY(t)+3);}
+  ctx.lineTo(W,H); ctx.closePath();
+  const tg=ctx.createLinearGradient(0,0,0,H);
+  tg.addColorStop(0,'#223a18'); tg.addColorStop(1,'#0c1808');
+  ctx.fillStyle=tg; ctx.fill();
+
+  // Road shadow
+  ctx.beginPath(); ctx.lineWidth=14; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineCap='butt';
+  for(let x=0;x<=W;x+=2){const t=x/W,y=roadY(t)+3;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
   ctx.stroke();
-
-  // Road surface
-  ctx.beginPath();
-  ctx.lineWidth=11; ctx.strokeStyle='#3a3540'; ctx.lineCap='round';
-  for(let x=0;x<=W;x+=2){
-    const t=x/W;
-    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
-    if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  }
+  // Road
+  ctx.beginPath(); ctx.lineWidth=10; ctx.strokeStyle='#2c2930';
+  for(let x=0;x<=W;x+=2){const t=x/W,y=roadY(t);if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
   ctx.stroke();
-
-  // Road dashes
-  ctx.beginPath();
-  ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,200,.4)'; ctx.setLineDash([6,8]);
-  for(let x=0;x<=W;x+=2){
-    const t=x/W;
-    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
-    if(x===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  }
+  // Edge
+  ctx.beginPath(); ctx.lineWidth=1.2; ctx.strokeStyle='rgba(240,220,150,.4)';
+  for(let x=0;x<=W;x+=2){const t=x/W,y=roadY(t)-4;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+  // Dashes
+  ctx.beginPath(); ctx.lineWidth=1; ctx.strokeStyle='rgba(255,255,200,.2)'; ctx.setLineDash([8,10]);
+  for(let x=0;x<=W;x+=2){const t=x/W,y=roadY(t);if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
   ctx.stroke(); ctx.setLineDash([]);
 
-  // Section markers (% labels) on road, varying with gradient
-  const sections=GP.params?.sections||[1,4,7,9,11,8,6,9,11,13];
+  // Trees on both sides of road
+  [0.06,0.14,0.22,0.30,0.38,0.46,0.54,0.62,0.70,0.78,0.86,0.93].forEach((tp,i)=>{
+    const x=tp*W, ry=roadY(tp);
+    const sz=9+((i*7)%5);
+    drawGrimpeTree(ctx,x-(i%3)*4-3,ry-sz-3-(i%3)*3,sz,i%3);   // above road
+    drawGrimpeTree(ctx,x+(i%2)*4+2,ry+sz*0.9+(i%2)*3,sz*0.8,(i+1)%3); // below road
+  });
+
+  // % labels
   for(let s=1;s<=10;s++){
-    const t=(s-0.5)/10;
-    const x=t*W;
-    const y=startY+(endY-startY)*Math.pow(t,1.3)+Math.sin(t*Math.PI*6)*3;
-    const p=sections[s-1]||s;
-    const color=p>=11?'#ff4444':p>=8?'#ffaa00':p>=5?'#ffee44':'#aaffaa';
-    ctx.fillStyle=color; ctx.font='bold 9px monospace';
-    ctx.fillText(p+'%',x-7,y-10);
+    const t=(s-0.5)/10,x=t*W,y=roadY(t);
+    const c=s>=8?'#ff5533':s>=6?'#ffaa22':s>=4?'#ffee55':'#88ff88';
+    ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(x-10,y-22,20,13);
+    ctx.fillStyle=c; ctx.font='bold 9px monospace'; ctx.fillText(s+'%',x-8,y-12);
   }
 
-  // Finish line at top right
-  const fx=W-12, fy=startY+(endY-startY)*Math.pow(1,1.3);
-  ctx.fillStyle='#fff'; ctx.font='16px serif'; ctx.fillText('🏁',fx-4,fy+5);
+  // Finish + altitude
+  ctx.font='14px serif'; ctx.fillText('🏁',W-20,roadY(0.99)-4);
+  ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(W-62,4,58,16);
+  ctx.fillStyle='#d0e4f5'; ctx.font='bold 9px monospace'; ctx.fillText('⛰ 1860m',W-60,15);
+}
 
-  // KOM badge top-right corner
-  ctx.fillStyle='rgba(255,200,0,.15)'; ctx.fillRect(W-50,4,46,16);
-  ctx.fillStyle='#ffc800'; ctx.font='bold 9px monospace'; ctx.fillText('1850m',W-46,15);
+function drawGrimpeTree(ctx,x,y,size,type){
+  if(type===0){
+    ctx.fillStyle='#1a4d1a';
+    ctx.beginPath(); ctx.moveTo(x,y-size); ctx.lineTo(x-size*.5,y); ctx.lineTo(x+size*.5,y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#144014';
+    ctx.beginPath(); ctx.moveTo(x,y-size*1.45); ctx.lineTo(x-size*.35,y-size*.55); ctx.lineTo(x+size*.35,y-size*.55); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#4a3010'; ctx.fillRect(x-1.5,y,3,size*.4);
+  } else if(type===1){
+    const g=ctx.createRadialGradient(x-size*.15,y-size*.75,0,x,y-size*.55,size*.6);
+    g.addColorStop(0,'#2a5c18'); g.addColorStop(1,'#0c2808');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y-size*.55,size*.52,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3e2610'; ctx.fillRect(x-2,y-size*.08,4,size*.38);
+  } else {
+    ctx.fillStyle='#163816';
+    ctx.beginPath(); ctx.moveTo(x,y-size*1.6); ctx.lineTo(x-size*.38,y); ctx.lineTo(x+size*.38,y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1c4e1c';
+    ctx.beginPath(); ctx.moveTo(x,y-size*1.15); ctx.lineTo(x-size*.48,y-size*.28); ctx.lineTo(x+size*.48,y-size*.28); ctx.closePath(); ctx.fill();
+  }
 }
 
 function grimpeUpdateRiders(){
   const cv=document.getElementById('grimpe-canvas');
   if(!cv)return;
   const W=cv.width,H=cv.height;
-  const startY=H*0.92, endY=H*0.18;
+  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*Math.pow(t,1.2)+Math.sin(t*Math.PI*6)*2;
   const riderEl=document.getElementById('grimpe-rider');
   const pogiEl=document.getElementById('grimpe-pogi');
   const profile=document.getElementById('grimpe-profile');
   const dispW=profile?profile.offsetWidth:W;
   const dispH=profile?profile.offsetHeight:H;
   if(riderEl){
-    const t=Math.min(1,GP.cases/100);
+    const t=Math.min(0.97,GP.cases/100);
     const x=t*dispW;
-    const y=(startY+(endY-startY)*Math.pow(t,1.3))/H*dispH;
-    riderEl.style.left=Math.min(x,dispW-28)+'px';
-    riderEl.style.bottom=(dispH-y-16)+'px';
+    const y=roadY(t)/H*dispH;
+    riderEl.style.left=Math.max(0,x-14)+'px';
+    riderEl.style.bottom=(dispH-y-18)+'px';
   }
   if(pogiEl){
-    const t=Math.min(1,GP.pogiCases/100);
+    const t=Math.min(0.97,GP.pogiCases/100);
     const x=t*dispW;
-    const y=(startY+(endY-startY)*Math.pow(t,1.3))/H*dispH;
-    pogiEl.style.left=Math.min(x,dispW-28)+'px';
-    pogiEl.style.bottom=(dispH-y-14)+'px';
+    const y=roadY(t)/H*dispH;
+    pogiEl.style.left=Math.max(0,x-14)+'px';
+    pogiEl.style.bottom=(dispH-y-16)+'px';
   }
 }
 
@@ -4554,7 +4597,7 @@ function setupGrimpeMode(data){
   if(epoBtn){epoBtn.style.display='block';}
   if(transBtn){transBtn.style.display='none';}
   if(gelBtn){gelBtn.style.display='block';}
-  setTimeout(()=>{if(cv){cv.width=cv.offsetWidth||340;cv.height=cv.offsetHeight||110;}grimpeDrawProfile();},100);
+  setTimeout(()=>{if(cv){cv.width=cv.offsetWidth||340;cv.height=cv.offsetHeight||150;}grimpeDrawProfile();},100);
   document.getElementById('grimpe-chk').onclick=submitGrimpeAnswer;
   document.getElementById('grimpe-in').onkeydown=e=>{if(e.key==='Enter')submitGrimpeAnswer();};
   document.getElementById('grimpe-in').oninput=e=>{if(!GP.questionStart&&e.target.value.length>0)GP.questionStart=Date.now();};
@@ -6216,11 +6259,13 @@ function setupSportusMode(data){
 
   document.getElementById('sportus-fb').textContent='';
   document.getElementById('sportus-fb').className='sportus-fb';
-  document.getElementById('sportus-in').value='';
-  document.getElementById('sportus-in').disabled=false;
+  const inEl=document.getElementById('sportus-in');
+  inEl.value='';
+  inEl.disabled=false;
+  inEl.maxLength=S.targetLen; // prevent typing more than answer length
   document.getElementById('sportus-chk').disabled=false;
   if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
-  setTimeout(()=>document.getElementById('sportus-in').focus(),80);
+  setTimeout(()=>inEl.focus(),80);
   startSportusTimer();
 }
 
@@ -6279,14 +6324,17 @@ function buildSportusHints(data){
 function scrollToActiveSportusRow(){
   const grid=document.getElementById('sportus-grid');
   if(!grid) return;
-  // Show all rows up to and including current active
   const rows=grid.querySelectorAll('.sportus-row');
   rows.forEach((r,i)=>{
     r.style.display = i <= S.tries ? 'flex' : 'none';
   });
-  // Scroll active row into view
   const activeRow=document.getElementById('srow-'+S.tries);
   if(activeRow) activeRow.scrollIntoView({block:'nearest',behavior:'smooth'});
+  // Also scroll page so input stays visible
+  setTimeout(()=>{
+    const inp=document.getElementById('sportus-in');
+    if(inp) inp.scrollIntoView({block:'center',behavior:'smooth'});
+  },200);
 }
 
 function buildSportusGrid(){
@@ -8238,7 +8286,7 @@ function rouletteFire(onHit,onSafe){
   // Gun animation: kick back
   if(gun){
     gun.style.transform='rotate(-20deg) scale(1.3) translateX(8px)';
-    gun.style.filter='brightness(2)';
+    gun.style.filter='brightness(3) drop-shadow(0 0 12px #ff8800)';
     setTimeout(()=>{gun.style.transform='rotate(0) scale(1) translateX(0)';gun.style.filter='';},250);
   }
   rouletteRenderChambers(chambers,bullet,RR.shots);
