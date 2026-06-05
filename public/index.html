@@ -221,21 +221,21 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .sportus-clue-box{background:var(--c1);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:11px 14px;font-size:13px;color:var(--mute);line-height:1.5;text-align:center;flex-shrink:0}
 .sportus-clue-box em{color:var(--cyan);font-style:normal;font-weight:800}
 .sportus-grid{display:flex;flex-direction:column;gap:5px}
-.sportus-grid-scroll{overflow-y:auto;display:flex;flex-direction:column;gap:5px;max-height:200px}
+.sportus-grid-scroll{overflow-y:auto;display:flex;flex-direction:column;gap:5px;max-height:220px}
 .sportus-row{display:flex;gap:4px;justify-content:center}
-.sportus-cell{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:20px;font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s;position:relative}
-.sportus-cell.active{border-color:rgba(255,255,255,.25);background:var(--c1)}
-.sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff}
+.sportus-cell{width:clamp(32px,9vw,42px);height:clamp(32px,9vw,42px);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:clamp(16px,4.5vw,22px);font-weight:700;border:2px solid rgba(255,255,255,.08);background:var(--c2);color:var(--mute);transition:background .25s,border-color .25s,color .25s,transform .1s;position:relative}
+.sportus-cell.active{border-color:rgba(255,255,255,.3);background:var(--c1);transform:scale(1.05)}
+.sportus-cell.correct{background:#e63030;border-color:#e63030;color:#fff;box-shadow:0 0 8px rgba(230,48,48,.4)}
 .sportus-cell.revealed-lock{background:rgba(212,255,0,.12);border-color:rgba(212,255,0,.4);color:var(--neon);font-weight:900}
-.sportus-cell.present{background:#f0c000;border-color:#f0c000;color:#07070f}
+.sportus-cell.present{background:#f0c000;border-color:#f0c000;color:#07070f;box-shadow:0 0 8px rgba(240,192,0,.3)}
 .sportus-cell.absent{background:var(--c2);border-color:rgba(255,255,255,.08);color:var(--mute)}
 .sportus-cell.flip{animation:scellflip .35s ease forwards}
 @keyframes scellflip{0%{transform:scaleY(1)}50%{transform:scaleY(0)}100%{transform:scaleY(1)}}
 .sportus-input-row{display:flex;gap:8px}
-.sportus-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.07);border-radius:var(--r);padding:13px 14px;font-size:17px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;text-transform:uppercase}
-.sportus-in:focus{border-color:var(--neon)}
+.sportus-in{flex:1;background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:var(--r);padding:14px 14px;font-size:18px;font-family:var(--fb);font-weight:700;color:var(--txt);outline:none;-webkit-appearance:none;transition:border-color .2s;text-transform:uppercase;letter-spacing:3px}
+.sportus-in:focus{border-color:var(--cyan)}
 .sportus-in.err{animation:shake .35s ease;border-color:var(--red)}
-.sportus-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:13px 18px;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.sportus-chk{background:var(--cyan);color:#07070f;border:none;border-radius:var(--r);padding:14px 20px;font-size:20px;font-weight:900;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;min-width:52px}
 .sportus-fb{font-size:13px;text-align:center;min-height:16px;color:var(--mute)}
 .sportus-fb.err{color:var(--red);font-weight:800}
 /* Boules */
@@ -335,22 +335,24 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .chase-grace{font-family:var(--fh);font-size:13px;text-align:center;color:var(--orange)}
 /* LE BLACKJACK */
 #blackjack-zone{display:none;flex-direction:column;gap:12px}
-.bj-theme{font-size:14px;font-weight:700;text-align:center;color:var(--txt);line-height:1.4;background:var(--c1);border-radius:var(--r);padding:12px}
+/* BLACKJACK — Casino */
+.bj-theme{font-size:14px;font-weight:700;text-align:center;color:var(--txt);line-height:1.4;background:rgba(0,0,0,.3);border-radius:var(--r);padding:12px;border:1px solid rgba(212,255,0,.08)}
 .bj-counter{text-align:center;margin:2px 0}
 .bj-counter-nums{font-family:var(--fh);font-size:52px;line-height:1;transition:color .3s}
 .bj-counter-nums.safe{color:var(--neon)}
 .bj-counter-nums.warn{color:var(--orange)}
 .bj-counter-nums.danger{color:var(--red)}
-.bj-target-lbl{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);margin-top:4px}
-.bj-bar{height:8px;background:var(--c2);border-radius:99px;overflow:hidden}
+.bj-target-lbl{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px}
+.bj-bar{height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
 .bj-bar-fill{height:100%;border-radius:99px;transition:width .4s cubic-bezier(.34,1.4,.64,1),background .3s}
-.bj-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.bj-card{background:var(--c2);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .2s;-webkit-tap-highlight-color:transparent}
-.bj-card:active{transform:scale(.97)}
-.bj-card.selected{background:rgba(212,255,0,.1);border-color:var(--neon)}
-.bj-card.used{opacity:.35;pointer-events:none;border-style:dashed}
+.bj-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.bj-card{background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.02) 100%);border:1px solid rgba(212,255,0,.12);border-radius:14px;padding:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .2s;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05)}
+.bj-card:active{transform:scale(.96)}
+.bj-card:hover{border-color:rgba(212,255,0,.35);box-shadow:0 0 14px rgba(212,255,0,.1)}
+.bj-card.selected{background:rgba(212,255,0,.1);border-color:rgba(212,255,0,.6);box-shadow:0 0 18px rgba(212,255,0,.15)}
+.bj-card.used{opacity:.2;pointer-events:none}
 .bj-card-name{font-size:13px;font-weight:800;color:var(--txt)}
-.bj-card-val{font-family:var(--fh);font-size:20px;color:var(--neon)}
+.bj-card-val{font-family:var(--fh);font-size:22px;color:var(--neon)}
 .bj-card.selected .bj-card-val{color:var(--neon)}
 .bj-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
 @keyframes bj-bust{0%{transform:scale(1)}20%{transform:scale(1.04)}40%{transform:scale(.97)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
@@ -372,11 +374,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .arc-cible.hit{border-color:var(--neon);background:rgba(212,255,0,.05)}
 .arc-cible.miss{border-color:var(--red);opacity:.7}
 #ns-zone{display:none;flex-direction:column;gap:10px;width:100%}
-.ns-couloir{background:var(--c1);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;min-height:54px;display:flex;align-items:center;gap:10px;transition:all .2s}
-.ns-couloir.over{border-color:var(--cyan);background:rgba(0,229,200,.08)}
-.ns-couloir.correct{border-color:var(--neon);background:rgba(212,255,0,.06)}
-.ns-couloir.wrong{border-color:var(--red);background:rgba(255,60,60,.06)}
-.ns-sportif-card{background:var(--c2);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:grab;text-align:center;user-select:none;-webkit-user-select:none;touch-action:none;transition:all .2s;display:inline-block}
+.ns-couloir{background:linear-gradient(90deg,rgba(0,80,180,.3) 0%,rgba(0,120,220,.15) 100%);border:1px solid rgba(0,150,255,.25);border-radius:12px;padding:10px 12px;min-height:54px;display:flex;align-items:center;gap:10px;transition:all .2s;position:relative;overflow:hidden}
+.ns-couloir::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:70%;background:rgba(0,200,255,.4);border-radius:0 4px 4px 0}
+.ns-couloir.over{border-color:#00c8ff;background:rgba(0,200,255,.12);box-shadow:0 0 12px rgba(0,200,255,.15)}
+.ns-couloir.correct{border-color:var(--neon);background:rgba(212,255,0,.08);box-shadow:0 0 10px rgba(212,255,0,.1)}
+.ns-couloir.wrong{border-color:var(--red);background:rgba(255,60,60,.08)}
+.ns-sportif-card{background:rgba(0,100,200,.2);border:1px solid rgba(0,200,255,.3);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:grab;text-align:center;user-select:none;-webkit-user-select:none;touch-action:none;transition:all .2s;display:inline-block;color:rgba(0,200,255,.9)}
+.ns-sportif-card:active{transform:scale(.96);border-color:#00c8ff}
+.ns-sportif-card.selected{border-color:#00c8ff;background:rgba(0,200,255,.2);box-shadow:0 0 10px rgba(0,200,255,.2);color:#00c8ff}
 #haltero-zone{display:none;flex-direction:column;gap:10px;width:100%}
 .penta-step{display:flex;flex-direction:column;align-items:center;font-size:20px;color:var(--mute);opacity:0.3;transition:all .3s;font-family:var(--fh)}
 .ha-sportif-card{flex:1;padding:12px;border-radius:12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s;font-family:var(--fh);font-size:13px;font-weight:800}
@@ -397,22 +402,23 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .idee-card{background:var(--c2);border-radius:14px;padding:12px 14px}
 .idee-vote-btn{background:var(--c1);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;font-family:var(--ff)}
 .idee-vote-btn.voted{border-color:var(--neon);color:var(--neon)}
-.biat-phase{font-family:var(--fh);font-size:11px;letter-spacing:3px;color:var(--mute);text-align:center}
+.biat-phase{font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(100,200,255,.5);text-align:center}
 .biat-step{text-align:center;transition:opacity .3s,transform .3s;color:var(--mute)}
-.biat-step.active{opacity:1!important;color:var(--neon)}
-.biat-step.done{opacity:.6!important;color:var(--neon)}
-.biat-big{font-family:var(--fh);font-size:56px;line-height:1;text-align:center;color:var(--neon)}
-.biat-target{width:48px;height:48px;border-radius:50%;border:3px solid var(--mute);display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .3s}
-.biat-target.hit{border-color:var(--neon);background:rgba(212,255,0,.15)}
+.biat-step.active{opacity:1!important;color:#64c8ff}
+.biat-step.done{opacity:.6!important;color:#64c8ff}
+.biat-big{font-family:var(--fh);font-size:56px;line-height:1;text-align:center;color:#64c8ff}
+.biat-target{width:50px;height:50px;border-radius:50%;border:3px solid rgba(100,200,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .3s;background:rgba(0,40,100,.3)}
+.biat-target.hit{border-color:#64c8ff;background:rgba(100,200,255,.15);box-shadow:0 0 12px rgba(100,200,255,.3)}
 .biat-target.miss{border-color:var(--red);background:rgba(255,60,60,.15)}
-.biat-qcm-btn{background:var(--c2);border:2px solid transparent;border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;transition:all .15s;font-family:var(--ff)}
-.biat-qcm-btn:active{background:var(--c1)}
-.biat-qcm-btn.correct{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.1)}
+.biat-qcm-btn{background:rgba(0,40,100,.3);border:1px solid rgba(100,200,255,.15);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;transition:all .15s;font-family:var(--ff)}
+.biat-qcm-btn:active{transform:scale(.98);background:rgba(0,60,140,.4)}
+.biat-qcm-btn:hover{border-color:rgba(100,200,255,.3)}
+.biat-qcm-btn.correct{border-color:#64c8ff;color:#64c8ff;background:rgba(100,200,255,.1);box-shadow:0 0 8px rgba(100,200,255,.1)}
 .biat-qcm-btn.wrong{border-color:var(--red);color:var(--red);background:rgba(255,60,60,.1)}
-.biat-order-btn{background:var(--c2);border:2px solid transparent;border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;font-family:var(--ff);display:flex;align-items:center;gap:10px}
-.biat-order-btn.placed{border-color:var(--neon);opacity:.5}
-.biat-slot{background:var(--c1);border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mute);min-height:48px;display:flex;align-items:center;gap:10px}
-.biat-slot.filled{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.08);cursor:pointer}
+.biat-order-btn{background:rgba(0,40,100,.3);border:1px solid rgba(100,200,255,.12);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--txt);cursor:pointer;text-align:left;width:100%;font-family:var(--ff);display:flex;align-items:center;gap:10px}
+.biat-order-btn.placed{border-color:#64c8ff;opacity:.5}
+.biat-slot{background:rgba(0,20,60,.4);border:1px dashed rgba(100,200,255,.2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mute);min-height:48px;display:flex;align-items:center;gap:10px}
+.biat-slot.filled{border-color:#64c8ff;color:#64c8ff;background:rgba(100,200,255,.06);cursor:pointer}
 .grimpe-profile{position:relative;height:110px;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-radius:12px;overflow:hidden;margin:4px 0}
 .grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
 .grimpe-timer-bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden}
@@ -451,19 +457,19 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .replique-full{background:var(--c1);border-radius:var(--r);padding:16px;font-size:14px;font-style:italic;color:var(--txt);text-align:center;line-height:1.7;border-left:4px solid var(--orange)}
 .replique-timer-bar{height:5px;background:var(--c2);border-radius:99px;overflow:hidden}
 .replique-timer-fill{height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 1s linear}
-#demineur-zone{display:none;flex-direction:column;gap:16px}
+#demineur-zone{display:none;flex-direction:column;gap:16px;background:radial-gradient(ellipse at center,#0d0d00 0%,#050500 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,200,0,.08)}
 .dem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.dem-case{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 6px;text-align:center;font-size:12px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.4;min-height:64px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;word-break:break-word}
-.dem-case:active{transform:scale(.96)}
-.dem-case.safe{background:rgba(0,230,118,.15);border-color:#00e676;color:#00e676;cursor:default}
-.dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default}
-.dem-case.locked{opacity:.45;cursor:default;pointer-events:none}
-@keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+.dem-case{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,200,0,.15);border-radius:14px;padding:14px 6px;text-align:center;font-size:12px;font-weight:700;color:var(--txt);cursor:pointer;transition:all .2s;line-height:1.4;min-height:64px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;word-break:break-word;box-shadow:0 2px 6px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04)}
+.dem-case:hover{border-color:rgba(255,200,0,.4);box-shadow:0 0 10px rgba(255,200,0,.1)}
+.dem-case:active{transform:scale(.95)}
+.dem-case.safe{background:rgba(0,230,118,.12);border-color:#00e676;color:#00e676;cursor:default;box-shadow:0 0 10px rgba(0,230,118,.15)}
+.dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default;box-shadow:0 0 20px rgba(255,0,0,.3)}
+.dem-case.locked{opacity:.35;cursor:default;pointer-events:none}
+@keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.2);filter:brightness(2)}60%{transform:scale(.95)}100%{transform:scale(1);filter:none}}
 .dem-pot{font-family:var(--fh);font-size:36px;text-align:center;color:var(--neon);transition:all .2s;line-height:1.1}
 .dem-pot.flash{animation:dem-flash .3s ease}
 @keyframes dem-flash{0%{transform:scale(1)}50%{transform:scale(1.15);color:#fff}100%{transform:scale(1)}}
 .dem-encaisser{font-family:var(--fh);font-size:18px;letter-spacing:2px}
-@keyframes securiser-pulse{0%,100%{box-shadow:0 0 12px rgba(255,200,0,.4)}50%{box-shadow:0 0 28px rgba(255,200,0,.8),0 0 8px rgba(255,200,0,.4)}}
 .trappe-bloc{background:var(--c1);border:2px solid rgba(255,255,255,.08);border-radius:var(--r);padding:8px 6px;display:flex;flex-direction:column;gap:8px;transition:border-color .3s,background .3s}
 .trappe-bloc.correct{border-color:#00e676;background:rgba(0,230,118,.1)}
 .trappe-bloc.wrong{border-color:var(--red);background:rgba(255,63,92,.1);animation:trappe-fall .5s ease forwards}
@@ -549,6 +555,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
       <div class="gt-item"><div class="gt-ico">🤿</div><div class="gt-name">La Plongée</div></div>
       <div class="gt-item"><div class="gt-ico">🧗</div><div class="gt-name">L'Escalade</div></div>
+      <div class="gt-item"><div class="gt-ico">🔫</div><div class="gt-name">Roulette Russe</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -783,24 +790,26 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
 
-  <div id="blackjack-zone">
-    <div class="bj-theme" id="bj-theme">…</div>
+  <div id="blackjack-zone" style="background:radial-gradient(ellipse at center,#0a2a0a 0%,#051505 60%,#020a02 100%);border-radius:16px;padding:14px;border:1px solid rgba(212,255,0,.1);box-shadow:inset 0 0 40px rgba(0,0,0,.5)">
+    <!-- Casino felt texture overlay -->
+    <div style="position:relative">
+      <div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;color:rgba(212,255,0,.3);text-align:center;margin-bottom:8px">♠ ♥ BLACKJACK ♦ ♣</div>
+      <div class="bj-theme" id="bj-theme">…</div>
     <div class="bj-counter">
       <div class="bj-counter-nums safe" id="bj-nums">0 <span style="font-size:28px;color:var(--mute)">/ <span id="bj-target-num">50</span></span></div>
       <div class="bj-target-lbl">Plafond à ne pas dépasser</div>
     </div>
     <div class="bj-bar"><div class="bj-bar-fill" id="bj-bar-fill" style="width:0%;background:var(--neon)"></div></div>
-    <!-- Timer -->
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="height:4px;flex:1;background:var(--c2);border-radius:99px;overflow:hidden;margin-right:10px">
+      <div style="height:4px;flex:1;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-right:10px">
         <div id="bj-timer-fill" style="height:100%;background:var(--orange);width:100%;border-radius:99px;transition:width 60s linear"></div>
       </div>
       <div style="font-family:var(--fh);font-size:16px;color:var(--orange);min-width:32px;text-align:right" id="bj-timer-txt">60s</div>
     </div>
-    <!-- Grille de cartes cliquables -->
     <div class="bj-cards" id="bj-cards"></div>
     <button id="bj-encaisser" class="btn btn-p bj-encaisser" disabled style="opacity:.4">💰 ENCAISSER</button>
     <div class="fb" id="bj-fb"></div>
+    </div>
   </div>
 
   <!-- SCOUT rules modal -->
@@ -1306,6 +1315,48 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <button onclick="varSkipCorrection()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--mute);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas → garder les points actuels</button>
   </div>
 
+  <div id="roulette-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+
+    <!-- Encart règles -->
+    <div id="roulette-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:13px;color:#ff3333;margin-bottom:8px;letter-spacing:1px">🔫 ROULETTE RUSSE</div>
+      Un texte sur un sportif s'affiche partiellement masqué.<br>
+      🎯 <strong style="color:var(--txt)">Devine le sportif</strong> — bonne réponse = <strong style="color:var(--neon)">100 pts</strong><br>
+      ❌ Mauvaise réponse → <strong style="color:#ff3333">tir de pistolet</strong><br>
+      🔍 Pas sûr ? Tire volontairement pour <strong style="color:var(--txt)">révéler plus de mots</strong> → tir de pistolet<br>
+      💀 Tombe sur la balle → <strong style="color:#ff3333">0 pts</strong>
+      <button id="roulette-start-btn" onclick="rouletteStart()" style="margin-top:10px;width:100%!important;background:#cc0000;color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">🔫 CHARGER L'ARME</button>
+    </div>
+
+    <!-- Pistolet + chargeur -->
+    <div id="roulette-gun-area" style="display:none;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px;background:var(--c2);border-radius:12px;padding:12px">
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+          <div style="font-size:10px;color:var(--mute);letter-spacing:1px">CHARGEUR</div>
+          <div id="roulette-chambers-display" style="display:flex;gap:4px;flex-wrap:wrap;max-width:120px"></div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div id="roulette-gun-emoji" style="font-size:52px;transition:transform .15s">🔫</div>
+          <div id="roulette-gun-status" style="font-size:11px;color:var(--mute);margin-top:4px">Tir <span id="roulette-shot-num">0</span> / <span id="roulette-chambers-num">6</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--mute)">ENJEU</div>
+          <div style="font-family:var(--fh);font-size:24px;color:var(--neon)">100</div>
+          <div style="font-size:10px;color:var(--mute)">ou 0 pts</div>
+        </div>
+      </div>
+      <div id="roulette-text-display" style="background:var(--c1);border-radius:12px;padding:12px;font-size:13px;line-height:2;color:var(--txt);max-height:220px;overflow-y:auto;word-break:break-word"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="roulette-in" placeholder="Nom du sportif…"
+          style="flex:1;min-width:0;background:var(--c1);border:1px solid rgba(255,50,50,.4);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none"
+          onkeydown="if(event.key==='Enter')rouletteGuess()">
+        <button onclick="rouletteGuess()" style="padding:0 16px;height:48px;background:#cc0000;color:#fff;border:none;border-radius:var(--r);font-family:var(--fh);font-size:13px;cursor:pointer;white-space:nowrap">🎯 DEVINER</button>
+      </div>
+      <button id="roulette-reveal-btn" onclick="rouletteReveal()" style="width:100%!important;padding:10px;border-radius:var(--r);border:1px solid rgba(255,200,0,.3);background:rgba(255,200,0,.06);color:#ffc800;font-family:var(--fh);font-size:12px;cursor:pointer">🔍 Révéler plus de mots → tir de pistolet</button>
+      <div id="roulette-fb" class="fb" style="text-align:center;font-size:13px"></div>
+    </div>
+  </div>
+
   <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="background:var(--c1);border-radius:14px;padding:14px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:6px">
@@ -1377,24 +1428,21 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- NAGE SYNC zone -->
-  <div id="ns-zone">
-    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">🏊 NATATION</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
-      <div style="font-size:12px;color:var(--mute)">Place chaque sportif<br>dans le bon couloir</div>
+  <div id="ns-zone" style="background:linear-gradient(180deg,#001428 0%,#002040 50%,#001028 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
+    <div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;color:rgba(0,200,255,.4);text-align:center;margin-bottom:8px">🏊 NATATION SYNCHRONISÉE 🏊</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.3);border-radius:10px;padding:8px 14px;margin-bottom:8px">
+      <div style="font-size:12px;color:rgba(0,200,255,.6)">Place chaque sportif<br>dans le bon couloir</div>
       <div style="text-align:center"><span style="font-family:var(--fh);font-size:22px;color:var(--red)" id="ns-chrono">60</span><div style="font-size:10px;color:var(--mute)">secondes</div></div>
     </div>
-    <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="ns-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
-    <!-- Encart règles -->
-    <div id="ns-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--mute)">
+    <div style="height:4px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-bottom:8px"><div id="ns-chrono-bar" style="height:100%;background:#00c8ff;width:100%;transition:width 1s linear"></div></div>
+    <div id="ns-rules" style="background:rgba(0,0,0,.3);border:1px solid rgba(0,150,255,.2);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.8;color:rgba(255,255,255,.5)">
       🏊 Clique un sportif puis un couloir · <strong style="color:var(--txt)">100/nb sportifs</strong> pts/bonne · <strong style="color:var(--txt)">3 essais</strong><br>
-      Essai 1 = 100% · Essai 2 = −25% · Essai 3 = −50% · Tu sais combien, pas lesquels
+      Essai 1 = 100% · Essai 2 = −25% · Essai 3 = −50%
     </div>
-    <!-- Couloirs -->
-    <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:8px"></div>
-    <!-- Sportifs à placer -->
-    <div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-top:4px">SPORTIFS</div>
+    <div id="ns-couloirs-zone" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div style="font-size:10px;color:rgba(0,200,255,.4);letter-spacing:1px;margin-top:8px">SPORTIFS</div>
     <div id="ns-sportifs-zone" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-    <button class="btn btn-p" id="ns-valider-btn" onclick="nsValider()" style="display:none;font-family:var(--fh);margin-top:4px">✓ VALIDER</button>
+    <button class="btn btn-p" id="ns-valider-btn" onclick="nsValider()" style="display:none;font-family:var(--fh);margin-top:4px;background:rgba(0,150,255,.2);border:1px solid rgba(0,200,255,.4);color:#00c8ff">✓ VALIDER</button>
     <div class="fb" id="ns-fb"></div>
   </div>
 
@@ -1431,7 +1479,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- BIATHLON zone -->
-  <div id="biathlon-zone">
+  <div id="biathlon-zone" style="background:linear-gradient(180deg,#0a1628 0%,#0d1f3a 50%,#071020 100%);border-radius:16px;padding:14px;border:1px solid rgba(100,180,255,.1)">
+    <!-- Snow texture header -->
+    <div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;color:rgba(100,200,255,.3);text-align:center;margin-bottom:8px">❄️ BIATHLON ❄️</div>
     <!-- Phase indicator -->
     <div id="biat-stepper" style="display:flex;align-items:center;gap:0;margin-bottom:4px;width:100%">
       <div class="biat-step active" id="biat-step-1" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
@@ -1541,9 +1591,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button class="btn btn-p" id="biat-validate-order" style="margin-top:8px;display:none" onclick="biatValidateOrder()">✓ Valider le classement</button>
     </div>
     <div class="fb" id="biat-fb"></div>
-  </div>
-
-  <!-- LE SCOUT zone -->
+  </div><!-- end biathlon-zone -->
   <div id="scout-zone">
     <div class="scout-score-big" id="scout-score" style="font-size:40px;text-align:center">100</div>
     <div id="scout-question" style="font-size:13px;color:var(--mute);text-align:center">Qui est ce sportif ?</div>
@@ -2117,6 +2165,8 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='roulette'){
+      setupRoulette(data);
     } else if(data.type==='escalade'){
       document.getElementById('std-ans-area').style.display='none';
       setupEscalade(data);
@@ -2148,7 +2198,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -2173,7 +2223,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','plongee':'🤿',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','plongee':'🤿',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -3295,7 +3345,7 @@ const PL={
 
 function setupPlongee(data){
   PL.data=data; PL.palier=0; PL.phase='descente'; PL.o2=1000;
-  PL.o2Rate=data.plongeeO2Base||6; PL.treasures=[]; PL.score=0;
+  PL.o2Rate=data.plongeeO2Base||6; PL.o2TreasureRate=data.plongeeO2Treasure||2; PL.treasures=[]; PL.score=0;
   PL.done=false; PL.timerInt=null; PL.waitingAnswer=false; PL.currentPalier=0;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Descends · Ramasse des trésors · Remonte vivant';
   hideAllZones();
@@ -3390,7 +3440,7 @@ function plongeeShowDescendChoice(){
   if(hasTreasure){
     const btn=document.getElementById('plongee-btn-treasure');
     const p=PL.data.plongeePaliers[PL.currentPalier-1];
-    if(btn){btn.style.display='block';btn.textContent=`💰 Prendre le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||1} O2/s`;}
+    if(btn){btn.style.display='block';btn.textContent=`💰 Prendre le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||2} O2/s`;}
   }
   if(canDescend){
     const btn=document.getElementById('plongee-btn-descend');
@@ -3404,10 +3454,10 @@ function plongeeTakeOrSkipTreasure(){
   const p=PL.data.plongeePaliers[PL.currentPalier-1];
   PL.treasures.push({palier:PL.currentPalier, pts:p.tresor});
   PL.score+=p.tresor;
-  PL.o2Rate+=(PL.data.plongeeO2Treasure||1);
+  PL.o2Rate+=(PL.data.plongeeO2Treasure||2);
   plongeeUpdateUI();
   const fb=document.getElementById('plongee-fb');
-  if(fb){fb.textContent=`💰 Trésor ramassé ! +${p.tresor} pts · O2 -${PL.data.plongeeO2Treasure||1}/s désormais`;fb.style.color='#ffc800';}
+  if(fb){fb.textContent=`💰 Trésor ramassé ! +${p.tresor} pts · O2 -${PL.data.plongeeO2Treasure||2}/s désormais`;fb.style.color='#ffc800';}
   const btn=document.getElementById('plongee-btn-treasure');
   if(btn)btn.style.display='none';
   G.score=PL.score;setScore(PL.score,false);
@@ -3473,7 +3523,7 @@ function plongeeShowSkipOptions(palier){
 function plongeeSkipWithTreasure(treasureIdx, palier){
   const t=PL.treasures[treasureIdx];
   PL.score-=t.pts;
-  PL.o2Rate-=(PL.data.plongeeO2Treasure||1);
+  PL.o2Rate-=(PL.data.plongeeO2Treasure||2);
   PL.treasures.splice(treasureIdx,1);
   plongeeUpdateUI();
   const fb=document.getElementById('plongee-fb');
@@ -4271,27 +4321,72 @@ function grimpeDrawProfile(){
   if(!cv)return;
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  const grad=ctx.createLinearGradient(0,0,W,0);
-  grad.addColorStop(0,'#1a2a1a'); grad.addColorStop(1,'#0a0a0a');
-  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0a1628'); sky.addColorStop(0.5,'#1a2a4a'); sky.addColorStop(1,'#2a3a2a');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Mountain silhouette background
+  ctx.beginPath();
+  ctx.moveTo(0,H);
+  for(let x=0;x<=W;x+=2){
+    const t=x/W;
+    const mh=H*0.55-Math.sin(t*Math.PI)*H*0.3+Math.sin(t*Math.PI*3)*H*0.05;
+    if(x===0)ctx.moveTo(x,mh); else ctx.lineTo(x,mh);
+  }
+  ctx.lineTo(W,H); ctx.closePath();
+  const mGrad=ctx.createLinearGradient(0,0,0,H);
+  mGrad.addColorStop(0,'#3a4a3a'); mGrad.addColorStop(1,'#1a2a1a');
+  ctx.fillStyle=mGrad; ctx.fill();
+
+  // Road surface - the col du galibier style road
+  const roadGrad=ctx.createLinearGradient(0,H,W,0);
+  roadGrad.addColorStop(0,'#2a2a2a'); roadGrad.addColorStop(1,'#3a3a3a');
+  ctx.beginPath();
+  ctx.moveTo(-2,H+2); ctx.lineTo(W+2,H*0.05);
+  ctx.lineTo(W+2,H*0.05+12); ctx.lineTo(-2,H+14);
+  ctx.closePath(); ctx.fillStyle=roadGrad; ctx.fill();
+  // Road center line
+  ctx.setLineDash([8,6]);
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,H-4); ctx.lineTo(W,H*0.1); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Sections markers with pente labels
   for(let s=1;s<=10;s++){
     const x=(s-1)/10*W;
-    if(s%2===0){ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(x,0,W/10,H);}
-    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px monospace';ctx.fillText(s+'%',x+2,H-4);
+    // Crowd dots on the sides of the road
+    if(s%2===0){
+      ctx.fillStyle='rgba(255,200,0,.15)'; ctx.fillRect(x,0,W/10,H);
+      for(let c=0;c<6;c++){
+        const cx=x+Math.random()*W/10;
+        const cy=H-8-((cx/W)*(H-20))+Math.random()*8;
+        ctx.fillStyle=`hsl(${Math.random()*60+180},60%,50%)`;
+        ctx.beginPath(); ctx.arc(cx,cy,2,0,Math.PI*2); ctx.fill();
+      }
+    }
+    // Section label
+    const lx=x+3; const ly=Math.max(12,H-6-(x/W)*(H-14));
+    ctx.fillStyle='rgba(255,255,255,.5)'; ctx.font='bold 9px monospace';
+    ctx.fillText(s+'%',lx,ly);
   }
-  // Ligne montée
-  ctx.beginPath();ctx.strokeStyle='#334';ctx.lineWidth=1;
-  ctx.moveTo(0,H-10);ctx.lineTo(W,10);ctx.stroke();
-  // Ligne joueur
+
+  // Player position line
   const px=GP.cases/100*W;
-  ctx.strokeStyle='#00ff88';ctx.lineWidth=2;ctx.setLineDash([3,3]);
-  ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H);ctx.stroke();
-  ctx.setLineDash([]);
-  // Ligne pogi
+  const pGrad=ctx.createLinearGradient(px,0,px+3,0);
+  pGrad.addColorStop(0,'rgba(0,255,136,.8)'); pGrad.addColorStop(1,'transparent');
+  ctx.fillStyle=pGrad; ctx.fillRect(px,0,3,H);
+
+  // Pogi position line
   const ppx=GP.pogiCases/100*W;
-  ctx.strokeStyle='#ff6600';ctx.lineWidth=2;ctx.setLineDash([3,3]);
-  ctx.beginPath();ctx.moveTo(ppx,0);ctx.lineTo(ppx,H);ctx.stroke();
-  ctx.setLineDash([]);
+  const pgGrad=ctx.createLinearGradient(ppx,0,ppx+3,0);
+  pgGrad.addColorStop(0,'rgba(255,102,0,.8)'); pgGrad.addColorStop(1,'transparent');
+  ctx.fillStyle=pgGrad; ctx.fillRect(ppx,0,3,H);
+
+  // Finish flag at top right
+  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='14px serif';
+  ctx.fillText('🏁',W-18,16);
 }
 
 function grimpeUpdateRiders(){
@@ -7961,6 +8056,164 @@ function haltFinish(){
 
 
 // ══════════════════════════════════════════════════════════════════════════
+// ── ROULETTE RUSSE ────────────────────────────────────────────────────────
+const RR={
+  data:null, shots:0, done:false, wordsState:[], revealStep:5
+};
+
+function setupRoulette(data){
+  RR.data=data; RR.shots=0; RR.done=false;
+  document.getElementById('std-ans-area').style.display='none';
+  hideAllZones();
+  document.getElementById('roulette-zone').style.display='flex';
+  document.getElementById('roulette-rules').style.display='block';
+  document.getElementById('roulette-gun-area').style.display='none';
+  const tip=document.getElementById('game-tip');
+  if(tip)tip.textContent='Devine le sportif · Tire pour plus d\'indices · Évite la balle';
+}
+
+function rouletteStart(){
+  document.getElementById('roulette-rules').style.display='none';
+  document.getElementById('roulette-gun-area').style.display='flex';
+  const txt=(RR.data.rouletteText||'').trim();
+  const pct=RR.data.roulettePct||40;
+  const tokens=txt.split(/(\s+)/);
+  const realWordIndices=[];
+  tokens.forEach((t,i)=>{if(t.trim().length>0)realWordIndices.push(i);});
+  const total=realWordIndices.length;
+  const visibleCount=Math.round(total*pct/100);
+  const visibleSet=new Set();
+  for(let i=0;i<visibleCount;i++)visibleSet.add(i);
+  let wi=0;
+  RR.wordsState=tokens.map(t=>{
+    if(!t.trim())return{token:t,type:'space',visible:true};
+    const idx=wi++;
+    return{token:t,type:'word',visible:visibleSet.has(idx)};
+  });
+  const chambers=RR.data.rouletteChambers||6;
+  const bullet=RR.data.rouletteBullet||4;
+  rouletteRenderChambers(chambers,bullet,0);
+  document.getElementById('roulette-chambers-num').textContent=chambers;
+  document.getElementById('roulette-shot-num').textContent=0;
+  rouletteRenderText();
+  document.getElementById('roulette-in').focus();
+}
+
+function rouletteRenderText(){
+  const el=document.getElementById('roulette-text-display');
+  if(!el)return;
+  el.innerHTML=RR.wordsState.map(w=>{
+    if(w.type==='space')return w.token;
+    if(w.visible)return`<span style="color:var(--txt)">${w.token}</span>`;
+    return`<span style="background:rgba(255,50,50,.12);color:rgba(255,255,255,.15);border-radius:3px;padding:0 2px;font-size:11px;letter-spacing:1px">${'▓'.repeat(Math.min(w.token.length,8))}</span>`;
+  }).join('');
+}
+
+function rouletteRenderChambers(chambers,bullet,shots){
+  const el=document.getElementById('roulette-chambers-display');
+  if(!el)return;
+  el.innerHTML='';
+  for(let i=1;i<=chambers;i++){
+    const c=document.createElement('div');
+    const fired=i<=shots;
+    const isBullet=i===bullet;
+    c.style.cssText=`width:20px;height:20px;border-radius:50%;border:2px solid ${fired?(isBullet?'#ff3333':'#444'):'rgba(255,255,255,.25)'};background:${fired?(isBullet?'#ff3333':'#222'):'rgba(255,255,255,.08)'};transition:all .3s;display:flex;align-items:center;justify-content:center;font-size:9px`;
+    if(fired&&isBullet)c.textContent='💥';
+    else if(fired)c.textContent='·';
+    el.appendChild(c);
+  }
+}
+
+function rouletteFire(onHit,onSafe){
+  if(RR.done)return;
+  RR.shots++;
+  const chambers=RR.data.rouletteChambers||6;
+  const bullet=RR.data.rouletteBullet||4;
+  document.getElementById('roulette-shot-num').textContent=RR.shots;
+  const gun=document.getElementById('roulette-gun-emoji');
+  // Gun animation: kick back
+  if(gun){
+    gun.style.transform='rotate(-20deg) scale(1.3) translateX(8px)';
+    gun.style.filter='brightness(2)';
+    setTimeout(()=>{gun.style.transform='rotate(0) scale(1) translateX(0)';gun.style.filter='';},250);
+  }
+  rouletteRenderChambers(chambers,bullet,RR.shots);
+  setTimeout(()=>{
+    if(RR.shots===bullet){if(gun)gun.textContent='💥';onHit();}
+    else onSafe();
+  },400);
+}
+
+function rouletteGuess(){
+  if(RR.done)return;
+  const inp=document.getElementById('roulette-in');
+  const ans=(inp?.value||'').trim();
+  if(!ans)return;
+  const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const lev=(a,b)=>{const m=a.length,n=b.length;const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];};
+  const tol=RR.data.rouletteTol||1;
+  // Check word by word for long names
+  const ansNorm=norm(ans);
+  const targetNorm=norm(RR.data.rouletteAnswer);
+  const correct=lev(ansNorm,targetNorm)<=tol||
+    targetNorm.split(' ').some(w=>w.length>=3&&lev(norm(w),ansNorm)<=1);
+  const fb=document.getElementById('roulette-fb');
+  if(correct){
+    RR.done=true;
+    rouletteEndGame(100,'🎯 EXACT ! '+RR.data.rouletteAnswer+' · 100 pts !');
+  } else {
+    if(fb){fb.textContent='❌ Faux — tir !';fb.style.color='var(--red)';}
+    inp.value='';
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      rouletteFire(
+        ()=>rouletteEndGame(0,'💥 LA BALLE ! 0 pts'),
+        ()=>{if(fb){fb.textContent='🔘 Chambre vide — continue !';fb.style.color='var(--mute)';}setTimeout(()=>{if(fb)fb.textContent='';},1500);}
+      );
+    },400);
+  }
+}
+
+function rouletteReveal(){
+  if(RR.done)return;
+  const fb=document.getElementById('roulette-fb');
+  if(fb){fb.textContent='🔍 Tir…';fb.style.color='#ffc800';}
+  setTimeout(()=>{
+    rouletteFire(
+      ()=>rouletteEndGame(0,'💥 LA BALLE EN RÉVÉLANT ! 0 pts'),
+      ()=>{
+        let revealed=0;
+        for(let i=0;i<RR.wordsState.length&&revealed<RR.revealStep;i++){
+          if(RR.wordsState[i].type==='word'&&!RR.wordsState[i].visible){
+            RR.wordsState[i].visible=true;revealed++;
+          }
+        }
+        rouletteRenderText();
+        if(fb){fb.textContent='🔘 Chambre vide — '+revealed+' mot(s) révélé(s)';fb.style.color='var(--mute)';}
+        setTimeout(()=>{if(fb)fb.textContent='';},1500);
+      }
+    );
+  },200);
+}
+
+function rouletteEndGame(score,msg){
+  RR.done=true;
+  const fb=document.getElementById('roulette-fb');
+  if(fb){fb.textContent=msg;fb.style.color=score>0?'var(--neon)':'var(--red)';}
+  RR.wordsState.forEach(w=>{if(w.type==='word')w.visible=true;});
+  rouletteRenderText();
+  const inp=document.getElementById('roulette-in');if(inp)inp.disabled=true;
+  const rb=document.getElementById('roulette-reveal-btn');if(rb)rb.disabled=true;
+  G.score=score;setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Roulette Russe';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(score===100?'🎯 Trouvé !':'💥 Éliminé !')+' · '+RR.data.rouletteAnswer;
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('roulette');submitScore(score);
+  setTimeout(()=>show('sv'),2000);
+}
+
 // L'ESCRIME (L'ASSAUT)
 // ══════════════════════════════════════════════════════════════════════════
 const ASSAUT={data:null,pos:5,qIdx:0,phase:1,timerInt:null,startTime:null,done:false,parUsed:false,qTimerInt:null};
