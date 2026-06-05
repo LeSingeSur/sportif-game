@@ -419,11 +419,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .biat-order-btn.placed{border-color:#64c8ff;opacity:.5}
 .biat-slot{background:rgba(0,20,60,.4);border:1px dashed rgba(100,200,255,.2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mute);min-height:48px;display:flex;align-items:center;gap:10px}
 .biat-slot.filled{border-color:#64c8ff;color:#64c8ff;background:rgba(100,200,255,.06);cursor:pointer}
-.grimpe-profile{position:relative;height:110px;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-radius:12px;overflow:hidden;margin:4px 0}
+/* GRIMPE — Modern clean mountain */
+.grimpe-profile{position:relative;height:140px;background:linear-gradient(180deg,#0a0a1a 0%,#0d1530 60%,#1a1a0a 100%);border-radius:14px;overflow:hidden;margin:4px 0;border:1px solid rgba(212,255,0,.1)}
 .grimpe-status{min-height:20px;font-family:var(--fh);font-size:13px;text-align:center;letter-spacing:1px}
-.grimpe-timer-bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden}
+.grimpe-timer-bar{height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
 .grimpe-timer-fill{height:100%;background:var(--neon);border-radius:99px;transition:width 1s linear}
-.grimpe-info{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.grimpe-info{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);background:rgba(0,0,0,.3);border-radius:8px;padding:5px 10px}
 .grimpe-streak{text-align:center;font-size:12px;color:var(--mute);min-height:16px}
 
 .scout-btn{background:var(--c1);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -466,6 +467,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default;box-shadow:0 0 20px rgba(255,0,0,.3)}
 .dem-case.locked{opacity:.35;cursor:default;pointer-events:none}
 @keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.2);filter:brightness(2)}60%{transform:scale(.95)}100%{transform:scale(1);filter:none}}
+@keyframes var-blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes var-scan{0%{top:0;opacity:.5}100%{top:100%;opacity:0}}
 .dem-pot{font-family:var(--fh);font-size:36px;text-align:center;color:var(--neon);transition:all .2s;line-height:1.1}
 .dem-pot.flash{animation:dem-flash .3s ease}
 @keyframes dem-flash{0%{transform:scale(1)}50%{transform:scale(1.15);color:#fff}100%{transform:scale(1)}}
@@ -976,10 +979,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
           Choisissez votre barre · Plus de questions = plus de points · Tout ou rien
         </div>
         <!-- Barre visuelle -->
-        <div id="halt-barbell" style="display:flex;align-items:center;justify-content:center;gap:0;margin:4px 0;transition:all .3s">
-          <div style="font-size:28px">⬛</div>
-          <div id="halt-bar-visual" style="height:8px;background:rgba(255,255,255,.2);border-radius:4px;transition:all .3s;width:80px"></div>
-          <div style="font-size:28px">⬛</div>
+        <div id="halt-barbell" style="display:flex;align-items:center;gap:4px;margin:8px 0;width:100%;padding:0 8px">
+          <div style="font-size:24px;flex-shrink:0">⬛</div>
+          <div style="flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.08)">
+            <div id="halt-bar-visual" style="height:100%;background:rgba(255,255,255,.15);border-radius:4px;transition:all .6s cubic-bezier(.34,1.4,.64,1);width:0%"></div>
+          </div>
+          <div style="font-size:24px;flex-shrink:0">⬛</div>
         </div>
         <div id="halt-bar-label" style="text-align:center;font-family:var(--fh);font-size:13px;color:var(--mute)">← Choisissez un poids</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
@@ -1092,12 +1097,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="escalade-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
 
     <!-- Voie + crochet info -->
-    <div style="display:flex;gap:8px;align-items:center">
-      <div id="escalade-route-badge" style="padding:4px 12px;border-radius:99px;font-family:var(--fh);font-size:11px">🟢 FACILE</div>
-      <button id="escalade-crochet-btn" onclick="escaladeUseCrochet()" style="padding:4px 12px;border-radius:99px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-family:var(--fh);font-size:11px;cursor:pointer">🪝 POSER LE CROCHET</button>
-      <div id="escalade-crochet-info" style="display:none;font-size:11px;color:#ffc800">🪝 Crochet posé · pts réduits</div>
-      <button id="escalade-switch-btn" onclick="escaladeSwitchRoute()" style="display:none;padding:4px 12px;border-radius:99px;border:1px solid rgba(255,100,50,.4);background:rgba(255,100,50,.08);color:#ff6633;font-family:var(--fh);font-size:11px;cursor:pointer">🔀 Passer en Difficile</button>
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <div id="escalade-route-badge" style="padding:8px 14px;border-radius:10px;font-family:var(--fh);font-size:12px;display:flex;align-items:center">🟢 FACILE</div>
+      <button id="escalade-crochet-btn" onclick="escaladeUseCrochet()" style="flex:1;padding:10px 12px;border-radius:10px;border:2px solid rgba(255,200,0,.6);background:rgba(255,200,0,.12);color:#ffc800;font-family:var(--fh);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.5px">🪝 POSER LE CROCHET</button>
+      <div id="escalade-crochet-info" style="display:none;flex:1;padding:10px 12px;border-radius:10px;background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.3);font-size:12px;color:#ffc800;text-align:center;font-family:var(--fh)">🪝 Crochet posé</div>
     </div>
+    <button id="escalade-switch-btn" onclick="escaladeSwitchRoute()" style="display:none;width:100%!important;padding:12px;border-radius:10px;border:2px solid rgba(255,100,50,.6);background:rgba(255,100,50,.12);color:#ff6633;font-family:var(--fh);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px">🔀 PASSER EN VOIE DIFFICILE (+points)</button>
 
     <!-- Paroi visuelle -->
     <div style="position:relative;width:100%;height:260px;background:linear-gradient(180deg,#87CEEB 0%,#b0d4e8 8%,#c8a882 15%,#b8976a 30%,#a07850 50%,#8a6240 70%,#6b4a2e 85%,#4a3020 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
@@ -1282,22 +1287,31 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- VAR ZONE -->
-  <div id="var-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
-    <div style="font-family:var(--fh);font-size:11px;letter-spacing:2px;color:var(--mute);text-align:center">📺 LA VAR</div>
-    <div id="var-rules" style="background:var(--c2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.8">
+  <div id="var-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0a0a1a 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
+    <!-- VAR header -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:2px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#ff3333;animation:var-blink 1s infinite"></div>
+      <div style="font-family:var(--fh);font-size:12px;letter-spacing:3px;color:rgba(255,50,50,.8)">📺 VIDEO ASSISTANCE REFEREE</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#ff3333;animation:var-blink 1s infinite .5s"></div>
+    </div>
+    <div id="var-rules" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,150,255,.15);border-radius:10px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,.5);line-height:1.8">
       📺 Un texte sportif contient <strong style="color:var(--txt)">une erreur factuelle</strong>.<br>
-      👆 <strong style="color:var(--txt)">Clique le segment faux</strong> · part de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur<br>
-      ✏️ <strong style="color:var(--txt)">Tape la correction</strong> · repart de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur
+      👆 <strong style="color:#64c8ff">Clique le segment faux</strong> · part de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur<br>
+      ✏️ <strong style="color:#64c8ff">Tape la correction</strong> · repart de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur
     </div>
-    <div id="var-score-display" style="display:flex;justify-content:space-between;background:var(--c2);border-radius:10px;padding:8px 14px">
-      <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">50</div></div>
-      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:28px" id="var-chrono">90</div></div>
-      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">PHASE</span><div style="font-family:var(--fh);font-size:16px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
+    <div id="var-score-display" style="display:flex;justify-content:space-between;background:rgba(0,0,0,.4);border:1px solid rgba(0,150,255,.1);border-radius:10px;padding:10px 14px">
+      <div><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">50</div></div>
+      <div style="text-align:center"><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">TEMPS</span><div style="font-family:var(--fh);font-size:28px;color:#64c8ff" id="var-chrono">90</div></div>
+      <div style="text-align:right"><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">PHASE</span><div style="font-family:var(--fh);font-size:14px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
     </div>
-    <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="var-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
-    <div id="var-text-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:14px;line-height:2.2;color:var(--txt);letter-spacing:0.01em;padding-bottom:120px"></div>
+    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="var-chrono-bar" style="height:100%;background:linear-gradient(90deg,#64c8ff,var(--neon));width:100%;transition:width 1s linear"></div></div>
+    <!-- Video screen effect for text -->
+    <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid rgba(0,150,255,.2);box-shadow:0 0 20px rgba(0,100,255,.1),inset 0 0 30px rgba(0,0,0,.5)">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,200,255,.3),transparent);animation:var-scan 3s linear infinite"></div>
+      <div id="var-text-display" style="background:rgba(0,5,15,.9);padding:16px;font-size:14px;line-height:2.2;color:rgba(255,255,255,.85);letter-spacing:0.01em;padding-bottom:120px;font-family:var(--ff)"></div>
+    </div>
     <div id="var-fb" class="fb"></div>
-    <button id="var-skip-btn" onclick="varSkip()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--mute);font-size:13px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas → 0 pt</button>
+    <button id="var-skip-btn" onclick="varSkip()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas → 0 pt</button>
   </div>
 
   <!-- VAR correction zone — fixed, outside var-zone -->
@@ -7639,10 +7653,17 @@ function haltUpdateBar(n){
   const bar=document.getElementById('halt-bar-visual');
   const lbl=document.getElementById('halt-bar-label');
   if(!bar)return;
-  const colors=['','var(--neon)','#a3e635','#f59e0b','#fb923c','var(--red)'];
-  const widths=[80,100,130,160,190,220];
-  if(n===0){bar.style.width='80px';bar.style.background='rgba(255,255,255,.2)';if(lbl)lbl.textContent='← Choisissez un poids';}
-  else{bar.style.width=widths[n]+'px';bar.style.background=colors[n];if(lbl){lbl.textContent=n+' question'+(n>1?'s':'')+' · '+n*20+' pts';lbl.style.color=colors[n];}}
+  const colors=['','#64c8ff','var(--neon)','#f59e0b','#fb923c','var(--red)'];
+  const pcts=[0,20,40,60,80,100];
+  if(n===0){
+    bar.style.width='0%';bar.style.background='rgba(255,255,255,.15)';bar.style.boxShadow='none';
+    if(lbl){lbl.textContent='← Choisissez un poids';lbl.style.color='var(--mute)';}
+  } else {
+    bar.style.width=pcts[n]+'%';bar.style.background=colors[n];
+    bar.style.boxShadow=`0 0 ${n*3}px ${colors[n]}`;
+    const plates='⬛'.repeat(n);
+    if(lbl){lbl.textContent=plates+' '+n*20+' pts · '+n+' question'+(n>1?'s':'');lbl.style.color=colors[n];}
+  }
 }
 
 function haltAracherChoix(n){
