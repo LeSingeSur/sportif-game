@@ -246,7 +246,7 @@ app.get('/api/preview', (req, res) => {
     }));
     base.plongeeO2Base = athlete.plongeeO2Base||6;
     base.plongeeTol = athlete.plongeeTol||1;
-    base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
+    base.plongeeO2Treasure = athlete.plongeeO2Treasure||2;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
     base.maxScore = 200;
   } else if (athlete.type === 'escalade') {
@@ -258,6 +258,14 @@ app.get('/api/preview', (req, res) => {
     base.escaladeTheme = athlete.escaladeTheme||'';
     base.escaladeTol = athlete.escaladeTol||1;
     base.maxScore = 200;
+  } else if (athlete.type === 'roulette') {
+    base.rouletteText = athlete.rouletteText||'';
+    base.rouletteAnswer = athlete.rouletteAnswer||'';
+    base.roulettePct = athlete.roulettePct||40;
+    base.rouletteChambers = athlete.rouletteChambers||6;
+    base.rouletteBullet = athlete.rouletteBullet||4;
+    base.rouletteTol = athlete.rouletteTol||1;
+    base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -616,7 +624,7 @@ app.get('/api/athlete', (req, res) => {
     }));
     base.plongeeO2Base = athlete.plongeeO2Base||6;
     base.plongeeTol = athlete.plongeeTol||1;
-    base.plongeeO2Treasure = athlete.plongeeO2Treasure||1;
+    base.plongeeO2Treasure = athlete.plongeeO2Treasure||2;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
     base.maxScore = 200;
   } else if (athlete.type === 'escalade') {
@@ -627,6 +635,14 @@ app.get('/api/athlete', (req, res) => {
     }));
     base.escaladeTheme = athlete.escaladeTheme||'';
     base.maxScore = 200;
+  } else if (athlete.type === 'roulette') {
+    base.rouletteText = athlete.rouletteText||'';
+    base.rouletteAnswer = athlete.rouletteAnswer||'';
+    base.roulettePct = athlete.roulettePct||40;
+    base.rouletteChambers = athlete.rouletteChambers||6;
+    base.rouletteBullet = athlete.rouletteBullet||4;
+    base.rouletteTol = athlete.rouletteTol||1;
+    base.maxScore = 100;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -898,7 +914,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -912,11 +928,11 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -998,12 +1014,18 @@ app.post('/api/admin/athlete', (req, res) => {
     rvlfNoTimer:        type === 'rvlf' ? !!req.body.rvlfNoTimer : undefined,
     plongeePaliers:     type === 'plongee' ? (req.body.plongeePaliers||[]) : undefined,
     plongeeO2Base:      type === 'plongee' ? (parseInt(req.body.plongeeO2Base)||6) : undefined,
-    plongeeO2Treasure:  type === 'plongee' ? (parseInt(req.body.plongeeO2Treasure)||1) : undefined,
+    plongeeO2Treasure:  type === 'plongee' ? (parseInt(req.body.plongeeO2Treasure)||2) : undefined,
     plongeeO2Error:     type === 'plongee' ? (parseInt(req.body.plongeeO2Error)||2) : undefined,
     escaladeQuestions:  type === 'escalade' ? (req.body.escaladeQuestions||[]) : undefined,
     escaladeTheme:      type === 'escalade' ? (req.body.escaladeTheme||'').trim() : undefined,
     escaladeTol:        type === 'escalade' ? (parseInt(req.body.escaladeTol)||1) : undefined,
     plongeeTol:         type === 'plongee' ? (parseInt(req.body.plongeeTol)||1) : undefined,
+    rouletteText:       type === 'roulette' ? (req.body.rouletteText||'').trim() : undefined,
+    rouletteAnswer:     type === 'roulette' ? (req.body.rouletteAnswer||'').trim() : undefined,
+    roulettePct:        type === 'roulette' ? (parseInt(req.body.roulettePct)||40) : undefined,
+    rouletteChambers:   type === 'roulette' ? (parseInt(req.body.rouletteChambers)||6) : undefined,
+    rouletteBullet:     type === 'roulette' ? (parseInt(req.body.rouletteBullet)||4) : undefined,
+    rouletteTol:        type === 'roulette' ? (parseInt(req.body.rouletteTol)||1) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
     biatAnnounceTime:   type === 'biathlon' ? (parseInt(req.body.biatAnnounceTime)||45) : undefined,
