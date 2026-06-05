@@ -547,6 +547,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🏊</div><div class="gt-name">Natation</div></div>
       <div class="gt-item"><div class="gt-ico">📺</div><div class="gt-name">La VAR</div></div>
       <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
+      <div class="gt-item"><div class="gt-ico">🤿</div><div class="gt-name">La Plongée</div></div>
+      <div class="gt-item"><div class="gt-ico">🧗</div><div class="gt-name">L'Escalade</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -887,7 +889,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div class="fb" id="grimpe-fb" style="font-size:15px;font-weight:800;min-height:22px;text-align:center;transition:all .15s"></div>
     <div id="grimpe-lives" style="text-align:center;font-size:20px;letter-spacing:4px;min-height:26px;margin-top:2px">❤️❤️❤️</div>
-    <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:100%;padding:12px;background:var(--neon);color:#000;font-family:var(--fh);font-size:15px;font-weight:900;border:none;border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px">🏁 Terminer — voir mon score</button>
+    <button id="grimpe-sprint-btn" onclick="grimpeSprintFinish()" style="display:none;width:auto!important;padding:7px 16px;background:rgba(212,255,0,.15);color:var(--neon);font-family:var(--fh);font-size:11px;font-weight:700;border:1px solid rgba(212,255,0,.3);border-radius:var(--r);cursor:pointer;letter-spacing:1px;margin-top:4px;float:right">🏁 Terminer</button>
   </div>
 
 
@@ -1055,6 +1057,174 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- ASSAUT zone -->
+  <!-- ESCALADE ZONE -->
+  <div id="escalade-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
+
+    <!-- Encart règles -->
+    <div id="escalade-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">🧗 L'ESCALADE</div>
+      Choisis ta voie avant de commencer. <strong style="color:var(--txt)">8 questions · 30s chacune · 1 erreur = chute = 0 pts</strong><br>
+      🟢 <strong style="color:#64c8ff">Voie Facile</strong> — 15 pts/question · max <strong style="color:#64c8ff">120 pts</strong><br>
+      🔴 <strong style="color:#ff6633">Voie Difficile</strong> — 25 pts/question · max <strong style="color:#ff6633">200 pts</strong><br>
+      🪝 <strong style="color:#ffc800">Crochet</strong> (1 seul) — si tu chutes après l'avoir posé → tu retombes au score de la pose. Les questions suivantes valent moins (15→12 / 25→20).<br>
+      🔀 Switch <strong style="color:var(--txt)">Facile→Difficile possible après Q4</strong>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button onclick="escaladeChooseRoute('facile')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #64c8ff;background:rgba(100,200,255,.1);color:#64c8ff;font-family:var(--fh);font-size:13px;cursor:pointer">🟢 FACILE<br><span style="font-size:10px;opacity:.7">15 pts · max 120</span></button>
+        <button onclick="escaladeChooseRoute('difficile')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #ff6633;background:rgba(255,100,50,.1);color:#ff6633;font-family:var(--fh);font-size:13px;cursor:pointer">🔴 DIFFICILE<br><span style="font-size:10px;opacity:.7">25 pts · max 200</span></button>
+      </div>
+    </div>
+
+    <!-- Header score + timer -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
+      <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="escalade-score">0</div></div>
+      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">QUESTION</span><div style="font-family:var(--fh);font-size:22px;color:var(--txt)" id="escalade-qnum">-<span style="font-size:14px;color:var(--mute)">/8</span></div></div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="escalade-timer">30</div></div>
+    </div>
+    <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="escalade-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
+
+    <!-- Voie + crochet info -->
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="escalade-route-badge" style="padding:4px 12px;border-radius:99px;font-family:var(--fh);font-size:11px">🟢 FACILE</div>
+      <button id="escalade-crochet-btn" onclick="escaladeUseCrochet()" style="padding:4px 12px;border-radius:99px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-family:var(--fh);font-size:11px;cursor:pointer">🪝 POSER LE CROCHET</button>
+      <div id="escalade-crochet-info" style="display:none;font-size:11px;color:#ffc800">🪝 Crochet posé · pts réduits</div>
+      <button id="escalade-switch-btn" onclick="escaladeSwitchRoute()" style="display:none;padding:4px 12px;border-radius:99px;border:1px solid rgba(255,100,50,.4);background:rgba(255,100,50,.08);color:#ff6633;font-family:var(--fh);font-size:11px;cursor:pointer">🔀 Passer en Difficile</button>
+    </div>
+
+    <!-- Paroi visuelle -->
+    <div style="position:relative;width:100%;height:260px;background:linear-gradient(180deg,#87CEEB 0%,#b0d4e8 8%,#c8a882 15%,#b8976a 30%,#a07850 50%,#8a6240 70%,#6b4a2e 85%,#4a3020 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+      <!-- Ciel + nuages -->
+      <div style="position:absolute;top:0;left:0;right:0;height:8%;background:linear-gradient(180deg,#87CEEB,#b0d4e8);z-index:1">
+        <div style="position:absolute;top:2px;left:15%;font-size:14px;opacity:.8">☁️</div>
+        <div style="position:absolute;top:1px;right:20%;font-size:10px;opacity:.6">☁️</div>
+      </div>
+      <!-- Sommet -->
+      <div style="position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:22px;z-index:3">🏔️</div>
+      <!-- Texture rocher — strates -->
+      <div style="position:absolute;left:0;right:0;top:15%;height:2px;background:rgba(255,255,255,.08)"></div>
+      <div style="position:absolute;left:0;right:0;top:28%;height:1px;background:rgba(0,0,0,.15)"></div>
+      <div style="position:absolute;left:0;right:0;top:44%;height:2px;background:rgba(255,255,255,.06)"></div>
+      <div style="position:absolute;left:0;right:0;top:58%;height:1px;background:rgba(0,0,0,.1)"></div>
+      <div style="position:absolute;left:0;right:0;top:72%;height:2px;background:rgba(255,255,255,.05)"></div>
+      <!-- Voie colorée selon difficulté -->
+      <div id="escalade-route-line" style="position:absolute;left:50%;top:8%;bottom:0;width:3px;transform:translateX(-50%);background:linear-gradient(180deg,rgba(100,200,255,.6),rgba(100,200,255,.1));z-index:1"></div>
+      <!-- Prises -->
+      <div id="escalade-wall-prises" style="position:absolute;inset:0;z-index:2"></div>
+      <!-- Corde -->
+      <div id="escalade-rope" style="position:absolute;left:50%;width:2px;background:rgba(255,220,100,.6);transform:translateX(-50%);z-index:3;top:8%;transition:height .8s ease"></div>
+      <!-- Crochet marker -->
+      <div id="escalade-crochet-marker" style="display:none;position:absolute;font-size:16px;z-index:4">🪝</div>
+      <!-- Grimpeur -->
+      <div id="escalade-climber" style="position:absolute;font-size:26px;transition:bottom .8s ease;z-index:5;bottom:5%;left:50%;transform:translateX(-50%)">🧗</div>
+    </div>
+
+    <!-- Question -->
+    <div id="escalade-q" style="background:var(--c1);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:52px;display:flex;align-items:center;justify-content:center"></div>
+
+    <!-- Réponses difficile multiples -->
+    <div id="escalade-answers-found" style="display:none;font-size:11px;color:var(--mute);text-align:center"></div>
+
+    <!-- Input -->
+    <div style="display:flex;gap:8px">
+      <input type="text" id="escalade-in" placeholder="Ta réponse…" style="flex:1;min-width:0;background:var(--c1);border:1px solid rgba(255,255,255,.15);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none" onkeydown="if(event.key==='Enter')escaladeSubmit()">
+      <button onclick="escaladeSubmit()" style="width:48px!important;height:48px;flex-shrink:0;background:var(--neon);color:#000;border:none;border-radius:var(--r);font-size:20px;cursor:pointer">✓</button>
+    </div>
+    <div id="escalade-fb" class="fb" style="text-align:center;font-size:13px"></div>
+  </div>
+
+  <!-- PLONGÉE ZONE -->
+  <div id="plongee-zone" style="display:none;flex-direction:column;gap:0;width:100%;position:relative">
+
+    <!-- Encart règles -->
+    <div id="plongee-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute);margin-bottom:8px">
+      <div style="font-family:var(--fh);font-size:13px;color:#64c8ff;margin-bottom:8px;letter-spacing:1px">🤿 LA PLONGÉE</div>
+      Tu plonges avec <strong style="color:var(--txt)">1000 O2</strong> qui s'épuisent en permanence.<br>
+      ⬇️ Descends 5 paliers · réponds à une question par palier<br>
+      💰 Ramasse les trésors <strong style="color:#ffc800">(10·20·35·55·80 pts)</strong> — mais chaque trésor accélère ta consommation O2<br>
+      ❌ Mauvaise réponse → <strong style="color:var(--red)">consommation O2 augmente</strong> · O2=0 → noyade → 0 pts<br>
+      ⬆️ Pour remonter : une question par palier · sacrifie un trésor pour passer une question<br>
+      <strong style="color:var(--txt)">Score = trésors ramenés vivant · Max 200 pts</strong>
+      <button onclick="document.getElementById('plongee-rules').style.display='none';plongeeStartTimer();plongeeShowDescendChoice();" style="margin-top:10px;width:100%!important;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">🤿 PLONGER</button>
+    </div>
+    <!-- En-tête score + O2 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,20,40,.8);border-radius:10px;padding:8px 14px;margin-bottom:8px;border:1px solid rgba(0,150,255,.2)">
+      <div><span style="font-size:9px;color:#64c8ff;letter-spacing:2px">SCORE</span><div style="font-family:var(--fh);font-size:24px;color:#ffc800" id="plongee-score">0</div></div>
+      <div style="text-align:center">
+        <span style="font-size:9px;color:#64c8ff;letter-spacing:2px">OXYGÈNE</span>
+        <div style="font-family:var(--fh);font-size:24px" id="plongee-o2-display" style="color:#00ff88">1000</div>
+        <div style="width:120px;height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-top:2px">
+          <div id="plongee-o2-bar" style="height:100%;background:linear-gradient(90deg,#00ff88,#00ccff);width:100%;transition:width .5s"></div>
+        </div>
+      </div>
+      <div style="text-align:right"><span style="font-size:9px;color:#64c8ff;letter-spacing:2px">PHASE</span><div style="font-family:var(--fh);font-size:14px;color:var(--txt)" id="plongee-phase">Descente</div></div>
+    </div>
+
+    <!-- Paroi sous-marine -->
+    <div id="plongee-wall" style="position:relative;width:100%;height:340px;background:linear-gradient(180deg,#001830 0%,#002244 30%,#001535 60%,#000d20 100%);border-radius:12px;overflow:hidden;border:1px solid rgba(0,100,200,.3)">
+      <!-- Bulles animées -->
+      <div style="position:absolute;inset:0;pointer-events:none" id="plongee-bubbles"></div>
+      <!-- Sous-marin en haut -->
+      <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:28px;z-index:3">🚢</div>
+      <!-- Paliers -->
+      <div id="plongee-palier-1" style="position:absolute;left:0;right:0;top:20%;display:flex;align-items:center;padding:0 8px;z-index:2">
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.3);border-top:1px dashed rgba(0,150,255,.3)"></div>
+        <div style="font-size:9px;color:#64c8ff;margin:0 6px;white-space:nowrap">20m 🪙10</div>
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.3);border-top:1px dashed rgba(0,150,255,.3)"></div>
+      </div>
+      <div id="plongee-palier-2" style="position:absolute;left:0;right:0;top:36%;display:flex;align-items:center;padding:0 8px;z-index:2">
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.25);border-top:1px dashed rgba(0,150,255,.25)"></div>
+        <div style="font-size:9px;color:#64c8ff;margin:0 6px;white-space:nowrap">40m 🪙20</div>
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.25);border-top:1px dashed rgba(0,150,255,.25)"></div>
+      </div>
+      <div id="plongee-palier-3" style="position:absolute;left:0;right:0;top:52%;display:flex;align-items:center;padding:0 8px;z-index:2">
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.2);border-top:1px dashed rgba(0,150,255,.2)"></div>
+        <div style="font-size:9px;color:#64c8ff;margin:0 6px;white-space:nowrap">60m 🪙35</div>
+        <div style="flex:1;height:1px;background:rgba(0,150,255,.2);border-top:1px dashed rgba(0,150,255,.2)"></div>
+      </div>
+      <div id="plongee-palier-4" style="position:absolute;left:0;right:0;top:68%;display:flex;align-items:center;padding:0 8px;z-index:2">
+        <div style="flex:1;height:1px;background:rgba(0,100,200,.2);border-top:1px dashed rgba(0,100,200,.2)"></div>
+        <div style="font-size:9px;color:#64c8ff;margin:0 6px;white-space:nowrap">80m 🪙55</div>
+        <div style="flex:1;height:1px;background:rgba(0,100,200,.2);border-top:1px dashed rgba(0,100,200,.2)"></div>
+      </div>
+      <div id="plongee-palier-5" style="position:absolute;left:0;right:0;top:84%;display:flex;align-items:center;padding:0 8px;z-index:2">
+        <div style="flex:1;height:1px;background:rgba(255,200,0,.3);border-top:1px dashed rgba(255,200,0,.3)"></div>
+        <div style="font-size:9px;color:#ffc800;margin:0 6px;white-space:nowrap">100m 💎80</div>
+        <div style="flex:1;height:1px;background:rgba(255,200,0,.3);border-top:1px dashed rgba(255,200,0,.3)"></div>
+      </div>
+      <!-- Fond marin -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(180deg,transparent,rgba(0,5,15,.8));display:flex;align-items:center;justify-content:center;font-size:16px">🪸🐠🪸🐟🪸</div>
+      <!-- Plongeur -->
+      <div id="plongee-diver" style="position:absolute;left:50%;transform:translateX(-50%);font-size:24px;transition:top 1s ease;z-index:4;top:8%">🤿</div>
+    </div>
+
+    <!-- Trésors ramassés -->
+    <div id="plongee-treasures" style="display:flex;gap:6px;margin-top:8px;min-height:28px;flex-wrap:wrap"></div>
+
+    <!-- Question -->
+    <div id="plongee-q" style="background:rgba(0,20,40,.9);border:1px solid rgba(0,150,255,.3);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;margin-top:8px;min-height:52px;display:flex;align-items:center;justify-content:center"></div>
+
+    <!-- Input réponse -->
+    <div id="plongee-input-wrap" style="display:none;gap:8px;margin-top:8px">
+      <input type="text" id="plongee-in" placeholder="Ta réponse…" style="flex:1;min-width:0;background:rgba(0,20,40,.9);border:1px solid rgba(0,150,255,.4);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none" onkeydown="if(event.key==='Enter')plongeeSubmit()">
+      <button onclick="plongeeSubmit()" style="width:48px!important;height:48px;flex-shrink:0;background:#0066cc;color:#fff;border:none;border-radius:var(--r);font-size:20px;cursor:pointer">✓</button>
+    </div>
+
+    <!-- Feedback -->
+    <div id="plongee-fb" class="fb" style="text-align:center;font-size:13px;margin-top:4px"></div>
+
+    <!-- Actions -->
+    <div id="plongee-actions" style="display:flex;gap:8px;margin-top:8px">
+      <button id="plongee-btn-treasure" onclick="plongeeTakeOrSkipTreasure()" style="flex:1;display:none;padding:10px;border-radius:var(--r);border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:12px;font-family:var(--fh);cursor:pointer">💰 Prendre le trésor</button>
+      <button id="plongee-btn-descend" onclick="plongeeDescend()" style="flex:1;display:none;padding:10px;border-radius:var(--r);border:1px solid rgba(0,200,255,.4);background:rgba(0,200,255,.08);color:#00ccff;font-size:12px;font-family:var(--fh);cursor:pointer">⬇️ Descendre</button>
+      <button id="plongee-btn-ascend" onclick="plongeeStartAscent()" style="flex:1;display:none;padding:10px;border-radius:var(--r);border:1px solid rgba(255,100,50,.4);background:rgba(255,100,50,.08);color:#ff6633;font-size:12px;font-family:var(--fh);cursor:pointer">⬆️ Remonter</button>
+    </div>
+
+    <!-- Skip avec trésor (remontée) -->
+    <div id="plongee-skip-area" style="display:none;margin-top:8px">
+      <div style="font-size:11px;color:var(--mute);margin-bottom:6px">Sacrifier un trésor pour passer cette question :</div>
+      <div id="plongee-skip-treasures" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+
   <!-- RVLF ZONE -->
   <div id="rvlf-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
 
@@ -1063,7 +1233,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">⏳ RETOUR VERS LE FUTUR</div>
       10 questions · 30s chacune · <strong style="color:var(--txt)">1 mauvaise réponse = Game Over</strong><br>
       ✅ Bonne réponse → <strong style="color:var(--neon)">+20 pts</strong> · Score parfait : <strong style="color:var(--neon)">200 pts</strong><br>
-      <div style="margin-top:6px;font-size:11px">3 jokers à usage unique — appuie longtemps pour les détails</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--mute);line-height:1.8">
+        🔗 <strong style="color:#ffc800">LIEN</strong> — Q actuelle + suivante. Réponds à 1 pour les 2. Juste → +40 pts. Faux → Game Over.<br>
+        🐱 <strong style="color:#64c8ff">SCHRÖDINGER</strong> — 2 questions en // jusqu'à la fin. 2 justes → +30 · 1 juste → +20 · 0 → Game Over.<br>
+        ⏱️ <strong style="color:#ff64c8">BALISE</strong> — Checkpoint. Si erreur → score + jokers restaurés. Toutes les cartes jouées après la pose = perdues.
+      </div>
       <button onclick="document.getElementById('rvlf-rules').style.display='none';rvlfShowQuestion();" style="margin-top:10px;width:100%!important;background:var(--neon);color:#000;border:none;border-radius:8px;padding:8px;font-family:var(--fh);font-size:13px;cursor:pointer">C'EST PARTI →</button>
     </div>
 
@@ -1078,15 +1252,24 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="rvlf-timer-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
     <!-- Jokers -->
     <div style="display:flex;gap:8px">
-      <button id="rvlf-j1" onclick="rvlfJoker('lien')" ontouchstart="rvlfJokerHold('lien')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('lien')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN<br><span style="font-size:9px;opacity:.7">2 cartes, +40 pts</span></button>
-      <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" ontouchstart="rvlfJokerHold('schrodinger')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('schrodinger')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER<br><span style="font-size:9px;opacity:.7">2 réalité</span></button>
-      <button id="rvlf-j3" onclick="rvlfJoker('balise')" ontouchstart="rvlfJokerHold('balise')" ontouchend="rvlfJokerRelease()" onmousedown="rvlfJokerHold('balise')" onmouseup="rvlfJokerRelease()" onmouseleave="rvlfJokerRelease()" style="flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE<br><span style="font-size:9px;opacity:.7">checkpoint</span></button>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j1" onclick="rvlfJoker('lien')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🔗 LIEN</button>
+        <button onclick="rvlfShowInfo('lien')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(255,200,0,.2);background:none;color:rgba(255,200,0,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j2" onclick="rvlfJoker('schrodinger')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(100,200,255,.4);background:rgba(100,200,255,.08);color:#64c8ff;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">🐱 SCHRÖDINGER</button>
+        <button onclick="rvlfShowInfo('schrodinger')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(100,200,255,.2);background:none;color:rgba(100,200,255,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <button id="rvlf-j3" onclick="rvlfJoker('balise')" style="width:100%!important;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,100,200,.4);background:rgba(255,100,200,.08);color:#ff64c8;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:0.5px">⏱️ BALISE</button>
+        <button onclick="rvlfShowInfo('balise')" style="width:100%!important;padding:3px;border-radius:6px;border:1px solid rgba(255,100,200,.2);background:none;color:rgba(255,100,200,.5);font-size:10px;cursor:pointer">? règles</button>
+      </div>
     </div>
     <div id="rvlf-q-display" style="background:var(--c1);border-radius:12px;padding:16px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
     <div id="rvlf-choices" style="display:flex;flex-direction:column;gap:8px"></div>
     <div id="rvlf-fb" class="fb" style="text-align:center;font-size:14px"></div>
     <div id="rvlf-balise-info" style="display:none;background:rgba(255,100,200,.08);border:1px solid rgba(255,100,200,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff64c8;text-align:center">⏱️ BALISE TEMPORELLE — Checkpoint actif</div>
-    <button id="rvlf-stop-btn" onclick="rvlfStop()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:var(--mute);font-size:12px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important;margin-top:4px">🏁 Arrêter et garder mes points ({{score}} pts)</button>
+    <button id="rvlf-stop-btn" onclick="rvlfStop()" style="background:rgba(255,200,0,.1);border:1px solid rgba(255,200,0,.4);color:#ffc800;font-size:13px;font-family:var(--fh);border-radius:var(--r);padding:12px;cursor:pointer;width:100%!important;margin-top:4px;letter-spacing:0.5px">🏁 Arrêter et garder mes points (0 pts)</button>
   </div>
 
   <!-- VAR ZONE -->
@@ -1167,6 +1350,28 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">CIBLE</span><div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="arc-cible-num">1/3</div></div>
     </div>
     <div style="height:4px;background:var(--c2);border-radius:99px;overflow:hidden"><div id="arc-chrono-bar" style="height:100%;background:var(--neon);width:100%;transition:width 1s linear"></div></div>
+
+    <!-- Cible SVG animée -->
+    <div id="arc-target-wrap" style="display:none;align-items:center;justify-content:center;position:relative;height:160px">
+      <svg id="arc-svg-target" width="150" height="150" viewBox="0 0 150 150" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">
+        <circle cx="75" cy="75" r="72" fill="#fff" stroke="#ccc" stroke-width="1"/>
+        <circle cx="75" cy="75" r="60" fill="#000"/>
+        <circle cx="75" cy="75" r="48" fill="#00bfff"/>
+        <circle cx="75" cy="75" r="36" fill="#ff3333"/>
+        <circle cx="75" cy="75" r="24" fill="#ff3333"/>
+        <circle cx="75" cy="75" r="12" fill="#ffdd00"/>
+        <!-- Cross hairs -->
+        <line x1="75" y1="3" x2="75" y2="20" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="75" y1="130" x2="75" y2="147" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="3" y1="75" x2="20" y2="75" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+        <line x1="130" y1="75" x2="147" y2="75" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+      </svg>
+      <!-- Flèche animée -->
+      <div id="arc-arrow" style="display:none;position:absolute;font-size:24px;transform:rotate(-45deg);transition:all .4s ease-out">🏹</div>
+      <!-- Distance badge -->
+      <div id="arc-dist-badge" style="display:none;position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:var(--neon);font-family:var(--fh);font-size:11px;padding:2px 8px;border-radius:99px"></div>
+    </div>
+
     <div id="arc-cible-zone" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="fb" id="arc-fb"></div>
   </div>
@@ -1912,6 +2117,12 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='escalade'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupEscalade(data);
+    } else if(data.type==='plongee'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupPlongee(data);
     } else if(data.type==='rvlf'){
       setupRvlf(data);
     } else if(data.type==='var'){
@@ -1937,7 +2148,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -1962,7 +2173,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','plongee':'🤿',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -2787,6 +2998,590 @@ function hexToRgb(hex){
   return map[hex]||'255,255,255';
 }
 
+// ── L'ESCALADE ────────────────────────────────────────────────────────────
+const ESC={
+  data:null, qIdx:0, route:'facile', score:0, done:false,
+  crochet:false, crochetUsed:false, crochetScore:0, crochetQIdx:0,
+  timerInt:null, switchUsed:false,
+  // Multiple answers tracking for difficile
+  answersNeeded:1, answersFound:[],
+  norm:s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
+};
+
+const ESC_PTS={facile:{normal:15,crochet:12},difficile:{normal:25,crochet:20}};
+
+function setupEscalade(data){
+  ESC.data=data; ESC.qIdx=0; ESC.route='facile'; ESC.score=0; ESC.done=false;
+  ESC.crochet=false; ESC.crochetUsed=false; ESC.crochetScore=0; ESC.crochetQIdx=0;
+  ESC.timerInt=null; ESC.switchUsed=false; ESC.answersFound=[];
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta voie · Réponds · Pose le crochet au bon moment';
+  hideAllZones();
+  document.getElementById('escalade-zone').style.display='flex';
+  document.getElementById('escalade-rules').style.display='block';
+  escaladeHideGame();
+  escaladeInitWall();
+}
+
+function escaladeHideGame(){
+  ['escalade-score','escalade-qnum','escalade-timer','escalade-timer-bar',
+   'escalade-route-badge','escalade-crochet-btn','escalade-switch-btn',
+   'escalade-q','escalade-in','escalade-fb'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.parentElement&&el.parentElement.style?null:null; // keep visible, just wait
+  });
+}
+
+function escaladeChooseRoute(route){
+  ESC.route=route;
+  document.getElementById('escalade-rules').style.display='none';
+  escaladeUpdateBadge();
+  escaladeStartTimer();
+  escaladeShowQuestion();
+}
+
+function escaladeUpdateBadge(){
+  const b=document.getElementById('escalade-route-badge');
+  if(b){
+    if(ESC.route==='facile'){b.textContent='🟢 FACILE';b.style.cssText='padding:4px 12px;border-radius:99px;font-family:var(--fh);font-size:11px;background:rgba(100,200,255,.15);color:#64c8ff;border:1px solid rgba(100,200,255,.3)';}
+    else{b.textContent='🔴 DIFFICILE';b.style.cssText='padding:4px 12px;border-radius:99px;font-family:var(--fh);font-size:11px;background:rgba(255,100,50,.15);color:#ff6633;border:1px solid rgba(255,100,50,.3)';}
+  }
+}
+
+function escaladeStartTimer(){
+  if(ESC.timerInt)clearInterval(ESC.timerInt);
+  let t=30;
+  const tEl=document.getElementById('escalade-timer');
+  const bar=document.getElementById('escalade-timer-bar');
+  const upd=()=>{
+    const col=t<=5?'var(--red)':t<=10?'var(--orange)':'var(--neon)';
+    if(tEl){tEl.textContent=t;tEl.style.color=col;}
+    if(bar)bar.style.width=(t/30*100)+'%';
+  };
+  upd();
+  ESC.timerInt=setInterval(()=>{
+    t--;upd();
+    if(t<=0){clearInterval(ESC.timerInt);escaladeFall('⏱️ Temps écoulé — chute !');}
+  },1000);
+}
+
+function escaladeStopTimer(){clearInterval(ESC.timerInt);ESC.timerInt=null;}
+
+function escaladeShowQuestion(){
+  if(ESC.qIdx>=8||ESC.done){escaladeFinish();return;}
+  const q=ESC.data.escaladeQuestions[ESC.qIdx];
+  if(!q){escaladeFinish();return;}
+
+  // Update question counter
+  const qnum=document.getElementById('escalade-qnum');
+  if(qnum)qnum.innerHTML=(ESC.qIdx+1)+'<span style="font-size:14px;color:var(--mute)">/8</span>';
+
+  // Show switch button after Q4 (qIdx=4 means we just answered Q4)
+  const switchBtn=document.getElementById('escalade-switch-btn');
+  if(switchBtn)switchBtn.style.display=(ESC.qIdx===4&&ESC.route==='facile'&&!ESC.switchUsed)?'block':'none';
+
+  // Get question text
+  const useDifficile=ESC.route==='difficile'&&q.qDifficile;
+  const qText=useDifficile?q.qDifficile:q.qFacile;
+  const qEl=document.getElementById('escalade-q');
+  if(qEl)qEl.textContent=qText||'?';
+
+  // Multiple answers for difficile
+  if(useDifficile&&q.aDifficile&&q.aDifficile.includes(';')){
+    const answers=q.aDifficile.split(';').map(a=>a.trim()).filter(Boolean);
+    ESC.answersNeeded=q.nbRequired||Math.ceil(answers.length/2);
+    ESC.answersFound=[];
+    escaladeUpdateAnswersFound();
+  } else {
+    ESC.answersNeeded=1;
+    ESC.answersFound=[];
+    document.getElementById('escalade-answers-found').style.display='none';
+  }
+
+  document.getElementById('escalade-in').value='';
+  document.getElementById('escalade-fb').textContent='';
+  document.getElementById('escalade-in').focus();
+
+  // Update crochet button
+  const cb=document.getElementById('escalade-crochet-btn');
+  const ci=document.getElementById('escalade-crochet-info');
+  if(ESC.crochetUsed){if(cb)cb.style.display='none';if(ci)ci.style.display='block';}
+  else{if(cb)cb.style.display='block';if(ci)ci.style.display='none';}
+
+  escaladeUpdateClimber();
+  escaladeStartTimer();
+}
+
+function escaladeUpdateAnswersFound(){
+  const el=document.getElementById('escalade-answers-found');
+  if(!el)return;
+  if(ESC.answersNeeded>1){
+    el.style.display='block';
+    el.textContent=ESC.answersFound.length+'/'+ESC.answersNeeded+' réponse(s) trouvées : '+ESC.answersFound.join(', ');
+  }
+}
+
+function escaladeSubmit(){
+  if(ESC.done)return;
+  const inp=document.getElementById('escalade-in');
+  const ans=(inp?.value||'').trim();
+  if(!ans)return;
+  const norm=ESC.norm;
+  function lev(a,b){const m=a.length,n=b.length;const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
+
+  const q=ESC.data.escaladeQuestions[ESC.qIdx];
+  const useDifficile=ESC.route==='difficile'&&q.qDifficile;
+  const correctAnswers=useDifficile
+    ?q.aDifficile.split(';').map(a=>norm(a.trim())).filter(Boolean)
+    :[norm(q.aFacile)];
+
+  const ansNorm=norm(ans);
+  const correct=correctAnswers.some(c=>lev(c,ansNorm)<=(ESC.data.escaladeTol||1));
+
+  if(correct){
+    // Check if already found
+    if(ESC.answersFound.includes(ans)){
+      inp.value='';return;
+    }
+    if(ESC.answersNeeded>1){
+      ESC.answersFound.push(ans);
+      inp.value='';
+      escaladeUpdateAnswersFound();
+      if(ESC.answersFound.length<ESC.answersNeeded){
+        const fb=document.getElementById('escalade-fb');
+        if(fb){fb.textContent='✅ +1 — encore '+(ESC.answersNeeded-ESC.answersFound.length)+'!';fb.style.color='var(--neon)';}
+        return;
+      }
+    }
+    // Correct!
+    escaladeStopTimer();
+    const pts=ESC_PTS[ESC.route][ESC.crochetUsed?'crochet':'normal'];
+    ESC.score+=pts;
+    G.score=ESC.score;setScore(ESC.score,false);
+    const fb=document.getElementById('escalade-fb');
+    if(fb){fb.textContent='✅ +'+pts+' pts !';fb.style.color='var(--neon)';}
+    ESC.qIdx++;
+    escaladeUpdateClimber();
+    setTimeout(()=>{if(fb)fb.textContent='';escaladeShowQuestion();},800);
+  } else {
+    const fb=document.getElementById('escalade-fb');
+    if(fb){fb.textContent='❌ Faux !';fb.style.color='var(--red)';}
+    inp.value='';
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      escaladeStopTimer();
+      escaladeFall('❌ Mauvaise réponse — chute !');
+    },800);
+  }
+}
+
+function escaladeFall(msg){
+  ESC.done=true;
+  escaladeStopTimer();
+  const climber=document.getElementById('escalade-climber');
+  if(climber){
+    climber.textContent='😱';
+    climber.style.transition='bottom 1s ease-in';
+    climber.style.bottom='5%';
+  }
+  if(ESC.crochetUsed){
+    // Bounce back to crochet position
+    ESC.score=ESC.crochetScore;
+    G.score=ESC.score;setScore(ESC.score,false);
+    const fb=document.getElementById('escalade-fb');
+    if(fb){fb.textContent='🪝 '+msg+' Retour au crochet — '+ESC.score+' pts sauvés';fb.style.color='#ffc800';}
+    setTimeout(escaladeFinish,2000);
+  } else {
+    ESC.score=0;
+    G.score=0;setScore(0,false);
+    const fb=document.getElementById('escalade-fb');
+    if(fb){fb.textContent='💀 '+msg+' 0 pts';fb.style.color='var(--red)';}
+    setTimeout(()=>{escaladeFinish(true);},2000);
+  }
+}
+
+function escaladeUseCrochet(){
+  if(ESC.crochetUsed||ESC.done)return;
+  ESC.crochetUsed=true;
+  ESC.crochetScore=ESC.score;
+  ESC.crochetQIdx=ESC.qIdx;
+  const cb=document.getElementById('escalade-crochet-btn');if(cb)cb.style.display='none';
+  const ci=document.getElementById('escalade-crochet-info');if(ci)ci.style.display='block';
+  // Show marker on wall at climber position
+  const marker=document.getElementById('escalade-crochet-marker');
+  const climber=document.getElementById('escalade-climber');
+  if(marker&&climber){
+    marker.style.display='block';
+    marker.style.bottom=climber.style.bottom;
+    marker.style.left='calc(50% + 16px)';
+  }
+  const fb=document.getElementById('escalade-fb');
+  if(fb){fb.textContent='🪝 Crochet posé ! Points réduits mais sécurisé à '+ESC.score+' pts';fb.style.color='#ffc800';}
+  setTimeout(()=>{if(fb)fb.textContent='';},1500);
+}
+
+function escaladeSwitchRoute(){
+  if(ESC.switchUsed||ESC.route!=='facile')return;
+  ESC.switchUsed=true;
+  ESC.route='difficile';
+  escaladeUpdateBadge();
+  const switchBtn=document.getElementById('escalade-switch-btn');
+  if(switchBtn)switchBtn.style.display='none';
+  const fb=document.getElementById('escalade-fb');
+  if(fb){fb.textContent='🔀 Passage en Voie Difficile ! Les questions valent maintenant '+(ESC.crochetUsed?20:25)+' pts';fb.style.color='#ff6633';}
+  setTimeout(()=>{if(fb)fb.textContent='';escaladeShowQuestion();},1000);
+}
+
+function escaladeFinish(zero=false){
+  ESC.done=true;
+  escaladeStopTimer();
+  const finalScore=zero?0:ESC.score;
+  G.score=finalScore;setScore(finalScore,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent="L'Escalade";
+  const vSub=document.getElementById('v-sub');
+  const route=ESC.route==='facile'?'🟢 Facile':'🔴 Difficile';
+  if(vSub)vSub.textContent=route+' · '+finalScore+' pts · Q'+ESC.qIdx+'/8';
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('escalade');submitScore(finalScore);
+  setTimeout(()=>show('sv'),1000);
+}
+
+function escaladeUpdateClimber(){
+  const climber=document.getElementById('escalade-climber');
+  const rope=document.getElementById('escalade-rope');
+  if(!climber)return;
+  const pct=5+(ESC.qIdx/8)*82;
+  climber.style.bottom=pct+'%';
+  if(rope){
+    const wallH=260;
+    const ropeHeight=wallH*((100-pct-8)/100);
+    rope.style.height=Math.max(0,ropeHeight)+'px';
+  }
+}
+
+function escaladeInitWall(){
+  const wall=document.getElementById('escalade-wall-prises');
+  if(!wall)return;
+  wall.innerHTML='';
+  const colors=['#ff6633','#ff9944','#cc4422','#ff8855','#dd5533'];
+  for(let q=0;q<8;q++){
+    const bottom=8+(q/8)*82;
+    const numHolds=2+Math.floor(Math.random()*2);
+    for(let h=0;h<numHolds;h++){
+      const p=document.createElement('div');
+      const size=Math.random()*10+8;
+      const left=15+Math.random()*70;
+      const col=colors[Math.floor(Math.random()*colors.length)];
+      p.style.cssText=`position:absolute;width:${size}px;height:${size*0.6}px;border-radius:50% 50% 40% 40%;background:${col};left:${left}%;bottom:${bottom}%;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.3);transform:rotate(${Math.random()*30-15}deg)`;
+      wall.appendChild(p);
+    }
+  }
+  // Route line color by difficulty
+  const routeLine=document.getElementById('escalade-route-line');
+  if(routeLine){
+    const col=ESC.route==='facile'?'rgba(100,200,255,.5)':'rgba(255,100,50,.5)';
+    routeLine.style.background=`linear-gradient(180deg,${col},rgba(255,255,255,.05))`;
+  }
+}
+
+// ── LA PLONGÉE ────────────────────────────────────────────────────────────
+const PL={
+  data:null, palier:0, phase:'descente', o2:1000, o2Rate:8,
+  treasures:[], score:0, done:false, timerInt:null,
+  waitingAnswer:false, currentPalier:0
+};
+
+function setupPlongee(data){
+  PL.data=data; PL.palier=0; PL.phase='descente'; PL.o2=1000;
+  PL.o2Rate=data.plongeeO2Base||6; PL.treasures=[]; PL.score=0;
+  PL.done=false; PL.timerInt=null; PL.waitingAnswer=false; PL.currentPalier=0;
+  const _t=document.getElementById('game-tip');if(_t)_t.textContent='Descends · Ramasse des trésors · Remonte vivant';
+  hideAllZones();
+  document.getElementById('plongee-zone').style.display='flex';
+  document.getElementById('plongee-rules').style.display='block';
+  // Reset input visibility
+  const inpWrap=document.getElementById('plongee-input-wrap');
+  if(inpWrap)inpWrap.style.display='none';
+  plongeeInitBubbles();
+  plongeeUpdateUI();
+  // Timer and game start on "PLONGER" button click
+}
+
+function plongeeStartTimer(){
+  if(PL.timerInt)clearInterval(PL.timerInt);
+  PL.timerInt=setInterval(()=>{
+    if(PL.done)return;
+    PL.o2=Math.max(0,PL.o2-PL.o2Rate/10);
+    plongeeUpdateO2();
+    if(PL.o2<=0) plongeeDrown();
+  },100);
+}
+
+function plongeeStopTimer(){clearInterval(PL.timerInt);PL.timerInt=null;}
+
+function plongeeUpdateO2(){
+  const el=document.getElementById('plongee-o2-display');
+  const bar=document.getElementById('plongee-o2-bar');
+  const pct=PL.o2/1000;
+  const col=pct>0.5?'#00ff88':pct>0.25?'#ffaa00':'#ff3333';
+  if(el){el.textContent=Math.ceil(PL.o2);el.style.color=col;}
+  if(bar){bar.style.width=(pct*100)+'%';bar.style.background=`linear-gradient(90deg,${col},#00ccff)`;}
+}
+
+function plongeeUpdateUI(){
+  document.getElementById('plongee-score').textContent=PL.score;
+  plongeeUpdateO2();
+  // Move diver
+  const diverEl=document.getElementById('plongee-diver');
+  if(diverEl){
+    const pcts=[8,22,38,54,70,86];
+    diverEl.style.top=pcts[Math.min(PL.currentPalier,5)]+'%';
+  }
+  // Highlight current palier
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById('plongee-palier-'+i);
+    if(el)el.style.opacity=i===PL.currentPalier?'1':'0.5';
+  }
+  // Treasures display
+  const tEl=document.getElementById('plongee-treasures');
+  if(tEl){
+    tEl.innerHTML='';
+    PL.treasures.forEach((t,i)=>{
+      const span=document.createElement('span');
+      span.style.cssText='background:rgba(255,200,0,.15);border:1px solid rgba(255,200,0,.4);border-radius:6px;padding:2px 8px;font-size:11px;color:#ffc800';
+      span.textContent=(t.palier===5?'💎':'🪙')+t.pts+'pts';
+      span.dataset.idx=i;
+      tEl.appendChild(span);
+    });
+  }
+  // Phase label
+  const pl=document.getElementById('plongee-phase');
+  if(pl)pl.textContent=PL.phase==='descente'?'⬇️ Descente':'⬆️ Remontée';
+}
+
+function plongeeShowDescendChoice(){
+  // Hide all action buttons first
+  ['plongee-btn-treasure','plongee-btn-descend','plongee-btn-ascend'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  document.getElementById('plongee-skip-area').style.display='none';
+  document.getElementById('plongee-q').textContent='';
+  document.getElementById('plongee-in').value='';
+  document.getElementById('plongee-fb').textContent='';
+  // Show input area hidden
+  document.getElementById('plongee-input-wrap').style.display='none';
+
+  if(PL.currentPalier===0){
+    // At submarine — show first descent question
+    plongeeAskDown(1);
+    return;
+  }
+
+  const maxPalier=PL.data.plongeePaliers?.length||5;
+  const hasTreasure=!PL.treasures.find(t=>t.palier===PL.currentPalier);
+  const canDescend=PL.currentPalier<maxPalier;
+
+  // Show options
+  const qEl=document.getElementById('plongee-q');
+  if(qEl)qEl.textContent=`📍 Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]}`;
+
+  if(hasTreasure){
+    const btn=document.getElementById('plongee-btn-treasure');
+    const p=PL.data.plongeePaliers[PL.currentPalier-1];
+    if(btn){btn.style.display='block';btn.textContent=`💰 Prendre le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||1} O2/s`;}
+  }
+  if(canDescend){
+    const btn=document.getElementById('plongee-btn-descend');
+    if(btn)btn.style.display='block';
+  }
+  const btnA=document.getElementById('plongee-btn-ascend');
+  if(btnA)btnA.style.display='block';
+}
+
+function plongeeTakeOrSkipTreasure(){
+  const p=PL.data.plongeePaliers[PL.currentPalier-1];
+  PL.treasures.push({palier:PL.currentPalier, pts:p.tresor});
+  PL.score+=p.tresor;
+  PL.o2Rate+=(PL.data.plongeeO2Treasure||1);
+  plongeeUpdateUI();
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent=`💰 Trésor ramassé ! +${p.tresor} pts · O2 -${PL.data.plongeeO2Treasure||1}/s désormais`;fb.style.color='#ffc800';}
+  const btn=document.getElementById('plongee-btn-treasure');
+  if(btn)btn.style.display='none';
+  G.score=PL.score;setScore(PL.score,false);
+  setTimeout(()=>{if(fb)fb.textContent='';},1500);
+}
+
+function plongeeDescend(){
+  plongeeAskDown(PL.currentPalier+1);
+}
+
+function plongeeAskDown(targetPalier){
+  const p=PL.data.plongeePaliers[targetPalier-1];
+  if(!p)return;
+  ['plongee-btn-treasure','plongee-btn-descend','plongee-btn-ascend'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  const qEl=document.getElementById('plongee-q');
+  if(qEl)qEl.textContent=`⬇️ P${targetPalier} : ${p.qDown}`;
+  document.getElementById('plongee-input-wrap').style.display='flex';
+  document.getElementById('plongee-in').value='';
+  document.getElementById('plongee-in').focus();
+  PL.waitingAnswer={type:'down', targetPalier, answer:p.aDown};
+}
+
+function plongeeStartAscent(){
+  if(PL.currentPalier===0){plongeeSurface();return;}
+  PL.phase='remontée';
+  plongeeUpdateUI();
+  plongeeAskUp(PL.currentPalier);
+}
+
+function plongeeAskUp(fromPalier){
+  const p=PL.data.plongeePaliers[fromPalier-1];
+  if(!p){plongeeSurface();return;}
+  ['plongee-btn-treasure','plongee-btn-descend','plongee-btn-ascend'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  const qEl=document.getElementById('plongee-q');
+  if(qEl)qEl.textContent=`⬆️ P${fromPalier}→P${fromPalier-1} : ${p.qUp}`;
+  document.getElementById('plongee-input-wrap').style.display='flex';
+  document.getElementById('plongee-in').value='';
+  document.getElementById('plongee-in').focus();
+  PL.waitingAnswer={type:'up', fromPalier, answer:p.aUp};
+  // Show skip with treasure option
+  plongeeShowSkipOptions(fromPalier);
+}
+
+function plongeeShowSkipOptions(palier){
+  const skipArea=document.getElementById('plongee-skip-area');
+  const skipTreasures=document.getElementById('plongee-skip-treasures');
+  if(!skipArea||!skipTreasures||PL.treasures.length===0){if(skipArea)skipArea.style.display='none';return;}
+  skipArea.style.display='block';
+  skipTreasures.innerHTML='';
+  PL.treasures.forEach((t,i)=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='padding:6px 10px;border-radius:6px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer';
+    btn.textContent=`Sacrifier ${t.palier===5?'💎':'🪙'}${t.pts}pts`;
+    btn.onclick=()=>plongeeSkipWithTreasure(i,palier);
+    skipTreasures.appendChild(btn);
+  });
+}
+
+function plongeeSkipWithTreasure(treasureIdx, palier){
+  const t=PL.treasures[treasureIdx];
+  PL.score-=t.pts;
+  PL.o2Rate-=(PL.data.plongeeO2Treasure||1);
+  PL.treasures.splice(treasureIdx,1);
+  plongeeUpdateUI();
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent=`🪙 Trésor sacrifié — question passée !`;fb.style.color='#ffc800';}
+  document.getElementById('plongee-skip-area').style.display='none';
+  document.getElementById('plongee-input-wrap').style.display='none';
+  G.score=PL.score;setScore(PL.score,false);
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    PL.currentPalier=palier-1;
+    if(PL.currentPalier<=0){plongeeSurface();}
+    else{plongeeAskUp(PL.currentPalier);}
+  },1200);
+}
+
+function plongeeSubmit(){
+  if(!PL.waitingAnswer||PL.done)return;
+  const inp=document.getElementById('plongee-in');
+  const ans=(inp?.value||'').trim();
+  if(!ans)return;
+  const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const lev=(a,b)=>{const m=a.length,n=b.length;const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];};
+  const correct=correctAnswers.some(c=>lev(c,ansNorm)<=(PL.data.plongeeTol||1));
+  const fb=document.getElementById('plongee-fb');
+  if(correct){
+    if(fb){fb.textContent='✅ Correct !';fb.style.color='var(--neon)';}
+    if(PL.waitingAnswer.type==='down'){
+      PL.currentPalier=PL.waitingAnswer.targetPalier;
+      plongeeUpdateUI();
+      document.getElementById('plongee-input-wrap').style.display='none';
+      PL.waitingAnswer=false;
+      setTimeout(()=>{if(fb)fb.textContent='';plongeeShowDescendChoice();},800);
+    } else {
+      const from=PL.waitingAnswer.fromPalier;
+      PL.currentPalier=from-1;
+      plongeeUpdateUI();
+      document.getElementById('plongee-input-wrap').style.display='none';
+      document.getElementById('plongee-skip-area').style.display='none';
+      PL.waitingAnswer=false;
+      setTimeout(()=>{
+        if(fb)fb.textContent='';
+        if(PL.currentPalier<=0){plongeeSurface();}
+        else{plongeeAskUp(PL.currentPalier);}
+      },800);
+    }
+  } else {
+    PL.o2Rate+=(PL.data.plongeeO2Error||2);
+    if(fb){fb.textContent=`❌ Faux ! O2 −${PL.data.plongeeO2Error||2}/s désormais`;fb.style.color='var(--red)';}
+    inp.value='';
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+  }
+}
+
+function plongeeSurface(){
+  plongeeStopTimer();
+  PL.done=true;
+  const finalScore=PL.score;
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent='🌊 Remonté vivant ! '+finalScore+' pts';fb.style.color='var(--neon)';}
+  G.score=finalScore;setScore(finalScore,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='La Plongée';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🤿 Remonté avec '+PL.treasures.length+' trésor(s) · '+finalScore+' pts';
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('plongee');submitScore(finalScore);
+  setTimeout(()=>show('sv'),1500);
+}
+
+function plongeeDrown(){
+  plongeeStopTimer();
+  PL.done=true;
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent='💀 NOYADE — O2 épuisé !';fb.style.color='var(--red)';}
+  // Animate diver to bottom
+  const diverEl=document.getElementById('plongee-diver');
+  if(diverEl){diverEl.textContent='💀';diverEl.style.top='88%';}
+  G.score=0;setScore(0,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=0;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='La Plongée';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='💀 Noyade — 0 pts';
+  ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
+  setVictoryIcon('plongee');submitScore(0);
+  setTimeout(()=>show('sv'),2000);
+}
+
+function plongeeInitBubbles(){
+  const el=document.getElementById('plongee-bubbles');
+  if(!el)return;
+  el.innerHTML='';
+  for(let i=0;i<12;i++){
+    const b=document.createElement('div');
+    const size=Math.random()*6+3;
+    const left=Math.random()*90+5;
+    const delay=Math.random()*4;
+    const dur=Math.random()*3+3;
+    b.style.cssText=`position:absolute;bottom:-10px;left:${left}%;width:${size}px;height:${size}px;border-radius:50%;background:rgba(100,200,255,0.2);border:1px solid rgba(100,200,255,0.3);animation:bubble ${dur}s ${delay}s infinite linear`;
+    el.appendChild(b);
+  }
+  // Add bubble keyframe if not exists
+  if(!document.getElementById('bubble-style')){
+    const s=document.createElement('style');
+    s.id='bubble-style';
+    s.textContent='@keyframes bubble{0%{bottom:-10px;opacity:0.8}100%{bottom:110%;opacity:0}}';
+    document.head.appendChild(s);
+  }
+}
+
 // ── RETOUR VERS LE FUTUR ──────────────────────────────────────────────────
 const RVLF={
   data:null, qIdx:0, score:0, done:false,
@@ -2805,7 +3600,16 @@ function setupRvlf(data){
   RVLF.cardsLeft=10; RVLF.timerInt=null;
   RVLF.jokers={lien:true,schrodinger:true,balise:true};
   RVLF.balise=null; RVLF.lienPending=false; RVLF.superActive=false; RVLF.deadUniverse=null;
+  RVLF.currentQA=null; RVLF.currentQB=null;
   RVLF.superPending=false; RVLF.superQA=null; RVLF.superQB=null;
+  // Reset joker button styles
+  ['rvlf-j1','rvlf-j2','rvlf-j3'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.style.opacity='1';btn.disabled=false;}
+  });
+  // Reset info panel
+  const panel=document.getElementById('rvlf-info-panel');if(panel)panel.style.display='none';
+  const bInfo=document.getElementById('rvlf-balise-info');if(bInfo)bInfo.style.display='none';
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='10 cartes · 30s · 1 mauvaise = Game Over';
   hideAllZones();
   document.getElementById('rvlf-zone').style.display='flex';
@@ -2824,12 +3628,14 @@ function rvlfUpdateUI(){
   const stopBtn=document.getElementById('rvlf-stop-btn');
   if(stopBtn)stopBtn.textContent='🏁 Arrêter et garder mes points ('+RVLF.score+' pts)';
   // Joker buttons
+  const cardsLeft=10-RVLF.qIdx;
   ['lien','schrodinger','balise'].forEach((j,idx)=>{
     const btn=document.getElementById('rvlf-j'+(idx+1));
     if(!btn)return;
     const used=!RVLF.jokers[j];
-    btn.style.opacity=used?'0.3':'1';
-    btn.disabled=used||RVLF.done;
+    const noCards=(j==='lien'||j==='schrodinger')&&cardsLeft<1;
+    btn.style.opacity=(used||noCards)?'0.3':'1';
+    btn.disabled=used||RVLF.done||noCards;
   });
   const bInfo=document.getElementById('rvlf-balise-info');
   if(bInfo)bInfo.style.display=RVLF.balise?'block':'none';
@@ -2957,7 +3763,7 @@ function rvlfShowLienInSuper(lienRealite, qLien1, qLien2, qNormal, colors, label
     answered++; // no normal question available
   }
 
-  function resolveLienSuper(){
+  const resolveLienSuper=()=>{
     rvlfStopTimer();
     const anyOk=lienOk||normalOk;
     const fb=document.getElementById('rvlf-fb');
@@ -3001,6 +3807,34 @@ function rvlfShowQuestion(){
   const q=qs[RVLF.qIdx];
   if(!q){rvlfFinish();return;}
   rvlfShowNormal(q);
+}
+
+function rvlfRenderQuestion(q){
+  // Display a question without consuming a card (used by balise restore)
+  RVLF.currentQA=q; RVLF.currentQB=null;
+  const panel=document.getElementById('rvlf-info-panel');
+  if(panel)panel.style.display='none';
+  rvlfUpdateUI();
+  const qEl=document.getElementById('rvlf-q-display');
+  if(qEl)qEl.textContent=q.q||'?';
+  const choices=[{txt:q.a,correct:true},{txt:q.w,correct:false}];
+  for(let i=1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}
+  const ch=document.getElementById('rvlf-choices');
+  if(ch){
+    ch.innerHTML='';
+    choices.forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='biat-qcm-btn';btn.textContent=c.txt;
+      btn.onclick=()=>{
+        rvlfStopTimer();
+        document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
+        rvlfAnswer(c.correct);
+      };
+      ch.appendChild(btn);
+    });
+  }
+  document.getElementById('rvlf-fb').textContent='';
+  rvlfStartTimer();
 }
 
 function rvlfShowNormal(q){
@@ -3094,26 +3928,67 @@ function rvlfFinish(){
 // ── JOKERS ────────────────────────────────────────────────────────────────
 function rvlfJoker(type){
   if(RVLF.done||!RVLF.jokers[type])return;
-  RVLF.jokers[type]=false;
+  const qs=RVLF.data?.rvlfQuestions||[];
+  const cardsLeft=10-RVLF.qIdx;
+  // Check if enough cards for this joker
+  if(type==='lien'&&cardsLeft<1){
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🔗 Plus assez de cartes pour le Lien.';fb.style.color='var(--mute)';}
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    return;
+  }
+  if(type==='schrodinger'&&cardsLeft<1){
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🐱 Plus assez de cartes pour Schrödinger.';fb.style.color='var(--mute)';}
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    return;
+  }
+  // Balise doesn't interrupt the game — only save state silently
+  if(type==='balise'){
+    if((10-RVLF.qIdx)<=1){
+      RVLF.jokers.balise=true; // refund
+      const fb=document.getElementById('rvlf-fb');
+      if(fb){fb.textContent='⏱️ Impossible de poser la balise sur la dernière carte.';fb.style.color='var(--mute)';}
+      setTimeout(()=>{if(fb)fb.textContent='';},1500);
+      return;
+    }
+    RVLF.balise={
+      score:RVLF.score,
+      jokers:{...RVLF.jokers},
+      superActive:RVLF.superActive,
+      deadUniverse:RVLF.deadUniverse,
+      currentQA:RVLF.currentQA,
+      currentQB:RVLF.currentQB,
+      qIdxNext:RVLF.qIdx
+    };
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='⏱️ BALISE posée — continue à jouer !';fb.style.color='#ff64c8';}
+    rvlfUpdateUI();
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    return; // don't stop timer, don't disable buttons
+  }
   rvlfStopTimer();
   document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
 
   if(type==='lien'){
     const qs=RVLF.data.rvlfQuestions||[];
     if(RVLF.superActive){
-      // Lien in Schrödinger: each reality gets 2 linked questions
-      // Réalité A: qIdx + qIdx+1, Réalité B: qIdx+2 + qIdx+3
-      const qA1=qs[RVLF.qIdx], qA2=qs[RVLF.qIdx+1];
-      const qB1=qs[RVLF.qIdx+2], qB2=qs[RVLF.qIdx+3];
+      // Lien in Schrödinger: current questions already displayed + 1 new card per reality
+      // Réalité A: currentQA (displayed) + qs[qIdx] (next for A)
+      // Réalité B: currentQB (displayed) + qs[qIdx+1] (next for B)
+      const qA1=RVLF.currentQA;
+      const qA2=qs[RVLF.qIdx];
+      const qB1=RVLF.currentQB;
+      const qB2=qs[RVLF.qIdx+1];
       if(!qA1||!qA2){
         RVLF.jokers.lien=true;
         const fb=document.getElementById('rvlf-fb');
         if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
         rvlfStartTimer();return;
       }
-      // Consume cards
-      const cardsAvail=[qA1,qA2,qB1,qB2].filter(Boolean).length;
-      RVLF.qIdx+=cardsAvail;
+      // Consume only the new cards (currentQA/QB already consumed)
+      const newCards=[qA2,qB2].filter(Boolean).length;
+      RVLF.qIdx+=newCards;
       rvlfStopTimer();
       rvlfShowInfo(null,'🔗 Chaque réalité reçoit 2 questions liées. Choisis une question dans chaque réalité. Juste → les deux de cette réalité comptent (+40 pts). Faux → cette réalité s\'effondre.','#ffc800');
       const qEl=document.getElementById('rvlf-q-display');
@@ -3182,15 +4057,15 @@ function rvlfJoker(type){
       return;
     }
     // Normal lien (no Schrödinger)
-    const qCurrent=qs[RVLF.qIdx];
-    const qNext=qs[RVLF.qIdx+1];
+    const qCurrent=RVLF.currentQA; // already displayed, card already consumed
+    const qNext=qs[RVLF.qIdx];     // next card not yet consumed
     if(!qCurrent||!qNext){
       RVLF.jokers.lien=true;
       const fb=document.getElementById('rvlf-fb');
       if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
       rvlfStartTimer();return;
     }
-    RVLF.qIdx+=2;
+    RVLF.qIdx+=1; // consume only the next card (current already consumed)
     rvlfStopTimer();
     rvlfShowInfo(null,'🔗 Choisis la question dont tu es le plus sûr et réponds. <strong style="color:#ffc800">Juste → +40 pts</strong> (les deux résolues). <strong style="color:var(--red)">Faux → Game Over</strong> (les deux tombent).','#ffc800');
     const qEl=document.getElementById('rvlf-q-display');
@@ -3239,40 +4114,33 @@ function rvlfJoker(type){
 
   else if(type==='schrodinger'){
     RVLF.superActive=true;
-    const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⚡ SCHRÖDINGER activée ! Chaque question se dédouble jusqu\'à la fin.';fb.style.color='#64c8ff';}
-    // Disable schrodinger button permanently
     const btn=document.getElementById('rvlf-j2');if(btn){btn.style.opacity='0.3';btn.disabled=true;}
-    // Update tip
-    const tip=document.getElementById('game-tip');if(tip)tip.textContent='⚡ Mode Schrödinger — 2 réalité parallèles';
+    const tip=document.getElementById('game-tip');if(tip)tip.textContent='🐱 Mode Schrödinger — 2 réalités parallèles';
     rvlfStopTimer();
+    // Get the current question already displayed + next card
+    const qs=RVLF.data.rvlfQuestions||[];
+    const qCurrent=RVLF.currentQA; // already displayed, card already consumed
+    const qNext=qs[RVLF.qIdx];     // next card, not yet consumed
+    if(!qCurrent||!qNext){
+      // Not enough cards — just continue in super mode from next question
+      const fb=document.getElementById('rvlf-fb');
+      if(fb){fb.textContent='🐱 SCHRÖDINGER activé !';fb.style.color='#64c8ff';}
+      setTimeout(()=>{if(fb)fb.textContent='';rvlfShowQuestion();},1000);
+      return;
+    }
+    // Consume the next card (current already consumed by rvlfShowNormal)
+    RVLF.qIdx++;
+    RVLF.currentQB=qNext;
+    // Save for balise
+    const savedQA=RVLF.currentQA; const savedQB=RVLF.currentQB;
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🐱 SCHRÖDINGER ! Les deux réalités s\'ouvrent…';fb.style.color='#64c8ff';}
     setTimeout(()=>{
       if(fb)fb.textContent='';
-      rvlfShowQuestion(); // restart current question in super mode
-    },1200);
+      rvlfShowSuper(savedQA, savedQB);
+    },800);
   }
 
-  else if(type==='balise'){
-    // qIdx is already incremented by showNormal/showSuper when balise is posed
-    // Save pre-increment qIdx so restore can show the same question
-    const savedQIdx=RVLF.superActive?RVLF.qIdx-2:RVLF.qIdx-1;
-    RVLF.balise={
-      score:RVLF.score,
-      jokers:{...RVLF.jokers},
-      qIdx:savedQIdx,
-      superActive:RVLF.superActive,
-      deadUniverse:RVLF.deadUniverse,
-      currentQA:RVLF.currentQA,
-      currentQB:RVLF.currentQB
-    };
-    const fb=document.getElementById('rvlf-fb');
-    if(fb){fb.textContent='⏱️ BALISE TEMPORELLE posée ! Checkpoint enregistré.';fb.style.color='#ff64c8';}
-    rvlfUpdateUI();
-    setTimeout(()=>{
-      if(fb)fb.textContent='';
-      rvlfShowQuestion();
-    },1000);
-  }
 }
 
 function rvlfShowSuper(qA,qB){
@@ -3349,32 +4217,27 @@ function rvlfShowSuper(qA,qB){
 function rvlfActivateBalise(){
   rvlfStopTimer();
   const saved=RVLF.balise;
-  const cardsLost=RVLF.qIdx-(saved.qIdx+(saved.superActive?2:1));
-  // Restore full state
+  const cardsLost=RVLF.qIdx-saved.qIdxNext;
   RVLF.score=saved.score;
   RVLF.jokers={...saved.jokers, balise:false};
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
-  RVLF.qIdx=saved.qIdx; // ← restore qIdx so next question is correct
+  // qIdx stays advanced — cards between balise and error are permanently lost
+  // We only re-show the saved questions visually
   RVLF.currentQA=saved.currentQA||null;
   RVLF.currentQB=saved.currentQB||null;
   RVLF.balise=null;
   RVLF.lienPending=false;
   const fb=document.getElementById('rvlf-fb');
-  if(fb){fb.textContent='⏱️ BALISE activée ! Retour à '+saved.score+' pts · '+cardsLost+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
+  if(fb){fb.textContent='⏱️ BALISE ! Score restauré à '+saved.score+' pts · '+Math.max(0,cardsLost)+' carte(s) perdue(s)';fb.style.color='#ff64c8';}
   rvlfUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    // Re-show exact same questions as when balise was set
     if(saved.superActive&&saved.currentQA&&saved.currentQB){
-      RVLF.qIdx+=2; // re-consume the 2 super cards
-      RVLF.currentQA=saved.currentQA;
-      RVLF.currentQB=saved.currentQB;
-      rvlfShowSuper(saved.currentQA, saved.currentQB);
+      rvlfShowSuper(saved.currentQA,saved.currentQB);
     } else if(saved.currentQA){
-      // rvlfShowNormal will increment qIdx itself
-      RVLF.currentQA=saved.currentQA;
-      rvlfShowNormal(saved.currentQA);
+      // Render directly without consuming a card (qIdx stays advanced)
+      rvlfRenderQuestion(saved.currentQA);
     } else {
       rvlfShowQuestion();
     }
@@ -3679,6 +4542,8 @@ async function submitGrimpeAnswer(){
       const lsEff=lsv*Math.sqrt(GP.found.length/(GP.totalAnswers||10));
       const ls=Math.min(100,Math.round(GP.found.length/(GP.totalAnswers||10)*67+lsEff*33));
       G.score=ls;setScore(ls,false);
+      // Sync cyclist position to score
+      GP.cases=ls;
     })();
     if(GP.found.length>=GP.totalAnswers){
       inp.disabled=true;document.getElementById('grimpe-chk').disabled=true;
@@ -7329,9 +8194,13 @@ function arcNextCible(){
   if(!cibles.length){arcFinish();return;}
   if(ARC.cibleIdx>=cibles.length){arcFinish();return;}
   const c=cibles[ARC.cibleIdx];
+  // Hide target until distance chosen
+  const wrap=document.getElementById('arc-target-wrap');
+  if(wrap)wrap.style.display='none';
+  // Reset arrow
+  const arrow=document.getElementById('arc-arrow');
+  if(arrow)arrow.style.display='none';
   document.getElementById('arc-cible-num').textContent=(ARC.cibleIdx+1)+'/'+cibles.length;
-  document.getElementById('arc-score').textContent=ARC.score;
-  document.getElementById('arc-fb').textContent='';
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
 
@@ -7355,7 +8224,18 @@ function arcNextCible(){
 }
 
 function arcChoixDistance(difficulty){
-  arcStartChrono(); // start 60s chrono for this cible
+  arcStartChrono();
+  // Show animated target
+  const wrap=document.getElementById('arc-target-wrap');
+  if(wrap)wrap.style.display='flex';
+  const badge=document.getElementById('arc-dist-badge');
+  if(badge){
+    badge.style.display='block';
+    badge.textContent=difficulty==='facile'?'🟢 11m':difficulty==='moyen'?'🟡 22m':'🔴 33m';
+  }
+  // Hide arrow on new cible
+  const arrow=document.getElementById('arc-arrow');
+  if(arrow)arrow.style.display='none';
   const cibles=ARC.data.cibles||[];
   const c=cibles[ARC.cibleIdx];
   const maxPts=ARC_DIFF_PTS[difficulty];
@@ -7398,17 +8278,50 @@ function arcTirer(target,maxPts,tolerance,max){
   const zone=document.getElementById('arc-cible-zone');
   zone.innerHTML='';
 
-  if(hit){
-    ARC.score+=maxPts;
-    ARC.hits++;
+  // Animate arrow flying to target
+  const arrow=document.getElementById('arc-arrow');
+  const svg=document.getElementById('arc-svg-target');
+  if(arrow&&svg){
+    // Calculate where on target the arrow lands
+    const pctOff=Math.min(1,ecart/(target||1));
+    const radius=65*pctOff; // 0=bullseye, 65=edge
+    const angle=Math.random()*Math.PI*2;
+    const cx=75+radius*Math.cos(angle);
+    const cy=75+radius*Math.sin(angle);
+    // Convert SVG coords to percent of container
+    const svgRect=svg.getBoundingClientRect();
+    const wrapRect=document.getElementById('arc-target-wrap').getBoundingClientRect();
+    const leftPct=((svgRect.left-wrapRect.left)+(cx/150)*svgRect.width)/wrapRect.width*100;
+    const topPct=((svgRect.top-wrapRect.top)+(cy/150)*svgRect.height)/wrapRect.height*100;
+    // Start from outside right
+    arrow.style.display='block';
+    arrow.style.right='auto';
+    arrow.style.left='110%';
+    arrow.style.top='50%';
+    arrow.style.transform='rotate(-45deg)';
+    setTimeout(()=>{
+      arrow.style.left=leftPct+'%';
+      arrow.style.top=topPct+'%';
+      arrow.style.transform='rotate(-45deg) scale(0.8)';
+    },50);
+    // Add impact mark on SVG
+    setTimeout(()=>{
+      const mark=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      mark.setAttribute('cx',cx);mark.setAttribute('cy',cy);
+      mark.setAttribute('r','4');
+      mark.setAttribute('fill',hit?'#ffdd00':'#ffffff');
+      mark.setAttribute('stroke','#000');mark.setAttribute('stroke-width','1');
+      svg.appendChild(mark);
+    },450);
   }
+
+  if(hit){ARC.score+=maxPts;ARC.hits++;}
 
   const d=document.createElement('div');
   d.className='arc-cible '+(hit?'hit':'miss');
   const pct=Math.round((1-Math.min(ecart/(target||1),1))*100);
-  d.innerHTML=`<div style="font-size:36px;text-align:center">${hit?'🎯':'💨'}</div>
-    <div style="font-family:var(--fh);font-size:18px;text-align:center;color:${hit?'var(--neon)':'var(--red)'}">
-      ${hit?'TOUCHÉ ! +'+maxPts+' pts':'MANQUÉ'}
+  d.innerHTML=`<div style="font-family:var(--fh);font-size:18px;text-align:center;color:${hit?'var(--neon)':'var(--red)'}">
+      ${hit?'🎯 TOUCHÉ ! +'+maxPts+' pts':'💨 MANQUÉ'}
     </div>
     <div style="font-size:13px;color:var(--mute);text-align:center">
       Ta flèche : <strong style="color:var(--txt)">${val}</strong> · Valeur exacte : <strong style="color:var(--neon)">${target}</strong><br>
@@ -7422,7 +8335,15 @@ function arcTirer(target,maxPts,tolerance,max){
   btn.style.fontFamily='var(--fh)';
   const cibles=ARC.data.cibles||[];
   btn.textContent=ARC.cibleIdx+1<cibles.length?'Cible suivante →':'Voir mon score →';
-  btn.onclick=()=>{ARC.cibleIdx++;arcNextCible();};
+  btn.onclick=()=>{
+    // Reset arrow and clear marks
+    const arrow2=document.getElementById('arc-arrow');if(arrow2)arrow2.style.display='none';
+    const svgEl=document.getElementById('arc-svg-target');
+    if(svgEl)svgEl.querySelectorAll('circle[fill="#ffdd00"], circle[fill="#ffffff"]').forEach(c=>{
+      if(c.getAttribute('r')==='4')c.remove();
+    });
+    ARC.cibleIdx++;arcNextCible();
+  };
   d.appendChild(btn);
   zone.appendChild(d);
   document.getElementById('arc-score').textContent=ARC.score;
