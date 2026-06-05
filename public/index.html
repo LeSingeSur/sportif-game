@@ -4376,7 +4376,7 @@ function grimpeDrawProfile(){
   const W=cv.width,H=cv.height,ctx=cv.getContext('2d');
   ctx.clearRect(0,0,W,H);
 
-  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*Math.pow(t,1.2)+Math.sin(t*Math.PI*6)*2;
+  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*t+Math.sin(t*Math.PI*6)*2;
 
   // Sky
   const sky=ctx.createLinearGradient(0,0,0,H*0.5);
@@ -4479,27 +4479,23 @@ function drawGrimpeTree(ctx,x,y,size,type){
 
 function grimpeUpdateRiders(){
   const cv=document.getElementById('grimpe-canvas');
-  if(!cv)return;
-  const W=cv.width,H=cv.height;
-  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*Math.pow(t,1.2)+Math.sin(t*Math.PI*6)*2;
+  if(!cv||!cv.width||!cv.height)return;
+  // Use canvas pixel dimensions directly — same coordinate space as drawProfile
+  const W=cv.width, H=cv.height;
+  const roadY=(t)=>H*0.88+(H*0.12-H*0.88)*t+Math.sin(t*Math.PI*6)*2;
   const riderEl=document.getElementById('grimpe-rider');
   const pogiEl=document.getElementById('grimpe-pogi');
-  const profile=document.getElementById('grimpe-profile');
-  const dispW=profile?profile.offsetWidth:W;
-  const dispH=profile?profile.offsetHeight:H;
+  // Canvas is sized to match profile container via offsetWidth/Height,
+  // so canvas px coords == CSS px coords for absolute children
   if(riderEl){
     const t=Math.min(0.97,GP.cases/100);
-    const x=t*dispW;
-    const y=roadY(t)/H*dispH;
-    riderEl.style.left=Math.max(0,x-14)+'px';
-    riderEl.style.bottom=(dispH-y-18)+'px';
+    riderEl.style.left=Math.max(0,t*W-14)+'px';
+    riderEl.style.bottom=(H-roadY(t)-20)+'px';
   }
   if(pogiEl){
     const t=Math.min(0.97,GP.pogiCases/100);
-    const x=t*dispW;
-    const y=roadY(t)/H*dispH;
-    pogiEl.style.left=Math.max(0,x-14)+'px';
-    pogiEl.style.bottom=(dispH-y-16)+'px';
+    pogiEl.style.left=Math.max(0,t*W-14)+'px';
+    pogiEl.style.bottom=(H-roadY(t)-16)+'px';
   }
 }
 
