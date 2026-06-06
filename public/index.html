@@ -3437,10 +3437,12 @@ function plongeeStartTimer(){
   if(sticky)sticky.style.display='block';
 }
 
-function plongeeStopTimer(){
+function plongeeStopTimer(hideSticky=true){
   clearInterval(PL.timerInt);PL.timerInt=null;
-  const sticky=document.getElementById('plongee-sticky-o2');
-  if(sticky)sticky.style.display='none';
+  if(hideSticky){
+    const sticky=document.getElementById('plongee-sticky-o2');
+    if(sticky)sticky.style.display='none';
+  }
 }
 
 function plongeeUpdateO2(){
@@ -3488,7 +3490,6 @@ function plongeeUpdateUI(){
 }
 
 function plongeeShowDescendChoice(){
-  // Hide all action buttons first
   ['plongee-btn-treasure','plongee-btn-descend','plongee-btn-ascend'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='none';
   });
@@ -3496,22 +3497,22 @@ function plongeeShowDescendChoice(){
   document.getElementById('plongee-q').textContent='';
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-fb').textContent='';
-  // Show input area hidden
   document.getElementById('plongee-input-wrap').style.display='none';
 
   if(PL.currentPalier===0){
-    // At submarine — show first descent question
     plongeeAskDown(1);
     return;
   }
+
+  // ⏸ FREEZE O2 TIMER during choice (keep sticky visible)
+  plongeeStopTimer(false);
 
   const maxPalier=PL.data.plongeePaliers?.length||5;
   const hasTreasure=!PL.treasures.find(t=>t.palier===PL.currentPalier);
   const canDescend=PL.currentPalier<maxPalier;
 
-  // Show options
   const qEl=document.getElementById('plongee-q');
-  if(qEl)qEl.textContent=`📍 Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]}`;
+  if(qEl)qEl.textContent=`⏸ Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]} · Chrono suspendu`;
 
   if(hasTreasure){
     const btn=document.getElementById('plongee-btn-treasure');
@@ -3541,7 +3542,28 @@ function plongeeTakeOrSkipTreasure(){
 }
 
 function plongeeDescend(){
+  plongeeRestartTimer(); // ▶ RESUME before question
   plongeeAskDown(PL.currentPalier+1);
+}
+
+function plongeeStartAscent(){
+  ['plongee-btn-treasure','plongee-btn-descend','plongee-btn-ascend'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  plongeeRestartTimer(); // ▶ RESUME before ascent question
+  plongeeAskUp(PL.currentPalier);
+}
+
+function plongeeRestartTimer(){
+  if(PL.timerInt)return; // already running
+  PL.timerInt=setInterval(()=>{
+    if(PL.done)return;
+    PL.o2=Math.max(0,PL.o2-PL.o2Rate/10);
+    plongeeUpdateO2();
+    if(PL.o2<=0)plongeeDrown();
+  },100);
+  const sticky=document.getElementById('plongee-sticky-o2');
+  if(sticky)sticky.style.display='block';
 }
 
 function plongeeAskDown(targetPalier){
@@ -3556,13 +3578,6 @@ function plongeeAskDown(targetPalier){
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-in').focus();
   PL.waitingAnswer={type:'down', targetPalier, answer:p.aDown};
-}
-
-function plongeeStartAscent(){
-  if(PL.currentPalier===0){plongeeSurface();return;}
-  PL.phase='remontée';
-  plongeeUpdateUI();
-  plongeeAskUp(PL.currentPalier);
 }
 
 function plongeeAskUp(fromPalier){
