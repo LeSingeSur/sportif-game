@@ -244,7 +244,7 @@ app.get('/api/preview', (req, res) => {
       qUp:p.qUp||'',aUp:p.aUp||'',
       tresor:p.tresor||0
     }));
-    base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeO2Base = athlete.plongeeO2Base||8;
     base.plongeeTol = athlete.plongeeTol||1;
     base.plongeeO2Treasure = athlete.plongeeO2Treasure||2;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
@@ -624,7 +624,7 @@ app.get('/api/athlete', (req, res) => {
       qUp:p.qUp||'',aUp:p.aUp||'',
       tresor:p.tresor||0
     }));
-    base.plongeeO2Base = athlete.plongeeO2Base||6;
+    base.plongeeO2Base = athlete.plongeeO2Base||8;
     base.plongeeTol = athlete.plongeeTol||1;
     base.plongeeO2Treasure = athlete.plongeeO2Treasure||2;
     base.plongeeO2Error = athlete.plongeeO2Error||2;
@@ -1017,7 +1017,7 @@ app.post('/api/admin/athlete', (req, res) => {
     rvlfQuestions:      type === 'rvlf' ? (req.body.rvlfQuestions||[]) : undefined,
     rvlfNoTimer:        type === 'rvlf' ? !!req.body.rvlfNoTimer : undefined,
     plongeePaliers:     type === 'plongee' ? (req.body.plongeePaliers||[]) : undefined,
-    plongeeO2Base:      type === 'plongee' ? (parseInt(req.body.plongeeO2Base)||6) : undefined,
+    plongeeO2Base:      type === 'plongee' ? (parseInt(req.body.plongeeO2Base)||8) : undefined,
     plongeeO2Treasure:  type === 'plongee' ? (parseInt(req.body.plongeeO2Treasure)||2) : undefined,
     plongeeO2Error:     type === 'plongee' ? (parseInt(req.body.plongeeO2Error)||2) : undefined,
     escaladeQuestions:  type === 'escalade' ? (req.body.escaladeQuestions||[]) : undefined,
