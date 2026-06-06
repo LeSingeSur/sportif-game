@@ -1156,7 +1156,18 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div>
 
   <!-- PLONGÉE ZONE -->
-  <div id="plongee-zone" style="display:none;flex-direction:column;gap:0;width:100%;position:relative">
+  <div id="plongee-zone" style="display:none;flex-direction:column;gap:0;width:100%;position:relative;padding-bottom:52px">
+
+    <!-- O2 sticky bar — always visible at bottom when scrolled -->
+    <div id="plongee-sticky-o2" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(0,10,25,.95);border-top:1px solid rgba(0,150,255,.3);padding:6px 16px;backdrop-filter:blur(8px)">
+      <div style="display:flex;align-items:center;gap:10px;max-width:500px;margin:0 auto">
+        <span style="font-size:9px;color:#64c8ff;letter-spacing:1px;white-space:nowrap">🫧 O2</span>
+        <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden">
+          <div id="plongee-sticky-bar" style="height:100%;background:linear-gradient(90deg,#00ff88,#00ccff);width:100%;transition:width .5s;border-radius:99px"></div>
+        </div>
+        <span style="font-family:var(--fh);font-size:16px;min-width:44px;text-align:right" id="plongee-sticky-num">1000</span>
+      </div>
+    </div>
 
     <!-- Encart règles -->
     <div id="plongee-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute);margin-bottom:8px">
@@ -3421,17 +3432,28 @@ function plongeeStartTimer(){
     plongeeUpdateO2();
     if(PL.o2<=0) plongeeDrown();
   },100);
+  // Show sticky O2 bar
+  const sticky=document.getElementById('plongee-sticky-o2');
+  if(sticky)sticky.style.display='block';
 }
 
-function plongeeStopTimer(){clearInterval(PL.timerInt);PL.timerInt=null;}
+function plongeeStopTimer(){
+  clearInterval(PL.timerInt);PL.timerInt=null;
+  const sticky=document.getElementById('plongee-sticky-o2');
+  if(sticky)sticky.style.display='none';
+}
 
 function plongeeUpdateO2(){
   const el=document.getElementById('plongee-o2-display');
   const bar=document.getElementById('plongee-o2-bar');
+  const sBar=document.getElementById('plongee-sticky-bar');
+  const sNum=document.getElementById('plongee-sticky-num');
   const pct=PL.o2/1000;
   const col=pct>0.5?'#00ff88':pct>0.25?'#ffaa00':'#ff3333';
   if(el){el.textContent=Math.ceil(PL.o2);el.style.color=col;}
   if(bar){bar.style.width=(pct*100)+'%';bar.style.background=`linear-gradient(90deg,${col},#00ccff)`;}
+  if(sBar){sBar.style.width=(pct*100)+'%';sBar.style.background=`linear-gradient(90deg,${col},#00ccff)`;}
+  if(sNum){sNum.textContent=Math.ceil(PL.o2);sNum.style.color=col;}
 }
 
 function plongeeUpdateUI(){
