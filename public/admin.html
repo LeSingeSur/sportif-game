@@ -324,6 +324,8 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Tolérance ortho (0-3)</label><input type="number" id="escalade-tol" value="1" min="0" max="3" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
         </div>
         <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Chaque question a une version facile et une version difficile (optionnelle — si vide = même question)</div>
+        <button id="escalade-ai-btn" onclick="escaladeGenerateDifficile()" type="button" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(212,255,0,.4);background:rgba(212,255,0,.08);color:var(--neon);font-family:var(--fh);font-size:12px;cursor:pointer;letter-spacing:1px;margin-bottom:8px">🔀 INVERSER AUTO LES QUESTIONS DIFFICILES</button>
+        <div id="escalade-ai-status" style="font-size:11px;color:var(--mute);text-align:center;min-height:14px;margin-bottom:4px"></div>
         <div id="escalade-q-list" style="display:flex;flex-direction:column;gap:10px"></div>
         <button class="btn btn-s" id="btn-add-escalade-q" style="margin-top:8px">➕ Question (max 8)</button>
       </div>
@@ -430,6 +432,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div style="flex:1">
             <label style="font-size:11px;color:var(--mute)">Tolérance ortho</label>
             <input type="number" id="roulette-tol" value="1" min="0" max="3"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">% révélé/tir</label>
+            <input type="number" id="roulette-reveal-step" value="10" min="1" max="50"
               style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
           </div>
         </div>
@@ -1452,6 +1459,7 @@ async function startEdit(id){
     const rc=document.getElementById('roulette-chambers');if(rc)rc.value=a.rouletteChambers||6;
     const rb=document.getElementById('roulette-bullet');if(rb)rb.value=a.rouletteBullet||4;
     const rtol=document.getElementById('roulette-tol');if(rtol)rtol.value=a.rouletteTol||1;
+    const rrs=document.getElementById('roulette-reveal-step');if(rrs)rrs.value=a.rouletteRevealStep||5;
     if(a.rouletteSeed)rouletteSeed=a.rouletteSeed;
     setTimeout(()=>roulettePreview(),50);
   }
@@ -1818,6 +1826,55 @@ function roulettePreview(){
   checkReady();
 }
 
+// ── ESCALADE IA — génération questions difficiles ─────────────────────────
+function escaladeAutoInverse(qFacile, aFacile){
+  const a=aFacile.trim();
+  const q=qFacile.trim().replace(/\?\s*$/,'').trim();
+
+  // Remove common French question starters
+  const body=q
+    .replace(/^(quel(le)?s?\s+(est|sont|a|ont|fut|furent|sera|seront)\s+(le|la|les|l')?\s*)/i,'')
+    .replace(/^(quel(le)?s?\s+)/i,'')
+    .replace(/^(qui\s+(est|a|fut|sont|était)\s*)/i,'')
+    .replace(/^(dans quel(le)?\s+)/i,'')
+    .replace(/^(en quelle\s+\w+\s+)/i,'')
+    .replace(/^(combien\s+de\s+)/i,'')
+    .replace(/^(combien\s+)/i,'')
+    .replace(/^(lequel|laquelle)\s+/i,'')
+    .trim();
+  const B=body.charAt(0).toUpperCase()+body.slice(1);
+
+  // Answer is a year
+  if(/^\d{4}$/.test(a)&&+a>=1900&&+a<=2030)
+    return {qDifficile:`${B} — en quelle année ?`,aDifficile:a};
+
+  // Answer is a number
+  if(/^\d+(\s*(fois|points?|buts?|médailles?|km|m|s|min))?$/i.test(a))
+    return {qDifficile:`Quel est le chiffre associé à : ${B} ?`,aDifficile:a};
+
+  // Question contains a year → invert to ask for it
+  const yearMatch=q.match(/\b(19|20)\d{2}\b/);
+  if(yearMatch)
+    return {qDifficile:`${a} — ${B.replace(yearMatch[0],'____')} ?`,aDifficile:yearMatch[0]};
+
+  // Default: answer as subject, body as context, ask for precision
+  return {qDifficile:`${a} — ${B} ?`,aDifficile:a};
+}
+
+function escaladeGenerateDifficile(){
+  const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile);
+  if(filled.length===0){alert('Remplis d\'abord les questions faciles.');return;}
+  const status=document.getElementById('escalade-ai-status');
+  escaladeQuestions.forEach(q=>{
+    if(!q.qFacile||!q.aFacile)return;
+    const inv=escaladeAutoInverse(q.qFacile,q.aFacile);
+    q.qDifficile=inv.qDifficile;
+    q.aDifficile=inv.aDifficile;
+  });
+  renderEscaladeQuestions();
+  if(status){status.textContent='✅ '+filled.length+' questions inversées générées — vérifie et ajuste !';status.style.color='var(--neon)';}
+}
+
 // ── ESCALADE ADMIN ────────────────────────────────────────────────────────
 let escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',asDifficileList:'',nbRequired:1}));
 
@@ -2121,7 +2178,16 @@ function checkReady(){
     const ans=(document.getElementById('roulette-answer')?.value||'').trim();
     const chambers=parseInt(document.getElementById('roulette-chambers')?.value||6);
     const bullet=parseInt(document.getElementById('roulette-bullet')?.value||4);
-    hasContent=txt.split(/\s+/).filter(Boolean).length>=10&&ans.length>0&&bullet<=chambers;
+    const wordCount=txt.split(/\s+/).filter(Boolean).length;
+    hasContent=wordCount>=5&&ans.length>0&&bullet<=chambers;
+    // Show hint
+    const stats=document.getElementById('roulette-preview-stats');
+    if(stats){
+      if(ans.length===0) stats.textContent='⚠️ Sportif manquant';
+      else if(wordCount<5) stats.textContent='⚠️ Texte trop court ('+wordCount+' mots)';
+      else if(bullet>chambers) stats.textContent='⚠️ Position balle ('+bullet+') > taille chargeur ('+chambers+')';
+      else stats.textContent=wordCount+' mots · seed '+rouletteSeed;
+    }
   }
   else if(currentType==='var'){
     const txt=(document.getElementById('var-text-in')?.value||'').trim();
@@ -3358,6 +3424,7 @@ document.getElementById('btn-save').onclick=async()=>{
   rouletteChambers:currentType==='roulette'?parseInt(document.getElementById('roulette-chambers')?.value||6):undefined,
   rouletteBullet:currentType==='roulette'?parseInt(document.getElementById('roulette-bullet')?.value||4):undefined,
   rouletteTol:currentType==='roulette'?parseInt(document.getElementById('roulette-tol')?.value||1):undefined,
+  rouletteRevealStep:currentType==='roulette'?parseInt(document.getElementById('roulette-reveal-step')?.value||5):undefined,
   rouletteSeed:currentType==='roulette'?rouletteSeed:undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);

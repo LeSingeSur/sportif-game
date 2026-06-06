@@ -8243,8 +8243,11 @@ function rouletteStart(){
   rouletteRenderChambers(chambers,bullet,0);
   document.getElementById('roulette-chambers-num').textContent=chambers;
   document.getElementById('roulette-shot-num').textContent=0;
+  RR.revealStep=RR.data.rouletteRevealStep||10;
   rouletteRenderText();
   document.getElementById('roulette-in').focus();
+  const rb=document.getElementById('roulette-reveal-btn');
+  if(rb)rb.textContent='🔍 Révéler '+RR.revealStep+'% des mots → tir de pistolet';
 }
 
 function rouletteRenderText(){
@@ -8330,14 +8333,16 @@ function rouletteReveal(){
     rouletteFire(
       ()=>rouletteEndGame(0,'💥 LA BALLE EN RÉVÉLANT ! 0 pts'),
       ()=>{
+        const totalWords=RR.wordsState.filter(w=>w.type==='word').length;
+        const revealCount=Math.max(1,Math.round(totalWords*(RR.revealStep||10)/100));
         let revealed=0;
-        for(let i=0;i<RR.wordsState.length&&revealed<RR.revealStep;i++){
+        for(let i=0;i<RR.wordsState.length&&revealed<revealCount;i++){
           if(RR.wordsState[i].type==='word'&&!RR.wordsState[i].visible){
             RR.wordsState[i].visible=true;revealed++;
           }
         }
         rouletteRenderText();
-        if(fb){fb.textContent='🔘 Chambre vide — '+revealed+' mot(s) révélé(s)';fb.style.color='var(--mute)';}
+        if(fb){fb.textContent='🔘 Chambre vide — '+revealed+' mot'+(revealed>1?'s':'')+' révélé'+(revealed>1?'s':'');fb.style.color='var(--mute)';}
         setTimeout(()=>{if(fb)fb.textContent='';},1500);
       }
     );
