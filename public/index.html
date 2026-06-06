@@ -8335,12 +8335,13 @@ function rouletteReveal(){
       ()=>{
         const totalWords=RR.wordsState.filter(w=>w.type==='word').length;
         const revealCount=Math.max(1,Math.round(totalWords*(RR.revealStep||10)/100));
-        let revealed=0;
-        for(let i=0;i<RR.wordsState.length&&revealed<revealCount;i++){
-          if(RR.wordsState[i].type==='word'&&!RR.wordsState[i].visible){
-            RR.wordsState[i].visible=true;revealed++;
-          }
-        }
+        // Pick random hidden words to reveal
+        const hiddenIdx=RR.wordsState.reduce((acc,w,i)=>{if(w.type==='word'&&!w.visible)acc.push(i);return acc;},[]);
+        // Fisher-Yates shuffle on hidden indices
+        for(let i=hiddenIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[hiddenIdx[i],hiddenIdx[j]]=[hiddenIdx[j],hiddenIdx[i]];}
+        const toReveal=hiddenIdx.slice(0,revealCount);
+        toReveal.forEach(i=>RR.wordsState[i].visible=true);
+        const revealed=toReveal.length;
         rouletteRenderText();
         if(fb){fb.textContent='🔘 Chambre vide — '+revealed+' mot'+(revealed>1?'s':'')+' révélé'+(revealed>1?'s':'');fb.style.color='var(--mute)';}
         setTimeout(()=>{if(fb)fb.textContent='';},1500);
