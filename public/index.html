@@ -3583,6 +3583,31 @@ function plongeeAskDown(targetPalier){
   PL.waitingAnswer={type:'down', targetPalier, answer:p.aDown};
 }
 
+function plongeeOfferAscentTreasure(palier){
+  // If treasure at this palier not yet taken → offer it before asking up question
+  const hasTreasure=!PL.treasures.find(t=>t.palier===palier);
+  if(!hasTreasure){plongeeAskUp(palier);return;}
+  // Freeze timer
+  plongeeStopTimer(false);
+  const p=PL.data.plongeePaliers[palier-1];
+  const qEl=document.getElementById('plongee-q');
+  if(qEl)qEl.textContent=`⏸ Remontée P${palier} — Trésor disponible !`;
+  const btn=document.getElementById('plongee-btn-treasure');
+  if(btn){
+    btn.style.display='block';
+    btn.textContent=`💰 Ramasser le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||2} O2/s`;
+    btn.onclick=()=>{
+      plongeeTakeOrSkipTreasure();
+      btn.style.display='none';
+      document.getElementById('plongee-fb').innerHTML='';
+      plongeeRestartTimer();
+      plongeeAskUp(palier);
+    };
+  }
+  const fb=document.getElementById('plongee-fb');
+  if(fb)fb.innerHTML=`<button onclick="document.getElementById('plongee-btn-treasure').style.display='none';document.getElementById('plongee-fb').innerHTML='';plongeeRestartTimer();plongeeAskUp(${palier});" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Laisser le trésor →</button>`;
+}
+
 function plongeeAskUp(fromPalier){
   const p=PL.data.plongeePaliers[fromPalier-1];
   if(!p){plongeeSurface();return;}
@@ -3633,7 +3658,7 @@ function plongeeSkipWithTreasure(treasureIdx, palier){
   setTimeout(()=>{
     if(fb)fb.textContent='';
     if(PL.currentPalier<=0){plongeeSurface();}
-    else{plongeeAskUp(PL.currentPalier);}
+    else{plongeeOfferAscentTreasure(PL.currentPalier);}
   },400);
 }
 
@@ -3666,7 +3691,7 @@ function plongeeSubmit(){
       setTimeout(()=>{
         if(fb)fb.textContent='';
         if(PL.currentPalier<=0){plongeeSurface();}
-        else{plongeeAskUp(PL.currentPalier);}
+        else{plongeeOfferAscentTreasure(PL.currentPalier);}
       },800);
     }
   } else {
