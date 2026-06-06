@@ -3496,35 +3496,38 @@ function plongeeShowDescendChoice(){
   document.getElementById('plongee-skip-area').style.display='none';
   document.getElementById('plongee-q').textContent='';
   document.getElementById('plongee-in').value='';
-  document.getElementById('plongee-fb').textContent='';
+  document.getElementById('plongee-fb').innerHTML='';
   document.getElementById('plongee-input-wrap').style.display='none';
-
-  if(PL.currentPalier===0){
-    plongeeAskDown(1);
-    return;
-  }
-
-  // ⏸ FREEZE O2 TIMER during choice (keep sticky visible)
+  if(PL.currentPalier===0){plongeeAskDown(1);return;}
+  // ⏸ FREEZE O2 during choice
   plongeeStopTimer(false);
-
-  const maxPalier=PL.data.plongeePaliers?.length||5;
   const hasTreasure=!PL.treasures.find(t=>t.palier===PL.currentPalier);
-  const canDescend=PL.currentPalier<maxPalier;
-
   const qEl=document.getElementById('plongee-q');
-  if(qEl)qEl.textContent=`⏸ Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]} · Chrono suspendu`;
-
   if(hasTreasure){
-    const btn=document.getElementById('plongee-btn-treasure');
+    // STEP 1: show ONLY treasure choice
     const p=PL.data.plongeePaliers[PL.currentPalier-1];
-    if(btn){btn.style.display='block';btn.textContent=`💰 Prendre le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||2} O2/s`;}
+    if(qEl)qEl.textContent=`⏸ Palier ${PL.currentPalier} · Trésor disponible !`;
+    const btn=document.getElementById('plongee-btn-treasure');
+    if(btn){
+      btn.style.display='block';
+      btn.textContent=`💰 Prendre le trésor (${p.tresor} pts) +${PL.data.plongeeO2Treasure||2} O2/s`;
+      btn.onclick=()=>{plongeeTakeOrSkipTreasure();plongeeShowDirectionChoice();};
+    }
+    const fb=document.getElementById('plongee-fb');
+    if(fb)fb.innerHTML=`<button onclick="document.getElementById('plongee-fb').innerHTML='';plongeeShowDirectionChoice();" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Ignorer le trésor →</button>`;
+  } else {
+    plongeeShowDirectionChoice();
   }
-  if(canDescend){
-    const btn=document.getElementById('plongee-btn-descend');
-    if(btn)btn.style.display='block';
-  }
-  const btnA=document.getElementById('plongee-btn-ascend');
-  if(btnA)btnA.style.display='block';
+}
+
+function plongeeShowDirectionChoice(){
+  const maxPalier=PL.data.plongeePaliers?.length||5;
+  const canDescend=PL.currentPalier<maxPalier;
+  const qEl=document.getElementById('plongee-q');
+  const tBtn=document.getElementById('plongee-btn-treasure');if(tBtn)tBtn.style.display='none';
+  if(qEl)qEl.textContent=`⏸ Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]} · Continuer ?`;
+  if(canDescend){const btn=document.getElementById('plongee-btn-descend');if(btn)btn.style.display='block';}
+  const btnA=document.getElementById('plongee-btn-ascend');if(btnA)btnA.style.display='block';
 }
 
 function plongeeTakeOrSkipTreasure(){
