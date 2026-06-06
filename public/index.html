@@ -3399,7 +3399,7 @@ const PL={
 
 function setupPlongee(data){
   PL.data=data; PL.palier=0; PL.phase='descente'; PL.o2=1000;
-  PL.o2Rate=data.plongeeO2Base||6; PL.o2TreasureRate=data.plongeeO2Treasure||2; PL.treasures=[]; PL.score=0;
+  PL.o2Rate=data.plongeeO2Base||8; PL.o2TreasureRate=data.plongeeO2Treasure||2; PL.treasures=[]; PL.score=0;
   PL.done=false; PL.timerInt=null; PL.waitingAnswer=false; PL.currentPalier=0;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Descends · Ramasse des trésors · Remonte vivant';
   hideAllZones();
@@ -3581,16 +3581,20 @@ function plongeeSkipWithTreasure(treasureIdx, palier){
   PL.treasures.splice(treasureIdx,1);
   plongeeUpdateUI();
   const fb=document.getElementById('plongee-fb');
-  if(fb){fb.textContent=`🪙 Trésor sacrifié — question passée !`;fb.style.color='#ffc800';}
+  if(fb){fb.textContent=`🪙 Trésor sacrifié — palier passé !`;fb.style.color='#ffc800';}
   document.getElementById('plongee-skip-area').style.display='none';
   document.getElementById('plongee-input-wrap').style.display='none';
+  document.getElementById('plongee-q').textContent='';
+  PL.waitingAnswer=false;
   G.score=PL.score;setScore(PL.score,false);
+  // Advance IMMEDIATELY by 1 palier (no question for this transition)
+  PL.currentPalier=palier-1;
+  plongeeUpdateUI();
   setTimeout(()=>{
     if(fb)fb.textContent='';
-    PL.currentPalier=palier-1;
     if(PL.currentPalier<=0){plongeeSurface();}
     else{plongeeAskUp(PL.currentPalier);}
-  },1200);
+  },400);
 }
 
 function plongeeSubmit(){
