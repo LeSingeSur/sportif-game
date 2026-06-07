@@ -1084,7 +1084,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
     <!-- Encart règles -->
     <div id="escalade-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
-      <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:8px;letter-spacing:1px">🧗 L'ESCALADE</div>
+      <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:4px;letter-spacing:1px">🧗 L'ESCALADE</div>
+      <div id="escalade-theme-display" style="display:none;font-family:var(--fh);font-size:16px;color:var(--txt);text-align:center;background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:8px;letter-spacing:1px"></div>
       Choisis ta voie avant de commencer. <strong style="color:var(--txt)">8 questions · 30s chacune · 1 erreur = chute = 0 pts</strong><br>
       🟢 <strong style="color:#64c8ff">Voie Facile</strong> — 15 pts/question · max <strong style="color:#64c8ff">120 pts</strong><br>
       🔴 <strong style="color:#ff6633">Voie Difficile</strong> — 25 pts/question · max <strong style="color:#ff6633">200 pts</strong><br>
@@ -3130,6 +3131,12 @@ function setupEscalade(data){
   ESC.crochet=false; ESC.crochetUsed=false; ESC.crochetScore=0; ESC.crochetQIdx=0;
   ESC.timerInt=null; ESC.switchUsed=false; ESC.answersFound=[];
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Choisis ta voie · Réponds · Pose le crochet au bon moment';
+  // Show theme
+  const themeEl=document.getElementById('escalade-theme-display');
+  if(themeEl&&data.escaladeTheme){
+    themeEl.textContent='📌 Thème : '+data.escaladeTheme;
+    themeEl.style.display='block';
+  } else if(themeEl){themeEl.style.display='none';}
   hideAllZones();
   document.getElementById('escalade-zone').style.display='flex';
   document.getElementById('escalade-rules').style.display='block';
