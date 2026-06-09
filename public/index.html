@@ -8587,13 +8587,10 @@ function bowlingInitScoreboard(){
   document.getElementById('bowling-input-wrap').style.display='flex';
 }
 
-function bowlingBallScore(player, correct){
-  const p=parseFloat(player), c=parseFloat(correct);
-  if(isNaN(p)||isNaN(c)||c===0) return 0;
-  if(p===c) return 10;
-  const raw=10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c));
-  const pts=p<c ? Math.ceil(raw) : Math.floor(raw); // en dessous=ceil, au dessus=floor
-  return Math.min(9, pts);
+function bowlingBallScore(player, correct, multiplier){
+  const p=parseFloat(player), c=parseFloat(correct), m=parseFloat(multiplier)||1;
+  if(isNaN(p)||isNaN(c)) return 0;
+  return Math.max(0, 10 - Math.floor(Math.abs(p-c)/m));
 }
 
 function bowlingSubmit(){
@@ -8604,18 +8601,18 @@ function bowlingSubmit(){
   const fb=document.getElementById('bowling-fb');
   const qs=BOWL.data.bowlingQuestions||[];
   if(BOWL.qIdx>=qs.length){bowlingFinish();return;}
-  const q=qs[BOWL.qIdx]; // DON'T advance qIdx yet
+  const q=qs[BOWL.qIdx];
   const fr=BOWL.frames[BOWL.currentFrame];
   const isTenthFrame=BOWL.currentFrame===9;
+  const mult=q.multiplier||1;
 
-  // Calculate score for this ball
-  const rawPts=bowlingBallScore(val, q.answer);
+  // New formula: max(0, 10 - floor(|answer - correct| / multiplier))
+  const rawPts=bowlingBallScore(val, q.answer, mult);
   let pts;
   if(BOWL.ballInFrame===1&&!BOWL.isBonusBall){
-    // 2nd attempt = same question, pins2 = max(0, raw - firstScore)
-    // → knock 1 pin needs raw≥score1+1, spare needs raw=10 (exact)
-    const firstScore=fr.balls[0];
-    pts=Math.max(0, rawPts - firstScore);
+    // Ball2: min(remaining, raw2)
+    const remaining=10-fr.balls[0];
+    pts=Math.min(remaining, rawPts);
   } else {
     pts=rawPts;
   }
@@ -8631,22 +8628,24 @@ function bowlingSubmit(){
     ballAnim.style.bottom='90%';
     setTimeout(()=>{ballAnim.style.transition='none';ballAnim.style.bottom='-32px';},500);
   }
-  // 🎯 Pin animation — knock correct number of pins
+  // 🎯 Pin animation
   const totalKnocked=Math.min(10, fr.balls.reduce((a,b)=>a+b,0));
   bowlingAnimatePins(totalKnocked, BOWL.ballInFrame>0);
 
-  // Feedback
   const isStrikeBall=pts===10&&BOWL.ballInFrame===0;
-  const isSpareBall=!isStrikeBall&&fr.balls.length>=2&&fr.balls[0]+pts===10;
+  const isSpareBall=!isStrikeBall&&fr.balls.length>=2&&fr.balls[0]+pts>=10;
   const col=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
   const pNum=parseFloat(val), cNum=parseFloat(q.answer);
   const direction=pNum>cNum?'📈 Trop haut':pNum<cNum?'📉 Trop bas':'';
+  const isLastBall=isStrikeBall||BOWL.ballInFrame===1||isTenthFrame; // reveal answer when frame done or strike
   let label;
-  if(pts===10) label='🎳 STRIKE !';
+  if(isStrikeBall) label='🎳 STRIKE !';
   else if(isSpareBall) label='🎯 SPARE !';
   else label=direction;
   if(fb){
-    fb.textContent=`${label} · ${pts}/10 quilles · Réponse : ${q.answer}`;
+    // Only reveal correct answer after frame done (2nd attempt or strike)
+    const revealAnswer=isStrikeBall||(BOWL.ballInFrame===1)||isTenthFrame;
+    fb.textContent=`${label} · ${pts}/10 quilles${revealAnswer?` · Réponse : ${q.answer}`:''}`;
     fb.style.color=col;
   }
 

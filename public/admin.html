@@ -1830,6 +1830,8 @@ function bowlingAdminRender(){
         style="flex:3;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
       <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;checkReady();"
         style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
+      <input value="${q.multiplier||1}" placeholder="×" type="number" title="Écart multiplicateur (ex: 5 pour années, 10000 pour prix)" oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||1;checkReady();"
+        style="flex:1;background:var(--c2);border:1px solid rgba(255,200,0,.2);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center" min="0.1">
       <button onclick="bowlingQuestions.splice(${i},1);bowlingAdminRender();checkReady();" style="padding:4px 8px;border-radius:4px;border:none;background:rgba(255,60,60,.2);color:var(--red);cursor:pointer;font-size:12px">✕</button>`;
     list.appendChild(row);
   });
