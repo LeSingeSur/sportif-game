@@ -8590,8 +8590,10 @@ function bowlingInitScoreboard(){
 function bowlingBallScore(player, correct){
   const p=parseFloat(player), c=parseFloat(correct);
   if(isNaN(p)||isNaN(c)||c===0) return 0;
-  if(p===c) return 10; // exact only = strike
-  return Math.min(9, Math.round(10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c))));
+  if(p===c) return 10;
+  const raw=10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c));
+  const pts=p<c ? Math.ceil(raw) : Math.floor(raw); // en dessous=ceil, au dessus=floor
+  return Math.min(9, pts);
 }
 
 function bowlingSubmit(){
@@ -8610,9 +8612,10 @@ function bowlingSubmit(){
   const rawPts=bowlingBallScore(val, q.answer);
   let pts;
   if(BOWL.ballInFrame===1&&!BOWL.isBonusBall){
-    // 2nd attempt = same question, capped at remaining pins
+    // 2nd attempt = same question, pins2 = max(0, raw - firstScore)
+    // → knock 1 pin needs raw≥score1+1, spare needs raw=10 (exact)
     const firstScore=fr.balls[0];
-    pts=Math.min(10-firstScore, rawPts);
+    pts=Math.max(0, rawPts - firstScore);
   } else {
     pts=rawPts;
   }
