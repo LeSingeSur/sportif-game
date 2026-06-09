@@ -8588,8 +8588,10 @@ function bowlingInitScoreboard(){
 }
 
 function bowlingBallScore(player, correct, multiplier){
-  const p=parseFloat(player), c=parseFloat(correct), m=parseFloat(multiplier)||1;
+  const p=parseFloat(player), c=parseFloat(correct);
   if(isNaN(p)||isNaN(c)) return 0;
+  // Auto mult if not set: correct × 0.05 (palier at min/max = 0.95)
+  const m=parseFloat(multiplier)>0 ? parseFloat(multiplier) : Math.max(0.01, Math.abs(c)*0.05);
   return Math.max(0, 10 - Math.floor(Math.abs(p-c)/m));
 }
 
@@ -8610,9 +8612,9 @@ function bowlingSubmit(){
   const rawPts=bowlingBallScore(val, q.answer, mult);
   let pts;
   if(BOWL.ballInFrame===1&&!BOWL.isBonusBall){
-    // Ball2: min(remaining, raw2)
+    // Ball2: max(0, raw - firstScore) — never spare unless raw very high
     const remaining=10-fr.balls[0];
-    pts=Math.min(remaining, rawPts);
+    pts=Math.max(0, rawPts - fr.balls[0]);
   } else {
     pts=rawPts;
   }
@@ -8636,16 +8638,14 @@ function bowlingSubmit(){
   const isSpareBall=!isStrikeBall&&fr.balls.length>=2&&fr.balls[0]+pts>=10;
   const col=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
   const pNum=parseFloat(val), cNum=parseFloat(q.answer);
-  const direction=pNum>cNum?'📈 Trop haut':pNum<cNum?'📉 Trop bas':'';
-  const isLastBall=isStrikeBall||BOWL.ballInFrame===1||isTenthFrame; // reveal answer when frame done or strike
+  const direction=pNum>cNum?'📈 TROP HAUT':pNum<cNum?'📉 TROP BAS':'';
+  const revealAnswer=isStrikeBall||(BOWL.ballInFrame===1)||isTenthFrame;
   let label;
   if(isStrikeBall) label='🎳 STRIKE !';
   else if(isSpareBall) label='🎯 SPARE !';
   else label=direction;
   if(fb){
-    // Only reveal correct answer after frame done (2nd attempt or strike)
-    const revealAnswer=isStrikeBall||(BOWL.ballInFrame===1)||isTenthFrame;
-    fb.textContent=`${label} · ${pts}/10 quilles${revealAnswer?` · Réponse : ${q.answer}`:''}`;
+    fb.innerHTML=`<span style="font-size:${(isStrikeBall||isSpareBall)?'22px':'26px'};font-family:var(--fh);font-weight:900;letter-spacing:2px">${label}</span><span style="font-size:14px;color:var(--mute)"> · ${pts}/10 quilles${revealAnswer?` · Réponse : ${q.answer}`:''}</span>`;
     fb.style.color=col;
   }
 
@@ -8788,11 +8788,11 @@ function bowlingShowNextQuestion(){
   const q=qs[BOWL.qIdx];
   const qEl=document.getElementById('bowling-q');
   if(qEl)qEl.textContent=q.question;
-  // Reset all pins standing for new frame/question
+  // Reset ALL pins for new frame
   if(BOWL.ballInFrame===0){
     for(let i=0;i<10;i++){
       const p=document.getElementById('bp-'+i);
-      if(p){p.className='bpin';p.style.transform='';p.style.opacity='1';}
+      if(p){p.className='bpin';p.style.transform='';p.style.opacity='1';p.classList.remove('down','falling');}
     }
   }
   document.getElementById('bowling-in').focus();
