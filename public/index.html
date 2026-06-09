@@ -8590,8 +8590,8 @@ function bowlingInitScoreboard(){
 function bowlingBallScore(player, correct){
   const p=parseFloat(player), c=parseFloat(correct);
   if(isNaN(p)||isNaN(c)||c===0) return 0;
-  if(p===c) return 10;
-  return Math.round(10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c)));
+  if(p===c) return 10; // exact only = strike
+  return Math.min(9, Math.round(10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c))));
 }
 
 function bowlingSubmit(){
@@ -8786,6 +8786,13 @@ function bowlingShowNextQuestion(){
   const q=qs[BOWL.qIdx];
   const qEl=document.getElementById('bowling-q');
   if(qEl)qEl.textContent=q.question;
+  // Reset all pins standing for new frame/question
+  if(BOWL.ballInFrame===0){
+    for(let i=0;i<10;i++){
+      const p=document.getElementById('bp-'+i);
+      if(p){p.className='bpin';p.style.transform='';p.style.opacity='1';}
+    }
+  }
   document.getElementById('bowling-in').focus();
 }
 
