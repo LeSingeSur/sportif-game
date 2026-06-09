@@ -269,7 +269,7 @@ app.get('/api/preview', (req, res) => {
     base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'bowling') {
-    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0}));
+    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
@@ -651,7 +651,7 @@ app.get('/api/athlete', (req, res) => {
     base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'bowling') {
-    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0}));
+    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
