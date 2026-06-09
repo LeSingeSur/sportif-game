@@ -1832,7 +1832,7 @@ function bowlingAdminRender(){
         style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
       <div style="flex:1;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:9px;color:#ffc800;text-align:center">mult ×</div>
-        <input value="${q.multiplier||(Math.max(0.01,(Math.abs(q.answer||1)*0.05))).toFixed(2)}" 
+        <input value="${q.multiplier||Math.max(1,Math.ceil(Math.abs(q.answer||1)*0.05))}" 
           title="Auto = réponse × 0.05. Modifie pour override (ex: 5 pour années, 10000 pour prix)"
           oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
           style="width:100%;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">

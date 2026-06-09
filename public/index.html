@@ -8591,7 +8591,7 @@ function bowlingBallScore(player, correct, multiplier){
   const p=parseFloat(player), c=parseFloat(correct);
   if(isNaN(p)||isNaN(c)) return 0;
   // Auto mult if not set: correct × 0.05 (palier at min/max = 0.95)
-  const m=parseFloat(multiplier)>0 ? parseFloat(multiplier) : Math.max(0.01, Math.abs(c)*0.05);
+  const m=parseFloat(multiplier)>0 ? parseFloat(multiplier) : Math.max(1, Math.ceil(Math.abs(c)*0.05));
   return Math.max(0, 10 - Math.floor(Math.abs(p-c)/m));
 }
 
