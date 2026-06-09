@@ -257,6 +257,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
+          <div class="type-opt" id="type-bowling" onclick="selectType('bowling')">
+            <div class="type-ico">🎳</div>
+            <div class="type-name">Bowling Quiz</div>
+            <div class="type-desc">Réponses numériques · Strikes & Spares · Max 300</div>
+          </div>
           <div class="type-opt" id="type-roulette" onclick="selectType('roulette')">
             <div class="type-ico">🔫</div>
             <div class="type-name">Roulette Russe</div>
@@ -398,6 +403,17 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
 
       
+      <!-- BOWLING FIELDS -->
+      <div id="bowling-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎳 Questions numériques · 2 essais/frame · Strikes & Spares · Max 300 pts<br>
+          <strong style="color:var(--neon)">12 questions</strong> numériques · 10 frames + 2 bonus pour le 10e frame · 2e essai sur la même question
+        </div>
+        <div id="bowling-q-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" id="btn-add-bowling" onclick="bowlingAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+        <div id="bowling-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
+      </div>
+
       <!-- ROULETTE FIELDS -->
       <div id="roulette-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
@@ -1146,7 +1162,7 @@ const ADMIN_GAME_ICONS={
   blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
   trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
   grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
-  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',var:'📺'
+  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',var:'📺'
 };
 function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
 
@@ -1233,7 +1249,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','bowling','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1242,6 +1258,8 @@ function selectType(type){
   document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
   const assautF=document.getElementById('assaut-fields');if(assautF)assautF.style.display='none';
+  document.getElementById('bowling-fields').style.display      = type==='bowling'?'block':'none';
+  if(type==='bowling')setTimeout(()=>bowlingAdminRender(),50);
   document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
   if(type==='roulette')setTimeout(()=>roulettePreview(),50);
   document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
@@ -1451,6 +1469,10 @@ async function startEdit(id){
     if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
+  if(a.type==='bowling'){
+    bowlingQuestions=[...(a.bowlingQuestions||[])];
+    setTimeout(()=>bowlingAdminRender(),50);
   }
   if(a.type==='roulette'){
     const rt=document.getElementById('roulette-text');if(rt)rt.value=a.rouletteText||'';
@@ -1794,6 +1816,28 @@ function rouletteRng(seed){
   };
 }
 
+// ── BOWLING ADMIN ─────────────────────────────────────────────────────────
+let bowlingQuestions=[];
+function bowlingAdminRender(){
+  const list=document.getElementById('bowling-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  bowlingQuestions.forEach((q,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:6px;align-items:center;background:var(--c1);border-radius:6px;padding:6px 8px';
+    row.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--mute);min-width:24px">${i+1}</span>
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question numérique…" oninput="bowlingQuestions[${i}].question=this.value;checkReady();"
+        style="flex:3;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+      <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
+      <button onclick="bowlingQuestions.splice(${i},1);bowlingAdminRender();checkReady();" style="padding:4px 8px;border-radius:4px;border:none;background:rgba(255,60,60,.2);color:var(--red);cursor:pointer;font-size:12px">✕</button>`;
+    list.appendChild(row);
+  });
+  const st=document.getElementById('bowling-admin-status');
+  if(st){const n=bowlingQuestions.length;st.textContent=n+'/12 questions'+(n>=12?' ✅ Prêt !':' — encore '+(12-n)+' à ajouter');st.style.color=n>=12?'var(--neon)':n>=8?'#ffaa00':'var(--mute)';}
+}
+function bowlingAdminAddQ(){bowlingQuestions.push({question:'',answer:0});bowlingAdminRender();checkReady();}
+
 function roulettePreview(){
   const txt=(document.getElementById('roulette-text')?.value||'').trim();
   const pct=parseInt(document.getElementById('roulette-pct')?.value||40);
@@ -2047,6 +2091,7 @@ function cancelEdit(){
   plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
   renderPlongeePaliers();
   escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',nbRequired:1}));
+  bowlingQuestions=[];
   renderEscaladeQuestions();
   const et=document.getElementById('escalade-theme');if(et)et.value='';
   const etol2=document.getElementById('escalade-tol');if(etol2)etol2.value=1;
@@ -2138,7 +2183,7 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
@@ -2172,6 +2217,9 @@ function checkReady(){
     const remaining=10-rvlfQuestions.length;
     if(btn&&remaining>0)btn.textContent='➕ Question ('+rvlfQuestions.length+'/10 — encore '+remaining+')';
     else if(btn)btn.textContent='✅ 10 questions saisies';
+  }
+  else if(currentType==='bowling'){
+    hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
   }
   else if(currentType==='roulette'){
     const txt=(document.getElementById('roulette-text')?.value||'').trim();
@@ -3425,7 +3473,8 @@ document.getElementById('btn-save').onclick=async()=>{
   rouletteBullet:currentType==='roulette'?parseInt(document.getElementById('roulette-bullet')?.value||4):undefined,
   rouletteTol:currentType==='roulette'?parseInt(document.getElementById('roulette-tol')?.value||1):undefined,
   rouletteRevealStep:currentType==='roulette'?parseInt(document.getElementById('roulette-reveal-step')?.value||5):undefined,
-  rouletteSeed:currentType==='roulette'?rouletteSeed:undefined};
+  rouletteSeed:currentType==='roulette'?rouletteSeed:undefined,
+  bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{

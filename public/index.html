@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="theme-color" content="#6366f1">
-    <title>Le Grand-Chelem ⚡ 20 jeux · 200 pts</title>
+    <title>Le Grand-Chelem ⚡ 21 jeux · 300 pts</title>
     <style>
         :root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--primary:#6366f1;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:16px;--shadow:0 8px 32px rgba(0,0,0,0.4)}
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -473,6 +473,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default;box-shadow:0 0 20px rgba(255,0,0,.3)}
 .dem-case.locked{opacity:.35;cursor:default;pointer-events:none}
 @keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.2);filter:brightness(2)}60%{transform:scale(.95)}100%{transform:scale(1);filter:none}}
+.bpin{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.4);transition:all .3s;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.bpin.down{background:rgba(180,80,0,.3);border-color:rgba(180,80,0,.2);box-shadow:none}
+@keyframes pin-fall{0%{transform:scale(1)}30%{transform:scale(1.3) rotate(20deg)}100%{transform:scale(0.2) rotate(90deg);opacity:0}}
+.bpin.falling{animation:pin-fall .4s ease-out forwards}
+@keyframes ball-roll{0%{bottom:-32px}100%{bottom:90%}}
 @keyframes dem-boom{0%{transform:scale(.3);opacity:0}40%{transform:scale(1.3);opacity:1}100%{transform:scale(1.8);opacity:0}}
 @keyframes dem-flash-screen{0%{opacity:1}100%{opacity:0}}
 @keyframes dem-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
@@ -542,7 +547,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 20 jeux · jusqu'à 200 pts ⚡</div>
+  <div class="logo-tag">⚡ 21 jeux · jusqu'à 300 pts ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -566,6 +571,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
       <div class="gt-item"><div class="gt-ico">🤿</div><div class="gt-name">La Plongée</div></div>
       <div class="gt-item"><div class="gt-ico">🧗</div><div class="gt-name">L'Escalade</div></div>
+      <div class="gt-item"><div class="gt-ico">🎳</div><div class="gt-name">Bowling Quiz</div></div>
       <div class="gt-item"><div class="gt-ico">🔫</div><div class="gt-name">Roulette Russe</div></div>
     </div>
     <div class="welcome-divider"></div>
@@ -1414,6 +1420,87 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
   </div>
 
+  <!-- BOWLING ZONE -->
+  <!-- BOWLING ZONE -->
+  <div id="bowling-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#1a0a00 0%,#0d0500 100%);border-radius:16px;padding:14px;border:1px solid rgba(180,120,60,.2)">
+
+    <!-- LANE VISUAL -->
+    <div style="position:relative;width:100%;height:130px;overflow:hidden;border-radius:12px;border:1px solid rgba(180,120,60,.2)">
+      <!-- Floor perspective -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,#3a2000 0%,#8b5a00 40%,#c4830a 70%,#e6a020 100%);transform:perspective(200px) rotateX(18deg);transform-origin:bottom;border-radius:12px"></div>
+      <!-- Lane lines -->
+      <div style="position:absolute;bottom:0;left:50%;width:2px;height:85%;background:rgba(255,255,255,.08);transform:translateX(-50%)"></div>
+      <div style="position:absolute;bottom:0;left:35%;width:1px;height:70%;background:rgba(255,255,255,.05)"></div>
+      <div style="position:absolute;bottom:0;left:65%;width:1px;height:70%;background:rgba(255,255,255,.05)"></div>
+      <!-- Arrow markers on lane -->
+      <div style="position:absolute;bottom:18%;left:50%;transform:translateX(-50%);display:flex;gap:10px">
+        <div style="width:6px;height:6px;background:rgba(255,80,0,.5);transform:rotate(45deg)"></div>
+        <div style="width:6px;height:6px;background:rgba(255,80,0,.5);transform:rotate(45deg)"></div>
+        <div style="width:6px;height:6px;background:rgba(255,80,0,.5);transform:rotate(45deg)"></div>
+      </div>
+      <!-- Pins -->
+      <div id="bowling-pins" style="position:absolute;top:6%;left:50%;transform:translateX(-50%)">
+        <!-- Row 4 (back) -->
+        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+          <div class="bpin" id="bp-0"></div><div class="bpin" id="bp-1"></div>
+          <div class="bpin" id="bp-2"></div><div class="bpin" id="bp-3"></div>
+        </div>
+        <!-- Row 3 -->
+        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+          <div class="bpin" id="bp-4"></div><div class="bpin" id="bp-5"></div><div class="bpin" id="bp-6"></div>
+        </div>
+        <!-- Row 2 -->
+        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+          <div class="bpin" id="bp-7"></div><div class="bpin" id="bp-8"></div>
+        </div>
+        <!-- Row 1 (front) -->
+        <div style="display:flex;gap:5px;justify-content:center">
+          <div class="bpin" id="bp-9"></div>
+        </div>
+      </div>
+      <!-- Ball animation -->
+      <div id="bowling-ball-anim" style="position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-size:30px;transition:bottom .5s ease-in;pointer-events:none">🎳</div>
+    </div>
+
+    <!-- Score + frame header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border:1px solid rgba(180,120,60,.2);border-radius:10px;padding:8px 14px" id="bowling-info">
+      <div><span style="font-size:9px;color:rgba(230,160,32,.5);letter-spacing:2px">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:#e6a020" id="bowling-score-display">0</div></div>
+      <div style="text-align:center"><span style="font-size:9px;color:rgba(230,160,32,.5);letter-spacing:2px">FRAME</span><div style="font-family:var(--fh);font-size:22px;color:var(--txt)" id="bowling-frame-display">1/10</div></div>
+      <div style="text-align:right"><span style="font-size:9px;color:rgba(230,160,32,.5);letter-spacing:2px">LANCER</span><div style="font-family:var(--fh);font-size:22px;color:var(--txt)" id="bowling-ball-display">1</div></div>
+    </div>
+
+    <!-- Scoreboard -->
+    <div id="bowling-scoreboard" style="overflow-x:auto;border-radius:10px;border:1px solid rgba(180,120,60,.2);background:rgba(0,0,0,.4)">
+      <table id="bowling-table" style="width:100%;border-collapse:collapse;font-size:10px;font-family:var(--fh);min-width:280px">
+        <thead><tr id="bowling-frames-row"></tr></thead>
+        <tbody><tr id="bowling-balls-row"></tr><tr id="bowling-scores-row"></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Rules -->
+    <div id="bowling-rules" style="background:rgba(0,0,0,.5);border:1px solid rgba(180,120,60,.3);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:14px;color:#e6a020;margin-bottom:8px;letter-spacing:2px">🎳 BOWLING QUIZ · MAX 300</div>
+      Réponds à chaque question numérique pour abattre des quilles.<br>
+      🎳 <strong style="color:#ffd700">Strike</strong> — 10/10 au 1er essai → bonus des 2 prochains lancers<br>
+      🎯 <strong style="color:#c0c0c0">Spare</strong> — 10/10 en 2 essais → bonus du prochain lancer<br>
+      <strong style="color:var(--txt)">Précision = 10 × ta réponse / bonne réponse</strong>
+      <button onclick="document.getElementById('bowling-rules').style.display='none';bowlingInitScoreboard();bowlingShowNextQuestion();" style="margin-top:10px;width:100%!important;background:linear-gradient(90deg,#8b4500,#c46000);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:2px">🎳 EN PISTE !</button>
+    </div>
+
+    <!-- Question -->
+    <div id="bowling-q" style="background:rgba(0,0,0,.5);border:1px solid rgba(180,120,60,.2);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;line-height:1.5;display:none"></div>
+
+    <!-- Input -->
+    <div style="display:flex;gap:8px" id="bowling-input-wrap">
+      <input type="number" id="bowling-in" placeholder="Réponse numérique…"
+        style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(180,120,60,.4);color:var(--txt);font-size:18px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none;-webkit-appearance:none"
+        onkeydown="if(event.key==='Enter')bowlingSubmit()">
+      <button onclick="bowlingSubmit()" style="width:52px;height:52px;flex-shrink:0;background:linear-gradient(135deg,#8b4500,#c46000);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">🎳</button>
+    </div>
+
+    <div id="bowling-fb" class="fb" style="text-align:center"></div>
+  </div>
+
   <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="background:var(--c1);border-radius:14px;padding:14px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:6px">
@@ -2231,6 +2318,8 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='bowling'){
+      setupBowling(data);
     } else if(data.type==='roulette'){
       setupRoulette(data);
     } else if(data.type==='escalade'){
@@ -2264,7 +2353,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -2289,7 +2378,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','plongee':'🤿',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','plongee':'🤿',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -8441,6 +8530,249 @@ function rouletteEndGame(score,msg){
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('roulette');submitScore(score);
+  setTimeout(()=>show('sv'),2000);
+}
+
+// ── BOWLING QUIZ ──────────────────────────────────────────────────────────
+const BOWL={
+  data:null, balls:[], frames:[], currentFrame:0, ballInFrame:0, done:false, qIdx:0
+};
+
+function setupBowling(data){
+  BOWL.data=data; BOWL.balls=[]; BOWL.frames=[]; BOWL.currentFrame=0;
+  BOWL.ballInFrame=0; BOWL.done=false; BOWL.qIdx=0; BOWL.isBonusBall=false;
+  // Init 10 empty frames
+  for(let i=0;i<10;i++) BOWL.frames.push({balls:[],score:null});
+  hideAllZones();
+  document.getElementById('bowling-zone').style.display='flex';
+  document.getElementById('bowling-rules').style.display='block';
+  document.getElementById('bowling-scoreboard').style.display='none';
+  document.getElementById('bowling-info').style.display='none';
+  document.getElementById('bowling-q').style.display='none';
+  document.getElementById('bowling-input-wrap').style.display='none';
+  document.getElementById('std-ans-area').style.display='none';
+  bowlingInitScoreboard();
+}
+
+function bowlingInitScoreboard(){
+  const fr=document.getElementById('bowling-frames-row');
+  const br=document.getElementById('bowling-balls-row');
+  const sr=document.getElementById('bowling-scores-row');
+  if(!fr)return;
+  fr.innerHTML=''; br.innerHTML=''; sr.innerHTML='';
+  for(let i=0;i<10;i++){
+    const th=document.createElement('th');
+    th.style.cssText='padding:3px;text-align:center;color:rgba(200,150,255,.5);font-size:9px;border:1px solid rgba(200,150,255,.1);min-width:28px';
+    th.textContent=i+1;
+    if(i===9) th.colSpan=3; else th.colSpan=2;
+    fr.appendChild(th);
+    // balls cells
+    const cols=i===9?3:2;
+    for(let b=0;b<cols;b++){
+      const td=document.createElement('td');
+      td.id=`bowl-b-${i}-${b}`;
+      td.style.cssText='text-align:center;border:1px solid rgba(200,150,255,.1);padding:3px 2px;font-size:11px;min-width:18px;height:20px;';
+      br.appendChild(td);
+    }
+    // score cell
+    const sc=document.createElement('td');
+    sc.id=`bowl-s-${i}`;
+    sc.style.cssText='text-align:center;border:1px solid rgba(200,150,255,.1);padding:3px;font-size:11px;height:20px;color:#c896ff;font-family:var(--fh)';
+    sc.colSpan=i===9?3:2;
+    sr.appendChild(sc);
+  }
+  document.getElementById('bowling-scoreboard').style.display='block';
+  document.getElementById('bowling-info').style.display='flex';
+  document.getElementById('bowling-q').style.display='block';
+  document.getElementById('bowling-input-wrap').style.display='flex';
+}
+
+function bowlingBallScore(player, correct){
+  const p=parseFloat(player), c=parseFloat(correct);
+  if(isNaN(p)||isNaN(c)||c===0) return 0;
+  if(p===c) return 10;
+  return Math.round(10*Math.min(Math.abs(p),Math.abs(c))/Math.max(Math.abs(p),Math.abs(c)));
+}
+
+function bowlingSubmit(){
+  if(BOWL.done) return;
+  const inp=document.getElementById('bowling-in');
+  const val=(inp?.value||'').trim();
+  if(val==='') return;
+  const fb=document.getElementById('bowling-fb');
+  const qs=BOWL.data.bowlingQuestions||[];
+  if(BOWL.qIdx>=qs.length){bowlingFinish();return;}
+  const q=qs[BOWL.qIdx]; // DON'T advance qIdx yet
+  const fr=BOWL.frames[BOWL.currentFrame];
+  const isTenthFrame=BOWL.currentFrame===9;
+
+  // Calculate score for this ball
+  const rawPts=bowlingBallScore(val, q.answer);
+  let pts;
+  if(BOWL.ballInFrame===1&&!BOWL.isBonusBall){
+    // 2nd attempt = same question, capped at remaining pins
+    const firstScore=fr.balls[0];
+    pts=Math.min(10-firstScore, rawPts);
+  } else {
+    pts=rawPts;
+  }
+
+  BOWL.balls.push(pts);
+  fr.balls.push(pts);
+  inp.value='';
+
+  // 🎳 Ball roll animation
+  const ballAnim=document.getElementById('bowling-ball-anim');
+  if(ballAnim){
+    ballAnim.style.transition='bottom .4s ease-in';
+    ballAnim.style.bottom='90%';
+    setTimeout(()=>{ballAnim.style.transition='none';ballAnim.style.bottom='-32px';},500);
+  }
+  // 🎯 Pin animation (show remaining pins after this ball)
+  const totalPinsThisFrame=fr.balls.reduce((a,b)=>a+b,0);
+  bowlingAnimatePins(Math.min(10,totalPinsThisFrame));
+
+  // Feedback
+  const isStrikeBall=pts===10&&BOWL.ballInFrame===0;
+  const isSpareBall=!isStrikeBall&&fr.balls.length>=2&&fr.balls[0]+pts===10;
+  const col=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
+  const label=isStrikeBall?'🎳 STRIKE !':isSpareBall?'🎯 SPARE !':pts>=7?'✅':'❌';
+  if(fb){fb.textContent=`${label} ${pts}/10 · Réponse exacte : ${q.answer}`;fb.style.color=col;}
+
+  bowlingUpdateBallCell(BOWL.currentFrame, BOWL.ballInFrame, pts);
+  bowlingRecalcScores();
+
+  // Advance state
+  BOWL.isBonusBall=false;
+  if(!isTenthFrame){
+    if(isStrikeBall||BOWL.ballInFrame===1){
+      // New frame → advance question
+      BOWL.qIdx++;
+      BOWL.currentFrame++;BOWL.ballInFrame=0;
+    } else {
+      // 2nd attempt on same question
+      BOWL.ballInFrame++;
+    }
+  } else {
+    // 10th frame special
+    BOWL.ballInFrame++;
+    const b=fr.balls;
+    const done10=(b.length===2&&b[0]+b[1]<10)||(b.length===3);
+    if(done10){BOWL.qIdx++;bowlingFinish();return;}
+    // Bonus ball after strike or spare in 10th = NEW question
+    if(b.length===2&&(b[0]===10||b[0]+b[1]===10)){
+      BOWL.qIdx++;BOWL.isBonusBall=true;
+    }
+    if(b.length===1&&b[0]===10){
+      // After 1st strike in 10th, 2nd ball is new question
+      BOWL.qIdx++;BOWL.isBonusBall=true;
+    }
+  }
+
+  if(BOWL.currentFrame>=10){bowlingFinish();return;}
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    bowlingShowNextQuestion();
+  },1200);
+}
+
+function bowlingAnimatePins(pts){
+  // Reset all pins standing
+  for(let i=0;i<10;i++){
+    const p=document.getElementById('bp-'+i);
+    if(p){p.className='bpin';p.style.opacity='1';}
+  }
+  // Knock down (10-pts) pins randomly with animation
+  const downCount=10-pts;
+  const allIdx=[0,1,2,3,4,5,6,7,8,9];
+  // Shuffle to pick random pins to knock
+  for(let i=allIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[allIdx[i],allIdx[j]]=[allIdx[j],allIdx[i]];}
+  const toDown=allIdx.slice(0,downCount);
+  toDown.forEach((idx,i)=>{
+    setTimeout(()=>{
+      const p=document.getElementById('bp-'+idx);
+      if(p){p.classList.add('falling');setTimeout(()=>{p.classList.remove('falling');p.classList.add('down');},400);}
+    },i*60+300);
+  });
+}
+
+function bowlingUpdateBallCell(frame, ball, pts){
+  const cell=document.getElementById(`bowl-b-${frame}-${ball}`);
+  if(!cell)return;
+  if(pts===10&&ball===0&&frame<9){
+    cell.textContent='';
+    const prev=document.getElementById(`bowl-b-${frame}-0`);
+    const next=document.getElementById(`bowl-b-${frame}-1`);
+    if(prev)prev.style.background='rgba(255,215,0,.15)';
+    if(next){next.textContent='X';next.style.color='#ffd700';next.style.fontWeight='900';}
+    return;
+  }
+  if(pts===10&&ball===0&&frame===9){cell.textContent='X';cell.style.color='#ffd700';cell.style.fontWeight='900';return;}
+  const fr=BOWL.frames[frame];
+  if(ball===1&&fr.balls[0]+pts===10&&frame<9){cell.textContent='/';cell.style.color='#c0c0c0';cell.style.fontWeight='700';return;}
+  if(ball===1&&frame===9&&fr.balls[0]!==10&&fr.balls[0]+pts===10){cell.textContent='/';cell.style.color='#c0c0c0';return;}
+  cell.textContent=pts===0?'-':pts;
+  cell.style.color=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
+}
+
+function bowlingRecalcScores(){
+  let ballIdx=0; let running=0;
+  const allBalls=BOWL.balls;
+  for(let f=0;f<10;f++){
+    const fr=BOWL.frames[f];
+    if(fr.balls.length===0)break;
+    const cell=document.getElementById(`bowl-s-${f}`);
+    if(f===9){
+      if(fr.balls.length<2)break;
+      const sum=fr.balls.reduce((a,b)=>a+b,0);
+      running+=sum;
+      fr.score=running;
+      if(cell)cell.textContent=running;
+    } else if(fr.balls[0]===10){ // strike
+      if(allBalls[ballIdx+1]===undefined||allBalls[ballIdx+2]===undefined)break;
+      running+=10+allBalls[ballIdx+1]+allBalls[ballIdx+2];
+      fr.score=running;
+      if(cell)cell.textContent=running;
+      ballIdx++;
+    } else if(fr.balls.length>=2&&fr.balls[0]+fr.balls[1]===10){ // spare
+      if(allBalls[ballIdx+2]===undefined)break;
+      running+=10+allBalls[ballIdx+2];
+      fr.score=running;
+      if(cell)cell.textContent=running;
+      ballIdx+=2;
+    } else if(fr.balls.length>=2){ // open
+      running+=fr.balls[0]+fr.balls[1];
+      fr.score=running;
+      if(cell)cell.textContent=running;
+      ballIdx+=2;
+    } else break;
+  }
+  const sd=document.getElementById('bowling-score-display');
+  if(sd)sd.textContent=running;
+  document.getElementById('bowling-frame-display').textContent=(Math.min(BOWL.currentFrame+1,10))+'/10';
+  document.getElementById('bowling-ball-display').textContent=BOWL.ballInFrame+1;
+}
+
+function bowlingShowNextQuestion(){
+  const qs=BOWL.data.bowlingQuestions||[];
+  if(BOWL.qIdx>=qs.length){bowlingFinish();return;}
+  const q=qs[BOWL.qIdx];
+  const qEl=document.getElementById('bowling-q');
+  if(qEl)qEl.textContent=q.question;
+  document.getElementById('bowling-in').focus();
+}
+
+function bowlingFinish(){
+  BOWL.done=true;
+  // Calc final score
+  bowlingRecalcScores();
+  const finalScore=Math.min(300,BOWL.frames.filter(f=>f.score!==null).reduce((_,f)=>f.score,0)||0);
+  const fb=document.getElementById('bowling-fb');
+  if(fb){fb.textContent=`🎳 Partie terminée ! Score final : ${finalScore}/300`;fb.style.color='#c896ff';}
+  document.getElementById('bowling-input-wrap').style.display='none';
+  document.getElementById('bowling-q').style.display='none';
+  G.score=finalScore;setScore(finalScore,true);
+  setVictoryIcon('bowling');submitScore(finalScore);
   setTimeout(()=>show('sv'),2000);
 }
 
