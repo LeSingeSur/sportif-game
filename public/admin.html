@@ -1828,12 +1828,12 @@ function bowlingAdminRender(){
     row.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--mute);min-width:24px">${i+1}</span>
       <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question numérique…" oninput="bowlingQuestions[${i}].question=this.value;checkReady();"
         style="flex:3;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
-      <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;checkReady();"
+      <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;bowlingAdminRender();checkReady();"
         style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
       <div style="flex:1;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:9px;color:#ffc800;text-align:center">mult ×</div>
-        <input value="${q.multiplier||''}" placeholder="${Math.max(0.01,(Math.abs(q.answer||1)*0.05)).toFixed(2)}" 
-          title="Vide = auto (réponse × 0.05). Ex: 5 pour années, 10000 pour prix"
+        <input value="${q.multiplier||(Math.max(0.01,(Math.abs(q.answer||1)*0.05))).toFixed(2)}" 
+          title="Auto = réponse × 0.05. Modifie pour override (ex: 5 pour années, 10000 pour prix)"
           oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
           style="width:100%;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
       </div>
