@@ -473,9 +473,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .dem-case.mine{background:rgba(255,63,92,.2);border-color:var(--red);color:var(--red);animation:dem-explode .4s ease;cursor:default;box-shadow:0 0 20px rgba(255,0,0,.3)}
 .dem-case.locked{opacity:.35;cursor:default;pointer-events:none}
 @keyframes dem-explode{0%{transform:scale(1)}30%{transform:scale(1.2);filter:brightness(2)}60%{transform:scale(.95)}100%{transform:scale(1);filter:none}}
-.bpin{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.4);transition:all .3s;box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.bpin.down{background:rgba(180,80,0,.3);border-color:rgba(180,80,0,.2);box-shadow:none}
-@keyframes pin-fall{0%{transform:scale(1)}30%{transform:scale(1.3) rotate(20deg)}100%{transform:scale(0.2) rotate(90deg);opacity:0}}
+.bpin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffffff,#d0d0d0);border:2px solid rgba(255,255,255,.6);transition:all .3s;box-shadow:0 2px 6px rgba(0,0,0,.6),inset 0 1px 2px rgba(255,255,255,.8)}
+.bpin.down{background:rgba(80,40,0,.2);border-color:rgba(80,40,0,.15);box-shadow:none;transform:scale(0.3) rotate(60deg);opacity:0.3}
+@keyframes pin-fall{0%{transform:scale(1) rotate(0deg)}30%{transform:scale(1.2) rotate(25deg)}100%{transform:scale(0.2) rotate(80deg);opacity:0.2}}
 .bpin.falling{animation:pin-fall .4s ease-out forwards}
 @keyframes ball-roll{0%{bottom:-32px}100%{bottom:90%}}
 @keyframes dem-boom{0%{transform:scale(.3);opacity:0}40%{transform:scale(1.3);opacity:1}100%{transform:scale(1.8);opacity:0}}
@@ -1439,22 +1439,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="width:6px;height:6px;background:rgba(255,80,0,.5);transform:rotate(45deg)"></div>
       </div>
       <!-- Pins -->
-      <div id="bowling-pins" style="position:absolute;top:6%;left:50%;transform:translateX(-50%)">
+      <div id="bowling-pins" style="position:absolute;top:5%;left:50%;transform:translateX(-50%)">
         <!-- Row 4 (back) -->
-        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+        <div style="display:flex;gap:7px;justify-content:center;margin-bottom:4px">
           <div class="bpin" id="bp-0"></div><div class="bpin" id="bp-1"></div>
           <div class="bpin" id="bp-2"></div><div class="bpin" id="bp-3"></div>
         </div>
         <!-- Row 3 -->
-        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+        <div style="display:flex;gap:7px;justify-content:center;margin-bottom:4px">
           <div class="bpin" id="bp-4"></div><div class="bpin" id="bp-5"></div><div class="bpin" id="bp-6"></div>
         </div>
         <!-- Row 2 -->
-        <div style="display:flex;gap:5px;justify-content:center;margin-bottom:2px">
+        <div style="display:flex;gap:7px;justify-content:center;margin-bottom:4px">
           <div class="bpin" id="bp-7"></div><div class="bpin" id="bp-8"></div>
         </div>
         <!-- Row 1 (front) -->
-        <div style="display:flex;gap:5px;justify-content:center">
+        <div style="display:flex;gap:7px;justify-content:center">
           <div class="bpin" id="bp-9"></div>
         </div>
       </div>
@@ -1488,7 +1488,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
 
     <!-- Question -->
-    <div id="bowling-q" style="background:rgba(0,0,0,.5);border:1px solid rgba(180,120,60,.2);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--txt);text-align:center;line-height:1.5;display:none"></div>
+    <div id="bowling-q" style="background:rgba(0,0,0,.5);border:1px solid rgba(180,120,60,.2);border-radius:12px;padding:14px;font-size:17px;font-weight:700;color:var(--txt);text-align:center;line-height:1.5;display:none"></div>
 
     <!-- Input -->
     <div style="display:flex;gap:8px" id="bowling-input-wrap">
@@ -1498,7 +1498,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button onclick="bowlingSubmit()" style="width:52px;height:52px;flex-shrink:0;background:linear-gradient(135deg,#8b4500,#c46000);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">🎳</button>
     </div>
 
-    <div id="bowling-fb" class="fb" style="text-align:center"></div>
+    <div id="bowling-fb" class="fb" style="text-align:center;font-size:15px"></div>
   </div>
 
   <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
@@ -8628,16 +8628,24 @@ function bowlingSubmit(){
     ballAnim.style.bottom='90%';
     setTimeout(()=>{ballAnim.style.transition='none';ballAnim.style.bottom='-32px';},500);
   }
-  // 🎯 Pin animation (show remaining pins after this ball)
-  const totalPinsThisFrame=fr.balls.reduce((a,b)=>a+b,0);
-  bowlingAnimatePins(Math.min(10,totalPinsThisFrame));
+  // 🎯 Pin animation — knock correct number of pins
+  const totalKnocked=Math.min(10, fr.balls.reduce((a,b)=>a+b,0));
+  bowlingAnimatePins(totalKnocked, BOWL.ballInFrame>0);
 
   // Feedback
   const isStrikeBall=pts===10&&BOWL.ballInFrame===0;
   const isSpareBall=!isStrikeBall&&fr.balls.length>=2&&fr.balls[0]+pts===10;
   const col=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
-  const label=isStrikeBall?'🎳 STRIKE !':isSpareBall?'🎯 SPARE !':pts>=7?'✅':'❌';
-  if(fb){fb.textContent=`${label} ${pts}/10 · Réponse exacte : ${q.answer}`;fb.style.color=col;}
+  const pNum=parseFloat(val), cNum=parseFloat(q.answer);
+  const direction=pNum>cNum?'📈 Trop haut':pNum<cNum?'📉 Trop bas':'';
+  let label;
+  if(pts===10) label='🎳 STRIKE !';
+  else if(isSpareBall) label='🎯 SPARE !';
+  else label=direction;
+  if(fb){
+    fb.textContent=`${label} · ${pts}/10 quilles · Réponse : ${q.answer}`;
+    fb.style.color=col;
+  }
 
   bowlingUpdateBallCell(BOWL.currentFrame, BOWL.ballInFrame, pts);
   bowlingRecalcScores();
@@ -8676,25 +8684,44 @@ function bowlingSubmit(){
   },1200);
 }
 
-function bowlingAnimatePins(pts){
-  // Reset all pins standing
-  for(let i=0;i<10;i++){
-    const p=document.getElementById('bp-'+i);
-    if(p){p.className='bpin';p.style.opacity='1';}
+function bowlingAnimatePins(knockedTotal, isSecondBall){
+  // knockedTotal = total pins knocked this frame so far
+  // pins knocked = knockedTotal, pins standing = 10 - knockedTotal
+  // On 2nd ball, only animate the newly fallen pins
+  const prevKnocked = isSecondBall ? (knockedTotal - (BOWL.frames[BOWL.currentFrame]?.balls[1]||0)) : 0;
+
+  // Build list of currently standing pin indices (those not yet knocked)
+  // We use a deterministic per-frame seed so same frame always knocks same pins
+  const frameSeed = BOWL.currentFrame * 100 + (BOWL.frames[BOWL.currentFrame]?.balls[0]||0);
+  const order = [0,1,2,3,4,5,6,7,8,9];
+  // Shuffle deterministically
+  let s = frameSeed + 1;
+  for(let i=order.length-1;i>0;i--){
+    s = (s*1103515245+12345)&0x7fffffff;
+    const j=s%(i+1);
+    [order[i],order[j]]=[order[j],order[i]];
   }
-  // Knock down (10-pts) pins randomly with animation
-  const downCount=10-pts;
-  const allIdx=[0,1,2,3,4,5,6,7,8,9];
-  // Shuffle to pick random pins to knock
-  for(let i=allIdx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[allIdx[i],allIdx[j]]=[allIdx[j],allIdx[i]];}
-  const toDown=allIdx.slice(0,downCount);
-  toDown.forEach((idx,i)=>{
+  // order[0..knockedTotal-1] = pins knocked this frame
+  // Reset all pins to standing first (only on 1st ball)
+  if(!isSecondBall){
+    for(let i=0;i<10;i++){
+      const p=document.getElementById('bp-'+i);
+      if(p){p.className='bpin';p.style.transform='';}
+    }
+  }
+  // Animate newly knocked pins
+  for(let i=prevKnocked;i<knockedTotal;i++){
+    const idx=order[i];
+    const p=document.getElementById('bp-'+idx);
+    if(!p)continue;
+    const delay=(i-prevKnocked)*80+300;
     setTimeout(()=>{
-      const p=document.getElementById('bp-'+idx);
       if(p){p.classList.add('falling');setTimeout(()=>{p.classList.remove('falling');p.classList.add('down');},400);}
-    },i*60+300);
-  });
+    },delay);
+  }
 }
+
+function setupBowlingPins(){}
 
 function bowlingUpdateBallCell(frame, ball, pts){
   const cell=document.getElementById(`bowl-b-${frame}-${ball}`);
