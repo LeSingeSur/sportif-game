@@ -3778,16 +3778,46 @@ function plongeeAskUp(fromPalier){
 function plongeeShowSkipOptions(palier){
   const skipArea=document.getElementById('plongee-skip-area');
   const skipTreasures=document.getElementById('plongee-skip-treasures');
-  if(!skipArea||!skipTreasures||PL.treasures.length===0){if(skipArea)skipArea.style.display='none';return;}
+  if(!skipArea||!skipTreasures){return;}
   skipArea.style.display='block';
   skipTreasures.innerHTML='';
-  PL.treasures.forEach((t,i)=>{
+  if(PL.treasures.length>0){
+    PL.treasures.forEach((t,i)=>{
+      const btn=document.createElement('button');
+      btn.style.cssText='padding:6px 10px;border-radius:6px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer';
+      btn.textContent=`Sacrifier ${t.palier===5?'💎':'🪙'}${t.pts}pts`;
+      btn.onclick=()=>plongeeSkipWithTreasure(i,palier);
+      skipTreasures.appendChild(btn);
+    });
+  } else if(palier>1){
+    // No treasure but not last question → malus option
     const btn=document.createElement('button');
-    btn.style.cssText='padding:6px 10px;border-radius:6px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:11px;cursor:pointer';
-    btn.textContent=`Sacrifier ${t.palier===5?'💎':'🪙'}${t.pts}pts`;
-    btn.onclick=()=>plongeeSkipWithTreasure(i,palier);
+    btn.style.cssText='padding:6px 10px;border-radius:6px;border:1px solid rgba(255,100,50,.3);background:transparent;color:rgba(255,100,50,.7);font-size:11px;cursor:pointer';
+    btn.textContent='⚠️ Passer (+5 O2/s)';
+    btn.onclick=()=>plongeeSkipWithMalus(palier);
     skipTreasures.appendChild(btn);
-  });
+  } else {
+    // Last question (palier=1) + no treasure → must answer
+    skipArea.style.display='none';
+  }
+}
+
+function plongeeSkipWithMalus(palier){
+  PL.o2Rate+=5;
+  plongeeUpdateUI();
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent='⚠️ Palier passé — malus +5 O2/s';fb.style.color='#ff6633';}
+  document.getElementById('plongee-skip-area').style.display='none';
+  document.getElementById('plongee-input-wrap').style.display='none';
+  document.getElementById('plongee-q').textContent='';
+  PL.waitingAnswer=false;
+  PL.currentPalier=palier-1;
+  plongeeUpdateUI();
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    if(PL.currentPalier<=0){plongeeSurface();}
+    else{plongeeOfferAscentTreasure(PL.currentPalier);}
+  },400);
 }
 
 function plongeeSkipWithTreasure(treasureIdx, palier){
@@ -3849,7 +3879,16 @@ function plongeeSubmit(){
     PL.o2Rate+=(PL.data.plongeeO2Error||2);
     if(fb){fb.textContent=`❌ Faux ! O2 −${PL.data.plongeeO2Error||2}/s désormais`;fb.style.color='var(--red)';}
     inp.value='';
-    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    setTimeout(()=>{
+      if(!PL.waitingAnswer||PL.done)return;
+      // Restore abandon button if still on a descent question
+      if(PL.waitingAnswer.type==='down'){
+        const tp=PL.waitingAnswer.targetPalier;
+        if(fb)fb.innerHTML=`<button onclick="plongeeAbandonDescent(${tp})" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,100,50,.3);background:transparent;color:rgba(255,100,50,.6);font-size:11px;cursor:pointer;margin-top:4px">⬆️ Je ne sais pas — remonter maintenant</button>`;
+      } else {
+        if(fb)fb.textContent='';
+      }
+    },1500);
   }
 }
 
