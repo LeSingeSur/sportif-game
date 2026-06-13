@@ -3677,6 +3677,61 @@ function plongeeAskDown(targetPalier){
   document.getElementById('plongee-in').value='';
   document.getElementById('plongee-in').focus();
   PL.waitingAnswer={type:'down', targetPalier, answer:p.aDown};
+  // Option: abandon descent and start ascending now
+  const fb=document.getElementById('plongee-fb');
+  if(fb)fb.innerHTML=`<button onclick="plongeeAbandonDescent(${targetPalier})" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,100,50,.3);background:transparent;color:rgba(255,100,50,.6);font-size:11px;cursor:pointer;margin-top:4px">⬆️ Je ne sais pas — remonter maintenant</button>`;
+}
+
+function plongeeAbandonDescent(targetPalier){
+  PL.waitingAnswer=false;
+  document.getElementById('plongee-input-wrap').style.display='none';
+  document.getElementById('plongee-fb').innerHTML='';
+  const fb=document.getElementById('plongee-fb');
+
+  // Check if player has a treasure to sacrifice
+  const hasTreasure=PL.treasures.length>0;
+
+  if(hasTreasure){
+    // Freeze timer, show treasure selection
+    plongeeStopTimer(false);
+    const qEl=document.getElementById('plongee-q');
+    if(qEl)qEl.textContent='⬆️ Choisissez un trésor à sacrifier pour remonter';
+    // Show treasure buttons
+    if(fb){
+      fb.innerHTML=PL.treasures.map((t,i)=>
+        `<button onclick="plongeeAbandonWithTreasure(${i},${targetPalier})" style="display:block;width:100%;margin-bottom:6px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,200,0,.4);background:rgba(255,200,0,.08);color:#ffc800;font-size:13px;font-family:var(--fh);cursor:pointer">🪙 Sacrifier trésor P${t.palier} (−${t.pts} pts)</button>`
+      ).join('');
+    }
+  } else {
+    // No treasure → O2 malus +5/s
+    PL.o2Rate+=5;
+    if(fb){fb.textContent='⚠️ Pas de trésor — malus +5 O2/s · Remontée !';fb.style.color='#ff6633';}
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      PL.currentPalier=targetPalier-1;
+      if(PL.currentPalier<=0){plongeeSurface();}
+      else{plongeeOfferAscentTreasure(PL.currentPalier);}
+    },800);
+  }
+}
+
+function plongeeAbandonWithTreasure(treasureIdx, targetPalier){
+  const t=PL.treasures[treasureIdx];
+  PL.score-=t.pts;
+  PL.o2Rate-=(PL.data.plongeeO2Treasure||2);
+  PL.treasures.splice(treasureIdx,1);
+  plongeeUpdateUI();
+  G.score=PL.score; setScore(PL.score,false);
+  document.getElementById('plongee-fb').innerHTML='';
+  const fb=document.getElementById('plongee-fb');
+  if(fb){fb.textContent=`🪙 Trésor sacrifié — remontée !`;fb.style.color='#ffc800';}
+  plongeeRestartTimer();
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    PL.currentPalier=targetPalier-1;
+    if(PL.currentPalier<=0){plongeeSurface();}
+    else{plongeeOfferAscentTreasure(PL.currentPalier);}
+  },600);
 }
 
 function plongeeOfferAscentTreasure(palier){
