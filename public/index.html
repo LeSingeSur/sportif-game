@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="theme-color" content="#6366f1">
-    <title>Le Grand-Chelem ⚡ 21 jeux · 300 pts</title>
+    <title>Le Grand-Chelem ⚡ 22 jeux · 300 pts</title>
     <style>
         :root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--primary:#6366f1;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius:16px;--shadow:0 8px 32px rgba(0,0,0,0.4)}
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -547,7 +547,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 21 jeux · jusqu'à 300 pts ⚡</div>
+  <div class="logo-tag">⚡ 22 jeux · jusqu'à 300 pts ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -1501,6 +1501,55 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="bowling-fb" class="fb" style="text-align:center;font-size:15px"></div>
   </div>
 
+  <!-- ÉQUITATION ZONE -->
+  <div id="equi-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#001a0a 0%,#002210 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,200,80,.15)">
+
+    <!-- Canvas piste -->
+    <canvas id="equi-canvas" style="width:100%;height:160px;border-radius:12px;border:1px solid rgba(0,200,80,.2);display:block"></canvas>
+
+    <!-- Status bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
+      <div><span style="font-size:9px;color:rgba(0,200,80,.5);letter-spacing:2px">SCORE</span><div style="font-family:var(--fh);font-size:26px;color:#00c850" id="equi-score-display">0</div></div>
+      <div style="text-align:center"><span style="font-size:9px;color:rgba(0,200,80,.5);letter-spacing:2px">OBSTACLE</span><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="equi-obs-display">1/5</div></div>
+      <div style="text-align:right"><span style="font-size:9px;color:rgba(0,200,80,.5);letter-spacing:2px">CHRONO</span><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="equi-timer-display">0s</div></div>
+    </div>
+
+    <!-- Bars indicator -->
+    <div id="equi-bars" style="display:flex;justify-content:center;gap:6px"></div>
+
+    <!-- Type badge + Question -->
+    <div id="equi-type-badge" style="display:none;font-family:var(--fh);font-size:10px;letter-spacing:2px;color:rgba(0,200,80,.6);text-align:center"></div>
+    <div id="equi-q" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,200,80,.15);border-radius:12px;padding:14px;font-size:16px;font-weight:700;color:var(--txt);text-align:center;line-height:1.5;display:none"></div>
+
+    <!-- QCM -->
+    <div id="equi-qcm" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+
+    <!-- Vrai/Faux -->
+    <div id="equi-vf" style="display:none;display:flex;gap:8px">
+      <button onclick="equiAnswerVF('vrai')" style="flex:1;padding:14px;border-radius:10px;border:1px solid rgba(0,200,80,.4);background:rgba(0,200,80,.08);color:#00c850;font-family:var(--fh);font-size:14px;cursor:pointer">✅ VRAI</button>
+      <button onclick="equiAnswerVF('faux')" style="flex:1;padding:14px;border-radius:10px;border:1px solid rgba(255,60,60,.4);background:rgba(255,60,60,.08);color:var(--red);font-family:var(--fh);font-size:14px;cursor:pointer">❌ FAUX</button>
+    </div>
+
+    <!-- Text/Number input -->
+    <div id="equi-input-wrap" style="display:none;display:flex;gap:8px">
+      <input id="equi-in" placeholder="Ta réponse…"
+        style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(0,200,80,.3);color:var(--txt);font-size:17px;border-radius:var(--r);padding:11px 14px;outline:none"
+        onkeydown="if(event.key==='Enter')equiSubmit()">
+      <button onclick="equiSubmit()" style="width:52px;height:52px;flex-shrink:0;background:#007830;color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">🏇</button>
+    </div>
+
+    <div id="equi-fb" class="fb" style="text-align:center;font-size:15px"></div>
+
+    <!-- Rules -->
+    <div id="equi-rules" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,200,80,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:14px;color:#00c850;margin-bottom:8px;letter-spacing:2px">🏇 ÉQUITATION CSO · MAX 150</div>
+      5 obstacles · 2 barres chacun · 30 pts par obstacle<br>
+      ✅ <strong style="color:var(--txt)">Net</strong> = 30 pts · ⚠️ <strong style="color:#ffaa00">1 barre tombée</strong> = 15 pts · ❌ <strong style="color:var(--red)">Double faute</strong> = 0 pts<br>
+      ⏱ Dépassement du temps : −1 pt/seconde
+      <button onclick="document.getElementById('equi-rules').style.display='none';equiStart();" style="margin-top:10px;width:100%!important;background:linear-gradient(90deg,#005a20,#009640);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:2px">🏇 EN PISTE !</button>
+    </div>
+  </div>
+
   <div id="assaut-zone" style="display:none;flex-direction:column;gap:12px;width:100%">
     <div style="background:var(--c1);border-radius:14px;padding:14px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:6px">
@@ -2318,6 +2367,8 @@ async function loadAthlete(){
     } else if(data.type==='tirarlarc'){
       document.getElementById('std-ans-area').style.display='none';
       setupTirALArc(data);
+    } else if(data.type==='equitation'){
+      setupEquitation(data);
     } else if(data.type==='bowling'){
       setupBowling(data);
     } else if(data.type==='roulette'){
@@ -2353,7 +2404,7 @@ async function loadAthlete(){
 }
 
 // ── HIDE ALL ZONES ────────────────────────────────────────────────────────
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone','equi-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -2378,7 +2429,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','plongee':'🤿',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇','plongee':'🤿',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -8739,7 +8790,8 @@ function bowlingSubmit(){
   else if(isSpareBall) label='🎯 SPARE !';
   else label=direction;
   if(fb){
-    fb.innerHTML=`<span style="font-size:${(isStrikeBall||isSpareBall)?'22px':'26px'};font-family:var(--fh);font-weight:900;letter-spacing:2px">${label}</span><span style="font-size:14px;color:var(--mute)"> · ${pts}/10 quilles${revealAnswer?` · Réponse : ${q.answer}`:''}</span>`;
+    const answerPart=revealAnswer?'<div style="font-size:13px;color:#e0e0e0;margin-top:4px">Réponse : <strong style="color:#fff">'+q.answer+'</strong></div>':'';
+    fb.innerHTML='<span style="font-size:'+(isStrikeBall||isSpareBall?'22':'26')+'px;font-family:var(--fh);font-weight:900;letter-spacing:2px">'+label+'</span><span style="font-size:15px;color:#ddd"> · '+pts+'/10 quilles</span>'+answerPart;
     fb.style.color=col;
   }
 
@@ -8748,36 +8800,35 @@ function bowlingSubmit(){
 
   // Advance state
   BOWL.isBonusBall=false;
+  const goingToSecondBall=!isStrikeBall&&BOWL.ballInFrame===0&&!isTenthFrame;
   if(!isTenthFrame){
     if(isStrikeBall||BOWL.ballInFrame===1){
-      // New frame → advance question
       BOWL.qIdx++;
       BOWL.currentFrame++;BOWL.ballInFrame=0;
     } else {
-      // 2nd attempt on same question
       BOWL.ballInFrame++;
     }
   } else {
-    // 10th frame special
     BOWL.ballInFrame++;
     const b=fr.balls;
     const done10=(b.length===2&&b[0]+b[1]<10)||(b.length===3);
     if(done10){BOWL.qIdx++;bowlingFinish();return;}
-    // Bonus ball after strike or spare in 10th = NEW question
-    if(b.length===2&&(b[0]===10||b[0]+b[1]===10)){
-      BOWL.qIdx++;BOWL.isBonusBall=true;
-    }
-    if(b.length===1&&b[0]===10){
-      // After 1st strike in 10th, 2nd ball is new question
-      BOWL.qIdx++;BOWL.isBonusBall=true;
-    }
+    if(b.length===2&&(b[0]===10||b[0]+b[1]===10)){BOWL.qIdx++;BOWL.isBonusBall=true;}
+    if(b.length===1&&b[0]===10){BOWL.qIdx++;BOWL.isBonusBall=true;}
   }
 
   if(BOWL.currentFrame>=10){bowlingFinish();return;}
-  setTimeout(()=>{
-    if(fb)fb.textContent='';
-    bowlingShowNextQuestion();
-  },1200);
+
+  if(goingToSecondBall){
+    // Ball 1 not strike: wait 1.5s showing result, then "2e lancer" for 0.9s, then show question
+    setTimeout(()=>{
+      const remaining=10-pts;
+      if(fb)fb.innerHTML='<span style="font-size:20px;font-family:var(--fh);color:#ffc800;letter-spacing:2px">🎳 2e LANCER</span><div style="font-size:12px;color:#bbb;margin-top:2px">'+remaining+' quille'+(remaining>1?'s':'')+' restante'+(remaining>1?'s':'')+'</div>';
+      setTimeout(()=>{if(fb)fb.innerHTML='';bowlingShowNextQuestion();},900);
+    },1500);
+  } else {
+    setTimeout(()=>{if(fb)fb.innerHTML='';bowlingShowNextQuestion();},1800);
+  }
 }
 
 function bowlingAnimatePins(knockedTotal, isSecondBall){
@@ -8904,6 +8955,307 @@ function bowlingFinish(){
   G.score=finalScore;setScore(finalScore,true);
   setVictoryIcon('bowling');submitScore(finalScore);
   setTimeout(()=>show('sv'),2000);
+}
+
+// ── ÉQUITATION CSO ────────────────────────────────────────────────────────
+const EQUI={
+  data:null, current:0, attempt:0, scores:[], done:false,
+  startTime:null, timerInt:null, elapsed:0,
+  subQ:0, // for combo sub-questions
+  horseX:0, jumping:false, jumpT:0, bars:[] // visual state per obstacle
+};
+
+function setupEquitation(data){
+  EQUI.data=data; EQUI.current=0; EQUI.attempt=0; EQUI.scores=[];
+  EQUI.done=false; EQUI.elapsed=0; EQUI.subQ=0; EQUI.jumping=false;
+  EQUI.bars=data.equiObstacles.map(()=>2); // 2 bars standing per obstacle
+  hideAllZones();
+  document.getElementById('equi-zone').style.display='flex';
+  document.getElementById('equi-rules').style.display='block';
+  document.getElementById('equi-q').style.display='none';
+  document.getElementById('equi-input-wrap').style.display='none';
+  document.getElementById('equi-qcm').style.display='none';
+  document.getElementById('equi-vf').style.display='none';
+  document.getElementById('std-ans-area').style.display='none';
+  equiInitCanvas();
+}
+
+function equiStart(){
+  EQUI.startTime=Date.now();
+  EQUI.timerInt=setInterval(()=>{
+    EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000);
+    const el=document.getElementById('equi-timer-display');
+    if(el)el.textContent=EQUI.elapsed+'s';
+  },500);
+  equiShowObstacle();
+}
+
+function equiInitCanvas(){
+  const cv=document.getElementById('equi-canvas');
+  if(!cv)return;
+  cv.width=cv.offsetWidth||360;
+  cv.height=160;
+  equiDrawTrack();
+}
+
+function equiDrawTrack(horseX, jumpH){
+  const cv=document.getElementById('equi-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  // Sky
+  const sky=ctx.createLinearGradient(0,0,0,H*0.7);
+  sky.addColorStop(0,'#c8e8ff'); sky.addColorStop(1,'#e8f8ff');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H*0.7);
+  // Ground
+  const grd=ctx.createLinearGradient(0,H*0.68,0,H);
+  grd.addColorStop(0,'#3a8a20'); grd.addColorStop(1,'#1a5a08');
+  ctx.fillStyle=grd; ctx.fillRect(0,H*0.68,W,H*0.32);
+  // Track line
+  ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=1.5; ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(0,H*0.7); ctx.lineTo(W,H*0.7); ctx.stroke();
+  ctx.setLineDash([]);
+  // Obstacles
+  const obs=EQUI.data?.equiObstacles||[];
+  const n=obs.length||5;
+  for(let i=0;i<n;i++){
+    const x=W*(i+1)/(n+1);
+    const fallen=EQUI.bars[i]!==undefined?2-EQUI.bars[i]:0;
+    equiDrawObstacle(ctx,x,H,obs[i]?.type||'vertical',fallen,i===EQUI.current&&!EQUI.done);
+  }
+  // Horse
+  const hx=horseX!==undefined?horseX:W*(EQUI.current)/(n+1)*(EQUI.current===0?0.5:1);
+  const groundY=H*0.68;
+  const jumpOffset=jumpH||0;
+  equiDrawHorse(ctx,hx,groundY-jumpOffset);
+}
+
+function equiDrawObstacle(ctx,x,H,type,fallen,active){
+  const groundY=H*0.68, poleH=38, poleW=6;
+  const barY=groundY-poleH*0.55;
+  // Glow if active
+  if(active){ctx.shadowColor='#ffdd00';ctx.shadowBlur=12;}
+  // Poles
+  ctx.fillStyle='#a0520a';
+  const span=type==='oxer'||type==='combo'?20:12;
+  ctx.fillRect(x-span/2-poleW/2,groundY-poleH,poleW,poleH);
+  ctx.fillRect(x+span/2-poleW/2,groundY-poleH,poleW,poleH);
+  // Bars
+  const barColors=['#dd2222','#ffffff'];
+  if(type==='riviere'){
+    // Blue pool
+    ctx.fillStyle='rgba(0,100,255,.6)';
+    ctx.fillRect(x-20,groundY-4,40,8);
+    ctx.fillStyle='#4488ff';
+    ctx.fillRect(x-18,groundY-2,36,3);
+  } else {
+    const nBars=type==='oxer'||type==='combo'?2:1;
+    for(let b=0;b<nBars;b++){
+      const by=barY-(b*10);
+      const isFallen=fallen>b;
+      ctx.fillStyle=isFallen?'rgba(120,60,0,.3)':barColors[b%2];
+      const barY2=isFallen?groundY-3:by;
+      ctx.fillRect(x-span/2,barY2,span,5);
+    }
+  }
+  ctx.shadowBlur=0;
+  // Type label
+  ctx.fillStyle=active?'#ffdd00':'rgba(255,255,255,.5)';
+  ctx.font='9px sans-serif'; ctx.textAlign='center';
+  const labels={vertical:'▲',oxer:'◆',riviere:'〜',combo:'⧫⧫',vf:'V/F',qcm:'QCM'};
+  ctx.fillText(labels[type]||'?',x,groundY-poleH-5);
+}
+
+function equiDrawHorse(ctx,x,y){
+  ctx.font='28px serif';
+  ctx.textAlign='center';
+  ctx.fillText('🐎',x,y+4);
+}
+
+// Animate horse jumping
+function equiAnimateJump(onDone){
+  if(!EQUI.jumping){EQUI.jumping=true; EQUI.jumpT=0;}
+  const cv=document.getElementById('equi-canvas');
+  const W=cv?.width||360, n=(EQUI.data?.equiObstacles?.length)||5;
+  const targetX=W*(EQUI.current+1)/(n+1);
+  const startX=W*Math.max(0,EQUI.current-0.5)/(n+1);
+  let frame=0;
+  const anim=()=>{
+    frame++;
+    const t=Math.min(1,frame/20);
+    const hx=startX+(targetX-startX)*t;
+    const jumpH=Math.sin(t*Math.PI)*35;
+    equiDrawTrack(hx,jumpH);
+    if(t<1){requestAnimationFrame(anim);}
+    else{EQUI.jumping=false;if(onDone)onDone();}
+  };
+  requestAnimationFrame(anim);
+}
+
+function equiShowObstacle(){
+  if(EQUI.current>=( EQUI.data?.equiObstacles?.length||5)){equiFinish();return;}
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  EQUI.attempt=0; EQUI.subQ=0;
+  equiUpdateBarsDisplay();
+  equiDrawTrack();
+  const badge=document.getElementById('equi-type-badge');
+  const labels={vertical:'▲ VERTICAL',oxer:'◆ OXER',riviere:'〜 RIVIÈRE',combo:'⧫ COMBINAISON',vf:'V/F',qcm:'QCM'};
+  if(badge){badge.textContent=labels[obs.type]||obs.type;badge.style.display='block';}
+  document.getElementById('equi-obs-display').textContent=(EQUI.current+1)+'/'+(EQUI.data.equiObstacles.length);
+  equiShowQuestion();
+}
+
+function equiShowQuestion(){
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const qEl=document.getElementById('equi-q');
+  // For combo, show sub-question
+  const q=obs.type==='combo'&&EQUI.subQ===1?(obs.question2||obs.question):obs.question;
+  if(qEl){qEl.textContent=q;qEl.style.display='block';}
+  // Show right input type
+  document.getElementById('equi-qcm').style.display='none';
+  document.getElementById('equi-vf').style.display='none';
+  document.getElementById('equi-input-wrap').style.display='none';
+  document.getElementById('equi-fb').textContent='';
+  if(obs.type==='qcm'||obs.type==='vertical'){
+    const div=document.getElementById('equi-qcm');
+    div.style.display='grid';
+    div.innerHTML=(obs.choices||[]).map((c,i)=>
+      `<button onclick="equiAnswerQCM(${i})" style="padding:11px 8px;border-radius:10px;border:1px solid rgba(0,200,80,.3);background:rgba(0,200,80,.06);color:var(--txt);font-size:13px;cursor:pointer;text-align:left">${['A','B','C','D'][i]}. ${c}</button>`
+    ).join('');
+  } else if(obs.type==='vf'){
+    document.getElementById('equi-vf').style.display='flex';
+  } else {
+    const wrap=document.getElementById('equi-input-wrap');
+    wrap.style.display='flex';
+    const inp=document.getElementById('equi-in');
+    inp.value='';
+    if(obs.type==='riviere')inp.type='number';
+    else inp.type='text';
+    setTimeout(()=>inp.focus(),100);
+  }
+}
+
+function equiCheckAnswer(playerAnswer){
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const ans=obs.type==='combo'&&EQUI.subQ===1?(obs.answer2||obs.answer):obs.answer;
+  if(obs.type==='riviere'){
+    const mult=obs.multiplier||Math.max(1,Math.ceil(Math.abs(parseFloat(ans))*0.05));
+    const pts=Math.max(0,10-Math.floor(Math.abs(parseFloat(playerAnswer)-parseFloat(ans))/mult));
+    return pts>=8; // 8/10 min = correct
+  }
+  if(obs.type==='vf') return playerAnswer.toLowerCase()===ans.toLowerCase();
+  if(obs.type==='qcm'||obs.type==='vertical') return playerAnswer===ans;
+  // text: levenshtein
+  return levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(ans.length*0.3);
+}
+
+function equiHandleResult(correct){
+  const fb=document.getElementById('equi-fb');
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  // Combo: handle sub-questions
+  if(obs.type==='combo'&&EQUI.subQ===0){
+    if(correct){
+      if(fb){fb.textContent='✅ 1ère partie !';fb.style.color='var(--neon)';}
+      EQUI.subQ=1;
+      setTimeout(()=>equiShowQuestion(),800);
+      return;
+    } else {
+      EQUI.bars[EQUI.current]--; // 1 bar falls
+      if(fb){fb.innerHTML=`<span style="font-size:20px">⚠️</span> Barre tombée !`;fb.style.color='#ffaa00';}
+      EQUI.subQ=1;
+      setTimeout(()=>equiShowQuestion(),1000);
+      return;
+    }
+  }
+  if(correct){
+    const score=EQUI.bars[EQUI.current]===2?30:15;
+    EQUI.scores.push(score);
+    const total=EQUI.scores.reduce((a,b)=>a+b,0);
+    document.getElementById('equi-score-display').textContent=total;
+    G.score=total; setScore(total,false);
+    if(fb){
+      const label=EQUI.bars[EQUI.current]===2?'🏆 NET !':'✅ FRANCHI (1 barre)';
+      fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · +${score} pts`;
+      fb.style.color=EQUI.bars[EQUI.current]===2?'#ffd700':'var(--neon)';
+    }
+    equiAnimateJump(()=>{
+      setTimeout(()=>{
+        if(fb)fb.textContent='';
+        EQUI.current++;
+        equiShowObstacle();
+      },400);
+    });
+  } else {
+    EQUI.bars[EQUI.current]--;
+    equiDrawTrack();
+    equiUpdateBarsDisplay();
+    if(EQUI.bars[EQUI.current]>0&&EQUI.attempt===0){
+      // 1 bar fallen, try again
+      EQUI.attempt=1;
+      if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">⚠️ BARRE TOMBÉE</span><br><span style="font-size:12px;color:var(--mute)">Réponse : ${EQUI.data.equiObstacles[EQUI.current][obs.type==='combo'&&EQUI.subQ===1?'answer2':'answer']}</span>`;fb.style.color='#ffaa00';}
+      setTimeout(()=>equiShowQuestion(),1200);
+    } else {
+      // Double fault or 2nd bar fallen
+      EQUI.scores.push(0);
+      const total=EQUI.scores.reduce((a,b)=>a+b,0);
+      document.getElementById('equi-score-display').textContent=total;
+      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">❌ DOUBLE FAUTE</span> · 0 pts<br><span style="font-size:12px;color:var(--mute)">Réponse : ${obs.answer}</span>`;fb.style.color='var(--red)';}
+      setTimeout(()=>{
+        if(fb)fb.textContent='';
+        EQUI.current++;
+        equiShowObstacle();
+      },1800);
+    }
+  }
+}
+
+function equiSubmit(){
+  const inp=document.getElementById('equi-in');
+  const val=(inp?.value||'').trim();
+  if(!val)return;
+  equiHandleResult(equiCheckAnswer(val));
+}
+function equiAnswerQCM(idx){
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  equiHandleResult(idx===parseInt(obs.answer));
+}
+function equiAnswerVF(val){
+  equiHandleResult(equiCheckAnswer(val));
+}
+
+function equiUpdateBarsDisplay(){
+  const div=document.getElementById('equi-bars');
+  if(!div)return;
+  const n=EQUI.data?.equiObstacles?.length||5;
+  div.innerHTML=Array.from({length:n},(_,i)=>{
+    const b=EQUI.bars[i]??2;
+    const past=i<EQUI.current, current=i===EQUI.current;
+    const color=past?(EQUI.scores[i]===30?'#ffd700':EQUI.scores[i]===15?'#ffaa00':'#ff3333'):(current?'#00c850':'rgba(255,255,255,.2)');
+    return `<div style="flex:1;height:6px;border-radius:3px;background:${color};transition:background .3s"></div>`;
+  }).join('');
+}
+
+function equiFinish(){
+  EQUI.done=true;
+  clearInterval(EQUI.timerInt);
+  const limit=EQUI.data.equiTimeLimit||60;
+  const over=Math.max(0,EQUI.elapsed-limit);
+  const base=EQUI.scores.reduce((a,b)=>a+b,0);
+  const final=Math.max(0,base-over);
+  const fb=document.getElementById('equi-fb');
+  document.getElementById('equi-q').style.display='none';
+  document.getElementById('equi-input-wrap').style.display='none';
+  document.getElementById('equi-qcm').style.display='none';
+  document.getElementById('equi-vf').style.display='none';
+  if(fb){
+    fb.innerHTML=`<div style="font-family:var(--fh);font-size:18px;color:#00c850">🏇 PARCOURS TERMINÉ</div>
+    <div style="font-size:13px;color:var(--mute);margin-top:4px">Score obstacles : ${base} pts${over>0?` · Dépassement : −${over} pts`:' · Dans le temps ✅'}</div>
+    <div style="font-family:var(--fh);font-size:28px;color:#ffd700;margin-top:6px">${final} / 150</div>`;
+  }
+  equiDrawTrack(document.getElementById('equi-canvas')?.width||360);
+  G.score=final; setScore(final,true);
+  setVictoryIcon('equitation'); submitScore(final);
+  setTimeout(()=>show('sv'),2500);
 }
 
 // L'ESCRIME (L'ASSAUT)
