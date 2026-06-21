@@ -8997,8 +8997,15 @@ function equiStart(){
 function equiInitCanvas(){
   const cv=document.getElementById('equi-canvas');
   if(!cv)return;
-  cv.width=cv.offsetWidth||360;
-  cv.height=160;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=cv.offsetWidth||360, cssH=160;
+  cv.width=Math.round(cssW*dpr);
+  cv.height=Math.round(cssH*dpr);
+  cv.style.width=cssW+'px';
+  cv.style.height=cssH+'px';
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  EQUI.canvasW=cssW; EQUI.canvasH=cssH;
   equiDrawTrack();
 }
 
@@ -9006,81 +9013,157 @@ function equiDrawTrack(horseX, jumpH){
   const cv=document.getElementById('equi-canvas');
   if(!cv)return;
   const ctx=cv.getContext('2d');
-  const W=cv.width, H=cv.height;
-  // Sky
-  const sky=ctx.createLinearGradient(0,0,0,H*0.7);
-  sky.addColorStop(0,'#c8e8ff'); sky.addColorStop(1,'#e8f8ff');
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H*0.7);
-  // Ground
-  const grd=ctx.createLinearGradient(0,H*0.68,0,H);
-  grd.addColorStop(0,'#3a8a20'); grd.addColorStop(1,'#1a5a08');
-  ctx.fillStyle=grd; ctx.fillRect(0,H*0.68,W,H*0.32);
-  // Track line
-  ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=1.5; ctx.setLineDash([6,6]);
-  ctx.beginPath(); ctx.moveTo(0,H*0.7); ctx.lineTo(W,H*0.7); ctx.stroke();
-  ctx.setLineDash([]);
+  const W=EQUI.canvasW||cv.offsetWidth||360, H=EQUI.canvasH||160;
+  const groundY=H*0.7;
+
+  // Sky with soft sun glow
+  const sky=ctx.createLinearGradient(0,0,0,groundY);
+  sky.addColorStop(0,'#a8d8f0'); sky.addColorStop(0.6,'#d4ecf8'); sky.addColorStop(1,'#f0f8ec');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,groundY);
+  // Soft clouds
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  [[W*0.18,H*0.16,14],[W*0.18+12,H*0.16,10],[W*0.7,H*0.1,12],[W*0.7+10,H*0.1,9]].forEach(([cx,cy,r])=>{
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  });
+
+  // Distant tree line
+  ctx.fillStyle='rgba(60,110,50,.35)';
+  for(let i=0;i<8;i++){
+    const tx=W*i/7;
+    ctx.beginPath();ctx.arc(tx,groundY-2,16,0,Math.PI*2);ctx.fill();
+  }
+
+  // Sand arena ground
+  const sand=ctx.createLinearGradient(0,groundY,0,H);
+  sand.addColorStop(0,'#e8c888'); sand.addColorStop(1,'#cda968');
+  ctx.fillStyle=sand; ctx.fillRect(0,groundY,W,H-groundY);
+  // Raking texture lines on sand
+  ctx.strokeStyle='rgba(150,110,50,.18)'; ctx.lineWidth=1;
+  for(let i=0;i<6;i++){
+    const ly=groundY+6+i*7;
+    ctx.beginPath();ctx.moveTo(0,ly);ctx.lineTo(W,ly);ctx.stroke();
+  }
+  // White rail border at edge of arena (background fence)
+  ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,groundY+2);ctx.lineTo(W,groundY+2);ctx.stroke();
+
   // Obstacles
   const obs=EQUI.data?.equiObstacles||[];
   const n=obs.length||5;
   for(let i=0;i<n;i++){
     const x=W*(i+1)/(n+1);
     const fallen=EQUI.bars[i]!==undefined?2-EQUI.bars[i]:0;
-    equiDrawObstacle(ctx,x,H,obs[i]?.type||'vertical',fallen,i===EQUI.current&&!EQUI.done);
+    equiDrawObstacle(ctx,x,groundY,obs[i]?.type||'vertical',fallen,i===EQUI.current&&!EQUI.done,i<EQUI.current);
   }
-  // Horse
+
+  // Horse + shadow
   const hx=horseX!==undefined?horseX:W*(EQUI.current)/(n+1)*(EQUI.current===0?0.5:1);
-  const groundY=H*0.68;
   const jumpOffset=jumpH||0;
+  // Shadow (squashes when jumping higher)
+  const shadowScale=Math.max(0.35,1-jumpOffset/45);
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.beginPath();
+  ctx.ellipse(hx,groundY+3,16*shadowScale,4*shadowScale,0,0,Math.PI*2);
+  ctx.fill();
   equiDrawHorse(ctx,hx,groundY-jumpOffset);
 }
 
-function equiDrawObstacle(ctx,x,H,type,fallen,active){
-  const groundY=H*0.68, poleH=38, poleW=6;
-  const barY=groundY-poleH*0.55;
-  // Glow if active
-  if(active){ctx.shadowColor='#ffdd00';ctx.shadowBlur=12;}
-  // Poles
-  ctx.fillStyle='#a0520a';
-  const span=type==='oxer'||type==='combo'?20:12;
-  ctx.fillRect(x-span/2-poleW/2,groundY-poleH,poleW,poleH);
-  ctx.fillRect(x+span/2-poleW/2,groundY-poleH,poleW,poleH);
-  // Bars
-  const barColors=['#dd2222','#ffffff'];
+function equiDrawObstacle(ctx,x,groundY,type,fallen,active,cleared){
+  const poleH=40, standW=5;
+  const span=type==='oxer'||type==='combo'?22:13;
+
   if(type==='riviere'){
-    // Blue pool
-    ctx.fillStyle='rgba(0,100,255,.6)';
-    ctx.fillRect(x-20,groundY-4,40,8);
-    ctx.fillStyle='#4488ff';
-    ctx.fillRect(x-18,groundY-2,36,3);
+    // Water pool with reflection shimmer
+    const water=ctx.createLinearGradient(x-22,groundY-5,x-22,groundY+5);
+    water.addColorStop(0,'#3a9bdc'); water.addColorStop(1,'#1e6fae');
+    ctx.fillStyle=water;
+    ctx.beginPath();ctx.ellipse(x,groundY,24,6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.45)';
+    ctx.beginPath();ctx.ellipse(x-6,groundY-1.5,8,1.8,0,0,Math.PI*2);ctx.fill();
+    // Small white guide rail at edge
+    ctx.fillStyle='#fff';ctx.fillRect(x-26,groundY-3,4,8);ctx.fillRect(x+22,groundY-3,4,8);
+    ctx.shadowBlur=0;
+    if(active){ctx.strokeStyle='rgba(255,221,0,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,groundY,27,8,0,0,Math.PI*2);ctx.stroke();}
   } else {
+    // Glow ring under active obstacle
+    if(active){
+      ctx.fillStyle='rgba(255,221,0,.18)';
+      ctx.beginPath();ctx.ellipse(x,groundY+2,span*1.3,6,0,0,Math.PI*2);ctx.fill();
+    }
+    // Wings (decorative side panels) for flair
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath();
+    ctx.moveTo(x-span/2-standW-2,groundY);
+    ctx.lineTo(x-span/2-standW-10,groundY-poleH*0.75);
+    ctx.lineTo(x-span/2-standW-10,groundY-poleH*0.55);
+    ctx.lineTo(x-span/2-standW-2,groundY-poleH*0.3);
+    ctx.closePath();ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x+span/2+standW+2,groundY);
+    ctx.lineTo(x+span/2+standW+10,groundY-poleH*0.75);
+    ctx.lineTo(x+span/2+standW+10,groundY-poleH*0.55);
+    ctx.lineTo(x+span/2+standW+2,groundY-poleH*0.3);
+    ctx.closePath();ctx.fill();
+
+    // Wooden standards (posts) with shading
+    const standGrad=ctx.createLinearGradient(x-span/2-standW,groundY-poleH,x-span/2,groundY-poleH);
+    standGrad.addColorStop(0,'#7a4410');standGrad.addColorStop(1,'#a8651c');
+    ctx.fillStyle=standGrad;
+    ctx.fillRect(x-span/2-standW,groundY-poleH,standW,poleH);
+    ctx.fillRect(x+span/2,groundY-poleH,standW,poleH);
+    // Little cups
+    ctx.fillStyle='#5a3008';
+    ctx.fillRect(x-span/2-standW-1,groundY-poleH*0.58,standW+2,3);
+    ctx.fillRect(x+span/2-1,groundY-poleH*0.58,standW+2,3);
+
+    // Rails — alternating red/white striped segments, knocked down ones lie flat
     const nBars=type==='oxer'||type==='combo'?2:1;
     for(let b=0;b<nBars;b++){
-      const by=barY-(b*10);
+      const restY=groundY-poleH*0.58-(b*11);
       const isFallen=fallen>b;
-      ctx.fillStyle=isFallen?'rgba(120,60,0,.3)':barColors[b%2];
-      const barY2=isFallen?groundY-3:by;
-      ctx.fillRect(x-span/2,barY2,span,5);
+      const railY=isFallen?groundY-2-(b*4):restY;
+      const railRot=isFallen?(b%2===0?2:-2):0;
+      ctx.save();
+      ctx.translate(x,railY);
+      ctx.rotate(isFallen?0.12*railRot:0);
+      // Rail shadow
+      if(!isFallen){ctx.fillStyle='rgba(0,0,0,.15)';ctx.fillRect(-span/2,2,span,2);}
+      // Striped pole
+      const stripes=4;
+      for(let s=0;s<stripes;s++){
+        ctx.fillStyle=isFallen?(s%2===0?'rgba(170,40,30,.55)':'rgba(180,170,150,.6)'):(s%2===0?'#cc2018':'#f5f0e6');
+        ctx.fillRect(-span/2+s*(span/stripes),-2.5,span/stripes,5);
+      }
+      // Rail highlight
+      ctx.fillStyle='rgba(255,255,255,.3)';
+      ctx.fillRect(-span/2,-2.5,span,1.2);
+      ctx.restore();
     }
   }
-  ctx.shadowBlur=0;
-  // Type label
-  ctx.fillStyle=active?'#ffdd00':'rgba(255,255,255,.5)';
-  ctx.font='9px sans-serif'; ctx.textAlign='center';
-  const labels={vertical:'▲',oxer:'◆',riviere:'〜',combo:'⧫⧫',vf:'V/F',qcm:'QCM'};
-  ctx.fillText(labels[type]||'?',x,groundY-poleH-5);
+
+  // Type icon flag on top
+  ctx.font='11px sans-serif'; ctx.textAlign='center';
+  const labels={vertical:'▲',oxer:'◆',riviere:'〜',combo:'⧫⧫',vf:'✓✗',qcm:'▲'};
+  ctx.fillStyle=cleared?'rgba(0,180,80,.7)':active?'#ffdd00':'rgba(255,255,255,.7)';
+  ctx.fillText(labels[type]||'?',x,groundY-poleH-7);
+  if(cleared){
+    ctx.font='10px sans-serif';
+    ctx.fillStyle='rgba(0,200,90,.85)';
+    ctx.fillText('✓',x,groundY-poleH-18);
+  }
 }
 
 function equiDrawHorse(ctx,x,y){
-  ctx.font='28px serif';
+  ctx.font='30px serif';
   ctx.textAlign='center';
-  ctx.fillText('🐎',x,y+4);
+  ctx.textBaseline='alphabetic';
+  ctx.fillText('🐎',x,y+5);
 }
 
 // Animate horse jumping
 function equiAnimateJump(onDone){
   if(!EQUI.jumping){EQUI.jumping=true; EQUI.jumpT=0;}
-  const cv=document.getElementById('equi-canvas');
-  const W=cv?.width||360, n=(EQUI.data?.equiObstacles?.length)||5;
+  const W=EQUI.canvasW||360, n=(EQUI.data?.equiObstacles?.length)||5;
   const targetX=W*(EQUI.current+1)/(n+1);
   const startX=W*Math.max(0,EQUI.current-0.5)/(n+1);
   let frame=0;
@@ -9143,15 +9226,16 @@ function equiShowQuestion(){
 function equiCheckAnswer(playerAnswer){
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const ans=obs.type==='combo'&&EQUI.subQ===1?(obs.answer2||obs.answer):obs.answer;
+  const norm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
   if(obs.type==='riviere'){
     const mult=obs.multiplier||Math.max(1,Math.ceil(Math.abs(parseFloat(ans))*0.05));
     const pts=Math.max(0,10-Math.floor(Math.abs(parseFloat(playerAnswer)-parseFloat(ans))/mult));
     return pts>=8; // 8/10 min = correct
   }
-  if(obs.type==='vf') return playerAnswer.toLowerCase()===ans.toLowerCase();
+  if(obs.type==='vf') return norm(playerAnswer)===norm(ans);
   if(obs.type==='qcm'||obs.type==='vertical') return playerAnswer===ans;
   // text: levenshtein
-  return levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(ans.length*0.3);
+  return levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(norm(ans).length*0.3);
 }
 
 function equiHandleResult(correct){
@@ -9264,7 +9348,7 @@ function equiFinish(){
     <div style="font-size:13px;color:var(--mute);margin-top:4px">Score obstacles : ${base} pts${over>0?` · Dépassement : −${over} pts`:' · Dans le temps ✅'}</div>
     <div style="font-family:var(--fh);font-size:28px;color:#ffd700;margin-top:6px">${final} / 150</div>`;
   }
-  equiDrawTrack(document.getElementById('equi-canvas')?.width||360);
+  equiDrawTrack(EQUI.canvasW||360, 0);
   G.score=final; setScore(final,true);
   setVictoryIcon('equitation'); submitScore(final);
   setTimeout(()=>show('sv'),2500);
