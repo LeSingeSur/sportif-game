@@ -1843,7 +1843,7 @@ let equiObstacles=[
   {type:'qcm',question:'',answer:'0',choices:['','','','']},
   {type:'oxer',question:'',answer:''},
   {type:'riviere',question:'',answer:'',multiplier:0},
-  {type:'vf',question:'',answer:'vrai'},
+  {type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai'},
   {type:'combo',question:'',answer:'',question2:'',answer2:''}
 ];
 
@@ -1851,8 +1851,9 @@ const EQUI_TYPES={
   vertical:'▲ Vertical (QCM)',
   oxer:'◆ Oxer (Texte libre)',
   riviere:'〜 Rivière (Numérique)',
-  vf:'V/F Vrai/Faux',
-  combo:'⧫ Combinaison (2 questions)'
+  vf:'✓✗ Double Vrai/Faux',
+  combo:'⧫ Combinaison (2 questions)',
+  mots:'🔤 Grille de mots'
 };
 
 function equiAdminRender(){
@@ -1869,7 +1870,7 @@ function equiAdminRender(){
         ${Object.entries(EQUI_TYPES).map(([v,l])=>`<option value="${v}"${obs.type===v?' selected':''}>${l}</option>`).join('')}
       </select>
     </div>
-    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="Question…"
+    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='vf'||obs.type==='combo'?'Affirmation / Question 1…':obs.type==='mots'?'Indice / thème (ex: pays europeen)…':'Question…'}"
       oninput="equiObstacles[${i}].question=this.value;checkReady();"
       style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
     ${obs.type==='qcm'||obs.type==='vertical'?`
@@ -1883,9 +1884,18 @@ function equiAdminRender(){
           </div>`).join('')}
       </div>`:
     obs.type==='vf'?`
-      <div style="display:flex;gap:6px;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 1 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer='vrai';checkReady();"> Vrai</label>
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='faux'?'checked':''} onchange="equiObstacles[${i}].answer='faux';checkReady();"> Faux</label>
+      </div>
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Affirmation / Question 2…"
+        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 2 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer2='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='faux'?'checked':''} onchange="equiObstacles[${i}].answer2='faux';checkReady();"> Faux</label>
       </div>`:
     obs.type==='combo'?`
       <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse Q1…"
@@ -1906,7 +1916,7 @@ function equiAdminRender(){
           oninput="equiObstacles[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
           style="flex:1;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
       </div>`:
-    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte…"
+    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='mots'?'Mot à trouver dans la grille…':'Réponse exacte…'}"
       oninput="equiObstacles[${i}].answer=this.value;checkReady();"
       style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:4px">`}`;
     list.appendChild(div);
@@ -1915,7 +1925,7 @@ function equiAdminRender(){
 
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
-  equiObstacles=[{type:'qcm',question:'',answer:'0',choices:['','','','']},{type:'oxer',question:'',answer:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai'},{type:'combo',question:'',answer:'',question2:'',answer2:''}];
+  equiObstacles=[{type:'qcm',question:'',answer:'0',choices:['','','','']},{type:'oxer',question:'',answer:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai'},{type:'combo',question:'',answer:'',question2:'',answer2:''}];
 function bowlingAdminRender(){
   const list=document.getElementById('bowling-q-list');
   if(!list)return;
@@ -2324,7 +2334,12 @@ function checkReady(){
     else if(btn)btn.textContent='✅ 10 questions saisies';
   }
   else if(currentType==='equitation'){
-    hasContent=equiObstacles.length===5&&equiObstacles.every(o=>o.question&&(o.answer||o.answer==='0'));
+    hasContent=equiObstacles.length===5&&equiObstacles.every(o=>{
+      const baseOk=o.question&&(o.answer||o.answer==='0');
+      if(o.type==='vf'||o.type==='combo') return baseOk&&o.question2&&o.answer2;
+      if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
+      return baseOk;
+    });
   }
   else if(currentType==='bowling'){
     hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
