@@ -257,6 +257,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
+          <div class="type-opt" id="type-equitation" onclick="selectType('equitation')">
+            <div class="type-ico">🏇</div>
+            <div class="type-name">Équitation CSO</div>
+            <div class="type-desc">5 obstacles · 2 barres · 30 pts chacun · Max 150</div>
+          </div>
           <div class="type-opt" id="type-bowling" onclick="selectType('bowling')">
             <div class="type-ico">🎳</div>
             <div class="type-name">Bowling Quiz</div>
@@ -403,6 +408,16 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
 
       
+      <!-- ÉQUITATION FIELDS -->
+      <div id="equi-fields" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+          <label style="font-size:11px;color:var(--mute);white-space:nowrap">⏱ Temps limite (s)</label>
+          <input type="number" id="equi-time-limit" value="60" min="20" max="300"
+            style="flex:1;background:var(--c1);border:1px solid rgba(0,200,80,.3);color:#00c850;font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+        </div>
+        <div id="equi-obs-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
       <!-- BOWLING FIELDS -->
       <div id="bowling-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
@@ -1162,7 +1177,7 @@ const ADMIN_GAME_ICONS={
   blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
   trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
   grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
-  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',var:'📺'
+  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',equitation:'🏇',var:'📺'
 };
 function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
 
@@ -1249,7 +1264,7 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 function selectType(type){
   currentType=type;
   ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
-   'biathlon','maillonfaible','haltero','bowling','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
+   'biathlon','maillonfaible','haltero','equitation','bowling','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
@@ -1258,6 +1273,8 @@ function selectType(type){
   document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
   document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
   const assautF=document.getElementById('assaut-fields');if(assautF)assautF.style.display='none';
+  document.getElementById('equi-fields').style.display        = type==='equitation'?'block':'none';
+  if(type==='equitation')setTimeout(()=>equiAdminRender(),50);
   document.getElementById('bowling-fields').style.display      = type==='bowling'?'block':'none';
   if(type==='bowling')setTimeout(()=>bowlingAdminRender(),50);
   document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
@@ -1469,6 +1486,11 @@ async function startEdit(id){
     if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
     if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
     setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
+  if(a.type==='equitation'){
+    equiObstacles=[...(a.equiObstacles||equiObstacles)];
+    const tl=document.getElementById('equi-time-limit');if(tl)tl.value=a.equiTimeLimit||60;
+    setTimeout(()=>equiAdminRender(),50);
   }
   if(a.type==='bowling'){
     bowlingQuestions=[...(a.bowlingQuestions||[])];
@@ -1816,8 +1838,84 @@ function rouletteRng(seed){
   };
 }
 
+// ── ÉQUITATION ADMIN ──────────────────────────────────────────────────────
+let equiObstacles=[
+  {type:'qcm',question:'',answer:'0',choices:['','','','']},
+  {type:'oxer',question:'',answer:''},
+  {type:'riviere',question:'',answer:'',multiplier:0},
+  {type:'vf',question:'',answer:'vrai'},
+  {type:'combo',question:'',answer:'',question2:'',answer2:''}
+];
+
+const EQUI_TYPES={
+  vertical:'▲ Vertical (QCM)',
+  oxer:'◆ Oxer (Texte libre)',
+  riviere:'〜 Rivière (Numérique)',
+  vf:'V/F Vrai/Faux',
+  combo:'⧫ Combinaison (2 questions)'
+};
+
+function equiAdminRender(){
+  const list=document.getElementById('equi-obs-list');
+  if(!list)return;
+  list.innerHTML='';
+  equiObstacles.forEach((obs,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c1);border-radius:10px;padding:10px;border:1px solid rgba(0,200,80,.15)';
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-family:var(--fh);font-size:11px;color:#00c850">OBSTACLE ${i+1}</span>
+      <select onchange="equiObstacles[${i}].type=this.value;equiAdminRender();checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px;outline:none">
+        ${Object.entries(EQUI_TYPES).map(([v,l])=>`<option value="${v}"${obs.type===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
+    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="Question…"
+      oninput="equiObstacles[${i}].question=this.value;checkReady();"
+      style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+    ${obs.type==='qcm'||obs.type==='vertical'?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
+        ${(obs.choices||['','','','']).map((c,ci)=>`
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="radio" name="equi-ans-${i}" ${obs.answer==ci?'checked':''} onchange="equiObstacles[${i}].answer='${ci}';checkReady();">
+            <input value="${(c||'').replace(/"/g,'&quot;')}" placeholder="${['A','B','C','D'][ci]}"
+              oninput="equiObstacles[${i}].choices=${JSON.stringify(obs.choices||['','','',''])};equiObstacles[${i}].choices[${ci}]=this.value;checkReady();"
+              style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:4px 6px;outline:none">
+          </div>`).join('')}
+      </div>`:
+    obs.type==='vf'?`
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='faux'?'checked':''} onchange="equiObstacles[${i}].answer='faux';checkReady();"> Faux</label>
+      </div>`:
+    obs.type==='combo'?`
+      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse Q1…"
+        oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;margin-bottom:4px">
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Question 2…"
+        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;margin-bottom:4px">
+      <input value="${(obs.answer2||'').replace(/"/g,'&quot;')}" placeholder="Réponse Q2…"
+        oninput="equiObstacles[${i}].answer2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">`:
+    obs.type==='riviere'?`
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input value="${obs.answer||''}" placeholder="Réponse (nombre)" type="number"
+          oninput="equiObstacles[${i}].answer=this.value;equiAdminRender();checkReady();"
+          style="flex:2;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+        <input value="${obs.multiplier||Math.max(1,Math.ceil(Math.abs(obs.answer||1)*0.05))}" placeholder="mult"
+          oninput="equiObstacles[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
+          style="flex:1;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
+      </div>`:
+    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte…"
+      oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+      style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:4px">`}`;
+    list.appendChild(div);
+  });
+}
+
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
+  equiObstacles=[{type:'qcm',question:'',answer:'0',choices:['','','','']},{type:'oxer',question:'',answer:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai'},{type:'combo',question:'',answer:'',question2:'',answer2:''}];
 function bowlingAdminRender(){
   const list=document.getElementById('bowling-q-list');
   if(!list)return;
@@ -2190,7 +2288,7 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
@@ -2224,6 +2322,9 @@ function checkReady(){
     const remaining=10-rvlfQuestions.length;
     if(btn&&remaining>0)btn.textContent='➕ Question ('+rvlfQuestions.length+'/10 — encore '+remaining+')';
     else if(btn)btn.textContent='✅ 10 questions saisies';
+  }
+  else if(currentType==='equitation'){
+    hasContent=equiObstacles.length===5&&equiObstacles.every(o=>o.question&&(o.answer||o.answer==='0'));
   }
   else if(currentType==='bowling'){
     hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
@@ -3481,7 +3582,9 @@ document.getElementById('btn-save').onclick=async()=>{
   rouletteTol:currentType==='roulette'?parseInt(document.getElementById('roulette-tol')?.value||1):undefined,
   rouletteRevealStep:currentType==='roulette'?parseInt(document.getElementById('roulette-reveal-step')?.value||5):undefined,
   rouletteSeed:currentType==='roulette'?rouletteSeed:undefined,
-  bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined};
+  bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined,
+  equiObstacles:currentType==='equitation'?equiObstacles:undefined,
+  equiTimeLimit:currentType==='equitation'?parseInt(document.getElementById('equi-time-limit')?.value||60):undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
