@@ -571,6 +571,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
       <div class="gt-item"><div class="gt-ico">🤿</div><div class="gt-name">La Plongée</div></div>
       <div class="gt-item"><div class="gt-ico">🧗</div><div class="gt-name">L'Escalade</div></div>
+      <div class="gt-item"><div class="gt-ico">🏇</div><div class="gt-name">Équitation CSO</div></div>
       <div class="gt-item"><div class="gt-ico">🎳</div><div class="gt-name">Bowling Quiz</div></div>
       <div class="gt-item"><div class="gt-ico">🔫</div><div class="gt-name">Roulette Russe</div></div>
     </div>
@@ -2429,7 +2430,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇','plongee':'🤿',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -8685,7 +8686,7 @@ const BOWL={
 
 function setupBowling(data){
   BOWL.data=data; BOWL.balls=[]; BOWL.frames=[]; BOWL.currentFrame=0;
-  BOWL.ballInFrame=0; BOWL.done=false; BOWL.qIdx=0; BOWL.isBonusBall=false;
+  BOWL.ballInFrame=0; BOWL.done=false; BOWL.qIdx=0; BOWL.isBonusBall=false; BOWL.locked=false;
   // Init 10 empty frames
   for(let i=0;i<10;i++) BOWL.frames.push({balls:[],score:null});
   hideAllZones();
@@ -8741,10 +8742,11 @@ function bowlingBallScore(player, correct, multiplier){
 }
 
 function bowlingSubmit(){
-  if(BOWL.done) return;
+  if(BOWL.done||BOWL.locked) return;
   const inp=document.getElementById('bowling-in');
   const val=(inp?.value||'').trim();
   if(val==='') return;
+  BOWL.locked=true;
   const fb=document.getElementById('bowling-fb');
   const qs=BOWL.data.bowlingQuestions||[];
   if(BOWL.qIdx>=qs.length){bowlingFinish();return;}
@@ -8784,10 +8786,11 @@ function bowlingSubmit(){
   const col=pts===10?'#ffd700':pts>=7?'var(--neon)':pts>=4?'#ffaa00':'var(--red)';
   const pNum=parseFloat(val), cNum=parseFloat(q.answer);
   const direction=pNum>cNum?'📈 TROP HAUT':pNum<cNum?'📉 TROP BAS':'';
-  const revealAnswer=isStrikeBall||(BOWL.ballInFrame===1)||isTenthFrame;
+  const revealAnswer=isStrikeBall||(BOWL.ballInFrame===1)||BOWL.isBonusBall;
   let label;
   if(isStrikeBall) label='🎳 STRIKE !';
   else if(isSpareBall) label='🎯 SPARE !';
+  else if(pts===10) label='🎯 PARFAIT !';
   else label=direction;
   if(fb){
     const answerPart=revealAnswer?'<div style="font-size:13px;color:#e0e0e0;margin-top:4px">Réponse : <strong style="color:#fff">'+q.answer+'</strong></div>':'';
@@ -8800,7 +8803,7 @@ function bowlingSubmit(){
 
   // Advance state
   BOWL.isBonusBall=false;
-  const goingToSecondBall=!isStrikeBall&&BOWL.ballInFrame===0&&!isTenthFrame;
+  const goingToSecondBall=!isStrikeBall&&BOWL.ballInFrame===0;
   if(!isTenthFrame){
     if(isStrikeBall||BOWL.ballInFrame===1){
       BOWL.qIdx++;
@@ -8928,6 +8931,7 @@ function bowlingRecalcScores(){
 }
 
 function bowlingShowNextQuestion(){
+  BOWL.locked=false;
   const qs=BOWL.data.bowlingQuestions||[];
   if(BOWL.qIdx>=qs.length){bowlingFinish();return;}
   const q=qs[BOWL.qIdx];
@@ -8967,7 +8971,7 @@ const EQUI={
 
 function setupEquitation(data){
   EQUI.data=data; EQUI.current=0; EQUI.attempt=0; EQUI.scores=[];
-  EQUI.done=false; EQUI.elapsed=0; EQUI.subQ=0; EQUI.jumping=false;
+  EQUI.done=false; EQUI.elapsed=0; EQUI.subQ=0; EQUI.jumping=false; EQUI.locked=false;
   EQUI.bars=data.equiObstacles.map(()=>2); // 2 bars standing per obstacle
   hideAllZones();
   document.getElementById('equi-zone').style.display='flex';
@@ -9106,6 +9110,7 @@ function equiShowObstacle(){
 }
 
 function equiShowQuestion(){
+  EQUI.locked=false;
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const qEl=document.getElementById('equi-q');
   // For combo, show sub-question
@@ -9210,16 +9215,22 @@ function equiHandleResult(correct){
 }
 
 function equiSubmit(){
+  if(EQUI.locked)return;
   const inp=document.getElementById('equi-in');
   const val=(inp?.value||'').trim();
   if(!val)return;
+  EQUI.locked=true;
   equiHandleResult(equiCheckAnswer(val));
 }
 function equiAnswerQCM(idx){
+  if(EQUI.locked)return;
+  EQUI.locked=true;
   const obs=EQUI.data.equiObstacles[EQUI.current];
   equiHandleResult(idx===parseInt(obs.answer));
 }
 function equiAnswerVF(val){
+  if(EQUI.locked)return;
+  EQUI.locked=true;
   equiHandleResult(equiCheckAnswer(val));
 }
 
@@ -9238,6 +9249,7 @@ function equiUpdateBarsDisplay(){
 function equiFinish(){
   EQUI.done=true;
   clearInterval(EQUI.timerInt);
+  EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000); // precise final time
   const limit=EQUI.data.equiTimeLimit||60;
   const over=Math.max(0,EQUI.elapsed-limit);
   const base=EQUI.scores.reduce((a,b)=>a+b,0);
