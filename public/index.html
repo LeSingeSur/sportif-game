@@ -476,6 +476,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .bpin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffffff,#d0d0d0);border:2px solid rgba(255,255,255,.6);transition:all .3s;box-shadow:0 2px 6px rgba(0,0,0,.6),inset 0 1px 2px rgba(255,255,255,.8)}
 .bpin.down{background:rgba(80,40,0,.2);border-color:rgba(80,40,0,.15);box-shadow:none;transform:scale(0.3) rotate(60deg);opacity:0.3}
 @keyframes pin-fall{0%{transform:scale(1) rotate(0deg)}30%{transform:scale(1.2) rotate(25deg)}100%{transform:scale(0.2) rotate(80deg);opacity:0.2}}
+@keyframes equiCellPop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes equiCellShake{0%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}100%{transform:translateX(0)}}
 .bpin.falling{animation:pin-fall .4s ease-out forwards}
 @keyframes ball-roll{0%{bottom:-32px}100%{bottom:90%}}
 @keyframes dem-boom{0%{transform:scale(.3);opacity:0}40%{transform:scale(1.3);opacity:1}100%{transform:scale(1.8);opacity:0}}
@@ -1538,6 +1540,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         onkeydown="if(event.key==='Enter')equiSubmit()">
       <button onclick="equiSubmit()" style="width:52px;height:52px;flex-shrink:0;background:#007830;color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">🏇</button>
     </div>
+
+    <button id="equi-giveup-btn" onclick="equiGiveUp()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (0 pt — affiche la réponse)</button>
 
     <div id="equi-fb" class="fb" style="text-align:center;font-size:15px"></div>
 
@@ -9001,6 +9005,7 @@ function setupEquitation(data){
   const wgInit=document.getElementById('equi-wordgrid');if(wgInit)wgInit.style.display='none';
   const cwInit=document.getElementById('equi-crossword');if(cwInit)cwInit.style.display='none';
   const fbInit=document.getElementById('equi-fleche-board');if(fbInit)fbInit.style.display='none';
+  const guInit=document.getElementById('equi-giveup-btn');if(guInit)guInit.style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-vf').style.display='none';
   document.getElementById('std-ans-area').style.display='none';
@@ -9009,12 +9014,35 @@ function setupEquitation(data){
 
 function equiStart(){
   EQUI.startTime=Date.now();
+  EQUI.timerPaused=false;
   EQUI.timerInt=setInterval(()=>{
     EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000);
     const el=document.getElementById('equi-timer-display');
     if(el)el.textContent=EQUI.elapsed+'s';
   },500);
   equiShowObstacle();
+}
+
+function equiPauseTimer(){
+  if(EQUI.timerPaused)return;
+  EQUI.timerPaused=true;
+  EQUI.pauseStartedAt=Date.now();
+  clearInterval(EQUI.timerInt);
+  EQUI.timerInt=null;
+  const el=document.getElementById('equi-timer-display');
+  if(el)el.innerHTML='⏸ pause';
+}
+
+function equiResumeTimer(){
+  if(!EQUI.timerPaused)return;
+  const pausedDuration=Date.now()-EQUI.pauseStartedAt;
+  EQUI.startTime+=pausedDuration; // shift forward to "erase" the paused interval
+  EQUI.timerPaused=false;
+  EQUI.timerInt=setInterval(()=>{
+    EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000);
+    const el=document.getElementById('equi-timer-display');
+    if(el)el.textContent=EQUI.elapsed+'s';
+  },500);
 }
 
 function equiInitCanvas(){
@@ -9224,6 +9252,7 @@ const FLECHE_DECAY=5; // pts perdus par mauvaise réponse, par mot
 
 function equiShowFlecheBoard(){
   EQUI.locked=false;
+  equiPauseTimer();
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4].filter(Boolean);
   const clues=[obs.question,obs.question2,obs.question3,obs.question4];
@@ -9231,7 +9260,7 @@ function equiShowFlecheBoard(){
   // Init per-obstacle state once
   EQUI.flecheState=EQUI.flecheState||{};
   if(!EQUI.flecheState[EQUI.current]){
-    EQUI.flecheState[EQUI.current]={solved:words.map(()=>false),wrongCount:words.map(()=>0)};
+    EQUI.flecheState[EQUI.current]={solved:words.map(()=>false),wrongCount:words.map(()=>0),gaveUp:false};
   }
   // Generate (cached) crossword
   EQUI.crosswords=EQUI.crosswords||{};
@@ -9242,25 +9271,41 @@ function equiShowFlecheBoard(){
   document.getElementById('equi-vf').style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-wordgrid').style.display='none';
+  const giveupBtnHide=document.getElementById('equi-giveup-btn');if(giveupBtnHide)giveupBtnHide.style.display='none';
   document.getElementById('equi-fb').textContent='';
 
   equiRenderCrosswordGrid();
   equiRenderFlecheBoard();
 }
 
-function equiRenderCrosswordGrid(){
+function equiRenderCrosswordGrid(flashWordIdx,flashColor){
   const cw=EQUI.crosswords[EQUI.current];
   const state=EQUI.flecheState[EQUI.current];
   const cwEl=document.getElementById('equi-crossword');
   if(!cwEl||!cw)return;
+  const gaveUp=state.gaveUp;
   let html=`<div style="font-size:9px;color:rgba(160,100,255,.6);letter-spacing:2px;margin-bottom:6px;text-align:center">🏹 MOT FLÉCHÉ</div>`;
   html+=`<div style="display:grid;grid-template-columns:repeat(${cw.gridW},1fr);gap:2px;max-width:${cw.gridW*24}px;margin:0 auto">`;
   for(let r=0;r<cw.gridH;r++){
     for(let c=0;c<cw.gridW;c++){
       const cell=cw.cells[r+','+c];
       if(!cell){html+=`<div style="aspect-ratio:1"></div>`;continue;}
-      const revealed=cell.words.some(wIdx=>state.solved[wIdx]);
-      html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:${revealed?'rgba(0,200,90,.12)':'rgba(160,100,255,.06)'};border:1px solid ${revealed?'rgba(0,200,90,.3)':'rgba(160,100,255,.2)'};border-radius:4px;font-family:var(--fh);font-size:12px;color:${revealed?'var(--txt)':'rgba(160,100,255,.3)'}">${revealed?cell.char:'·'}</div>`;
+      const solved=cell.words.some(wIdx=>state.solved[wIdx]);
+      const isFlash=flashWordIdx!==undefined&&cell.words.includes(flashWordIdx);
+      let style, anim='', showChar=solved;
+      if(isFlash&&flashColor==='red'){
+        style=`background:#ff3333;border:2px solid #ff3333;box-shadow:0 0 12px 2px #ff3333;color:#fff`;
+        anim='animation:equiCellShake .4s ease-out;';
+        showChar=false; // ne révèle jamais la lettre sur un mauvais essai
+      } else if(gaveUp){
+        style=`background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7)`;
+      } else if(solved){
+        style=`background:#1fd95f;border:2px solid #1fd95f;box-shadow:0 0 10px 1px #1fd95f;color:#04210f`;
+        if(isFlash)anim='animation:equiCellPop .5s ease-out;';
+      } else {
+        style=`background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.25)`;
+      }
+      html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:var(--fh);font-size:13px;font-weight:900;${style};${anim}">${showChar?cell.char:'·'}</div>`;
     }
   }
   html+=`</div>`;
@@ -9281,23 +9326,27 @@ function equiRenderFlecheBoard(){
     const solved=state.solved[i];
     const potential=Math.max(0,15-FLECHE_DECAY*state.wrongCount[i]);
     if(solved){
-      return `<div style="display:flex;align-items:center;gap:8px;background:rgba(0,200,90,.08);border:1px solid rgba(0,200,90,.3);border-radius:10px;padding:9px 12px">
+      return `<div style="display:flex;align-items:center;gap:8px;background:rgba(31,217,95,.1);border:1px solid rgba(31,217,95,.4);border-radius:10px;padding:9px 12px">
         <span style="font-size:16px">✅</span>
         <span style="flex:1;font-size:13px;color:var(--mute)">${clues[i]||''}</span>
-        <span style="font-family:var(--fh);font-size:13px;color:#00c850">${w}</span>
+        <span style="font-family:var(--fh);font-size:13px;color:#1fd95f;font-weight:900">${w}</span>
       </div>`;
     }
-    return `<div style="background:rgba(160,100,255,.06);border:1px solid rgba(160,100,255,.2);border-radius:10px;padding:9px 12px">
-      <div style="font-size:13px;color:var(--txt);margin-bottom:6px">${clues[i]||''} <span style="font-size:10px;color:#ffc800">(${potential} pts)</span></div>
+    return `<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 12px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--txt)">${clues[i]||''}</span>
+        <span style="font-size:10px;color:#ffc800">(${potential} pts)</span>
+      </div>
       <div style="display:flex;gap:6px">
         <input id="equi-fleche-in-${i}" placeholder="Mot ${i+1}…"
           onkeydown="if(event.key==='Enter'){event.preventDefault();equiFlecheSubmit(${i});}"
-          style="flex:1;background:rgba(0,0,0,.4);border:1px solid rgba(160,100,255,.3);color:var(--txt);font-size:14px;border-radius:8px;padding:7px 10px;outline:none">
+          style="flex:1;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.2);color:var(--txt);font-size:14px;border-radius:8px;padding:7px 10px;outline:none">
         <button onclick="equiFlecheSubmit(${i})" style="width:40px;height:36px;flex-shrink:0;background:#6a3fc4;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">🏹</button>
       </div>
-      <div id="equi-fleche-fb-${i}" style="font-size:12px;margin-top:4px;min-height:14px"></div>
+      <div id="equi-fleche-fb-${i}" style="margin-top:4px;min-height:18px"></div>
     </div>`;
-  }).join('');
+  }).join('')
+  + `<button onclick="equiFlecheGiveUp()" style="margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (0 pt — affiche les réponses)</button>`;
 }
 
 function equiFlecheSubmit(i){
@@ -9311,13 +9360,12 @@ function equiFlecheSubmit(i){
   const norm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
   const ans=words[i];
   const correct=levenshtein(norm(val),norm(ans))<=Math.floor(norm(ans).length*0.3);
-  const fbI=document.getElementById('equi-fleche-fb-'+i);
 
   if(correct){
     state.solved[i]=true;
     const earned=Math.max(0,15-FLECHE_DECAY*state.wrongCount[i]);
     EQUI.flecheState[EQUI.current].earnedTotal=(EQUI.flecheState[EQUI.current].earnedTotal||0)+earned;
-    equiRenderCrosswordGrid();
+    equiRenderCrosswordGrid(i);
     equiRenderFlecheBoard();
     // Check completion
     if(state.solved.every((s,idx)=>!words[idx]||s)){
@@ -9328,23 +9376,54 @@ function equiFlecheSubmit(i){
       document.getElementById('equi-score-display').textContent=gtotal;
       G.score=gtotal; setScore(gtotal,false);
       const fb=document.getElementById('equi-fb');
-      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏆 GRILLE COMPLÈTE !</span> · ${total} pts`;fb.style.color='#ffd700';}
+      const recap=words.filter(Boolean).map(w=>w).join(' · ');
+      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏆 GRILLE COMPLÈTE !</span> · ${total} pts<br><span style="font-size:12px;color:var(--mute)">Mots : ${recap}</span>`;fb.style.color='#ffd700';}
       EQUI.bars[EQUI.current]=total>=45?2:total>=20?1:0;
+      equiResumeTimer();
       equiAnimateJump(()=>{
         setTimeout(()=>{
           if(fb)fb.textContent='';
           EQUI.current++;
           equiShowObstacle();
-        },500);
+        },1800);
       });
     }
   } else {
     state.wrongCount[i]++;
-    if(fbI){fbI.innerHTML=`<span style="color:#ff8855">❌ Faux — réessaie !</span>`;}
     inp.value='';
+    equiRenderCrosswordGrid(i,'red'); // flash rouge temporaire, lettre jamais révélée
     equiRenderFlecheBoard();
+    const fbI2=document.getElementById('equi-fleche-fb-'+i);
+    if(fbI2){fbI2.innerHTML=`<span style="font-size:18px;font-family:var(--fh);font-weight:900;color:#ff5544">❌ FAUX !</span> <span style="font-size:12px;color:#ff8855">−5 pts sur ce mot</span>`;}
+    setTimeout(()=>{
+      equiRenderCrosswordGrid(); // revient au neutre
+    },600);
     setTimeout(()=>document.getElementById('equi-fleche-in-'+i)?.focus(),50);
   }
+}
+
+function equiFlecheGiveUp(){
+  if(EQUI.locked)return;
+  EQUI.locked=true;
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4].filter(Boolean);
+  const state=EQUI.flecheState[EQUI.current];
+  state.gaveUp=true;
+  EQUI.scores.push(0);
+  const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
+  document.getElementById('equi-score-display').textContent=gtotal;
+  G.score=gtotal; setScore(gtotal,false);
+  EQUI.bars[EQUI.current]=0;
+  equiRenderCrosswordGrid();
+  const fb=document.getElementById('equi-fb');
+  if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏳️ ABANDON</span> · 0 pt<br><span style="font-size:12px;color:var(--mute)">Mots : ${words.join(' · ')}</span>`;fb.style.color='var(--red)';}
+  document.getElementById('equi-fleche-board').style.display='none';
+  equiResumeTimer();
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    EQUI.current++;
+    equiShowObstacle();
+  },2200);
 }
 
 function equiShowQuestion(){
@@ -9377,6 +9456,8 @@ function equiShowQuestion(){
   document.getElementById('equi-vf').style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-fb').textContent='';
+  const giveupBtn=document.getElementById('equi-giveup-btn');
+  if(giveupBtn)giveupBtn.style.display='block';
   if(obs.type==='vf'){
     document.getElementById('equi-vf').style.display='flex';
   } else {
@@ -9584,11 +9665,13 @@ function equiHandleResult(correct){
       const total=EQUI.scores.reduce((a,b)=>a+b,0);
       document.getElementById('equi-score-display').textContent=total;
       G.score=total; setScore(total,false);
+      const recap=[obs.answer,obs.answer2,obs.answer3].map((a,idx)=>`${idx+1}.${(a||'').toUpperCase()}`).join(' · ');
+      if(fb){fb.innerHTML+=`<br><span style="font-size:11px;color:var(--mute)">Réponses : ${recap}</span>`;}
       setTimeout(()=>{
         if(fb)fb.textContent='';
         EQUI.current++;
         equiShowObstacle();
-      },1200);
+      },1800);
     }
     return;
   }
@@ -9630,6 +9713,36 @@ function equiHandleResult(correct){
   }
 }
 
+function equiGiveUp(){
+  if(EQUI.locked)return;
+  EQUI.locked=true;
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const fb=document.getElementById('equi-fb');
+  document.getElementById('equi-input-wrap').style.display='none';
+  document.getElementById('equi-vf').style.display='none';
+  document.getElementById('equi-giveup-btn').style.display='none';
+  document.getElementById('equi-q').style.display='none';
+  EQUI.scores.push(0);
+  const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
+  document.getElementById('equi-score-display').textContent=gtotal;
+  G.score=gtotal; setScore(gtotal,false);
+  EQUI.bars[EQUI.current]=0;
+  equiDrawTrack(); equiUpdateBarsDisplay();
+
+  let ansText;
+  if(obs.type==='vf'){
+    ansText=[obs.answer,obs.answer2,obs.answer3].map((a,idx)=>`${idx+1}. ${(a||'').toUpperCase()}`).join(' · ');
+  } else {
+    ansText=obs.answer;
+  }
+  if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏳️ ABANDON</span> · 0 pt<br><span style="font-size:12px;color:var(--mute)">Réponse : ${ansText}</span>`;fb.style.color='var(--red)';}
+  setTimeout(()=>{
+    if(fb)fb.textContent='';
+    EQUI.current++;
+    equiShowObstacle();
+  },2200);
+}
+
 function equiSubmit(){
   if(EQUI.locked)return;
   const inp=document.getElementById('equi-in');
@@ -9659,21 +9772,20 @@ function equiUpdateBarsDisplay(){
 function equiFinish(){
   EQUI.done=true;
   clearInterval(EQUI.timerInt);
-  EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000); // precise final time
-  const limit=EQUI.data.equiTimeLimit||60;
-  const over=Math.max(0,EQUI.elapsed-limit);
+  EQUI.elapsed=Math.floor((Date.now()-EQUI.startTime)/1000); // precise final time, info only
   const base=EQUI.scores.reduce((a,b)=>a+b,0);
-  const final=Math.max(0,base-over);
+  const final=base; // contrainte de temps désactivée pour le moment
   const fb=document.getElementById('equi-fb');
   document.getElementById('equi-q').style.display='none';
   const wgFin=document.getElementById('equi-wordgrid');if(wgFin)wgFin.style.display='none';
   const cwFin=document.getElementById('equi-crossword');if(cwFin)cwFin.style.display='none';
   const fbFin2=document.getElementById('equi-fleche-board');if(fbFin2)fbFin2.style.display='none';
+  const guFin=document.getElementById('equi-giveup-btn');if(guFin)guFin.style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-vf').style.display='none';
   if(fb){
     fb.innerHTML=`<div style="font-family:var(--fh);font-size:18px;color:#00c850">🏇 PARCOURS TERMINÉ</div>
-    <div style="font-size:13px;color:var(--mute);margin-top:4px">Score obstacles : ${base} pts${over>0?` · Dépassement : −${over} pts`:' · Dans le temps ✅'}</div>
+    <div style="font-size:13px;color:var(--mute);margin-top:4px">Temps : ${EQUI.elapsed}s</div>
     <div style="font-family:var(--fh);font-size:28px;color:#ffd700;margin-top:6px">${final} / 200</div>`;
   }
   equiDrawTrack(EQUI.canvasW||360, 0);
