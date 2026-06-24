@@ -274,7 +274,7 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
-    base.maxScore = 150;
+    base.maxScore = 250;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
@@ -660,7 +660,7 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
-    base.maxScore = 150;
+    base.maxScore = 250;
   } else if (athlete.type === 'haltero') {
     const ar = athlete.halteroArache || {};
     const ej = athlete.halteroEpaule || {};
