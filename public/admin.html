@@ -260,7 +260,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div class="type-opt" id="type-equitation" onclick="selectType('equitation')">
             <div class="type-ico">🏇</div>
             <div class="type-name">Équitation CSO</div>
-            <div class="type-desc">5 obstacles · 2 barres · 30 pts chacun · Max 150</div>
+            <div class="type-desc">5 obstacles · 2 barres · 50 pts chacun · Max 250</div>
           </div>
           <div class="type-opt" id="type-bowling" onclick="selectType('bowling')">
             <div class="type-ico">🎳</div>
@@ -1840,21 +1840,32 @@ function rouletteRng(seed){
 
 // ── ÉQUITATION ADMIN ──────────────────────────────────────────────────────
 let equiObstacles=[
-  {type:'qcm',question:'',answer:'0',choices:['','','','']},
   {type:'oxer',question:'',answer:''},
+  {type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:''},
   {type:'riviere',question:'',answer:'',multiplier:0},
-  {type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai'},
-  {type:'combo',question:'',answer:'',question2:'',answer2:''}
+  {type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},
+  {type:'mots',question:'',answer:''}
 ];
 
 const EQUI_TYPES={
-  vertical:'▲ Vertical (QCM)',
   oxer:'◆ Oxer (Texte libre)',
+  fleche:'🏹 Mot fléché (3 mots)',
   riviere:'〜 Rivière (Numérique)',
-  vf:'✓✗ Double Vrai/Faux',
-  combo:'⧫ Combinaison (2 questions)',
+  vf:'✓✗ Triple Vrai/Faux',
   mots:'🔤 Grille de mots'
 };
+
+function equiAddTrapWord(i){
+  const inp=document.getElementById('equi-trap-in-'+i);
+  const val=(inp?.value||'').trim();
+  if(!val)return;
+  equiObstacles[i].trapWords=equiObstacles[i].trapWords||[];
+  if(equiObstacles[i].trapWords.length>=4){alert('4 mots pièges maximum');return;}
+  if(equiObstacles[i].trapWords.some(t=>t.toLowerCase()===val.toLowerCase())){alert('Déjà ajouté');return;}
+  equiObstacles[i].trapWords.push(val);
+  equiAdminRender();
+  checkReady();
+}
 
 function equiAdminRender(){
   const list=document.getElementById('equi-obs-list');
@@ -1870,43 +1881,62 @@ function equiAdminRender(){
         ${Object.entries(EQUI_TYPES).map(([v,l])=>`<option value="${v}"${obs.type===v?' selected':''}>${l}</option>`).join('')}
       </select>
     </div>
-    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='vf'||obs.type==='combo'?'Affirmation / Question 1…':obs.type==='mots'?'Indice / thème (ex: pays europeen)…':'Question…'}"
+    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='vf'?'Affirmation 1…':obs.type==='fleche'?'Indice mot 1…':obs.type==='mots'?'Indice / thème (ex: pays europeen)…':'Question…'}"
       oninput="equiObstacles[${i}].question=this.value;checkReady();"
       style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
-    ${obs.type==='qcm'||obs.type==='vertical'?`
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
-        ${(obs.choices||['','','','']).map((c,ci)=>`
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="radio" name="equi-ans-${i}" ${obs.answer==ci?'checked':''} onchange="equiObstacles[${i}].answer='${ci}';checkReady();">
-            <input value="${(c||'').replace(/"/g,'&quot;')}" placeholder="${['A','B','C','D'][ci]}"
-              oninput="equiObstacles[${i}].choices=${JSON.stringify(obs.choices||['','','',''])};equiObstacles[${i}].choices[${ci}]=this.value;checkReady();"
-              style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:11px;border-radius:4px;padding:4px 6px;outline:none">
-          </div>`).join('')}
-      </div>`:
+    ${obs.type==='fleche'?`
+      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Mot 1…"
+        oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 2…"
+        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer2||'').replace(/"/g,'&quot;')}" placeholder="Mot 2…"
+        oninput="equiObstacles[${i}].answer2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question3||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 3…"
+        oninput="equiObstacles[${i}].question3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer3||'').replace(/"/g,'&quot;')}" placeholder="Mot 3…"
+        oninput="equiObstacles[${i}].answer3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none">
+      <div style="font-size:10px;color:var(--mute);margin-top:6px">🏹 Si 2 mots partagent une lettre, la grille les croise automatiquement.</div>`:
     obs.type==='vf'?`
       <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 1 :</div>
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer='vrai';checkReady();"> Vrai</label>
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='faux'?'checked':''} onchange="equiObstacles[${i}].answer='faux';checkReady();"> Faux</label>
       </div>
-      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Affirmation / Question 2…"
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Affirmation 2…"
         oninput="equiObstacles[${i}].question2=this.value;checkReady();"
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
       <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 2 :</div>
-      <div style="display:flex;gap:6px;margin-bottom:6px">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer2='vrai';checkReady();"> Vrai</label>
         <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='faux'?'checked':''} onchange="equiObstacles[${i}].answer2='faux';checkReady();"> Faux</label>
+      </div>
+      <input value="${(obs.question3||'').replace(/"/g,'&quot;')}" placeholder="Affirmation 3…"
+        oninput="equiObstacles[${i}].question3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 3 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf3-${i}" ${obs.answer3==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer3='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf3-${i}" ${obs.answer3==='faux'?'checked':''} onchange="equiObstacles[${i}].answer3='faux';checkReady();"> Faux</label>
       </div>`:
-    obs.type==='combo'?`
-      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse Q1…"
+    obs.type==='mots'?`
+      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Mot à trouver dans la grille…"
         oninput="equiObstacles[${i}].answer=this.value;checkReady();"
-        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;margin-bottom:4px">
-      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Question 2…"
-        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
-        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;margin-bottom:4px">
-      <input value="${(obs.answer2||'').replace(/"/g,'&quot;')}" placeholder="Réponse Q2…"
-        oninput="equiObstacles[${i}].answer2=this.value;checkReady();"
-        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">`:
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:4px">Mots pièges (optionnel, max 4) :</div>
+      <div style="display:flex;gap:4px;margin-bottom:6px">
+        <input id="equi-trap-in-${i}" placeholder="Ajouter un mot piège…"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();equiAddTrapWord(${i});}"
+          style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+        <button onclick="equiAddTrapWord(${i})" type="button" style="padding:5px 12px;border-radius:4px;border:none;background:rgba(0,200,80,.15);color:var(--neon);cursor:pointer;font-size:13px;font-weight:700">+</button>
+      </div>
+      ${(obs.trapWords&&obs.trapWords.length)?`<div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${obs.trapWords.map((tw,ti)=>`<span style="background:rgba(255,100,50,.12);border:1px solid rgba(255,100,50,.3);color:#ff8855;font-size:11px;padding:3px 8px;border-radius:99px;display:inline-flex;align-items:center;gap:5px">🪤 ${tw}<span onclick="equiObstacles[${i}].trapWords.splice(${ti},1);equiAdminRender();checkReady();" style="cursor:pointer;color:rgba(255,140,90,.8);font-weight:900">✕</span></span>`).join('')}
+      </div>`:''}`:
     obs.type==='riviere'?`
       <div style="display:flex;gap:6px;margin-bottom:6px">
         <input value="${obs.answer||''}" placeholder="Réponse (nombre)" type="number"
@@ -1916,7 +1946,7 @@ function equiAdminRender(){
           oninput="equiObstacles[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
           style="flex:1;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
       </div>`:
-    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='mots'?'Mot à trouver dans la grille…':'Réponse exacte…'}"
+    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte…"
       oninput="equiObstacles[${i}].answer=this.value;checkReady();"
       style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:4px">`}`;
     list.appendChild(div);
@@ -1925,7 +1955,7 @@ function equiAdminRender(){
 
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
-  equiObstacles=[{type:'qcm',question:'',answer:'0',choices:['','','','']},{type:'oxer',question:'',answer:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai'},{type:'combo',question:'',answer:'',question2:'',answer2:''}];
+  equiObstacles=[{type:'oxer',question:'',answer:''},{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:''}];
 function bowlingAdminRender(){
   const list=document.getElementById('bowling-q-list');
   if(!list)return;
@@ -2336,7 +2366,8 @@ function checkReady(){
   else if(currentType==='equitation'){
     hasContent=equiObstacles.length===5&&equiObstacles.every(o=>{
       const baseOk=o.question&&(o.answer||o.answer==='0');
-      if(o.type==='vf'||o.type==='combo') return baseOk&&o.question2&&o.answer2;
+      if(o.type==='vf') return baseOk&&o.question2&&o.answer2&&o.question3&&o.answer3;
+      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3;
       if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
       return baseOk;
     });
