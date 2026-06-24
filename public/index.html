@@ -1523,6 +1523,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="equi-q" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,200,80,.15);border-radius:12px;padding:14px;font-size:16px;font-weight:700;color:var(--txt);text-align:center;line-height:1.5;display:none"></div>
     <div id="equi-wordgrid" style="display:none;background:rgba(0,0,0,.45);border:1px solid rgba(0,200,80,.25);border-radius:12px;padding:10px;margin-bottom:2px"></div>
     <div id="equi-crossword" style="display:none;background:rgba(0,0,0,.45);border:1px solid rgba(160,100,255,.3);border-radius:12px;padding:12px;margin-bottom:2px"></div>
+    <div id="equi-fleche-board" style="display:none;flex-direction:column;gap:8px"></div>
 
     <!-- Vrai/Faux -->
     <div id="equi-vf" style="display:none;display:flex;gap:8px">
@@ -1541,11 +1542,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="equi-fb" class="fb" style="text-align:center;font-size:15px"></div>
 
     <!-- Rules -->
-    <div id="equi-rules" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,200,80,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
-      <div style="font-family:var(--fh);font-size:14px;color:#00c850;margin-bottom:8px;letter-spacing:2px">🏇 ÉQUITATION CSO · MAX 250</div>
-      5 obstacles · 2 barres chacun · 50 pts par obstacle<br>
-      ✅ <strong style="color:var(--txt)">Net</strong> = 50 pts · ⚠️ <strong style="color:#ffaa00">1 barre tombée</strong> = 25 pts · ❌ <strong style="color:var(--red)">Double faute</strong> = 0 pts<br>
-      〜 <strong style="color:var(--txt)">Rivière</strong> : score continu selon ta précision (jusqu'à 50 pts)<br>
+    <div id="equi-rules" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,200,80,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.8;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:14px;color:#00c850;margin-bottom:8px;letter-spacing:2px">🏇 ÉQUITATION CSO · MAX 200</div>
+      🏹 <strong style="color:var(--txt)">Mot fléché</strong> (60 pts) — 4 mots, ordre libre, essais illimités · erreur = −5 pts sur ce mot<br>
+      〜 <strong style="color:var(--txt)">Rivière</strong> (50 pts) — 3 essais, score continu selon ta précision<br>
+      ✓✗ <strong style="color:var(--txt)">Triple Vrai/Faux</strong> (45 pts) — 15 pts par affirmation juste<br>
+      🔤 <strong style="color:var(--txt)">Grille de mots</strong> (45 pts) — essais illimités, erreur = −15 pts<br>
       ⏱ Dépassement du temps : −1 pt/seconde
       <button onclick="document.getElementById('equi-rules').style.display='none';equiStart();" style="margin-top:10px;width:100%!important;background:linear-gradient(90deg,#005a20,#009640);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:2px">🏇 EN PISTE !</button>
     </div>
@@ -8987,13 +8989,18 @@ function setupEquitation(data){
   EQUI.bars=data.equiObstacles.map(()=>2); // 2 bars standing per obstacle
   EQUI.wordGrids={};
   EQUI.crosswords={};
-  document.getElementById('game-tip').innerHTML='Franchis 5 obstacles · 2 essais chacun · <em>Hors temps = −1 pt/s</em>';
+  EQUI.flecheState={};
+  EQUI.vfEarned={};
+  EQUI.motsWrong={};
+  EQUI.riviereBest={};
+  document.getElementById('game-tip').innerHTML='4 obstacles variés · Essais multiples · <em>Hors temps = −1 pt/s</em>';
   hideAllZones();
   document.getElementById('equi-zone').style.display='flex';
   document.getElementById('equi-rules').style.display='block';
   document.getElementById('equi-q').style.display='none';
   const wgInit=document.getElementById('equi-wordgrid');if(wgInit)wgInit.style.display='none';
   const cwInit=document.getElementById('equi-crossword');if(cwInit)cwInit.style.display='none';
+  const fbInit=document.getElementById('equi-fleche-board');if(fbInit)fbInit.style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-vf').style.display='none';
   document.getElementById('std-ans-area').style.display='none';
@@ -9196,27 +9203,158 @@ function equiAnimateJump(onDone){
 }
 
 function equiShowObstacle(){
-  if(EQUI.current>=( EQUI.data?.equiObstacles?.length||5)){equiFinish();return;}
+  if(EQUI.current>=( EQUI.data?.equiObstacles?.length||4)){equiFinish();return;}
   const obs=EQUI.data.equiObstacles[EQUI.current];
   EQUI.attempt=0; EQUI.subQ=0;
   equiUpdateBarsDisplay();
   equiDrawTrack();
   const badge=document.getElementById('equi-type-badge');
-  const labels={oxer:'◆ OXER',fleche:'🏹 MOT FLÉCHÉ',riviere:'〜 RIVIÈRE',vf:'✓✗ TRIPLE V/F',mots:'🔤 GRILLE DE MOTS'};
+  const labels={fleche:'🏹 MOT FLÉCHÉ',riviere:'〜 RIVIÈRE',vf:'✓✗ TRIPLE V/F',mots:'🔤 GRILLE DE MOTS'};
   if(badge){badge.textContent=labels[obs.type]||obs.type;badge.style.display='block';}
   document.getElementById('equi-obs-display').textContent=(EQUI.current+1)+'/'+(EQUI.data.equiObstacles.length);
-  equiShowQuestion();
+  if(obs.type==='fleche'){
+    equiShowFlecheBoard();
+  } else {
+    const fbEl=document.getElementById('equi-fleche-board');if(fbEl)fbEl.style.display='none';
+    equiShowQuestion();
+  }
+}
+
+const FLECHE_DECAY=5; // pts perdus par mauvaise réponse, par mot
+
+function equiShowFlecheBoard(){
+  EQUI.locked=false;
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4].filter(Boolean);
+  const clues=[obs.question,obs.question2,obs.question3,obs.question4];
+
+  // Init per-obstacle state once
+  EQUI.flecheState=EQUI.flecheState||{};
+  if(!EQUI.flecheState[EQUI.current]){
+    EQUI.flecheState[EQUI.current]={solved:words.map(()=>false),wrongCount:words.map(()=>0)};
+  }
+  // Generate (cached) crossword
+  EQUI.crosswords=EQUI.crosswords||{};
+  if(!EQUI.crosswords[EQUI.current]) EQUI.crosswords[EQUI.current]=equiGenerateCrossword(words);
+
+  // Hide single-question UI, show board
+  document.getElementById('equi-q').style.display='none';
+  document.getElementById('equi-vf').style.display='none';
+  document.getElementById('equi-input-wrap').style.display='none';
+  document.getElementById('equi-wordgrid').style.display='none';
+  document.getElementById('equi-fb').textContent='';
+
+  equiRenderCrosswordGrid();
+  equiRenderFlecheBoard();
+}
+
+function equiRenderCrosswordGrid(){
+  const cw=EQUI.crosswords[EQUI.current];
+  const state=EQUI.flecheState[EQUI.current];
+  const cwEl=document.getElementById('equi-crossword');
+  if(!cwEl||!cw)return;
+  let html=`<div style="font-size:9px;color:rgba(160,100,255,.6);letter-spacing:2px;margin-bottom:6px;text-align:center">🏹 MOT FLÉCHÉ</div>`;
+  html+=`<div style="display:grid;grid-template-columns:repeat(${cw.gridW},1fr);gap:2px;max-width:${cw.gridW*24}px;margin:0 auto">`;
+  for(let r=0;r<cw.gridH;r++){
+    for(let c=0;c<cw.gridW;c++){
+      const cell=cw.cells[r+','+c];
+      if(!cell){html+=`<div style="aspect-ratio:1"></div>`;continue;}
+      const revealed=cell.words.some(wIdx=>state.solved[wIdx]);
+      html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:${revealed?'rgba(0,200,90,.12)':'rgba(160,100,255,.06)'};border:1px solid ${revealed?'rgba(0,200,90,.3)':'rgba(160,100,255,.2)'};border-radius:4px;font-family:var(--fh);font-size:12px;color:${revealed?'var(--txt)':'rgba(160,100,255,.3)'}">${revealed?cell.char:'·'}</div>`;
+    }
+  }
+  html+=`</div>`;
+  cwEl.innerHTML=html;
+  cwEl.style.display='block';
+}
+
+function equiRenderFlecheBoard(){
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4];
+  const clues=[obs.question,obs.question2,obs.question3,obs.question4];
+  const state=EQUI.flecheState[EQUI.current];
+  const board=document.getElementById('equi-fleche-board');
+  if(!board)return;
+  board.style.display='flex';
+  board.innerHTML=words.map((w,i)=>{
+    if(!w)return '';
+    const solved=state.solved[i];
+    const potential=Math.max(0,15-FLECHE_DECAY*state.wrongCount[i]);
+    if(solved){
+      return `<div style="display:flex;align-items:center;gap:8px;background:rgba(0,200,90,.08);border:1px solid rgba(0,200,90,.3);border-radius:10px;padding:9px 12px">
+        <span style="font-size:16px">✅</span>
+        <span style="flex:1;font-size:13px;color:var(--mute)">${clues[i]||''}</span>
+        <span style="font-family:var(--fh);font-size:13px;color:#00c850">${w}</span>
+      </div>`;
+    }
+    return `<div style="background:rgba(160,100,255,.06);border:1px solid rgba(160,100,255,.2);border-radius:10px;padding:9px 12px">
+      <div style="font-size:13px;color:var(--txt);margin-bottom:6px">${clues[i]||''} <span style="font-size:10px;color:#ffc800">(${potential} pts)</span></div>
+      <div style="display:flex;gap:6px">
+        <input id="equi-fleche-in-${i}" placeholder="Mot ${i+1}…"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();equiFlecheSubmit(${i});}"
+          style="flex:1;background:rgba(0,0,0,.4);border:1px solid rgba(160,100,255,.3);color:var(--txt);font-size:14px;border-radius:8px;padding:7px 10px;outline:none">
+        <button onclick="equiFlecheSubmit(${i})" style="width:40px;height:36px;flex-shrink:0;background:#6a3fc4;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">🏹</button>
+      </div>
+      <div id="equi-fleche-fb-${i}" style="font-size:12px;margin-top:4px;min-height:14px"></div>
+    </div>`;
+  }).join('');
+}
+
+function equiFlecheSubmit(i){
+  if(EQUI.locked)return;
+  const obs=EQUI.data.equiObstacles[EQUI.current];
+  const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4];
+  const inp=document.getElementById('equi-fleche-in-'+i);
+  const val=(inp?.value||'').trim();
+  if(!val)return;
+  const state=EQUI.flecheState[EQUI.current];
+  const norm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
+  const ans=words[i];
+  const correct=levenshtein(norm(val),norm(ans))<=Math.floor(norm(ans).length*0.3);
+  const fbI=document.getElementById('equi-fleche-fb-'+i);
+
+  if(correct){
+    state.solved[i]=true;
+    const earned=Math.max(0,15-FLECHE_DECAY*state.wrongCount[i]);
+    EQUI.flecheState[EQUI.current].earnedTotal=(EQUI.flecheState[EQUI.current].earnedTotal||0)+earned;
+    equiRenderCrosswordGrid();
+    equiRenderFlecheBoard();
+    // Check completion
+    if(state.solved.every((s,idx)=>!words[idx]||s)){
+      EQUI.locked=true;
+      const total=EQUI.flecheState[EQUI.current].earnedTotal;
+      EQUI.scores.push(total);
+      const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
+      document.getElementById('equi-score-display').textContent=gtotal;
+      G.score=gtotal; setScore(gtotal,false);
+      const fb=document.getElementById('equi-fb');
+      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏆 GRILLE COMPLÈTE !</span> · ${total} pts`;fb.style.color='#ffd700';}
+      EQUI.bars[EQUI.current]=total>=45?2:total>=20?1:0;
+      equiAnimateJump(()=>{
+        setTimeout(()=>{
+          if(fb)fb.textContent='';
+          EQUI.current++;
+          equiShowObstacle();
+        },500);
+      });
+    }
+  } else {
+    state.wrongCount[i]++;
+    if(fbI){fbI.innerHTML=`<span style="color:#ff8855">❌ Faux — réessaie !</span>`;}
+    inp.value='';
+    equiRenderFlecheBoard();
+    setTimeout(()=>document.getElementById('equi-fleche-in-'+i)?.focus(),50);
+  }
 }
 
 function equiShowQuestion(){
   EQUI.locked=false;
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const qEl=document.getElementById('equi-q');
-  const isMultiRound=obs.type==='vf'||obs.type==='fleche';
+  const isMultiRound=obs.type==='vf';
   const qFields=['question','question2','question3'];
   const q=isMultiRound?(obs[qFields[EQUI.subQ]]||obs.question):obs.question;
-  const roundLabel=obs.type==='vf'?'AFFIRMATION':'MOT';
-  const roundTag=isMultiRound?`<div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-bottom:4px">${roundLabel} ${EQUI.subQ+1}/3</div>`:'';
+  const roundTag=isMultiRound?`<div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-bottom:4px">AFFIRMATION ${EQUI.subQ+1}/3</div>`:'';
   if(qEl){qEl.innerHTML=roundTag+q;qEl.style.display='block';}
 
   // Word grid (wordsearch) obstacle
@@ -9224,7 +9362,7 @@ function equiShowQuestion(){
   if(wgEl){
     if(obs.type==='mots'){
       EQUI.wordGrids=EQUI.wordGrids||{};
-      if(!EQUI.wordGrids[EQUI.current]) EQUI.wordGrids[EQUI.current]=equiGenerateWordGrid(obs.answer,obs.trapWords);
+      if(!EQUI.wordGrids[EQUI.current]) EQUI.wordGrids[EQUI.current]=equiGenerateWordGrid(obs.answer,obs.trapWords,obs.gridSize);
       const wg=EQUI.wordGrids[EQUI.current];
       wgEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${wg.size},1fr);gap:2px;max-width:${wg.size*26}px;margin:0 auto">`+
         wg.grid.map(row=>row.map(ch=>`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(0,200,80,.07);border:1px solid rgba(0,200,80,.15);border-radius:4px;font-family:var(--fh);font-size:13px;color:var(--txt)">${ch}</div>`).join('')).join('')+
@@ -9232,30 +9370,8 @@ function equiShowQuestion(){
       wgEl.style.display='block';
     } else { wgEl.style.display='none'; }
   }
-
-  // Mot fléché (crossword) obstacle
   const cwEl=document.getElementById('equi-crossword');
-  if(cwEl){
-    if(obs.type==='fleche'){
-      EQUI.crosswords=EQUI.crosswords||{};
-      if(!EQUI.crosswords[EQUI.current]) EQUI.crosswords[EQUI.current]=equiGenerateCrossword([obs.answer,obs.answer2,obs.answer3]);
-      const cw=EQUI.crosswords[EQUI.current];
-      let html=`<div style="font-size:9px;color:rgba(160,100,255,.6);letter-spacing:2px;margin-bottom:6px;text-align:center">🏹 MOT FLÉCHÉ</div>`;
-      html+=`<div style="display:grid;grid-template-columns:repeat(${cw.gridW},1fr);gap:2px;max-width:${cw.gridW*26}px;margin:0 auto">`;
-      for(let r=0;r<cw.gridH;r++){
-        for(let c=0;c<cw.gridW;c++){
-          const cell=cw.cells[r+','+c];
-          if(!cell){html+=`<div style="aspect-ratio:1"></div>`;continue;}
-          const revealed=cell.words.some(wIdx=>wIdx<EQUI.subQ);
-          const isCurrent=cell.words.includes(EQUI.subQ);
-          html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:${isCurrent?'rgba(160,100,255,.15)':'rgba(160,100,255,.06)'};border:1px solid rgba(160,100,255,${isCurrent?'.5':'.2'});border-radius:4px;font-family:var(--fh);font-size:13px;color:${revealed?'var(--txt)':'rgba(160,100,255,.3)'}">${revealed?cell.char:'·'}</div>`;
-        }
-      }
-      html+=`</div>`;
-      cwEl.innerHTML=html;
-      cwEl.style.display='block';
-    } else { cwEl.style.display='none'; }
-  }
+  if(cwEl) cwEl.style.display='none'; // crossword only used by dedicated fleche board
 
   // Show right input type
   document.getElementById('equi-vf').style.display='none';
@@ -9275,7 +9391,7 @@ function equiShowQuestion(){
 
 function equiGenerateCrossword(words){
   const W=(words||[]).map(w=>(w||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,''));
-  if(W.length<3||W.some(w=>!w)) return {cells:{},gridH:1,gridW:1,placements:[]};
+  if(W.length<2||W.some(w=>!w)) return {cells:{},gridH:1,gridW:1,placements:[]};
   const cells={};
   const placements=[];
   function canPlace(word,row,col,dir){
@@ -9286,6 +9402,14 @@ function equiGenerateCrossword(words){
     }
     return true;
   }
+  function countIntersections(word,row,col,dir){
+    let n=0;
+    for(let i=0;i<word.length;i++){
+      const r=dir==='h'?row:row+i, c=dir==='h'?col+i:col;
+      if(cells[r+','+c]) n++;
+    }
+    return n;
+  }
   function place(word,row,col,dir,idx){
     for(let i=0;i<word.length;i++){
       const r=dir==='h'?row:row+i, c=dir==='h'?col+i:col;
@@ -9293,25 +9417,34 @@ function equiGenerateCrossword(words){
       if(!cells[key]) cells[key]={char:word[i],words:[]};
       if(!cells[key].words.includes(idx)) cells[key].words.push(idx);
     }
-    placements.push({row,col,dir,word:idx,len:word.length});
+    placements.push({row,col,dir,word:idx,str:word,len:word.length});
   }
+  // Anchor word 0
   place(W[0],0,0,'h',0);
-  let w1Placed=false;
-  for(let i=0;i<W[0].length&&!w1Placed;i++)for(let j=0;j<W[1].length&&!w1Placed;j++){
-    if(W[0][i]===W[1][j]){const row=-j,col=i;if(canPlace(W[1],row,col,'v')){place(W[1],row,col,'v',1);w1Placed=true;}}
-  }
-  if(!w1Placed) place(W[1],3,0,'h',1);
-  let w2Placed=false;
-  for(let i=0;i<W[0].length&&!w2Placed;i++)for(let j=0;j<W[2].length&&!w2Placed;j++){
-    if(W[0][i]===W[2][j]){const row=-j,col=i;if(canPlace(W[2],row,col,'v')){place(W[2],row,col,'v',2);w2Placed=true;}}
-  }
-  if(!w2Placed&&w1Placed){
-    const w1Info=placements.find(p=>p.word===1);
-    for(let i=0;i<W[1].length&&!w2Placed;i++)for(let j=0;j<W[2].length&&!w2Placed;j++){
-      if(W[1][i]===W[2][j]){const row=w1Info.row+i,col=w1Info.col-j;if(canPlace(W[2],row,col,'h')){place(W[2],row,col,'h',2);w2Placed=true;}}
+  // For each subsequent word, search ALL already-placed words for the BEST crossing
+  // (most resulting intersections — sometimes 2 letters shared with different words)
+  for(let wi=1;wi<W.length;wi++){
+    const word=W[wi];
+    let candidates=[];
+    for(const p of placements){
+      for(let i=0;i<p.str.length;i++){
+        for(let j=0;j<word.length;j++){
+          if(p.str[i]!==word[j]) continue;
+          const dir=p.dir==='h'?'v':'h';
+          let row,col;
+          if(p.dir==='h'){ row=p.row-j; col=p.col+i; } else { row=p.row+i; col=p.col-j; }
+          if(canPlace(word,row,col,dir)) candidates.push({row,col,dir,score:countIntersections(word,row,col,dir)});
+        }
+      }
+    }
+    if(candidates.length>0){
+      candidates.sort((a,b)=>b.score-a.score);
+      place(word,candidates[0].row,candidates[0].col,candidates[0].dir,wi);
+    } else {
+      const maxRow=Math.max(...Object.keys(cells).map(k=>parseInt(k.split(',')[0])));
+      place(word,maxRow+3,0,'h',wi);
     }
   }
-  if(!w2Placed) place(W[2],6,0,'h',2);
   const keys=Object.keys(cells);
   const rows=keys.map(k=>parseInt(k.split(',')[0])), cols=keys.map(k=>parseInt(k.split(',')[1]));
   const minR=Math.min(...rows), minC=Math.min(...cols);
@@ -9321,7 +9454,7 @@ function equiGenerateCrossword(words){
   return {cells:normCells,gridH,gridW,placements};
 }
 
-function equiGenerateWordGrid(word,trapWords){
+function equiGenerateWordGrid(word,trapWords,customSize){
   const clean=s=>(s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
   const target=clean(word);
   if(!target) return {grid:[['?']],size:1};
@@ -9329,7 +9462,8 @@ function equiGenerateWordGrid(word,trapWords){
   const allWords=[target,...traps];
   const totalLen=allWords.reduce((a,w)=>a+w.length,0);
   const maxLen=Math.max(...allWords.map(w=>w.length));
-  const size=Math.min(12,Math.max(7,maxLen+2,Math.ceil(Math.sqrt(totalLen*2.2))));
+  const autoSize=Math.min(12,Math.max(7,maxLen+2,Math.ceil(Math.sqrt(totalLen*2.2))));
+  const size=customSize>0?Math.max(maxLen,Math.min(14,customSize)):autoSize;
   const grid=Array.from({length:size},()=>Array(size).fill(null));
   const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 
@@ -9365,7 +9499,7 @@ function equiGenerateWordGrid(word,trapWords){
 function equiCheckAnswer(playerAnswer){
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const aFields=['answer','answer2','answer3'];
-  const ans=(obs.type==='vf'||obs.type==='fleche')?(obs[aFields[EQUI.subQ]]||obs.answer):obs.answer;
+  const ans=obs.type==='vf'?(obs[aFields[EQUI.subQ]]||obs.answer):obs.answer;
   const norm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
   if(obs.type==='riviere'){
     const p=parseFloat(playerAnswer), c=parseFloat(ans);
@@ -9379,16 +9513,15 @@ function equiCheckAnswer(playerAnswer){
     return pts>=8; // 8/10 min = correct
   }
   if(obs.type==='vf') return norm(playerAnswer)===norm(ans);
-  // text (oxer/fleche/mots): levenshtein
+  // text (mots): levenshtein
   return levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(norm(ans).length*0.3);
 }
 
 function equiHandleResult(correct){
   const fb=document.getElementById('equi-fb');
   const obs=EQUI.data.equiObstacles[EQUI.current];
-  const isMultiRound=obs.type==='vf'||obs.type==='fleche';
 
-  // RIVIÈRE: scoring continu basé sur la précision, garde le meilleur des 2 essais
+  // RIVIÈRE: scoring continu basé sur la précision, garde le meilleur de 3 essais
   if(obs.type==='riviere'){
     const ptsThisAttempt=EQUI.riviereLastPts||0; // 0-10
     const continuousScore=Math.round(ptsThisAttempt/10*50);
@@ -9396,8 +9529,8 @@ function equiHandleResult(correct){
     const bestSoFar=Math.max(EQUI.riviereBest[EQUI.current]||0,continuousScore);
     EQUI.riviereBest[EQUI.current]=bestSoFar;
 
-    if(ptsThisAttempt>=10||EQUI.attempt>=1){
-      // Parfait du 1er coup, OU c'était le 2e essai → on finalise
+    if(ptsThisAttempt>=10||EQUI.attempt>=2){
+      // Parfait, OU c'était le 3e (dernier) essai → on finalise
       const finalScore=Math.min(50,bestSoFar);
       EQUI.scores.push(finalScore);
       const total=EQUI.scores.reduce((a,b)=>a+b,0);
@@ -9407,104 +9540,94 @@ function equiHandleResult(correct){
       equiDrawTrack(); equiUpdateBarsDisplay();
       const label=finalScore>=45?'🏆 EXCELLENT !':finalScore>=20?'⚠️ FRANCHI':'❌ RATÉ';
       const col=finalScore>=45?'#ffd700':finalScore>=20?'#ffaa00':'var(--red)';
-      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · ${finalScore} pts<br><span style="font-size:12px;color:var(--mute)">Réponse : ${obs.answer}</span>`;fb.style.color=col;}
+      if(fb){fb.innerHTML=`<span style="font-size:24px;font-family:var(--fh);font-weight:900">${label}</span> · ${finalScore} pts<br><span style="font-size:13px;color:var(--mute)">Réponse : ${obs.answer}</span>`;fb.style.color=col;}
       setTimeout(()=>{
         if(fb)fb.textContent='';
         EQUI.current++;
         equiShowObstacle();
       },1800);
     } else {
-      // Pas parfait, 1er essai → on propose un 2e essai
-      EQUI.attempt=1;
+      // Pas parfait → on propose un nouvel essai (jusqu'à 3 au total)
+      EQUI.attempt++;
       EQUI.bars[EQUI.current]=1;
       equiDrawTrack(); equiUpdateBarsDisplay();
-      const hint=EQUI.riviereHint?`<br><span style="font-size:12px;color:var(--mute)">${EQUI.riviereHint} · ${continuousScore} pts pour l'instant</span>`:'';
-      if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">⚠️ PAS PARFAIT</span>${hint}`;fb.style.color='#ffaa00';}
-      setTimeout(()=>equiShowQuestion(),1200);
+      const remaining=3-EQUI.attempt;
+      const dirText=(EQUI.riviereHint||'').split('·')[0]||'';
+      if(fb){
+        fb.innerHTML=`<span style="font-size:28px;font-family:var(--fh);font-weight:900;letter-spacing:1px">${dirText}</span><br><span style="font-size:13px;color:#ffc800">${continuousScore} pts pour l'instant · ${remaining} essai${remaining>1?'s':''} restant${remaining>1?'s':''}</span>`;
+        fb.style.color='#ffaa00';
+      }
+      setTimeout(()=>equiShowQuestion(),1300);
     }
     return;
   }
 
-  // Multi-round (vf/fleche): rounds 0 and 1 are intermediate — no retry, no finalize, just advance
-  if(isMultiRound&&EQUI.subQ<2){
-    if(!correct) EQUI.bars[EQUI.current]--; // 1 erreur = 1 barre tombée, immédiat
+  // VF (Triple Vrai/Faux): chaque affirmation vaut 15 pts indépendamment, pas de retry (binaire)
+  if(obs.type==='vf'){
+    EQUI.vfEarned=EQUI.vfEarned||{};
+    EQUI.vfEarned[EQUI.current]=EQUI.vfEarned[EQUI.current]||0;
+    if(correct) EQUI.vfEarned[EQUI.current]+=15;
+    if(!correct) EQUI.bars[EQUI.current]--; // visuel uniquement
     equiDrawTrack();
     equiUpdateBarsDisplay();
     if(fb){
-      if(correct){fb.textContent=obs.type==='vf'?'✅ Affirmation juste !':'✅ Mot trouvé !';fb.style.color='var(--neon)';}
-      else{fb.innerHTML=`<span style="font-size:20px">⚠️</span> ${obs.type==='vf'?'Faux !':'Pas le bon mot !'}`;fb.style.color='#ffaa00';}
+      if(correct){fb.textContent='✅ Affirmation juste ! +15 pts';fb.style.color='var(--neon)';}
+      else{fb.innerHTML=`<span style="font-size:20px">⚠️</span> Faux ! 0 pt pour celle-ci`;fb.style.color='#ffaa00';}
     }
-    EQUI.subQ++;
-    setTimeout(()=>equiShowQuestion(),correct?800:1000);
-    return;
-  }
-  if(correct){
-    const score=EQUI.bars[EQUI.current]===2?50:25;
-    EQUI.scores.push(score);
-    const total=EQUI.scores.reduce((a,b)=>a+b,0);
-    document.getElementById('equi-score-display').textContent=total;
-    G.score=total; setScore(total,false);
-    if(obs.type==='fleche') equiRevealCrosswordFull();
-    if(fb){
-      const label=EQUI.bars[EQUI.current]===2?'🏆 NET !':'✅ FRANCHI (1 barre)';
-      fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · +${score} pts`;
-      fb.style.color=EQUI.bars[EQUI.current]===2?'#ffd700':'var(--neon)';
-    }
-    equiAnimateJump(()=>{
-      setTimeout(()=>{
-        if(fb)fb.textContent='';
-        EQUI.current++;
-        equiShowObstacle();
-      },400);
-    });
-  } else {
-    EQUI.bars[EQUI.current]--;
-    equiDrawTrack();
-    equiUpdateBarsDisplay();
-    const canRetry=EQUI.bars[EQUI.current]>0&&EQUI.attempt===0&&!isMultiRound;
-    if(canRetry){
-      // 1 bar fallen, try again — answer NOT revealed (would trivialize the retry)
-      EQUI.attempt=1;
-      if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">⚠️ BARRE TOMBÉE</span>`;fb.style.color='#ffaa00';}
-      setTimeout(()=>equiShowQuestion(),1200);
+    if(EQUI.subQ<2){
+      EQUI.subQ++;
+      setTimeout(()=>equiShowQuestion(),correct?800:1000);
     } else {
-      // Finalize obstacle: score reflects REMAINING bars (floored at 0), not an automatic 0
-      const remainingBars=Math.max(0,EQUI.bars[EQUI.current]);
-      const score=remainingBars>=2?50:remainingBars===1?25:0;
-      EQUI.scores.push(score);
+      // 3e affirmation traitée → finalise l'obstacle
+      const total15=EQUI.vfEarned[EQUI.current];
+      EQUI.scores.push(total15);
       const total=EQUI.scores.reduce((a,b)=>a+b,0);
       document.getElementById('equi-score-display').textContent=total;
       G.score=total; setScore(total,false);
-      if(obs.type==='fleche') equiRevealCrosswordFull();
-      const aFields=['answer','answer2','answer3'];
-      const ansShown=isMultiRound?(obs[aFields[EQUI.subQ]]||obs.answer):obs.answer;
-      const label=score===0?'❌ DOUBLE FAUTE':'⚠️ FRANCHI (1 barre)';
-      const col=score===0?'var(--red)':'#ffaa00';
-      if(fb){fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · ${score} pts<br><span style="font-size:12px;color:var(--mute)">Réponse : ${ansShown}</span>`;fb.style.color=col;}
       setTimeout(()=>{
         if(fb)fb.textContent='';
         EQUI.current++;
         equiShowObstacle();
-      },1800);
+      },1200);
     }
+    return;
   }
-}
 
-function equiRevealCrosswordFull(){
-  const cw=EQUI.crosswords&&EQUI.crosswords[EQUI.current];
-  const cwEl=document.getElementById('equi-crossword');
-  if(!cw||!cwEl)return;
-  let html=`<div style="font-size:9px;color:rgba(160,100,255,.6);letter-spacing:2px;margin-bottom:6px;text-align:center">🏹 MOT FLÉCHÉ</div>`;
-  html+=`<div style="display:grid;grid-template-columns:repeat(${cw.gridW},1fr);gap:2px;max-width:${cw.gridW*26}px;margin:0 auto">`;
-  for(let r=0;r<cw.gridH;r++){
-    for(let c=0;c<cw.gridW;c++){
-      const cell=cw.cells[r+','+c];
-      if(!cell){html+=`<div style="aspect-ratio:1"></div>`;continue;}
-      html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(0,200,90,.12);border:1px solid rgba(0,200,90,.3);border-radius:4px;font-family:var(--fh);font-size:13px;color:var(--txt)">${cell.char}</div>`;
+  // MOTS (grille de mots): essais illimités, -15 pts par erreur, pas de réponse révélée
+  if(obs.type==='mots'){
+    const MOTS_DECAY=15, MOTS_MAX=45;
+    EQUI.motsWrong=EQUI.motsWrong||{};
+    EQUI.motsWrong[EQUI.current]=EQUI.motsWrong[EQUI.current]||0;
+    if(correct){
+      const potential=Math.max(0,MOTS_MAX-MOTS_DECAY*EQUI.motsWrong[EQUI.current]);
+      EQUI.scores.push(potential);
+      const total=EQUI.scores.reduce((a,b)=>a+b,0);
+      document.getElementById('equi-score-display').textContent=total;
+      G.score=total; setScore(total,false);
+      EQUI.bars[EQUI.current]=potential>=MOTS_MAX?2:potential>0?1:0;
+      equiDrawTrack(); equiUpdateBarsDisplay();
+      if(fb){
+        const label=potential>=MOTS_MAX?'🏆 TROUVÉ DU 1ER COUP !':'✅ TROUVÉ !';
+        fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · +${potential} pts`;
+        fb.style.color=potential>=MOTS_MAX?'#ffd700':'var(--neon)';
+      }
+      equiAnimateJump(()=>{
+        setTimeout(()=>{
+          if(fb)fb.textContent='';
+          EQUI.current++;
+          equiShowObstacle();
+        },400);
+      });
+    } else {
+      EQUI.motsWrong[EQUI.current]++;
+      const potential=Math.max(0,MOTS_MAX-MOTS_DECAY*EQUI.motsWrong[EQUI.current]);
+      if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">❌ Pas le bon mot — réessaie !</span><br><span style="font-size:12px;color:#ffc800">${potential} pts encore possibles</span>`;fb.style.color='#ffaa00';}
+      document.getElementById('equi-in').value='';
+      EQUI.locked=false;
+      setTimeout(()=>document.getElementById('equi-in')?.focus(),50);
     }
+    return;
   }
-  html+=`</div>`;
-  cwEl.innerHTML=html;
 }
 
 function equiSubmit(){
@@ -9545,12 +9668,13 @@ function equiFinish(){
   document.getElementById('equi-q').style.display='none';
   const wgFin=document.getElementById('equi-wordgrid');if(wgFin)wgFin.style.display='none';
   const cwFin=document.getElementById('equi-crossword');if(cwFin)cwFin.style.display='none';
+  const fbFin2=document.getElementById('equi-fleche-board');if(fbFin2)fbFin2.style.display='none';
   document.getElementById('equi-input-wrap').style.display='none';
   document.getElementById('equi-vf').style.display='none';
   if(fb){
     fb.innerHTML=`<div style="font-family:var(--fh);font-size:18px;color:#00c850">🏇 PARCOURS TERMINÉ</div>
     <div style="font-size:13px;color:var(--mute);margin-top:4px">Score obstacles : ${base} pts${over>0?` · Dépassement : −${over} pts`:' · Dans le temps ✅'}</div>
-    <div style="font-family:var(--fh);font-size:28px;color:#ffd700;margin-top:6px">${final} / 250</div>`;
+    <div style="font-family:var(--fh);font-size:28px;color:#ffd700;margin-top:6px">${final} / 200</div>`;
   }
   equiDrawTrack(EQUI.canvasW||360, 0);
   G.score=final; setScore(final,true);

@@ -260,7 +260,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <div class="type-opt" id="type-equitation" onclick="selectType('equitation')">
             <div class="type-ico">🏇</div>
             <div class="type-name">Équitation CSO</div>
-            <div class="type-desc">5 obstacles · 2 barres · 50 pts chacun · Max 250</div>
+            <div class="type-desc">4 obstacles variés · Max 200 pts</div>
           </div>
           <div class="type-opt" id="type-bowling" onclick="selectType('bowling')">
             <div class="type-ico">🎳</div>
@@ -1840,20 +1840,65 @@ function rouletteRng(seed){
 
 // ── ÉQUITATION ADMIN ──────────────────────────────────────────────────────
 let equiObstacles=[
-  {type:'oxer',question:'',answer:''},
-  {type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:''},
+  {type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},
   {type:'riviere',question:'',answer:'',multiplier:0},
   {type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},
-  {type:'mots',question:'',answer:''}
+  {type:'mots',question:'',answer:'',gridSize:0}
 ];
 
 const EQUI_TYPES={
-  oxer:'◆ Oxer (Texte libre)',
-  fleche:'🏹 Mot fléché (3 mots)',
+  fleche:'🏹 Mot fléché (4 mots)',
   riviere:'〜 Rivière (Numérique)',
   vf:'✓✗ Triple Vrai/Faux',
   mots:'🔤 Grille de mots'
 };
+
+function equiGenerateWordGridPreview(word,trapWords,customSize){
+  const clean=s=>(s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
+  const target=clean(word);
+  if(!target) return {grid:[['?']],size:1};
+  const traps=(trapWords||[]).map(clean).filter(t=>t.length>=2).slice(0,4);
+  const allWords=[target,...traps];
+  const totalLen=allWords.reduce((a,w)=>a+w.length,0);
+  const maxLen=Math.max(...allWords.map(w=>w.length));
+  const autoSize=Math.min(12,Math.max(7,maxLen+2,Math.ceil(Math.sqrt(totalLen*2.2))));
+  const size=customSize>0?Math.max(maxLen,Math.min(14,customSize)):autoSize;
+  const grid=Array.from({length:size},()=>Array(size).fill(null));
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  function tryPlace(w){
+    let tries=0;
+    while(tries<400){
+      tries++;
+      const dir=dirs[Math.floor(Math.random()*dirs.length)];
+      const r0=Math.floor(Math.random()*size), c0=Math.floor(Math.random()*size);
+      const rEnd=r0+dir[0]*(w.length-1), cEnd=c0+dir[1]*(w.length-1);
+      if(rEnd<0||rEnd>=size||cEnd<0||cEnd>=size) continue;
+      let ok=true;
+      for(let i=0;i<w.length;i++){if(grid[r0+dir[0]*i][c0+dir[1]*i]!==null){ok=false;break;}}
+      if(!ok) continue;
+      for(let i=0;i<w.length;i++) grid[r0+dir[0]*i][c0+dir[1]*i]=w[i];
+      return true;
+    }
+    return false;
+  }
+  tryPlace(target);
+  traps.forEach(t=>tryPlace(t));
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(grid[r][c]===null) grid[r][c]=String.fromCharCode(65+Math.floor(Math.random()*26));
+  }
+  return {grid,size};
+}
+
+function equiRegenerateGridPreview(i){
+  const obs=equiObstacles[i];
+  const wg=equiGenerateWordGridPreview(obs.answer,obs.trapWords,obs.gridSize);
+  const prev=document.getElementById('equi-grid-preview-'+i);
+  if(prev){
+    prev.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${wg.size},1fr);gap:2px;max-width:${wg.size*22}px;margin:0 auto">`+
+      wg.grid.map(row=>row.map(ch=>`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(0,200,80,.08);border:1px solid rgba(0,200,80,.2);border-radius:3px;font-family:var(--fh);font-size:11px;color:var(--txt)">${ch}</div>`).join('')).join('')+
+      `</div>`;
+  }
+}
 
 function equiAddTrapWord(i){
   const inp=document.getElementById('equi-trap-in-'+i);
@@ -1899,8 +1944,14 @@ function equiAdminRender(){
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
       <input value="${(obs.answer3||'').replace(/"/g,'&quot;')}" placeholder="Mot 3…"
         oninput="equiObstacles[${i}].answer3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question4||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 4…"
+        oninput="equiObstacles[${i}].question4=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer4||'').replace(/"/g,'&quot;')}" placeholder="Mot 4…"
+        oninput="equiObstacles[${i}].answer4=this.value;checkReady();"
         style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none">
-      <div style="font-size:10px;color:var(--mute);margin-top:6px">🏹 Si 2 mots partagent une lettre, la grille les croise automatiquement.</div>`:
+      <div style="font-size:10px;color:var(--mute);margin-top:6px">🏹 4 mots, ordre libre · la grille maximise les intersections automatiquement.</div>`:
     obs.type==='vf'?`
       <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 1 :</div>
       <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -1925,7 +1976,7 @@ function equiAdminRender(){
       </div>`:
     obs.type==='mots'?`
       <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Mot à trouver dans la grille…"
-        oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+        oninput="equiObstacles[${i}].answer=this.value;checkReady();equiRegenerateGridPreview(${i});"
         style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
       <div style="font-size:10px;color:var(--mute);margin-bottom:4px">Mots pièges (optionnel, max 4) :</div>
       <div style="display:flex;gap:4px;margin-bottom:6px">
@@ -1934,9 +1985,18 @@ function equiAdminRender(){
           style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
         <button onclick="equiAddTrapWord(${i})" type="button" style="padding:5px 12px;border-radius:4px;border:none;background:rgba(0,200,80,.15);color:var(--neon);cursor:pointer;font-size:13px;font-weight:700">+</button>
       </div>
-      ${(obs.trapWords&&obs.trapWords.length)?`<div style="display:flex;flex-wrap:wrap;gap:4px">
+      ${(obs.trapWords&&obs.trapWords.length)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
         ${obs.trapWords.map((tw,ti)=>`<span style="background:rgba(255,100,50,.12);border:1px solid rgba(255,100,50,.3);color:#ff8855;font-size:11px;padding:3px 8px;border-radius:99px;display:inline-flex;align-items:center;gap:5px">🪤 ${tw}<span onclick="equiObstacles[${i}].trapWords.splice(${ti},1);equiAdminRender();checkReady();" style="cursor:pointer;color:rgba(255,140,90,.8);font-weight:900">✕</span></span>`).join('')}
-      </div>`:''}`:
+      </div>`:''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <label style="font-size:10px;color:var(--mute);white-space:nowrap">Taille grille</label>
+        <input value="${obs.gridSize||''}" type="number" placeholder="auto" min="7" max="14"
+          oninput="equiObstacles[${i}].gridSize=parseInt(this.value)||0;equiRegenerateGridPreview(${i});"
+          style="width:60px;background:var(--c2);border:1px solid rgba(0,200,80,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
+        <button onclick="equiRegenerateGridPreview(${i})" type="button" style="padding:5px 10px;border-radius:4px;border:none;background:rgba(0,200,80,.15);color:var(--neon);cursor:pointer;font-size:11px">🎲 Régénérer</button>
+      </div>
+      <div style="font-size:9px;color:var(--mute);text-align:center;margin-bottom:4px">Aperçu (régénéré aléatoirement à chaque partie) :</div>
+      <div id="equi-grid-preview-${i}" style="min-height:20px"></div>`:
     obs.type==='riviere'?`
       <div style="display:flex;gap:6px;margin-bottom:6px">
         <input value="${obs.answer||''}" placeholder="Réponse (nombre)" type="number"
@@ -1951,11 +2011,12 @@ function equiAdminRender(){
       style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:4px">`}`;
     list.appendChild(div);
   });
+  equiObstacles.forEach((obs,i)=>{ if(obs.type==='mots'&&obs.answer) equiRegenerateGridPreview(i); });
 }
 
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
-  equiObstacles=[{type:'oxer',question:'',answer:''},{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:''}];
+  equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
 function bowlingAdminRender(){
   const list=document.getElementById('bowling-q-list');
   if(!list)return;
@@ -2364,10 +2425,10 @@ function checkReady(){
     else if(btn)btn.textContent='✅ 10 questions saisies';
   }
   else if(currentType==='equitation'){
-    hasContent=equiObstacles.length===5&&equiObstacles.every(o=>{
+    hasContent=equiObstacles.length===4&&equiObstacles.every(o=>{
       const baseOk=o.question&&(o.answer||o.answer==='0');
       if(o.type==='vf') return baseOk&&o.question2&&o.answer2&&o.question3&&o.answer3;
-      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3;
+      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3&&!!o.question4&&!!o.answer4;
       if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
       return baseOk;
     });
