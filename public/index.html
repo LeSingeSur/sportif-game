@@ -9446,10 +9446,7 @@ function equiShowQuestion(){
     if(obs.type==='mots'){
       EQUI.wordGrids=EQUI.wordGrids||{};
       if(!EQUI.wordGrids[EQUI.current]) EQUI.wordGrids[EQUI.current]=equiGenerateWordGrid(obs.answer,obs.trapWords,obs.gridSize);
-      const wg=EQUI.wordGrids[EQUI.current];
-      wgEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${wg.size},1fr);gap:2px;max-width:${wg.size*26}px;margin:0 auto">`+
-        wg.grid.map(row=>row.map(ch=>`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(0,200,80,.07);border:1px solid rgba(0,200,80,.15);border-radius:4px;font-family:var(--fh);font-size:13px;color:var(--txt)">${ch}</div>`).join('')).join('')+
-        `</div>`;
+      equiRenderWordGrid();
       wgEl.style.display='block';
     } else { wgEl.style.display='none'; }
   }
@@ -9539,10 +9536,43 @@ function equiGenerateCrossword(words){
   return {cells:normCells,gridH,gridW,placements};
 }
 
+function equiRenderWordGrid(){
+  const wg=EQUI.wordGrids[EQUI.current];
+  const wgEl=document.getElementById('equi-wordgrid');
+  if(!wg||!wgEl)return;
+  wgEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${wg.size},1fr);gap:2px;max-width:${wg.size*26}px;margin:0 auto">`+
+    wg.grid.map((row,r)=>row.map((ch,c)=>
+      `<div id="equi-wg-cell-${r}-${c}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:4px;font-family:var(--fh);font-size:13px;color:rgba(255,255,255,.7)">${ch}</div>`
+    ).join('')).join('')+
+    `</div>`;
+}
+
+function equiFlashWordGridCells(cells,color,persist){
+  if(!cells)return;
+  const styles={
+    green:'background:#1fd95f;border:2px solid #1fd95f;box-shadow:0 0 10px 1px #1fd95f;color:#04210f',
+    red:'background:#ff3333;border:2px solid #ff3333;box-shadow:0 0 12px 2px #ff3333;color:#fff',
+    orange:'background:#ff9d2e;border:2px solid #ff9d2e;box-shadow:0 0 10px 1px #ff9d2e;color:#2a1500'
+  };
+  cells.forEach(([r,c])=>{
+    const el=document.getElementById(`equi-wg-cell-${r}-${c}`);
+    if(!el)return;
+    el.style.cssText=`aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:var(--fh);font-size:13px;font-weight:900;${styles[color]||styles.red};animation:equiCellPop .5s ease-out`;
+  });
+  if(!persist){
+    setTimeout(()=>{
+      cells.forEach(([r,c])=>{
+        const el=document.getElementById(`equi-wg-cell-${r}-${c}`);
+        if(el)el.style.cssText='aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:4px;font-family:var(--fh);font-size:13px;color:rgba(255,255,255,.7)';
+      });
+    },700);
+  }
+}
+
 function equiGenerateWordGrid(word,trapWords,customSize){
   const clean=s=>(s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
   const target=clean(word);
-  if(!target) return {grid:[['?']],size:1};
+  if(!target) return {grid:[['?']],size:1,placements:[]};
   const traps=(trapWords||[]).map(clean).filter(t=>t.length>=2).slice(0,4);
   const allWords=[target,...traps];
   const totalLen=allWords.reduce((a,w)=>a+w.length,0);
@@ -9551,8 +9581,9 @@ function equiGenerateWordGrid(word,trapWords,customSize){
   const size=customSize>0?Math.max(maxLen,Math.min(14,customSize)):autoSize;
   const grid=Array.from({length:size},()=>Array(size).fill(null));
   const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  const placements=[]; // {wordIdx, word, cells:[[r,c],...]} — 0=target, 1+=trap
 
-  function tryPlace(w){
+  function tryPlace(w,wordIdx){
     let tries=0;
     while(tries<400){
       tries++;
@@ -9565,20 +9596,26 @@ function equiGenerateWordGrid(word,trapWords,customSize){
         if(grid[r0+dir[0]*i][c0+dir[1]*i]!==null){ok=false;break;}
       }
       if(!ok) continue;
-      for(let i=0;i<w.length;i++) grid[r0+dir[0]*i][c0+dir[1]*i]=w[i];
+      const cells=[];
+      for(let i=0;i<w.length;i++){
+        const r=r0+dir[0]*i,c=c0+dir[1]*i;
+        grid[r][c]=w[i];
+        cells.push([r,c]);
+      }
+      placements.push({wordIdx,word:w,cells});
       return true;
     }
     return false;
   }
 
-  tryPlace(target);
-  traps.forEach(t=>tryPlace(t));
+  tryPlace(target,0);
+  traps.forEach((t,idx)=>tryPlace(t,idx+1));
 
   // Fill remaining empty cells with random letters
   for(let r=0;r<size;r++)for(let c=0;c<size;c++){
     if(grid[r][c]===null) grid[r][c]=String.fromCharCode(65+Math.floor(Math.random()*26));
   }
-  return {grid,size};
+  return {grid,size,placements};
 }
 
 function equiCheckAnswer(playerAnswer){
@@ -9598,7 +9635,22 @@ function equiCheckAnswer(playerAnswer){
     return pts>=8; // 8/10 min = correct
   }
   if(obs.type==='vf') return norm(playerAnswer)===norm(ans);
-  // text (mots): levenshtein
+  if(obs.type==='mots'){
+    EQUI.motsTrapMatched=null;
+    const correctMatch=levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(norm(ans).length*0.3);
+    if(!correctMatch){
+      // Vérifie si la réponse correspond à un mot piège spécifique
+      const traps=obs.trapWords||[];
+      for(let ti=0;ti<traps.length;ti++){
+        if(levenshtein(norm(playerAnswer),norm(traps[ti]))<=Math.floor(norm(traps[ti]).length*0.3)){
+          EQUI.motsTrapMatched=ti+1; // wordIdx 1+ dans placements (0=target)
+          break;
+        }
+      }
+    }
+    return correctMatch;
+  }
+  // text (oxer-like fallback): levenshtein
   return levenshtein(norm(playerAnswer),norm(ans))<=Math.floor(norm(ans).length*0.3);
 }
 
@@ -9685,6 +9737,7 @@ function equiHandleResult(correct){
     const MOTS_DECAY=15, MOTS_MAX=45;
     EQUI.motsWrong=EQUI.motsWrong||{};
     EQUI.motsWrong[EQUI.current]=EQUI.motsWrong[EQUI.current]||0;
+    const wg=EQUI.wordGrids[EQUI.current];
     if(correct){
       const potential=Math.max(0,MOTS_MAX-MOTS_DECAY*EQUI.motsWrong[EQUI.current]);
       EQUI.scores.push(potential);
@@ -9693,6 +9746,9 @@ function equiHandleResult(correct){
       G.score=total; setScore(total,false);
       EQUI.bars[EQUI.current]=potential>=MOTS_MAX?2:potential>0?1:0;
       equiDrawTrack(); equiUpdateBarsDisplay();
+      // Surligne le mot trouvé en VERT dans la grille
+      const targetPlacement=wg?.placements?.find(p=>p.wordIdx===0);
+      if(targetPlacement) equiFlashWordGridCells(targetPlacement.cells,'green',true);
       if(fb){
         const label=potential>=MOTS_MAX?'🏆 TROUVÉ DU 1ER COUP !':'✅ TROUVÉ !';
         fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">${label}</span> · +${potential} pts`;
@@ -9703,12 +9759,20 @@ function equiHandleResult(correct){
           if(fb)fb.textContent='';
           EQUI.current++;
           equiShowObstacle();
-        },400);
+        },1200);
       });
     } else {
       EQUI.motsWrong[EQUI.current]++;
       const potential=Math.max(0,MOTS_MAX-MOTS_DECAY*EQUI.motsWrong[EQUI.current]);
-      if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">❌ Pas le bon mot — réessaie !</span><br><span style="font-size:12px;color:#ffc800">${potential} pts encore possibles</span>`;fb.style.color='#ffaa00';}
+      const isTrap=EQUI.motsTrapMatched;
+      if(isTrap&&wg){
+        // Surligne le mot piège trouvé en ORANGE (temporaire)
+        const trapPlacement=wg.placements?.find(p=>p.wordIdx===isTrap);
+        if(trapPlacement) equiFlashWordGridCells(trapPlacement.cells,'orange',false);
+        if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">🪤 PIÈGE !</span> Ce n'est pas le bon mot<br><span style="font-size:12px;color:#ffc800">${potential} pts encore possibles</span>`;fb.style.color='#ff9d2e';}
+      } else {
+        if(fb){fb.innerHTML=`<span style="font-size:20px;font-family:var(--fh)">❌ Pas le bon mot — réessaie !</span><br><span style="font-size:12px;color:#ffc800">${potential} pts encore possibles</span>`;fb.style.color='#ffaa00';}
+      }
       document.getElementById('equi-in').value='';
       EQUI.locked=false;
       setTimeout(()=>document.getElementById('equi-in')?.focus(),50);
@@ -9733,6 +9797,16 @@ function equiGiveUp(){
   G.score=gtotal; setScore(gtotal,false);
   EQUI.bars[EQUI.current]=0;
   equiDrawTrack(); equiUpdateBarsDisplay();
+  if(obs.type==='mots'){
+    const wg=EQUI.wordGrids[EQUI.current];
+    const targetPlacement=wg?.placements?.find(p=>p.wordIdx===0);
+    if(targetPlacement){
+      targetPlacement.cells.forEach(([r,c])=>{
+        const el=document.getElementById(`equi-wg-cell-${r}-${c}`);
+        if(el)el.style.cssText='aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);border-radius:4px;font-family:var(--fh);font-size:13px;font-weight:900;color:rgba(255,255,255,.85)';
+      });
+    }
+  }
 
   const ansText=obs.answer;
   if(fb){
