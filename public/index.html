@@ -9505,22 +9505,28 @@ function equiFlecheSubmit(i){
 function equiFlecheGiveUp(){
   if(EQUI.locked)return;
   EQUI.locked=true;
-  document.activeElement?.blur(); // ferme le clavier mobile pour libérer la vue
+  document.activeElement?.blur();
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4].filter(Boolean);
   const state=EQUI.flecheState[EQUI.current];
   state.gaveUp=true;
-  EQUI.scores.push(0);
+  // Garde les points déjà acquis sur les mots trouvés — seuls les mots restants valent 0
+  const earned=state.earnedTotal||0;
+  EQUI.scores.push(earned);
   const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
   document.getElementById('equi-score-display').textContent=gtotal;
   G.score=gtotal; setScore(gtotal,false);
-  EQUI.bars[EQUI.current]=0;
+  EQUI.bars[EQUI.current]=earned>=45?2:earned>=20?1:0;
   equiRenderCrosswordGrid();
+  equiUpdateBarsDisplay();
   document.getElementById('equi-fleche-board').style.display='none';
+  const solvedCount=state.solved.filter(Boolean).length;
+  const remaining=words.filter((_,i)=>!state.solved[i]);
   const fb=document.getElementById('equi-fb');
   if(fb){
-    fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏳️ ABANDON</span> · 0 pt<br><span style="font-size:13px;color:var(--mute)">Mots : ${words.join(' · ')}</span>`;
-    fb.style.color='var(--red)';
+    const earnedLabel=earned>0?` · ${earned} pts acquis`:'';
+    fb.innerHTML=`<span style="font-size:22px;font-family:var(--fh)">🏳️ ABANDON</span>${earnedLabel}<br><span style="font-size:12px;color:var(--mute)">Mots manquants : ${remaining.join(' · ')||'aucun'}</span>`;
+    fb.style.color=earned>0?'#ffaa00':'var(--red)';
     setTimeout(()=>fb.scrollIntoView({behavior:'smooth',block:'center'}),100);
   }
   equiResumeTimer();
