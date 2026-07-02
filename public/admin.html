@@ -472,6 +472,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           </div>
         </div>
 
+        <div style="margin-bottom:8px">
+          <label style="font-size:11px;color:var(--mute)">Indice Délateur <span style="color:rgba(255,200,0,.5)">(joker 10 pts · ex: "Joueur de tennis suisse")</span></label>
+          <input type="text" id="roulette-hint" placeholder="Un indice sur le sportif…"
+            style="width:100%;background:var(--c1);border:1px solid rgba(255,200,0,.2);color:#ffc800;font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-top:4px">
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px">APERÇU LIVE</div>
           <button onclick="rouletteShuffleSeed()" type="button" style="background:rgba(212,255,0,.1);border:1px solid rgba(212,255,0,.4);color:var(--neon);font-size:11px;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:var(--fh);letter-spacing:1px">🎲 RE-MÉLANGER</button>
@@ -1499,6 +1505,7 @@ async function startEdit(id){
   if(a.type==='roulette'){
     const rt=document.getElementById('roulette-text');if(rt)rt.value=a.rouletteText||'';
     const ra=document.getElementById('roulette-answer');if(ra)ra.value=a.rouletteAnswer||'';
+    const rh=document.getElementById('roulette-hint');if(rh)rh.value=a.rouletteHint||'';
     const rp=document.getElementById('roulette-pct');if(rp)rp.value=a.roulettePct||40;
     const rc=document.getElementById('roulette-chambers');if(rc)rc.value=a.rouletteChambers||6;
     const rb=document.getElementById('roulette-bullet');if(rb)rb.value=a.rouletteBullet||4;
@@ -3683,6 +3690,7 @@ document.getElementById('btn-save').onclick=async()=>{
   escaladeTol:currentType==='escalade'?parseInt(document.getElementById('escalade-tol')?.value||1):undefined,
   rouletteText:currentType==='roulette'?(document.getElementById('roulette-text')?.value||'').trim():undefined,
   rouletteAnswer:currentType==='roulette'?(document.getElementById('roulette-answer')?.value||'').trim():undefined,
+  rouletteHint:currentType==='roulette'?(document.getElementById('roulette-hint')?.value||'').trim():undefined,
   roulettePct:currentType==='roulette'?parseInt(document.getElementById('roulette-pct')?.value||40):undefined,
   rouletteChambers:currentType==='roulette'?parseInt(document.getElementById('roulette-chambers')?.value||6):undefined,
   rouletteBullet:currentType==='roulette'?parseInt(document.getElementById('roulette-bullet')?.value||4):undefined,

@@ -494,9 +494,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .trappe-bloc.wrong{border-color:var(--red);background:rgba(255,63,92,.1);animation:trappe-fall .5s ease forwards}
 .trappe-label{font-size:11px;color:var(--txt);line-height:1.3;text-align:center}
 .trappe-mise-row{display:flex;align-items:center;justify-content:center;gap:4px}
-.trappe-mise-btn{width:40px;height:34px;border-radius:8px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:background .15s;flex-shrink:0}
+.trappe-mise-btn{width:32px;height:32px;border-radius:8px;border:2px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-size:10px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:background .15s;flex-shrink:0}
 .trappe-mise-btn:active{background:rgba(212,255,0,.15)}
-.trappe-mise-val{font-family:var(--fh);font-size:20px;min-width:26px;text-align:center;color:var(--neon)}
+.trappe-mise-val{font-family:var(--fh);font-size:17px;min-width:20px;text-align:center;color:var(--neon)}
 .trappe-tout-btn{width:100%;padding:6px 0;background:rgba(212,255,0,.08);border:1px solid rgba(212,255,0,.25);border-radius:6px;color:var(--neon);font-size:11px;font-weight:800;font-family:var(--fh);cursor:pointer;letter-spacing:1px;-webkit-tap-highlight-color:transparent;transition:background .15s}
 .trappe-tout-btn:active{background:rgba(212,255,0,.2)}
 .trappe-mise-bar{height:4px;border-radius:99px;background:var(--c2);overflow:hidden}
@@ -771,7 +771,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:13px;color:var(--orange)">Non misé : <span id="trappe-unalloc" style="font-weight:800">0</span></div>
     </div>
     <div id="trappe-question" style="font-family:var(--fh);font-size:18px;text-align:center;padding:14px;background:var(--c1);border-radius:var(--r);line-height:1.4"></div>
-    <div id="trappe-trappes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+    <div id="trappe-trappes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px"></div>
     <button id="trappe-valider" class="btn btn-p" disabled>🕳️ OUVRIR LES TRAPPES</button>
     <div id="trappe-fb" style="font-size:13px;text-align:center;color:var(--mute);min-height:18px"></div>
   </div>
@@ -1384,42 +1384,64 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div id="roulette-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
 
     <!-- Encart règles -->
-    <div id="roulette-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
-      <div style="font-family:var(--fh);font-size:13px;color:#ff3333;margin-bottom:8px;letter-spacing:1px">🔫 ROULETTE RUSSE</div>
+    <div id="roulette-rules" style="background:rgba(180,0,0,.1);border:1px solid rgba(255,40,40,.25);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:14px;color:#ff3333;margin-bottom:8px;letter-spacing:2px;text-shadow:0 0 20px #ff0000aa">🔫 ROULETTE RUSSE</div>
       Un texte sur un sportif s'affiche partiellement masqué.<br>
       🎯 <strong style="color:var(--txt)">Devine le sportif</strong> — bonne réponse = <strong style="color:var(--neon)">100 pts</strong><br>
       ❌ Mauvaise réponse → <strong style="color:#ff3333">tir de pistolet</strong><br>
       🔍 Pas sûr ? Tire volontairement pour <strong style="color:var(--txt)">révéler plus de mots</strong> → tir de pistolet<br>
       💀 Tombe sur la balle → <strong style="color:#ff3333">0 pts</strong>
-      <button id="roulette-start-btn" onclick="rouletteStart()" style="margin-top:10px;width:100%!important;background:#cc0000;color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">🔫 CHARGER L'ARME</button>
+      <button id="roulette-start-btn" onclick="rouletteStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#8b0000,#cc0000);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 24px rgba(255,0,0,.4);text-shadow:0 1px 4px rgba(0,0,0,.5)">🔫 CHARGER L'ARME</button>
     </div>
 
-    <!-- Pistolet + chargeur -->
-    <div id="roulette-gun-area" style="display:none;flex-direction:column;gap:10px">
-      <div style="display:flex;align-items:center;gap:12px;background:var(--c2);border-radius:12px;padding:12px">
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-          <div style="font-size:10px;color:var(--mute);letter-spacing:1px">CHARGEUR</div>
-          <div id="roulette-chambers-display" style="display:flex;gap:4px;flex-wrap:wrap;max-width:120px"></div>
+    <!-- Flash overlay on fire -->
+    <div id="roulette-flash" style="display:none;position:fixed;inset:0;background:rgba(255,0,0,.55);z-index:9999;pointer-events:none"></div>
+
+    <!-- Main game area -->
+    <div id="roulette-gun-area" style="display:none;flex-direction:column;gap:8px">
+
+      <!-- Top bar: cylinder + score -->
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.5);border:1px solid rgba(255,40,40,.2);border-radius:12px;padding:10px 14px">
+        <!-- Cylinder visual -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+          <div style="font-size:9px;color:rgba(255,100,100,.6);letter-spacing:2px;font-family:var(--fh)">BARILLET</div>
+          <div id="roulette-chambers-display" style="display:flex;gap:3px;flex-wrap:wrap;max-width:130px;justify-content:center"></div>
         </div>
+        <!-- Gun emoji -->
         <div style="flex:1;text-align:center">
-          <div id="roulette-gun-emoji" style="font-size:52px;transition:transform .15s">🔫</div>
-          <div id="roulette-gun-status" style="font-size:11px;color:var(--mute);margin-top:4px">Tir <span id="roulette-shot-num">0</span> / <span id="roulette-chambers-num">6</span></div>
+          <div id="roulette-gun-emoji" style="font-size:56px;filter:drop-shadow(0 0 16px rgba(255,80,0,.4));transition:transform .15s,filter .15s">🔫</div>
+          <div id="roulette-gun-status" style="font-size:11px;color:rgba(255,100,100,.6);margin-top:2px;font-family:var(--fh);letter-spacing:1px">TIR <span id="roulette-shot-num">0</span> / <span id="roulette-chambers-num">6</span></div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:10px;color:var(--mute)">ENJEU</div>
-          <div style="font-family:var(--fh);font-size:24px;color:var(--neon)">100</div>
-          <div style="font-size:10px;color:var(--mute)">ou 0 pts</div>
+        <!-- Stake -->
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:9px;color:rgba(255,100,100,.6);letter-spacing:2px;font-family:var(--fh)">ENJEU</div>
+          <div style="font-family:var(--fh);font-size:28px;color:#ff4444;text-shadow:0 0 12px #ff0000aa;line-height:1">100</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3)">ou 0 pts</div>
         </div>
       </div>
-      <div id="roulette-text-display" style="background:var(--c1);border-radius:12px;padding:12px;font-size:13px;line-height:2;color:var(--txt);max-height:220px;overflow-y:auto;word-break:break-word"></div>
+
+      <!-- Text display -->
+      <div id="roulette-text-display" style="background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;font-size:13px;line-height:2.1;color:var(--txt);max-height:210px;overflow-y:auto;word-break:break-word;letter-spacing:.2px"></div>
+
+      <!-- Input row -->
       <div style="display:flex;gap:8px">
         <input type="text" id="roulette-in" placeholder="Nom du sportif…"
-          style="flex:1;min-width:0;background:var(--c1);border:1px solid rgba(255,50,50,.4);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none"
+          style="flex:1;min-width:0;background:rgba(0,0,0,.6);border:2px solid rgba(255,50,50,.5);color:var(--txt);font-size:15px;border-radius:var(--r);padding:11px 14px;font-family:var(--fh);outline:none;box-shadow:0 0 12px rgba(255,0,0,.1)"
           onkeydown="if(event.key==='Enter')rouletteGuess()">
-        <button onclick="rouletteGuess()" style="padding:0 16px;height:48px;background:#cc0000;color:#fff;border:none;border-radius:var(--r);font-family:var(--fh);font-size:13px;cursor:pointer;white-space:nowrap">🎯 DEVINER</button>
+        <button onclick="rouletteGuess()" style="padding:0 16px;height:50px;background:linear-gradient(135deg,#8b0000,#cc0000);color:#fff;border:none;border-radius:var(--r);font-family:var(--fh);font-size:13px;cursor:pointer;white-space:nowrap;box-shadow:0 0 16px rgba(255,0,0,.3);letter-spacing:1px">🎯 VISER</button>
       </div>
-      <button id="roulette-reveal-btn" onclick="rouletteReveal()" style="width:100%!important;padding:10px;border-radius:var(--r);border:1px solid rgba(255,200,0,.3);background:rgba(255,200,0,.06);color:#ffc800;font-family:var(--fh);font-size:12px;cursor:pointer">🔍 Révéler plus de mots → tir de pistolet</button>
-      <div id="roulette-fb" class="fb" style="text-align:center;font-size:13px"></div>
+
+      <!-- Reveal button -->
+      <button id="roulette-reveal-btn" onclick="rouletteReveal()" style="width:100%!important;padding:10px;border-radius:var(--r);border:1px solid rgba(255,200,0,.3);background:rgba(255,200,0,.05);color:#ffc800;font-family:var(--fh);font-size:12px;cursor:pointer;letter-spacing:1px">🔍 RÉVÉLER DES MOTS → tir de pistolet</button>
+
+      <!-- Jokers -->
+      <div style="display:flex;gap:6px">
+        <button id="rr-j-delateur" onclick="rouletteJokerDelateur()" style="flex:1;padding:8px 6px;border-radius:8px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffc800;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:.5px;line-height:1.3">🕵️ DÉLATEUR<br><span style="font-size:9px;opacity:.7">−10 pts · Indice</span></button>
+        <button id="rr-j-consigliere" onclick="rouletteJokerConsigliere()" style="flex:1;padding:8px 6px;border-radius:8px;border:1px solid rgba(255,100,100,.35);background:rgba(255,0,0,.07);color:#ff6666;font-size:11px;cursor:pointer;font-family:var(--fh);letter-spacing:.5px;line-height:1.3">🤵 CONSIGLIERE<br><span style="font-size:9px;opacity:.7">−20 pts · Position</span></button>
+      </div>
+
+      <!-- Feedback -->
+      <div id="roulette-fb" class="fb" style="text-align:center;font-size:15px;font-family:var(--fh);letter-spacing:1px;min-height:22px"></div>
     </div>
   </div>
 
@@ -1548,7 +1570,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Rules -->
     <div id="equi-rules" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,200,80,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.8;color:var(--mute)">
       <div style="font-family:var(--fh);font-size:14px;color:#00c850;margin-bottom:8px;letter-spacing:2px">🏇 ÉQUITATION CSO · MAX 200</div>
-      🏹 <strong style="color:var(--txt)">Mot fléché</strong> (60 pts) — 4 mots, ordre libre, essais illimités · erreur = −10 pts à l'épreuve<br>
+      🏹 <strong style="color:var(--txt)">Mot fléché</strong> (60 pts) — 4 mots, ordre libre, essais illimités<br>
+      &nbsp;&nbsp;Chaque mot vaut 15 pts. Chaque erreur (n'importe où) fait baisser le taux des mots <em>pas encore trouvés</em> de −5 pts — mais ce que tu as déjà gagné reste acquis<br>
       〜 <strong style="color:var(--txt)">Rivière</strong> (50 pts) — 3 essais, score continu selon ta précision<br>
       ✓✗ <strong style="color:var(--txt)">Triple Vrai/Faux</strong> (45 pts) — 15 pts par affirmation juste<br>
       🔤 <strong style="color:var(--txt)">Grille de mots</strong> (45 pts) — essais illimités, erreur = −15 pts<br>
@@ -2223,13 +2246,6 @@ function toggleMusic(){
     audio.pause();
   }
 }
-function toggleMusicMute(){
-  const audio=document.getElementById('music-audio');
-  const btn=document.getElementById('music-vol-btn');
-  audio.muted=!audio.muted;
-  btn.textContent=audio.muted?'🔇':'🔊';
-}
-
 document.getElementById('btn-start').onclick=startGame;
 document.getElementById('pseudo-in').addEventListener('keydown',e=>{if(e.key==='Enter')startGame()});
 document.getElementById('btn-lb-open').onclick=()=>{loadLB();show('sl')};
@@ -3070,7 +3086,6 @@ function varTimeoutCorrect(){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Temps écoulé · '+finalScore+' pts';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('var');submitScore(finalScore);show('sv');
 }
 
@@ -3115,7 +3130,6 @@ function varSkipCorrection(){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=finalScore+' pts · Correction non trouvée';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('var');submitScore(finalScore);
   show('sv');
 }
@@ -3202,7 +3216,6 @@ function varSubmitCorrection(){
       const vName=document.getElementById('v-name');if(vName)vName.textContent='La VAR';
       const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Erreur trouvée et corrigée · '+finalScore+' pts';
       ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-      const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
       setVictoryIcon('var');submitScore(finalScore);
       setTimeout(()=>show('sv'),1500);
     } else {
@@ -3512,7 +3525,6 @@ function escaladeFinish(zero=false){
   const route=ESC.route==='facile'?'🟢 Facile':'🔴 Difficile';
   if(vSub)vSub.textContent=route+' · '+finalScore+' pts · Q'+ESC.qIdx+'/8';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('escalade');submitScore(finalScore);
   setTimeout(()=>show('sv'),1000);
 }
@@ -3558,13 +3570,13 @@ function escaladeInitWall(){
 // ── LA PLONGÉE ────────────────────────────────────────────────────────────
 const PL={
   data:null, palier:0, phase:'descente', o2:1000, o2Rate:8,
-  treasures:[], score:0, done:false, timerInt:null,
+  treasures:[], treasuresResolved:[], score:0, done:false, timerInt:null,
   waitingAnswer:false, currentPalier:0
 };
 
 function setupPlongee(data){
   PL.data=data; PL.palier=0; PL.phase='descente'; PL.o2=1000;
-  PL.o2Rate=data.plongeeO2Base||8; PL.o2TreasureRate=data.plongeeO2Treasure||2; PL.treasures=[]; PL.score=0;
+  PL.o2Rate=data.plongeeO2Base||8; PL.o2TreasureRate=data.plongeeO2Treasure||2; PL.treasures=[]; PL.treasuresResolved=[]; PL.score=0;
   PL.done=false; PL.timerInt=null; PL.waitingAnswer=false; PL.currentPalier=0;
   const _t=document.getElementById('game-tip');if(_t)_t.textContent='Descends · Ramasse des trésors · Remonte vivant';
   hideAllZones();
@@ -3655,7 +3667,7 @@ function plongeeShowDescendChoice(){
   if(PL.currentPalier===0){plongeeAskDown(1);return;}
   // ⏸ FREEZE O2 during choice
   plongeeStopTimer(false);
-  const hasTreasure=!PL.treasures.find(t=>t.palier===PL.currentPalier);
+  const hasTreasure=!PL.treasuresResolved.includes(PL.currentPalier);
   const qEl=document.getElementById('plongee-q');
   if(hasTreasure){
     // STEP 1: show ONLY treasure choice
@@ -3668,7 +3680,7 @@ function plongeeShowDescendChoice(){
       btn.onclick=()=>{plongeeTakeOrSkipTreasure();plongeeShowDirectionChoice();};
     }
     const fb=document.getElementById('plongee-fb');
-    if(fb)fb.innerHTML=`<button onclick="document.getElementById('plongee-fb').innerHTML='';plongeeShowDirectionChoice();" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Ignorer le trésor →</button>`;
+    if(fb)fb.innerHTML=`<button onclick="PL.treasuresResolved.push(PL.currentPalier);document.getElementById('plongee-fb').innerHTML='';plongeeShowDirectionChoice();" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Ignorer le trésor →</button>`;
   } else {
     plongeeShowDirectionChoice();
   }
@@ -3687,6 +3699,7 @@ function plongeeShowDirectionChoice(){
 function plongeeTakeOrSkipTreasure(){
   const p=PL.data.plongeePaliers[PL.currentPalier-1];
   PL.treasures.push({palier:PL.currentPalier, pts:p.tresor});
+  PL.treasuresResolved.push(PL.currentPalier);
   PL.score+=p.tresor;
   PL.o2Rate+=(PL.data.plongeeO2Treasure||2);
   plongeeUpdateUI();
@@ -3793,8 +3806,8 @@ function plongeeAbandonWithTreasure(treasureIdx, targetPalier){
 }
 
 function plongeeOfferAscentTreasure(palier){
-  // If treasure at this palier not yet taken → offer it before asking up question
-  const hasTreasure=!PL.treasures.find(t=>t.palier===palier);
+  // If treasure at this palier not yet resolved (taken or declined) → offer it before asking up question
+  const hasTreasure=!PL.treasuresResolved.includes(palier);
   if(!hasTreasure){plongeeAskUp(palier);return;}
   // Freeze timer
   plongeeStopTimer(false);
@@ -3814,7 +3827,7 @@ function plongeeOfferAscentTreasure(palier){
     };
   }
   const fb=document.getElementById('plongee-fb');
-  if(fb)fb.innerHTML=`<button onclick="document.getElementById('plongee-btn-treasure').style.display='none';document.getElementById('plongee-fb').innerHTML='';plongeeRestartTimer();plongeeAskUp(${palier});" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Laisser le trésor →</button>`;
+  if(fb)fb.innerHTML=`<button onclick="PL.treasuresResolved.push(${palier});document.getElementById('plongee-btn-treasure').style.display='none';document.getElementById('plongee-fb').innerHTML='';plongeeRestartTimer();plongeeAskUp(${palier});" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--mute);font-size:11px;cursor:pointer">⏭ Laisser le trésor →</button>`;
 }
 
 function plongeeAskUp(fromPalier){
@@ -3961,7 +3974,6 @@ function plongeeSurface(){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='La Plongée';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🤿 Remonté avec '+PL.treasures.length+' trésor(s) · '+finalScore+' pts';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('plongee');submitScore(finalScore);
   setTimeout(()=>show('sv'),1500);
 }
@@ -3979,7 +3991,6 @@ function plongeeDrown(){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='La Plongée';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='💀 Noyade — 0 pts';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('plongee');submitScore(0);
   setTimeout(()=>show('sv'),2000);
 }
@@ -4105,7 +4116,6 @@ function rvlfStop(){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Retour vers le Futur';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🏁 Arrêt volontaire · '+finalScore+' pts sur 200';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('rvlf');submitScore(finalScore);show('sv');
 }
 
@@ -4329,7 +4339,6 @@ function rvlfGameOver(msg){
     const vName=document.getElementById('v-name');if(vName)vName.textContent='Retour vers le Futur';
     const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='Game Over · '+msg;
     ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-    const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
     setVictoryIcon('rvlf');submitScore(0);show('sv');
   },1500);
 }
@@ -4343,7 +4352,6 @@ function rvlfFinish(){
   const perfect=RVLF.score===200;
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(perfect?'🏆 PERFECT ! ':'📊 ')+RVLF.score+'/200 pts';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('rvlf');submitScore(RVLF.score);
   if(RVLF.score>0)setTimeout(()=>show('sv'),500);
   else setTimeout(()=>show('sv'),500);
@@ -4370,7 +4378,8 @@ function rvlfJoker(type){
   // Balise doesn't interrupt the game — only save state silently
   if(type==='balise'){
     if((10-RVLF.qIdx)<=1){
-      RVLF.jokers.balise=true; // refund
+      RVLF.jokers.balise=false; // désactivé définitivement, pas de restitution
+      rvlfUpdateUI();
       const fb=document.getElementById('rvlf-fb');
       if(fb){fb.textContent='⏱️ Impossible de poser la balise sur la dernière carte.';fb.style.color='var(--mute)';}
       setTimeout(()=>{if(fb)fb.textContent='';},1500);
@@ -4405,7 +4414,8 @@ function rvlfJoker(type){
       const qB1=RVLF.currentQB;
       const qB2=qs[RVLF.qIdx+1];
       if(!qA1||!qA2){
-        RVLF.jokers.lien=true;
+        RVLF.jokers.lien=false; // désactivé définitivement, pas de restitution
+        rvlfUpdateUI();
         const fb=document.getElementById('rvlf-fb');
         if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
         rvlfStartTimer();return;
@@ -4484,7 +4494,8 @@ function rvlfJoker(type){
     const qCurrent=RVLF.currentQA; // already displayed, card already consumed
     const qNext=qs[RVLF.qIdx];     // next card not yet consumed
     if(!qCurrent||!qNext){
-      RVLF.jokers.lien=true;
+      RVLF.jokers.lien=false; // désactivé définitivement, pas de restitution
+      rvlfUpdateUI();
       const fb=document.getElementById('rvlf-fb');
       if(fb){fb.textContent='🔗 Pas assez de questions pour le Lien.';fb.style.color='var(--mute)';}
       rvlfStartTimer();return;
@@ -8528,11 +8539,13 @@ function haltFinish(){
 // ══════════════════════════════════════════════════════════════════════════
 // ── ROULETTE RUSSE ────────────────────────────────────────────────────────
 const RR={
-  data:null, shots:0, done:false, wordsState:[], revealStep:5
+  data:null, shots:0, done:false, wordsState:[], revealStep:5,
+  jokers:{delateur:true,consigliere:true}
 };
 
 function setupRoulette(data){
   RR.data=data; RR.shots=0; RR.done=false;
+  RR.jokers={delateur:true,consigliere:true};
   document.getElementById('std-ans-area').style.display='none';
   hideAllZones();
   document.getElementById('roulette-zone').style.display='flex';
@@ -8576,6 +8589,7 @@ function rouletteStart(){
   document.getElementById('roulette-in').focus();
   const rb=document.getElementById('roulette-reveal-btn');
   if(rb)rb.textContent='🔍 Révéler '+RR.revealStep+'% des mots → tir de pistolet';
+  rouletteUpdateJokers();
 }
 
 function rouletteRenderText(){
@@ -8584,7 +8598,7 @@ function rouletteRenderText(){
   el.innerHTML=RR.wordsState.map(w=>{
     if(w.type==='space')return w.token;
     if(w.visible)return`<span style="color:var(--txt)">${w.token}</span>`;
-    return`<span style="background:rgba(255,50,50,.12);color:rgba(255,255,255,.15);border-radius:3px;padding:0 2px;font-size:11px;letter-spacing:1px">${'▓'.repeat(Math.min(w.token.length,8))}</span>`;
+    return`<span style="display:inline-block;background:#1a0000;color:transparent;border-radius:2px;padding:0 3px;min-width:${Math.min(w.token.length,10)*7}px;height:1.1em;vertical-align:middle;border:1px solid rgba(255,30,30,.2);box-shadow:inset 0 0 4px rgba(200,0,0,.15)">&nbsp;</span>`;
   }).join('');
 }
 
@@ -8595,10 +8609,13 @@ function rouletteRenderChambers(chambers,bullet,shots){
   for(let i=1;i<=chambers;i++){
     const c=document.createElement('div');
     const fired=i<=shots;
-    const isBullet=i===bullet;
-    c.style.cssText=`width:20px;height:20px;border-radius:50%;border:2px solid ${fired?(isBullet?'#ff3333':'#444'):'rgba(255,255,255,.25)'};background:${fired?(isBullet?'#ff3333':'#222'):'rgba(255,255,255,.08)'};transition:all .3s;display:flex;align-items:center;justify-content:center;font-size:9px`;
-    if(fired&&isBullet)c.textContent='💥';
-    else if(fired)c.textContent='·';
+    const isBullet=fired&&i===bullet;
+    const isPending=!fired&&i===bullet; // bullet not yet fired — shown as unknown
+    c.style.cssText=`width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .3s;
+      border:2px solid ${isBullet?'#ff3333':fired?'rgba(255,255,255,.1)':'rgba(255,255,255,.3)'};
+      background:${isBullet?'radial-gradient(circle,#ff4444,#8b0000)':fired?'rgba(0,0,0,.6)':'rgba(255,255,255,.06)'};
+      box-shadow:${isBullet?'0 0 12px #ff0000aa':'none'}`;
+    c.textContent=isBullet?'💥':fired?'·':'';
     el.appendChild(c);
   }
 }
@@ -8610,12 +8627,22 @@ function rouletteFire(onHit,onSafe){
   const bullet=RR.data.rouletteBullet||4;
   document.getElementById('roulette-shot-num').textContent=RR.shots;
   const gun=document.getElementById('roulette-gun-emoji');
-  // Gun animation: kick back
+  const flash=document.getElementById('roulette-flash');
+  // Gun kick animation
   if(gun){
-    gun.style.transform='rotate(-20deg) scale(1.3) translateX(8px)';
-    gun.style.filter='brightness(3) drop-shadow(0 0 12px #ff8800)';
-    setTimeout(()=>{gun.style.transform='rotate(0) scale(1) translateX(0)';gun.style.filter='';},250);
+    gun.style.transform='rotate(-25deg) scale(1.4) translateX(12px)';
+    gun.style.filter='brightness(4) drop-shadow(0 0 20px #ff4400)';
+    setTimeout(()=>{gun.style.transform='rotate(0) scale(1) translateX(0)';gun.style.filter='drop-shadow(0 0 16px rgba(255,80,0,.4))';},300);
   }
+  // Screen flash
+  if(flash){
+    flash.style.display='block';
+    flash.style.opacity='1';
+    setTimeout(()=>{flash.style.transition='opacity .35s';flash.style.opacity='0';},100);
+    setTimeout(()=>{flash.style.display='none';flash.style.transition='';},500);
+  }
+  // Haptic on mobile
+  if(navigator.vibrate) navigator.vibrate([80,30,40]);
   rouletteRenderChambers(chambers,bullet,RR.shots);
   setTimeout(()=>{
     if(RR.shots===bullet){if(gun)gun.textContent='💥';onHit();}
@@ -8678,8 +8705,71 @@ function rouletteReveal(){
   },200);
 }
 
+function rouletteUpdateJokers(){
+  const jD=document.getElementById('rr-j-delateur');
+  const jC=document.getElementById('rr-j-consigliere');
+  const hasHint=!!(RR.data.rouletteHint||'').trim();
+  if(jD){
+    const ok=RR.jokers.delateur&&!RR.done&&hasHint;
+    jD.disabled=!ok;
+    jD.style.opacity=ok?'1':'0.35';
+    jD.style.cursor=ok?'pointer':'not-allowed';
+    if(!hasHint) jD.title='Aucun indice configuré pour cette partie';
+  }
+  if(jC){
+    const ok=RR.jokers.consigliere&&!RR.done;
+    jC.disabled=!ok;
+    jC.style.opacity=ok?'1':'0.35';
+    jC.style.cursor=ok?'pointer':'not-allowed';
+  }
+}
+
+function rouletteJokerDelateur(){
+  if(!RR.jokers.delateur||RR.done)return;
+  const hint=(RR.data.rouletteHint||'').trim();
+  if(!hint){
+    const fb=document.getElementById('roulette-fb');
+    if(fb){fb.textContent='🕵️ Aucun indice configuré.';fb.style.color='var(--mute)';}
+    return;
+  }
+  RR.jokers.delateur=false;
+  G.score=Math.max(0,(G.score||0)-10);
+  rouletteUpdateJokers();
+  const fb=document.getElementById('roulette-fb');
+  if(fb){
+    fb.innerHTML=`<div style="background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.3);border-radius:8px;padding:10px;font-size:13px;color:#ffc800">🕵️ DÉLATEUR <span style="font-size:10px;opacity:.6">−10 pts</span><br><strong>${hint}</strong></div>`;
+    fb.style.color='';
+  }
+}
+
+function rouletteJokerConsigliere(){
+  if(!RR.jokers.consigliere||RR.done)return;
+  RR.jokers.consigliere=false;
+  G.score=Math.max(0,(G.score||0)-20);
+  rouletteUpdateJokers();
+  const bullet=RR.data.rouletteBullet||4;
+  const chambers=RR.data.rouletteChambers||6;
+  const remaining=bullet-RR.shots; // positions restantes avant la balle
+  const fb=document.getElementById('roulette-fb');
+  if(remaining<=0){
+    // Already past bullet (shouldn't happen, but safe fallback)
+    if(fb){fb.innerHTML=`<div style="background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.3);border-radius:8px;padding:10px;font-size:13px;color:#ff6666">🤵 CONSIGLIERE <span style="font-size:10px;opacity:.6">−20 pts</span><br>La balle est passée... tu as survécu jusqu'ici.</div>`;fb.style.color='';}
+    return;
+  }
+  const danger= remaining===1?'⚠️ DANGER IMMÉDIAT — La balle est la prochaine chambre !':
+                remaining===2?`La balle est dans 2 tirs (chambre ${bullet}/${chambers}).`:
+                `La balle est dans ${remaining} tirs (chambre ${bullet}/${chambers}). Tu as de la marge.`;
+  const color= remaining===1?'#ff4444': remaining<=3?'#ff9933':'#88cc44';
+  if(fb){
+    fb.innerHTML=`<div style="background:rgba(255,0,0,.08);border:1px solid ${color}55;border-radius:8px;padding:10px;font-size:13px;color:${color}">🤵 CONSIGLIERE <span style="font-size:10px;opacity:.6">−20 pts</span><br>${danger}</div>`;
+    fb.style.color='';
+  }
+}
+
 function rouletteEndGame(score,msg){
   RR.done=true;
+  RR.jokers={delateur:false,consigliere:false};
+  rouletteUpdateJokers();
   const fb=document.getElementById('roulette-fb');
   if(fb){fb.textContent=msg;fb.style.color=score>0?'var(--neon)':'var(--red)';}
   RR.wordsState.forEach(w=>{if(w.type==='word')w.visible=true;});
@@ -8691,7 +8781,6 @@ function rouletteEndGame(score,msg){
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Roulette Russe';
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(score===100?'🎯 Trouvé !':'💥 Éliminé !')+' · '+RR.data.rouletteAnswer;
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  const vStats=document.getElementById('v-stats');if(vStats)vStats.style.display='none';
   setVictoryIcon('roulette');submitScore(score);
   setTimeout(()=>show('sv'),2000);
 }
@@ -9260,7 +9349,7 @@ function equiShowFlecheBoard(){
   // Init per-obstacle state once
   EQUI.flecheState=EQUI.flecheState||{};
   if(!EQUI.flecheState[EQUI.current]){
-    EQUI.flecheState[EQUI.current]={solved:words.map(()=>false),penalty:0,gaveUp:false};
+    EQUI.flecheState[EQUI.current]={solved:words.map(()=>false),globalErrors:0,earnedTotal:0,gaveUp:false};
   }
   // Generate (cached) crossword
   EQUI.crosswords=EQUI.crosswords||{};
@@ -9284,6 +9373,9 @@ function equiRenderCrosswordGrid(flashWordIdx,flashColor){
   const cwEl=document.getElementById('equi-crossword');
   if(!cwEl||!cw)return;
   const gaveUp=state.gaveUp;
+  // Numéro de mot à afficher sur sa case de départ (comme un vrai mot fléché)
+  const startNumbers={};
+  (cw.placements||[]).forEach(p=>{ startNumbers[p.startR+','+p.startC]=p.word+1; });
   let html=`<div style="font-size:9px;color:rgba(160,100,255,.6);letter-spacing:2px;margin-bottom:6px;text-align:center">🏹 MOT FLÉCHÉ</div>`;
   html+=`<div style="display:grid;grid-template-columns:repeat(${cw.gridW},1fr);gap:2px;max-width:${cw.gridW*24}px;margin:0 auto">`;
   for(let r=0;r<cw.gridH;r++){
@@ -9292,6 +9384,7 @@ function equiRenderCrosswordGrid(flashWordIdx,flashColor){
       if(!cell){html+=`<div style="aspect-ratio:1"></div>`;continue;}
       const solved=cell.words.some(wIdx=>state.solved[wIdx]);
       const isFlash=flashWordIdx!==undefined&&cell.words.includes(flashWordIdx);
+      const numBadge=startNumbers[r+','+c];
       let style, anim='', showChar=solved;
       if(isFlash&&flashColor==='red'){
         style=`background:#ff3333;border:2px solid #ff3333;box-shadow:0 0 12px 2px #ff3333;color:#fff`;
@@ -9305,7 +9398,8 @@ function equiRenderCrosswordGrid(flashWordIdx,flashColor){
       } else {
         style=`background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.25)`;
       }
-      html+=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:var(--fh);font-size:13px;font-weight:900;${style};${anim}">${showChar?cell.char:'·'}</div>`;
+      const badgeHtml=numBadge?`<span style="position:absolute;top:1px;left:2px;font-size:8px;font-weight:900;color:#ffd700;line-height:1">${numBadge}</span>`:'';
+      html+=`<div style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:4px;font-family:var(--fh);font-size:13px;font-weight:900;${style};${anim}">${badgeHtml}${showChar?cell.char:'·'}</div>`;
     }
   }
   html+=`</div>`;
@@ -9321,10 +9415,10 @@ function equiRenderFlecheBoard(){
   const board=document.getElementById('equi-fleche-board');
   if(!board)return;
   board.style.display='flex';
-  const currentScore=Math.max(0,60-state.penalty);
+  const currentRate=Math.max(0,15-5*state.globalErrors);
   const scoreBar=`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(160,100,255,.08);border:1px solid rgba(160,100,255,.25);border-radius:10px;padding:8px 14px;margin-bottom:2px">
-    <span style="font-size:11px;color:var(--mute);letter-spacing:1px">SCORE DE L'ÉPREUVE</span>
-    <span style="font-family:var(--fh);font-size:18px;color:${currentScore>=45?'#1fd95f':currentScore>0?'#ffaa00':'var(--red)'}">${currentScore} / 60</span>
+    <div><span style="font-size:10px;color:var(--mute);letter-spacing:1px">ACQUIS</span><div style="font-family:var(--fh);font-size:17px;color:#1fd95f">${state.earnedTotal} pts</div></div>
+    <div style="text-align:right"><span style="font-size:10px;color:var(--mute);letter-spacing:1px">TAUX ACTUEL/MOT</span><div style="font-family:var(--fh);font-size:17px;color:${currentRate>=10?'#ffd700':currentRate>0?'#ffaa00':'var(--red)'}">${currentRate} pts</div></div>
   </div>`;
   board.innerHTML=scoreBar+words.map((w,i)=>{
     if(!w)return '';
@@ -9332,12 +9426,16 @@ function equiRenderFlecheBoard(){
     if(solved){
       return `<div style="display:flex;align-items:center;gap:8px;background:rgba(31,217,95,.1);border:1px solid rgba(31,217,95,.4);border-radius:10px;padding:9px 12px">
         <span style="font-size:16px">✅</span>
+        <span style="font-size:11px;color:#ffd700;font-family:var(--fh);min-width:14px">${i+1}</span>
         <span style="flex:1;font-size:13px;color:var(--mute)">${clues[i]||''}</span>
         <span style="font-family:var(--fh);font-size:13px;color:#1fd95f;font-weight:900">${w}</span>
       </div>`;
     }
     return `<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 12px">
-      <div style="font-size:13px;color:var(--txt);margin-bottom:6px">${clues[i]||''}</div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+        <span style="font-size:11px;color:#ffd700;font-family:var(--fh)">${i+1}</span>
+        <span style="font-size:13px;color:var(--txt)">${clues[i]||''}</span>
+      </div>
       <div style="display:flex;gap:6px">
         <input id="equi-fleche-in-${i}" placeholder="Mot ${i+1}…"
           onkeydown="if(event.key==='Enter'){event.preventDefault();equiFlecheSubmit(${i});}"
@@ -9364,12 +9462,14 @@ function equiFlecheSubmit(i){
 
   if(correct){
     state.solved[i]=true;
+    const rate=Math.max(0,15-5*state.globalErrors); // taux figé au moment de la validation
+    state.earnedTotal+=rate;
     equiRenderCrosswordGrid(i);
     equiRenderFlecheBoard();
     // Check completion
     if(state.solved.every((s,idx)=>!words[idx]||s)){
       EQUI.locked=true;
-      const total=Math.max(0,60-state.penalty);
+      const total=state.earnedTotal;
       EQUI.scores.push(total);
       const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
       document.getElementById('equi-score-display').textContent=gtotal;
@@ -9388,12 +9488,13 @@ function equiFlecheSubmit(i){
       });
     }
   } else {
-    state.penalty=Math.min(60,state.penalty+10);
+    state.globalErrors++;
     inp.value='';
     equiRenderCrosswordGrid(i,'red'); // flash rouge temporaire, lettre jamais révélée
     equiRenderFlecheBoard();
     const fbI2=document.getElementById('equi-fleche-fb-'+i);
-    if(fbI2){fbI2.innerHTML=`<span style="font-size:18px;font-family:var(--fh);font-weight:900;color:#ff5544">❌ FAUX !</span> <span style="font-size:12px;color:#ff8855">−10 pts au score de l'épreuve</span>`;}
+    const newRate=Math.max(0,15-5*state.globalErrors);
+    if(fbI2){fbI2.innerHTML=`<span style="font-size:18px;font-family:var(--fh);font-weight:900;color:#ff5544">❌ FAUX !</span> <span style="font-size:12px;color:#ff8855">Les mots non trouvés rapportent maintenant ${newRate} pts</span>`;}
     setTimeout(()=>{
       equiRenderCrosswordGrid(); // revient au neutre
     },600);
@@ -9533,6 +9634,8 @@ function equiGenerateCrossword(words){
   const gridH=Math.max(...rows)-minR+1, gridW=Math.max(...cols)-minC+1;
   const normCells={};
   keys.forEach(k=>{const [r,c]=k.split(',').map(Number);normCells[(r-minR)+','+(c-minC)]=cells[k];});
+  // Position de départ normalisée de chaque mot, pour numéroter les indices dans la grille
+  placements.forEach(p=>{ p.startR=p.row-minR; p.startC=p.col-minC; });
   return {cells:normCells,gridH,gridW,placements};
 }
 
