@@ -261,6 +261,7 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     base.rouletteAnswer = athlete.rouletteAnswer||'';
+    base.rouletteHint = athlete.rouletteHint||'';
     base.roulettePct = athlete.roulettePct||40;
     base.rouletteChambers = athlete.rouletteChambers||6;
     base.rouletteBullet = athlete.rouletteBullet||4;
@@ -647,6 +648,7 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     base.rouletteAnswer = athlete.rouletteAnswer||'';
+    base.rouletteHint = athlete.rouletteHint||'';
     base.roulettePct = athlete.roulettePct||40;
     base.rouletteChambers = athlete.rouletteChambers||6;
     base.rouletteBullet = athlete.rouletteBullet||4;
@@ -1040,6 +1042,7 @@ app.post('/api/admin/athlete', (req, res) => {
     plongeeTol:         type === 'plongee' ? (parseInt(req.body.plongeeTol)||1) : undefined,
     rouletteText:       type === 'roulette' ? (req.body.rouletteText||'').trim() : undefined,
     rouletteAnswer:     type === 'roulette' ? (req.body.rouletteAnswer||'').trim() : undefined,
+    rouletteHint:       type === 'roulette' ? (req.body.rouletteHint||'').trim() : undefined,
     roulettePct:        type === 'roulette' ? (parseInt(req.body.roulettePct)||40) : undefined,
     rouletteChambers:   type === 'roulette' ? (parseInt(req.body.rouletteChambers)||6) : undefined,
     rouletteBullet:     type === 'roulette' ? (parseInt(req.body.rouletteBullet)||4) : undefined,
