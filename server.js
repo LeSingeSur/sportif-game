@@ -142,7 +142,17 @@ function rebuildGlobalScores() {
   for (const [athleteId, list] of Object.entries(scores)) {
     const athlete = athletes.find(a => String(a.id) === String(athleteId));
     const coeff   = athlete?.coefficient ?? 1;
+
+    // Dédupliquer : garder uniquement le MEILLEUR score par pseudo pour ce jeu
+    const bestPerPseudo = {};
     for (const entry of list) {
+      const key = norm(entry.pseudo);
+      if (!bestPerPseudo[key] || entry.score > bestPerPseudo[key].score) {
+        bestPerPseudo[key] = entry;
+      }
+    }
+
+    for (const entry of Object.values(bestPerPseudo)) {
       const key = norm(entry.pseudo);
       if (!map[key]) map[key] = { pseudo: entry.pseudo, totalScore: 0, count: 0, lastDate: entry.date };
       map[key].totalScore += entry.score * coeff;
@@ -272,6 +282,12 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'bowling') {
     base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
+  } else if (athlete.type === 'badminton') {
+    base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
+      question:q.question||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+    }));
+    base.badTheme = athlete.badTheme||'Badminton Quiz';
+    base.maxScore = 400;
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
@@ -659,6 +675,12 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'bowling') {
     base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
+  } else if (athlete.type === 'badminton') {
+    base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
+      question:q.question||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+    }));
+    base.badTheme = athlete.badTheme||'Badminton Quiz';
+    base.maxScore = 400;
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
@@ -934,7 +956,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -948,11 +970,11 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -1051,6 +1073,8 @@ app.post('/api/admin/athlete', (req, res) => {
     equiObstacles:      type === 'equitation' ? (req.body.equiObstacles||[]) : undefined,
     equiTimeLimit:      type === 'equitation' ? (parseInt(req.body.equiTimeLimit)||60) : undefined,
     bowlingQuestions:   type === 'bowling' ? (req.body.bowlingQuestions||[]) : undefined,
+    badmintonQuestions: type === 'badminton' ? (req.body.badmintonQuestions||[]) : undefined,
+    badTheme:           type === 'badminton' ? (req.body.badTheme||'Badminton Quiz') : undefined,
     rouletteSeed:       type === 'roulette' ? (parseInt(req.body.rouletteSeed)||Date.now()) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
