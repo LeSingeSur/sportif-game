@@ -1346,47 +1346,73 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   </div><!-- end rvlf-zone -->
 
   <!-- VAR ZONE -->
-  <div id="var-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0a0a1a 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
-    <!-- VAR header -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:2px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#ff3333;animation:var-blink 1s infinite"></div>
-      <div style="font-family:var(--fh);font-size:12px;letter-spacing:3px;color:rgba(255,50,50,.8)">📺 VIDEO ASSISTANCE REFEREE</div>
-      <div style="width:8px;height:8px;border-radius:50%;background:#ff3333;animation:var-blink 1s infinite .5s"></div>
+  <div id="var-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#06080f 0%,#0a0c18 100%);border-radius:16px;padding:14px;border:1px solid rgba(50,120,255,.2)">
+
+    <!-- VAR header — bold and dramatic -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.6);border:1px solid rgba(50,120,255,.2);border-radius:10px;padding:8px 14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:9px;height:9px;border-radius:50%;background:#ff3333;box-shadow:0 0 8px #ff3333;animation:var-blink 1s infinite;flex-shrink:0"></div>
+        <div>
+          <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,80,80,.9)">📺 VAR</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1px">VIDEO ASSISTANT REFEREE</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">TEMPS</div>
+        <div style="font-family:var(--fh);font-size:26px;color:#64c8ff;line-height:1" id="var-chrono">90</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">SCORE</div>
+        <div style="font-family:var(--fh);font-size:26px;color:var(--neon);line-height:1" id="var-score">50</div>
+      </div>
     </div>
-    <div id="var-rules" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,150,255,.15);border-radius:10px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,.5);line-height:1.8">
-      📺 Un texte sportif contient <strong style="color:var(--txt)">une erreur factuelle</strong>.<br>
-      👆 <strong style="color:#64c8ff">Clique le segment faux</strong> · part de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur<br>
-      ✏️ <strong style="color:#64c8ff">Tape la correction</strong> · repart de <strong style="color:var(--neon)">50 pts</strong> · −10 par erreur
+
+    <!-- Timer bar -->
+    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
+      <div id="var-chrono-bar" style="height:100%;background:linear-gradient(90deg,#64c8ff,var(--neon));width:100%;transition:width 1s linear"></div>
     </div>
-    <div id="var-score-display" style="display:flex;justify-content:space-between;background:rgba(0,0,0,.4);border:1px solid rgba(0,150,255,.1);border-radius:10px;padding:10px 14px">
-      <div><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="var-score">50</div></div>
-      <div style="text-align:center"><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">TEMPS</span><div style="font-family:var(--fh);font-size:28px;color:#64c8ff" id="var-chrono">90</div></div>
-      <div style="text-align:right"><span style="font-size:9px;color:rgba(100,200,255,.5);letter-spacing:2px">PHASE</span><div style="font-family:var(--fh);font-size:14px;color:var(--txt)" id="var-phase-lbl">Trouve l'erreur</div></div>
+
+    <!-- Phase label — big and clear -->
+    <div id="var-phase-lbl" style="font-family:var(--fh);font-size:16px;letter-spacing:2px;color:var(--txt);text-align:center;padding:4px 0">Trouve l'erreur</div>
+
+    <!-- Rules encart -->
+    <div id="var-rules" style="background:rgba(50,120,255,.07);border:1px solid rgba(50,120,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,.55);line-height:1.9">
+      👆 <strong style="color:#64c8ff">Clique le segment faux</strong> dans le texte — part de <strong style="color:var(--neon)">50 pts</strong>, −10 par erreur<br>
+      ✏️ <strong style="color:#64c8ff">Tape la correction</strong> — repart de <strong style="color:var(--neon)">50 pts</strong>, −10 par erreur
     </div>
-    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="var-chrono-bar" style="height:100%;background:linear-gradient(90deg,#64c8ff,var(--neon));width:100%;transition:width 1s linear"></div></div>
-    <!-- Video screen effect for text -->
-    <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid rgba(0,150,255,.2);box-shadow:0 0 20px rgba(0,100,255,.1),inset 0 0 30px rgba(0,0,0,.5)">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,200,255,.3),transparent);animation:var-scan 3s linear infinite"></div>
-      <div id="var-text-display" style="background:rgba(0,5,15,.9);padding:16px;font-size:14px;line-height:2.2;color:rgba(255,255,255,.85);letter-spacing:0.01em;padding-bottom:120px;font-family:var(--ff)"></div>
+
+    <!-- Video screen — stronger visual identity -->
+    <div style="position:relative;border-radius:12px;overflow:hidden;border:2px solid rgba(50,120,255,.25);box-shadow:0 0 24px rgba(0,80,255,.12),inset 0 0 40px rgba(0,0,0,.6)">
+      <!-- Scanline animation top -->
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(100,200,255,.5),transparent);animation:var-scan 3s linear infinite;z-index:2"></div>
+      <!-- Corner brackets for TV feel -->
+      <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;border-top:2px solid rgba(100,200,255,.4);border-left:2px solid rgba(100,200,255,.4)"></div>
+      <div style="position:absolute;top:6px;right:6px;width:14px;height:14px;border-top:2px solid rgba(100,200,255,.4);border-right:2px solid rgba(100,200,255,.4)"></div>
+      <div style="position:absolute;bottom:6px;left:6px;width:14px;height:14px;border-bottom:2px solid rgba(100,200,255,.4);border-left:2px solid rgba(100,200,255,.4)"></div>
+      <div style="position:absolute;bottom:6px;right:6px;width:14px;height:14px;border-bottom:2px solid rgba(100,200,255,.4);border-right:2px solid rgba(100,200,255,.4)"></div>
+      <!-- Text -->
+      <div id="var-text-display" style="background:rgba(0,4,14,.92);padding:20px 16px;font-size:15px;line-height:2.4;color:rgba(255,255,255,.9);letter-spacing:0.02em;font-family:var(--ff)"></div>
     </div>
-    <div id="var-fb" class="fb"></div>
-    <button id="var-skip-btn" onclick="varSkip()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas → 0 pt</button>
+
+    <div id="var-fb" class="fb" style="text-align:center;font-size:14px;min-height:20px"></div>
+    <button id="var-skip-btn" onclick="varSkip()" style="background:transparent;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.35);font-size:12px;border-radius:var(--r);padding:10px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas — passer à la correction (0 pt phase 1)</button>
   </div>
 
-  <!-- VAR correction zone — fixed, outside var-zone -->
-  <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px;position:fixed;bottom:0;left:0;right:0;background:var(--bg);padding:12px 16px;z-index:100;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -8px 24px rgba(0,0,0,.4)">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="font-size:13px;color:var(--mute)">✏️ Tape la correction :</div>
-      <div style="font-family:var(--fh);font-size:18px" id="var-chrono2">90</div>
+  <!-- VAR correction zone — fixed bottom panel -->
+  <div id="var-correct-zone" style="display:none;flex-direction:column;gap:8px;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,#06080f,#0a0c18);padding:14px 16px;z-index:100;border-top:2px solid rgba(50,120,255,.3);box-shadow:0 -12px 32px rgba(0,0,0,.7)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <div style="font-family:var(--fh);font-size:13px;color:#64c8ff;letter-spacing:1px">✏️ TAPE LA CORRECTION</div>
+      <div style="font-family:var(--fh);font-size:22px;color:#64c8ff" id="var-chrono2">90</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <input type="text" id="var-in" placeholder="Ta correction…"
-        style="flex:1;min-width:0;background:var(--c1);border:2px solid var(--neon);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);outline:none"
+        style="flex:1;min-width:0;background:rgba(0,0,0,.5);border:2px solid rgba(50,120,255,.5);color:var(--txt);font-size:17px;border-radius:var(--r);padding:13px 14px;font-family:var(--fh);outline:none;box-shadow:0 0 12px rgba(50,120,255,.1)"
         onkeydown="if(event.key==='Enter')varSubmitCorrection()">
-      <button onclick="varSubmitCorrection()" style="width:52px!important;height:52px;flex-shrink:0;background:var(--neon);color:#000;border:none;border-radius:var(--r);font-size:22px;cursor:pointer;font-weight:900">✓</button>
+      <button onclick="varSubmitCorrection()" style="width:54px!important;height:54px;flex-shrink:0;background:linear-gradient(135deg,#1a5cff,#0a3aaa);color:#fff;border:none;border-radius:var(--r);font-size:24px;cursor:pointer;font-weight:900;box-shadow:0 0 16px rgba(50,120,255,.4)">✓</button>
     </div>
-    <button onclick="varSkipCorrection()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--mute);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas → garder les points actuels</button>
+    <button onclick="varSkipCorrection()" style="background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">🏳️ Je ne sais pas — garder les points actuels</button>
   </div>
+
 
   <div id="roulette-zone" style="display:none;flex-direction:column;gap:10px;width:100%">
 
@@ -1660,6 +1686,62 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- NAGE SYNC zone -->
   <div id="ns-zone" style="background:linear-gradient(180deg,#001428 0%,#002040 50%,#001028 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
+
+  <!-- BADMINTON zone -->
+  <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
+      <div>
+        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
+        <div style="font-family:var(--fh);font-size:28px;color:#00dc78" id="bad-score">0</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">TEMPS</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="bad-timer">180</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="bad-qnum">0/10</div>
+      </div>
+    </div>
+    <div style="height:4px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
+      <div id="bad-timer-bar" style="height:100%;background:#00dc78;width:100%;transition:width .5s linear"></div>
+    </div>
+
+    <!-- Phase 1 : règles + start -->
+    <div id="bad-rules" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,220,120,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
+      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
+      Avant chaque question, choisis ta tactique :<br>
+      🏸 <strong style="color:var(--txt)">Smash</strong> — chrono 2× plus vite · <strong style="color:#ffd700">40 pts</strong> si juste<br>
+      🦅 <strong style="color:var(--txt)">Dégagé</strong> — 8s offertes · <strong style="color:#88aaff">10 pts</strong> si juste<br>
+      ➡️ <strong style="color:var(--txt)">Drive</strong> — neutre · <strong style="color:#00dc78">20 pts</strong> si juste<br>
+      ⏱ 180 secondes pour tout finir · Mauvaise réponse = 0 pt
+      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
+    </div>
+
+    <!-- Phase 2 : choix tactique -->
+    <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🏸 SMASH<br><span style="font-size:10px;opacity:.7">2× chrono · 40pts</span></button>
+        <button onclick="badChoixTactic('degage')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🦅 DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s offerts · 10pts</span></button>
+        <button onclick="badChoixTactic('drive')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">➡️ DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
+      </div>
+    </div>
+
+    <!-- Phase 3 : question QCM -->
+    <div id="bad-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div id="bad-tactic-badge" style="text-align:center;font-size:11px;font-family:var(--fh);letter-spacing:1px;color:var(--mute)"></div>
+      <div id="bad-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
+      <div id="bad-choices" style="display:flex;flex-direction:column;gap:7px"></div>
+      <div id="bad-degage-countdown" style="display:none;text-align:center;font-family:var(--fh);font-size:20px;color:#88aaff"></div>
+    </div>
+
+    <!-- Feedback -->
+    <div id="bad-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+  </div>
+
     <div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;color:rgba(0,200,255,.4);text-align:center;margin-bottom:8px">🏊 NATATION SYNCHRONISÉE 🏊</div>
     <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.3);border-radius:10px;padding:8px 14px;margin-bottom:8px">
       <div style="font-size:12px;color:rgba(0,200,255,.6)">Place chaque sportif<br>dans le bon couloir</div>
@@ -2407,6 +2489,9 @@ async function loadAthlete(){
       setupEquitation(data);
     } else if(data.type==='bowling'){
       setupBowling(data);
+    } else if(data.type==='badminton'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupBadminton(data);
     } else if(data.type==='roulette'){
       setupRoulette(data);
     } else if(data.type==='escalade'){
@@ -2440,7 +2525,7 @@ async function loadAthlete(){
 }
 
 // -- HIDE ALL ZONES --------------------------------------------------------
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone','equi-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone','equi-zone','badminton-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -2465,7 +2550,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -3020,9 +3105,9 @@ function varRenderText(){
     } else {
       const span=document.createElement('span');
       span.textContent=seg.text;
-      span.style.cssText='cursor:pointer;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:2px 6px;margin:1px 2px;transition:all .15s;display:inline-block;color:var(--txt);font-size:inherit';
-      span.onmouseenter=()=>{if(!span.classList.contains('var-selected'))span.style.background='rgba(212,255,0,.15)';span.style.borderColor='rgba(212,255,0,.4)';};
-      span.onmouseleave=()=>{if(!span.classList.contains('var-selected')){span.style.background='rgba(255,255,255,.08)';span.style.borderColor='rgba(255,255,255,.12)';}};
+      span.style.cssText='cursor:pointer;background:rgba(50,120,255,.1);border:1px solid rgba(50,120,255,.25);border-radius:8px;padding:4px 9px;margin:2px 3px;transition:all .15s;display:inline-block;color:rgba(255,255,255,.9);font-size:inherit';
+      span.onmouseenter=()=>{if(!span.classList.contains('var-selected')){span.style.background='rgba(50,120,255,.25)';span.style.borderColor='rgba(100,180,255,.6)';}};
+      span.onmouseleave=()=>{if(!span.classList.contains('var-selected')){span.style.background='rgba(50,120,255,.1)';span.style.borderColor='rgba(50,120,255,.25)';}};
       span.onclick=()=>varClickSegment(seg.text,span);
       el.appendChild(span);
       if(useChips&&idx<segments.length-1) el.appendChild(document.createTextNode(' '));
@@ -7379,7 +7464,7 @@ async function loadLB(){
       }
     }catch(e){}
     lbAthletes.forEach((a,i)=>{
-      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️'};
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️'};
       const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
@@ -10277,8 +10362,9 @@ function arcNextCible(){
   const t22=c.tol22||tolsGlobal.moyen||8;
   const t33=c.tol33||tolsGlobal.difficile||3;
 
-  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${c.stat}</div>
-    <div style="font-size:13px;color:var(--txt)">Choisis ta distance :</div>
+  d.innerHTML=`<div style="font-size:10px;color:var(--mute);letter-spacing:2px;font-family:var(--fh);margin-bottom:4px">CIBLE ${ARC.cibleIdx+1}</div>
+    <div style="font-size:17px;font-weight:800;color:var(--txt);line-height:1.4;text-align:center;padding:10px 8px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.1);margin-bottom:4px">${c.stat}</div>
+    <div style="font-size:12px;color:var(--mute);text-align:center;margin-bottom:4px">Choisis ta distance :</div>
     <div style="display:flex;gap:8px">
       <button onclick="arcChoixDistance('facile')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟢</span><span style="font-size:16px;font-weight:800;color:var(--neon)">11m</span><span style="font-size:11px;color:var(--mute)">11 pts</span><span style="font-size:10px;color:var(--neon)">±${t11}%</span></button>
       <button onclick="arcChoixDistance('moyen')" style="flex:1;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:var(--c2);color:var(--txt);font-family:var(--fh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:22px">🟡</span><span style="font-size:16px;font-weight:800;color:var(--neon)">22m</span><span style="font-size:11px;color:var(--mute)">22 pts</span><span style="font-size:10px;color:#f59e0b">±${t22}%</span></button>
@@ -10315,8 +10401,8 @@ function arcChoixDistance(difficulty){
   // Phase 2: slider
   const d=document.createElement('div');
   d.className='arc-cible';
-  d.innerHTML=`<div style="font-size:11px;color:var(--mute);letter-spacing:2px;font-family:var(--fh)">CIBLE ${ARC.cibleIdx+1} — ${difficulty==='facile'?'🟢 11m':difficulty==='moyen'?'🟡 22m':'🔴 33m'} · ${maxPts} pts</div>
-    <div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px">${c.stat}</div>
+  d.innerHTML=`<div style="font-size:10px;color:var(--mute);letter-spacing:2px;font-family:var(--fh);margin-bottom:4px">CIBLE ${ARC.cibleIdx+1} — ${difficulty==='facile'?'🟢 11m':difficulty==='moyen'?'🟡 22m':'🔴 33m'} · ${maxPts} pts</div>
+    <div style="font-size:17px;font-weight:800;color:var(--txt);line-height:1.4;text-align:center;padding:10px 8px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.1);margin-bottom:8px">${c.stat}</div>
     <div style="text-align:center;margin-bottom:6px">
       <span style="font-family:var(--fh);font-size:40px;color:var(--neon)" id="arc-slider-val">${Math.round(max/2)}</span>
     </div>
@@ -10423,6 +10509,208 @@ function arcFinish(){
 }
 
 // --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// BADMINTON QUIZ
+// --------------------------------------------------------------------------
+const BAD={
+  data:null, qIdx:0, score:0, done:false,
+  timerLeft:180, timerInt:null,
+  tactic:null, degageActive:false, degageInt:null
+};
+
+function setupBadminton(data){
+  BAD.data=data; BAD.qIdx=0; BAD.score=0; BAD.done=false;
+  BAD.timerLeft=180; BAD.tactic=null; BAD.degageActive=false;
+  if(BAD.timerInt){clearInterval(BAD.timerInt);BAD.timerInt=null;}
+  if(BAD.degageInt){clearInterval(BAD.degageInt);BAD.degageInt=null;}
+  const badge=document.getElementById('type-badge');
+  if(badge){badge.textContent='🏸 Badminton Quiz';badge.className='type-badge';}
+  document.getElementById('game-tip').innerHTML='10 questions · 3 tactiques · 180 secondes';
+  hideAllZones();
+  document.getElementById('badminton-zone').style.display='flex';
+  document.getElementById('bad-rules').style.display='block';
+  document.getElementById('bad-tactic').style.display='none';
+  document.getElementById('bad-question-wrap').style.display='none';
+  document.getElementById('bad-score').textContent='0';
+  document.getElementById('bad-timer').textContent='180';
+  document.getElementById('bad-qnum').textContent='0/10';
+  document.getElementById('bad-timer-bar').style.width='100%';
+  document.getElementById('bad-fb').textContent='';
+  GAME.score=0; setScore(0,false);
+}
+
+function badStart(){
+  document.getElementById('bad-rules').style.display='none';
+  badShowTactic();
+}
+
+function badTickTimer(){
+  if(BAD.done) return;
+  BAD.timerLeft=Math.max(0,BAD.timerLeft-1);
+  const el=document.getElementById('bad-timer');
+  const bar=document.getElementById('bad-timer-bar');
+  if(el){
+    el.textContent=BAD.timerLeft;
+    el.style.color=BAD.timerLeft<=30?'var(--red)':BAD.timerLeft<=60?'#ffaa00':'var(--txt)';
+  }
+  if(bar) bar.style.width=(BAD.timerLeft/180*100)+'%';
+  if(BAD.timerLeft<=0) badFinish();
+}
+
+function badStartTimer(){
+  if(BAD.timerInt) clearInterval(BAD.timerInt);
+  BAD.timerInt=setInterval(badTickTimer,1000);
+}
+
+function badStopTimer(){
+  if(BAD.timerInt){clearInterval(BAD.timerInt);BAD.timerInt=null;}
+}
+
+function badShowTactic(){
+  if(BAD.done) return;
+  badStopTimer(); // timer pausé entre questions
+  document.getElementById('bad-tactic').style.display='flex';
+  document.getElementById('bad-question-wrap').style.display='none';
+  document.getElementById('bad-fb').textContent='';
+  const total=(BAD.data.badmintonQuestions||[]).length;
+  document.getElementById('bad-qnum').textContent=BAD.qIdx+'/'+total;
+}
+
+function badChoixTactic(tactic){
+  BAD.tactic=tactic;
+  document.getElementById('bad-tactic').style.display='none';
+  badShowQuestion();
+}
+
+function badShowQuestion(){
+  if(BAD.done) return;
+  const qs=BAD.data.badmintonQuestions||[];
+  if(BAD.qIdx>=qs.length){badFinish();return;}
+  const q=qs[BAD.qIdx];
+  const total=qs.length;
+  document.getElementById('bad-qnum').textContent=(BAD.qIdx+1)+'/'+total;
+
+  // Badge tactique
+  const badge=document.getElementById('bad-tactic-badge');
+  if(badge){
+    const map={smash:'🏸 SMASH — 40 pts · ×2 chrono',degage:'🦅 DÉGAGÉ — 10 pts · 8s offertes',drive:'➡️ DRIVE — 20 pts · neutre'};
+    const col={smash:'#ffd700',degage:'#88aaff',drive:'#00dc78'};
+    badge.textContent=map[BAD.tactic]||'';
+    badge.style.color=col[BAD.tactic]||'var(--mute)';
+  }
+
+  // Question
+  document.getElementById('bad-q-text').textContent=q.question||'';
+
+  // Choix QCM
+  const choicesEl=document.getElementById('bad-choices');
+  const choices=[q.a,q.b,q.c,q.d];
+  choicesEl.innerHTML='';
+  choices.forEach((ch,i)=>{
+    if(!ch) return;
+    const btn=document.createElement('button');
+    btn.textContent=ch;
+    btn.style.cssText='width:100%;padding:13px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--txt);font-size:15px;font-family:var(--ff);cursor:pointer;text-align:left;transition:background .15s;line-height:1.4';
+    btn.onclick=()=>badAnswer(i,choices);
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById('bad-question-wrap').style.display='flex';
+
+  // Dégagé : 8s offertes avant de démarrer le chrono
+  if(BAD.tactic==='degage'){
+    document.getElementById('bad-degage-countdown').style.display='block';
+    let countdown=8;
+    const cdEl=document.getElementById('bad-degage-countdown');
+    cdEl.textContent='⏸ '+countdown+'s offertes…';
+    BAD.degageActive=true;
+    if(BAD.degageInt) clearInterval(BAD.degageInt);
+    BAD.degageInt=setInterval(()=>{
+      countdown--;
+      if(countdown<=0){
+        clearInterval(BAD.degageInt);BAD.degageInt=null;
+        BAD.degageActive=false;
+        cdEl.style.display='none';
+        badStartTimer(); // démarre le chrono après les 8s
+      } else {
+        cdEl.textContent='⏸ '+countdown+'s offertes…';
+      }
+    },1000);
+  } else {
+    document.getElementById('bad-degage-countdown').style.display='none';
+    // Smash : 2× plus vite = 1 tick toutes les 0.5s
+    if(BAD.tactic==='smash'){
+      if(BAD.timerInt) clearInterval(BAD.timerInt);
+      BAD.timerInt=setInterval(badTickTimer,500);
+    } else {
+      badStartTimer();
+    }
+  }
+}
+
+function badAnswer(choiceIdx,choices){
+  if(BAD.done) return;
+  badStopTimer();
+  if(BAD.degageInt){clearInterval(BAD.degageInt);BAD.degageInt=null;}
+  document.getElementById('bad-degage-countdown').style.display='none';
+
+  const qs=BAD.data.badmintonQuestions||[];
+  const q=qs[BAD.qIdx];
+  const correctIdx = q.correct!=null ? parseInt(q.correct) : 0; // 0-based, null-safe
+  const isCorrect=(choiceIdx===correctIdx);
+  const pts={smash:40,degage:10,drive:20}[BAD.tactic]||20;
+  const earned=isCorrect?pts:0;
+  if(earned>0) BAD.score+=earned;
+
+  // Colorize buttons
+  const btns=document.getElementById('bad-choices').querySelectorAll('button');
+  btns.forEach((btn,i)=>{
+    btn.disabled=true;
+    if(i===correctIdx) btn.style.background='rgba(0,220,120,.25)';
+    else if(i===choiceIdx&&!isCorrect) btn.style.background='rgba(255,50,50,.25)';
+  });
+
+  const fb=document.getElementById('bad-fb');
+  if(fb){
+    if(isCorrect){
+      fb.textContent='✅ +'+earned+' pts !';
+      fb.style.color='#00dc78';
+    } else {
+      fb.textContent='❌ Raté ! La bonne réponse : '+choices[correctIdx];
+      fb.style.color='var(--red)';
+    }
+  }
+  document.getElementById('bad-score').textContent=BAD.score;
+  GAME.score=BAD.score; setScore(BAD.score,false);
+
+  BAD.qIdx++;
+  const total=qs.length;
+  setTimeout(()=>{
+    if(BAD.done) return;
+    if(BAD.qIdx>=total){
+      badFinish();
+    } else {
+      badShowTactic();
+    }
+  },1400);
+}
+
+function badFinish(){
+  if(BAD.done) return;
+  BAD.done=true;
+  badStopTimer();
+  if(BAD.degageInt){clearInterval(BAD.degageInt);BAD.degageInt=null;}
+  const total=(BAD.data.badmintonQuestions||[]).length;
+  const score=BAD.score;
+  GAME.score=score; setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent=BAD.data.badTheme||'Badminton Quiz';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=BAD.qIdx+'/'+total+' questions · '+score+' pts';
+  setVictoryIcon('badminton');
+  submitScore(score);
+  setTimeout(()=>show('sv'),800);
+}
+
 // NAGE SYNCHRONISÉE
 // --------------------------------------------------------------------------
 const NS={data:null,placement:{},done:false,essai:1,score:0,maxScore:100,chronoInt:null};

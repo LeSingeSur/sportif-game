@@ -267,6 +267,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Bowling Quiz</div>
             <div class="type-desc">Réponses numériques · Strikes & Spares · Max 300</div>
           </div>
+          <div class="type-opt" id="type-badminton" onclick="selectType('badminton')">
+            <div class="type-ico">🏸</div>
+            <div class="type-name">Badminton Quiz</div>
+            <div class="type-desc">10 QCM · 3 tactiques · 180s · Max 200</div>
+          </div>
           <div class="type-opt" id="type-roulette" onclick="selectType('roulette')">
             <div class="type-ico">🔫</div>
             <div class="type-name">Roulette Russe</div>
@@ -427,6 +432,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div id="bowling-q-list" style="display:flex;flex-direction:column;gap:6px"></div>
         <button class="btn btn-s" id="btn-add-bowling" onclick="bowlingAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
         <div id="bowling-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
+      </div>
+
+      <!-- BADMINTON FIELDS -->
+      <div id="badminton-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🏸 10 QCM · 4 choix par question · 3 tactiques (Smash/Dégagé/Drive) · 180s · Max 200 pts
+        </div>
+        <label style="font-size:11px;color:var(--mute)">Thème (affiché en fin)</label>
+        <input type="text" id="bad-theme" placeholder="Ex: Carrière de Zlatan" oninput="checkReady()"
+          style="width:100%;background:var(--c1);border:none;color:var(--neon);font-size:14px;border-radius:6px;padding:7px 10px;margin-bottom:10px;outline:none">
+        <div id="bad-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" onclick="badAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+        <div id="bad-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
       </div>
 
       <!-- ROULETTE FIELDS -->
@@ -1283,6 +1301,8 @@ function selectType(type){
   if(type==='equitation')setTimeout(()=>equiAdminRender(),50);
   document.getElementById('bowling-fields').style.display      = type==='bowling'?'block':'none';
   if(type==='bowling')setTimeout(()=>bowlingAdminRender(),50);
+  document.getElementById('badminton-fields').style.display    = type==='badminton'?'block':'none';
+  if(type==='badminton')setTimeout(()=>badAdminRender(),50);
   document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
   if(type==='roulette')setTimeout(()=>roulettePreview(),50);
   document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
@@ -1501,6 +1521,11 @@ async function startEdit(id){
   if(a.type==='bowling'){
     bowlingQuestions=[...(a.bowlingQuestions||[])];
     setTimeout(()=>bowlingAdminRender(),50);
+  }
+  if(a.type==='badminton'){
+    badmintonQuestions=[...(a.badmintonQuestions||[])];
+    const bt=document.getElementById('bad-theme');if(bt)bt.value=a.badTheme||'';
+    setTimeout(()=>badAdminRender(),50);
   }
   if(a.type==='roulette'){
     const rt=document.getElementById('roulette-text');if(rt)rt.value=a.rouletteText||'';
@@ -2023,6 +2048,43 @@ function equiAdminRender(){
 
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
+let badmintonQuestions=[];
+
+function badAdminRender(){
+  const list=document.getElementById('bad-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(!badmintonQuestions.length){
+    list.innerHTML='<div style="font-size:11px;color:var(--mute);text-align:center;padding:10px">Aucune question. Cliquez ➕ pour en ajouter.</div>';
+    return;
+  }
+  badmintonQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--neon);font-family:var(--fh)">Q${i+1}</span>
+        <button onclick="badmintonQuestions.splice(${i},1);badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="badmintonQuestions[${i}].question=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+      ${['a','b','c','d'].map((ch,ci)=>`
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="radio" name="bad-correct-${i}" value="${ci}" ${q.correct==ci?'checked':''} onchange="badmintonQuestions[${i}].correct=${ci};checkReady();" style="accent-color:var(--neon);width:14px;height:14px;flex-shrink:0" title="Bonne réponse">
+          <input value="${(q[ch]||'').replace(/"/g,'&quot;')}" placeholder="Choix ${ch.toUpperCase()}…" oninput="badmintonQuestions[${i}]['${ch}']=this.value;checkReady();"
+            style="flex:1;background:${q.correct==ci?'rgba(0,200,80,.1)':'var(--c2)'};border:${q.correct==ci?'1px solid rgba(0,200,80,.3)':'none'};color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+        </div>`).join('')}`;
+    list.appendChild(d);
+  });
+  const status=document.getElementById('bad-admin-status');
+  if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées';
+}
+
+function badAdminAddQ(){
+  if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
+  badmintonQuestions.push({question:'',a:'',b:'',c:'',d:'',correct:0});
+  badAdminRender();checkReady();
+}
   equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
 function bowlingAdminRender(){
   const list=document.getElementById('bowling-q-list');
@@ -2396,7 +2458,7 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
@@ -2442,6 +2504,11 @@ function checkReady(){
   }
   else if(currentType==='bowling'){
     hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
+  }
+  else if(currentType==='badminton'){
+    hasContent=badmintonQuestions.length>=1&&badmintonQuestions.every(q=>q.question&&q.a&&q.b&&q.correct!==undefined);
+    const status=document.getElementById('bad-admin-status');
+    if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées'+(badmintonQuestions.length<10?' (minimum 1)':'');
   }
   else if(currentType==='roulette'){
     const txt=(document.getElementById('roulette-text')?.value||'').trim();
@@ -3698,6 +3765,8 @@ document.getElementById('btn-save').onclick=async()=>{
   rouletteRevealStep:currentType==='roulette'?parseInt(document.getElementById('roulette-reveal-step')?.value||5):undefined,
   rouletteSeed:currentType==='roulette'?rouletteSeed:undefined,
   bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined,
+  badmintonQuestions:currentType==='badminton'?badmintonQuestions:undefined,
+  badTheme:currentType==='badminton'?(document.getElementById('bad-theme')?.value||'Badminton Quiz'):undefined,
   equiObstacles:currentType==='equitation'?equiObstacles:undefined,
   equiTimeLimit:currentType==='equitation'?parseInt(document.getElementById('equi-time-limit')?.value||60):undefined};
   if(editId)body.editId=editId;
