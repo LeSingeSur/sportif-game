@@ -560,7 +560,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <!-- PSEUDO / COMPTE -->
 <section class="scr on" id="sp">
   <div class="logo">LE GRAND <br>CHELEM</div>
-  <div class="logo-tag">⚡ 22 jeux · jusqu'à 300 pts ⚡</div>
+  <div class="logo-tag">⚡ 26 jeux · jusqu'à 400 pts ⚡</div>
   <div class="card">
     <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);text-align:center;margin-bottom:10px">Les jeux disponibles</div>
     <div class="game-types-grid">
@@ -578,7 +578,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🎿</div><div class="gt-name">Biathlon</div></div>
       <div class="gt-item"><div class="gt-ico">🔗</div><div class="gt-name">Maillon Faible</div></div>
       <div class="gt-item"><div class="gt-ico">🏋️</div><div class="gt-name">Haltéro-Quiz</div></div>
-      <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Tir à l'Arc</div></div>
+      <div class="gt-item"><div class="gt-ico">🏹</div><div class="gt-name">Tir à l'Arc</div></div>
       <div class="gt-item"><div class="gt-ico">🏊</div><div class="gt-name">Natation</div></div>
       <div class="gt-item"><div class="gt-ico">📺</div><div class="gt-name">La VAR</div></div>
       <div class="gt-item"><div class="gt-ico">⏳</div><div class="gt-name">Retour vers le Futur</div></div>
@@ -587,6 +587,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🏇</div><div class="gt-name">Équitation CSO</div></div>
       <div class="gt-item"><div class="gt-ico">🎳</div><div class="gt-name">Bowling Quiz</div></div>
       <div class="gt-item"><div class="gt-ico">🔫</div><div class="gt-name">Roulette Russe</div></div>
+      <div class="gt-item"><div class="gt-ico">🏸</div><div class="gt-name">Badminton Quiz</div></div>
+      <div class="gt-item"><div class="gt-ico">🔀</div><div class="gt-name">Méli-Mélo</div></div>
+      <div class="gt-item"><div class="gt-ico">📦</div><div class="gt-name">À Prendre ou À Laisser</div></div>
+      <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Trivial Pursuit</div></div>
     </div>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
@@ -1850,7 +1854,11 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="display:none"><span id="bad-timer">180</span></div>
     <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      🏸 <strong style="color:var(--txt)">Smash</strong> — 2× chrono · <strong style="color:#ffd700">40 pts</strong> &nbsp;|&nbsp; 🦅 <strong style="color:var(--txt)">Dégagé</strong> — +8s · <strong style="color:#88aaff">10 pts</strong> &nbsp;|&nbsp; ➡️ <strong style="color:var(--txt)">Drive</strong> — <strong style="color:#00dc78">20 pts</strong>
+      Avant chaque question, choisis ta tactique :<br>
+      🏸 <strong style="color:#ffd700">SMASH</strong> — chrono 2× plus vite · <strong style="color:#ffd700">+30 pts</strong> si juste · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
+      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé pendant la question · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
+      ➡️ <strong style="color:#00dc78">DRIVE</strong> — chrono normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux<br>
+      ⏱ 180s pour tout finir · Cap à <strong style="color:var(--txt)">300 pts</strong>
       <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
     </div>
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
@@ -1860,7 +1868,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
-        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:10px;opacity:.7">2× · 40pts</span></button>
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:10px;opacity:.7">× · 30pts</span></button>
         <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🦅<br>DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s · 10pts</span></button>
         <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
       </div>
@@ -1892,8 +1900,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
       <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
     </div>
-    <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
+    <div     <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
+      Les lettres d'un nom de sportif ont été <strong style="color:#c060ff">mélangées</strong> — retrouve le nom original<br>
+      ✅ Bonne réponse = <strong style="color:#c060ff">+20 pts</strong> · Insensible aux accents<br>
+      ⏭ "Passer" révèle la réponse — 0 pt sur ce mot<br>
+      ⏱ <strong style="color:var(--txt)">60 secondes</strong> pour 5 mots · Max <strong style="color:var(--txt)">100 pts</strong>
+      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
+    </div>
       5 noms de sportifs mélangés à remettre dans l'ordre<br>
       ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
       ⏱ 60 secondes pour les 5 mots
@@ -1919,8 +1933,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#b48fff;line-height:1" id="triv-score">0</div></div>
       <div style="text-align:right"><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">PARTS</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="triv-parts">0/6</div></div>
     </div>
-    <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+    <div     <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
+      Un plateau de <strong style="color:#b48fff">18 cases</strong> en cercle : 6 camemberts thématiques alternant avec 12 cases-questions (2 entre chaque thème)<br>
+      🟣 <strong style="color:var(--txt)">Camembert</strong> = collecté automatiquement · <strong style="color:#b48fff">+50 pts</strong><br>
+      ❓ <strong style="color:var(--txt)">Case-question</strong> = réponds pour traverser · Faux = case <strong style="color:var(--red)">effondrée</strong> (bloquée)<br>
+      ↔️ Chaque tour : tu vas à gauche ou à droite d'une case<br>
+      💀 Cerné des 2 côtés = fin du jeu · Score conservé · Max <strong style="color:var(--txt)">300 pts</strong>
+      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
+    </div>
       6 camemberts alternent avec 12 cases-questions · Chaque camembert = <strong style="color:#b48fff">+50 pts</strong><br>
       ❓ Réponds pour traverser une case-question · Faux → case effondrée 💀<br>
       Cerné des 2 côtés → fin · Score conservé
@@ -1966,8 +1987,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div>
       </div>
     </div>
-    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+    <div     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#ffb400;margin-bottom:8px;letter-spacing:2px">📦 À PRENDRE OU À LAISSER</div>
+      <strong style="color:var(--txt)">5 questions</strong> à réponse libre · <strong style="color:#ffb400">+20 pts</strong> par bonne réponse<br>
+      À la fin, tu as le choix :<br>
+      ✅ <strong style="color:#00dc78">GARDER</strong> — tu sécurises ton score<br>
+      📦 <strong style="color:#ffb400">LA BOÎTE</strong> — 5 boîtes s'affichent, chacune cache un bonus ou un malus · tu en choisis une<br>
+      La 6ème possibilité n'est dans aucune boîte — tu ne sauras jamais laquelle · Max <strong style="color:var(--txt)">200 pts</strong>
+      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
+    </div>
       5 questions à 20 pts chacune<br>
       À la fin : <strong style="color:var(--txt)">garder ton score</strong> ou <strong style="color:#ffb400">tenter la boîte</strong><br>
       📦 La boîte peut tout changer…
@@ -2045,7 +2073,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
-        <button onclick="badChoixTactic('smash')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🏸 SMASH<br><span style="font-size:10px;opacity:.7">2× chrono · 40pts</span></button>
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🏸 SMASH<br><span style="font-size:10px;opacity:.7">2× · 30pts</span></button>
         <button onclick="badChoixTactic('degage')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🦅 DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s offerts · 10pts</span></button>
         <button onclick="badChoixTactic('drive')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">➡️ DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
       </div>
@@ -7804,7 +7832,7 @@ async function loadLB(){
       }
     }catch(e){}
     lbAthletes.forEach((a,i)=>{
-      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️'};
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️','melimelo':'🔀','apol':'📦','trivpursuit':'🎯'};
       const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
@@ -10918,9 +10946,12 @@ function badStopTimer(){
 function badShowTactic(){
   if(BAD.done) return;
   badStopTimer(); // timer pausé entre questions
+  // Si dégagé: le timer reprend ici (était gelé pendant la question)
+  // → non, on démarre à la prochaine question selon la tactique choisie
   document.getElementById('bad-tactic').style.display='flex';
   document.getElementById('bad-question-wrap').style.display='none';
   document.getElementById('bad-fb').textContent='';
+  document.getElementById('bad-degage-countdown').style.display='none';
   const total=(BAD.data.badmintonQuestions||[]).length;
   document.getElementById('bad-qnum').textContent=BAD.qIdx+'/'+total;
   // Thème de la prochaine question
@@ -10976,28 +11007,13 @@ function badShowQuestion(){
 
   document.getElementById('bad-question-wrap').style.display='flex';
 
-  // Dégagé : 8s offertes avant de démarrer le chrono
+  // Dégagé : timer gelé pendant TOUTE la question (reprend à la prochaine tactique)
   if(BAD.tactic==='degage'){
     document.getElementById('bad-degage-countdown').style.display='block';
-    let countdown=8;
-    const cdEl=document.getElementById('bad-degage-countdown');
-    cdEl.textContent='⏸ '+countdown+'s offertes…';
-    BAD.degageActive=true;
-    if(BAD.degageInt) clearInterval(BAD.degageInt);
-    BAD.degageInt=setInterval(()=>{
-      countdown--;
-      if(countdown<=0){
-        clearInterval(BAD.degageInt);BAD.degageInt=null;
-        BAD.degageActive=false;
-        cdEl.style.display='none';
-        badStartTimer(); // démarre le chrono après les 8s
-      } else {
-        cdEl.textContent='⏸ '+countdown+'s offertes…';
-      }
-    },1000);
+    document.getElementById('bad-degage-countdown').textContent='⏸ Chrono gelé';
+    // Timer stays stopped — badStartTimer will be called when next tactic is shown
   } else {
     document.getElementById('bad-degage-countdown').style.display='none';
-    // Smash : 2× plus vite = 1 tick toutes les 0.5s
     if(BAD.tactic==='smash'){
       if(BAD.timerInt) clearInterval(BAD.timerInt);
       BAD.timerInt=setInterval(badTickTimer,500);
@@ -11015,11 +11031,19 @@ function badAnswer(choiceIdx,choices){
 
   const qs=BAD.data.badmintonQuestions||[];
   const q=qs[BAD.qIdx];
-  const correctIdx = q.correct!=null ? parseInt(q.correct) : 0; // 0-based, null-safe
+  const correctIdx = q.correct!=null ? parseInt(q.correct) : 0;
   const isCorrect=(choiceIdx===correctIdx);
-  const pts={smash:40,degage:10,drive:20}[BAD.tactic]||20;
-  const earned=isCorrect?pts:0;
-  if(earned>0) BAD.score+=earned;
+
+  // Scoring avec pénalité Smash
+  const gainMap={smash:30,degage:10,drive:20};
+  let delta=0;
+  if(isCorrect){
+    delta=gainMap[BAD.tactic]||20;
+  } else if(BAD.tactic==='smash'){
+    delta=-10; // pénalité smash
+  }
+  BAD.score=Math.max(0,BAD.score+delta);
+  BAD.score=Math.min(300,BAD.score); // cap 300
 
   // Colorize buttons
   const btns=document.getElementById('bad-choices').querySelectorAll('button');
@@ -11032,10 +11056,11 @@ function badAnswer(choiceIdx,choices){
   const fb=document.getElementById('bad-fb');
   if(fb){
     if(isCorrect){
-      fb.textContent='✅ +'+earned+' pts !';
+      fb.textContent='✅ +'+delta+' pts !';
       fb.style.color='#00dc78';
     } else {
-      fb.textContent='❌ Raté ! La bonne réponse : '+choices[correctIdx];
+      const penaltyMsg=BAD.tactic==='smash'?' · −10 pts (Smash raté)'  :'';
+      fb.textContent='❌ Raté'+penaltyMsg+' · '+choices[correctIdx];
       fb.style.color='var(--red)';
     }
   }
@@ -11048,11 +11073,8 @@ function badAnswer(choiceIdx,choices){
   const total=qs.length;
   setTimeout(()=>{
     if(BAD.done) return;
-    if(BAD.qIdx>=total){
-      badFinish();
-    } else {
-      badShowTactic();
-    }
+    if(BAD.qIdx>=total) badFinish();
+    else badShowTactic();
   },1400);
 }
 
