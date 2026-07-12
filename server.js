@@ -284,10 +284,38 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
-      question:q.question||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
     }));
     base.badTheme = athlete.badTheme||'Badminton Quiz';
-    base.maxScore = 400;
+    base.maxScore = 300;
+  } else if (athlete.type === 'trivpursuit') {
+    base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
+      name:t.name||'Thème', color:t.color||'#888888'
+    }));
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,12).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0
+    }));
+    base.maxScore = 300;
+  } else if (athlete.type === 'melimelo') {
+    base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
+      scrambled:(w.scrambled||'').toUpperCase().trim(),
+      answer:(w.answer||'').toUpperCase().trim()
+    }));
+    base.meliTimer = athlete.meliTimer||60;
+    base.maxScore = 100;
+  } else if (athlete.type === 'apol') {
+    base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+    }));
+    base.apolBoxItems = [
+      {label:'+10 pts',value:10,type:'add',prob:25},
+      {label:'−10 pts',value:-10,type:'add',prob:25},
+      {label:'+20 pts',value:20,type:'add',prob:15},
+      {label:'−20 pts',value:-20,type:'add',prob:15},
+      {label:'×2',value:2,type:'mult',prob:10},
+      {label:'÷2',value:0.5,type:'mult',prob:10}
+    ];
+    base.maxScore = 200; // 5x20 + double possible
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
@@ -677,10 +705,38 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
-      question:q.question||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
     }));
     base.badTheme = athlete.badTheme||'Badminton Quiz';
-    base.maxScore = 400;
+    base.maxScore = 300;
+  } else if (athlete.type === 'trivpursuit') {
+    base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
+      name:t.name||'Thème', color:t.color||'#888888'
+    }));
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,12).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0
+    }));
+    base.maxScore = 300;
+  } else if (athlete.type === 'melimelo') {
+    base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
+      scrambled:(w.scrambled||'').toUpperCase().trim(),
+      answer:(w.answer||'').toUpperCase().trim()
+    }));
+    base.meliTimer = athlete.meliTimer||60;
+    base.maxScore = 100;
+  } else if (athlete.type === 'apol') {
+    base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+    }));
+    base.apolBoxItems = [
+      {label:'+10 pts',value:10,type:'add',prob:25},
+      {label:'−10 pts',value:-10,type:'add',prob:25},
+      {label:'+20 pts',value:20,type:'add',prob:15},
+      {label:'−20 pts',value:-20,type:'add',prob:15},
+      {label:'×2',value:2,type:'mult',prob:10},
+      {label:'÷2',value:0.5,type:'mult',prob:10}
+    ];
+    base.maxScore = 200; // 5x20 + double possible
   } else if (athlete.type === 'equitation') {
     base.equiObstacles = (athlete.equiObstacles||[]).map(o=>({...o}));
     base.equiTimeLimit = athlete.equiTimeLimit||60;
@@ -956,7 +1012,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -970,7 +1026,7 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
@@ -1075,6 +1131,11 @@ app.post('/api/admin/athlete', (req, res) => {
     bowlingQuestions:   type === 'bowling' ? (req.body.bowlingQuestions||[]) : undefined,
     badmintonQuestions: type === 'badminton' ? (req.body.badmintonQuestions||[]) : undefined,
     badTheme:           type === 'badminton' ? (req.body.badTheme||'Badminton Quiz') : undefined,
+    meliWords:          type === 'melimelo' ? (req.body.meliWords||[]) : undefined,
+    meliTimer:          type === 'melimelo' ? (parseInt(req.body.meliTimer)||60) : undefined,
+    apolQuestions:      type === 'apol' ? (req.body.apolQuestions||[]) : undefined,
+    trivThemes:         type === 'trivpursuit' ? (req.body.trivThemes||[]) : undefined,
+    trivQuestions:      type === 'trivpursuit' ? (req.body.trivQuestions||[]) : undefined,
     rouletteSeed:       type === 'roulette' ? (parseInt(req.body.rouletteSeed)||Date.now()) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
     biatTheme:          type === 'biathlon' ? (req.body.biatTheme||'').trim() : undefined,
