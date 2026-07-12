@@ -272,6 +272,21 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-name">Badminton Quiz</div>
             <div class="type-desc">10 QCM · 3 tactiques · 180s · Max 200</div>
           </div>
+          <div class="type-opt" id="type-melimelo" onclick="selectType('melimelo')">
+            <div class="type-ico">🔀</div>
+            <div class="type-name">Méli-Mélo</div>
+            <div class="type-desc">5 anagrammes · 20 pts chacun · 60s · Max 100</div>
+          </div>
+          <div class="type-opt" id="type-apol" onclick="selectType('apol')">
+            <div class="type-ico">📦</div>
+            <div class="type-name">À prendre ou à laisser</div>
+            <div class="type-desc">5 questions · Dilemme final · Max 200</div>
+          </div>
+          <div class="type-opt" id="type-trivpursuit" onclick="selectType('trivpursuit')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Trivial Pursuit</div>
+            <div class="type-desc">6 thèmes · 12 questions · Plateau circulaire · Max 300</div>
+          </div>
           <div class="type-opt" id="type-roulette" onclick="selectType('roulette')">
             <div class="type-ico">🔫</div>
             <div class="type-name">Roulette Russe</div>
@@ -445,6 +460,42 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         <div id="bad-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
         <button class="btn btn-s" onclick="badAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
         <div id="bad-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
+      </div>
+
+      <!-- MÉLI-MÉLO FIELDS -->
+      <div id="melimelo-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🔀 5 anagrammes max · Saisir le mot mélangé + la réponse
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <label style="font-size:11px;color:var(--mute);white-space:nowrap">⏱ Timer (s)</label>
+          <input type="number" id="meli-timer-admin" value="60" min="20" max="120"
+            style="width:80px;background:var(--c1);border:none;color:var(--neon);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+        </div>
+        <div id="meli-word-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" onclick="meliAdminAddWord()" style="margin-top:6px">➕ Ajouter un mot</button>
+      </div>
+
+      <!-- APOL FIELDS -->
+      <div id="apol-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          📦 5 questions texte libre · 20 pts chacune · Dilemme auto-configuré
+        </div>
+        <div id="apol-q-list-admin" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" onclick="apolAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+      </div>
+
+      <!-- PLATEAU FIELDS -->
+      <div id="trivpursuit-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎯 6 thèmes (camemberts) + 12 questions (2 entre chaque thème) · Max 300 pts
+        </div>
+        <!-- 6 themes -->
+        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">THÈMES (camemberts)</div>
+        <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+        <!-- 12 questions grouped by section -->
+        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">QUESTIONS (2 par section)</div>
+        <div id="triv-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
       <!-- ROULETTE FIELDS -->
@@ -1303,6 +1354,12 @@ function selectType(type){
   if(type==='bowling')setTimeout(()=>bowlingAdminRender(),50);
   document.getElementById('badminton-fields').style.display    = type==='badminton'?'block':'none';
   if(type==='badminton')setTimeout(()=>badAdminRender(),50);
+  document.getElementById('melimelo-fields').style.display     = type==='melimelo'?'block':'none';
+  if(type==='melimelo')setTimeout(()=>meliAdminRender(),50);
+  document.getElementById('apol-fields').style.display         = type==='apol'?'block':'none';
+  if(type==='apol')setTimeout(()=>apolAdminRender(),50);
+  document.getElementById('trivpursuit-fields').style.display      = type==='trivpursuit'?'block':'none';
+  if(type==='trivpursuit')setTimeout(()=>trivAdminRender(),50);
   document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
   if(type==='roulette')setTimeout(()=>roulettePreview(),50);
   document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
@@ -1526,6 +1583,20 @@ async function startEdit(id){
     badmintonQuestions=[...(a.badmintonQuestions||[])];
     const bt=document.getElementById('bad-theme');if(bt)bt.value=a.badTheme||'';
     setTimeout(()=>badAdminRender(),50);
+  }
+  if(a.type==='melimelo'){
+    meliWords=[...(a.meliWords||[])];
+    const mt=document.getElementById('meli-timer-admin');if(mt)mt.value=a.meliTimer||60;
+    setTimeout(()=>meliAdminRender(),50);
+  }
+  if(a.type==='apol'){
+    apolQuestions=[...(a.apolQuestions||[])];
+    setTimeout(()=>apolAdminRender(),50);
+  }
+  if(a.type==='trivpursuit'){
+    trivThemes=[...(a.trivThemes||[])];
+    trivQuestions=[...(a.trivQuestions||[])];
+    setTimeout(()=>trivAdminRender(),50);
   }
   if(a.type==='roulette'){
     const rt=document.getElementById('roulette-text');if(rt)rt.value=a.rouletteText||'';
@@ -2049,6 +2120,107 @@ function equiAdminRender(){
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
 let badmintonQuestions=[];
+let meliWords=[];
+let apolQuestions=[];
+const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
+let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i]}));
+let trivQuestions=Array.from({length:12},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:Math.floor(i/2)}));
+
+function trivAdminRender(){
+  // Themes
+  const tList=document.getElementById('triv-theme-list');
+  if(!tList)return;
+  tList.innerHTML='';
+  trivThemes.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center';
+    d.innerHTML=`<span style="font-size:11px;font-family:var(--fh);color:${t.color};min-width:16px">${i+1}</span>
+      <input value="${(t.name||'').replace(/"/g,'&quot;')}" placeholder="Thème ${i+1} (ex: Football)" oninput="trivThemes[${i}].name=this.value;checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:${t.color};font-size:13px;border-radius:6px;padding:6px 9px;outline:none">
+      <input type="color" value="${t.color}" oninput="trivThemes[${i}].color=this.value;trivAdminRender();"
+        style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">`;
+    tList.appendChild(d);
+  });
+  // Questions grouped by section
+  const qList=document.getElementById('triv-q-list');
+  if(!qList)return;
+  qList.innerHTML='';
+  for(let sec=0;sec<6;sec++){
+    const t=trivThemes[sec];
+    const secDiv=document.createElement('div');
+    secDiv.style.cssText=`border-left:3px solid ${t.color};padding-left:10px;margin-bottom:4px`;
+    secDiv.innerHTML=`<div style="font-size:10px;color:${t.color};letter-spacing:1px;font-family:var(--fh);margin-bottom:6px">${t.name||'Thème '+(sec+1)} — entre T${sec+1} et T${(sec+1)%6+1}</div>`;
+    [0,1].forEach(pos=>{
+      const qi=sec*2+pos;
+      const q=trivQuestions[qi]||{question:'',answer:'',tol:1};
+      const row=document.createElement('div');
+      row.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
+      row.innerHTML=`<input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Q${qi+1} · Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+        <div style="display:flex;gap:6px">
+          <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivQuestions[${qi}].answer=this.value;checkReady();"
+            style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+          <label style="font-size:10px;color:var(--mute);align-self:center;white-space:nowrap">Tol.</label>
+          <input type="number" value="${q.tol||1}" min="0" max="3" oninput="trivQuestions[${qi}].tol=parseInt(this.value)||0;checkReady();"
+            style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:5px;outline:none;text-align:center">
+        </div>`;
+      secDiv.appendChild(row);
+    });
+    qList.appendChild(secDiv);
+  }
+}
+
+function meliAdminRender(){
+  const list=document.getElementById('meli-word-list');if(!list)return;
+  list.innerHTML='';
+  meliWords.forEach((w,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;gap:8px;align-items:center';
+    d.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
+      <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="meliWords[${i}].scrambled=this.value.toUpperCase();checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+      <span style="color:var(--mute)">→</span>
+      <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+      <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>`;
+    list.appendChild(d);
+  });
+}
+function meliAdminAddWord(){
+  if(meliWords.length>=5){alert('5 mots maximum');return;}
+  meliWords.push({scrambled:'',answer:''});
+  meliAdminRender();checkReady();
+}
+
+function apolAdminRender(){
+  const list=document.getElementById('apol-q-list-admin');if(!list)return;
+  list.innerHTML='';
+  apolQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between">
+        <span style="font-size:11px;color:#ffb400;font-family:var(--fh)">Q${i+1}</span>
+        <button onclick="apolQuestions.splice(${i},1);apolAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer">✕</button>
+      </div>
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="apolQuestions[${i}].theme=this.value;checkReady();"
+        style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="apolQuestions[${i}].question=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="apolQuestions[${i}].answer=this.value;checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+        <label style="font-size:11px;color:var(--mute);white-space:nowrap">Tol.</label>
+        <input type="number" value="${q.tol||1}" min="0" max="3" oninput="apolQuestions[${i}].tol=parseInt(this.value)||0;checkReady();"
+          style="width:50px;background:var(--c2);border:none;color:var(--mute);font-size:13px;border-radius:6px;padding:6px;outline:none;text-align:center">
+      </div>`;
+    list.appendChild(d);
+  });
+}
+function apolAdminAddQ(){
+  if(apolQuestions.length>=5){alert('5 questions maximum');return;}
+  apolQuestions.push({question:'',theme:'',answer:'',tol:1});
+  apolAdminRender();checkReady();
+}
 
 function badAdminRender(){
   const list=document.getElementById('bad-q-list');
@@ -2066,6 +2238,8 @@ function badAdminRender(){
         <span style="font-size:11px;color:var(--neon);font-family:var(--fh)">Q${i+1}</span>
         <button onclick="badmintonQuestions.splice(${i},1);badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
       </div>
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Carrière, Records…)" oninput="badmintonQuestions[${i}].theme=this.value;checkReady();"
+        style="width:100%;background:rgba(0,180,100,.06);border:1px solid rgba(0,180,100,.2);color:#00c870;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
       <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="badmintonQuestions[${i}].question=this.value;checkReady();"
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
       ${['a','b','c','d'].map((ch,ci)=>`
@@ -2082,7 +2256,7 @@ function badAdminRender(){
 
 function badAdminAddQ(){
   if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
-  badmintonQuestions.push({question:'',a:'',b:'',c:'',d:'',correct:0});
+  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',d:'',correct:0});
   badAdminRender();checkReady();
 }
   equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
@@ -2509,6 +2683,16 @@ function checkReady(){
     hasContent=badmintonQuestions.length>=1&&badmintonQuestions.every(q=>q.question&&q.a&&q.b&&q.correct!==undefined);
     const status=document.getElementById('bad-admin-status');
     if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées'+(badmintonQuestions.length<10?' (minimum 1)':'');
+  }
+  else if(currentType==='melimelo'){
+    hasContent=meliWords.length>=1&&meliWords.every(w=>w.scrambled&&w.answer);
+  }
+  else if(currentType==='apol'){
+    hasContent=apolQuestions.length>=1&&apolQuestions.every(q=>q.question&&q.answer);
+  }
+  else if(currentType==='trivpursuit'){
+    hasContent=trivThemes.length===6&&trivThemes.every(t=>t.name)&&
+      trivQuestions.length===12&&trivQuestions.every(q=>q.question&&q.answer);
   }
   else if(currentType==='roulette'){
     const txt=(document.getElementById('roulette-text')?.value||'').trim();
@@ -3767,6 +3951,11 @@ document.getElementById('btn-save').onclick=async()=>{
   bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined,
   badmintonQuestions:currentType==='badminton'?badmintonQuestions:undefined,
   badTheme:currentType==='badminton'?(document.getElementById('bad-theme')?.value||'Badminton Quiz'):undefined,
+  meliWords:currentType==='melimelo'?meliWords:undefined,
+  meliTimer:currentType==='melimelo'?parseInt(document.getElementById('meli-timer-admin')?.value||60):undefined,
+  apolQuestions:currentType==='apol'?apolQuestions:undefined,
+  trivThemes:currentType==='trivpursuit'?trivThemes:undefined,
+  trivQuestions:currentType==='trivpursuit'?trivQuestions:undefined,
   equiObstacles:currentType==='equitation'?equiObstacles:undefined,
   equiTimeLimit:currentType==='equitation'?parseInt(document.getElementById('equi-time-limit')?.value||60):undefined};
   if(editId)body.editId=editId;

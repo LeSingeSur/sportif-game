@@ -478,6 +478,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 @keyframes pin-fall{0%{transform:scale(1) rotate(0deg)}30%{transform:scale(1.2) rotate(25deg)}100%{transform:scale(0.2) rotate(80deg);opacity:0.2}}
 @keyframes equiCellPop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
 @keyframes equiCellShake{0%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}100%{transform:translateX(0)}}
+@keyframes shuttleFloat{0%,100%{transform:translateY(0) rotate(-15deg)}50%{transform:translateY(-8px) rotate(-15deg)}}
+@keyframes boxGlow{0%,100%{box-shadow:0 0 20px rgba(255,180,0,.3)}50%{box-shadow:0 0 40px rgba(255,180,0,.7)}}
+@keyframes boxSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.1)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes trivPulse{0%,100%{opacity:1}50%{opacity:.4}}
 .bpin.falling{animation:pin-fall .4s ease-out forwards}
 @keyframes ball-roll{0%{bottom:-32px}100%{bottom:90%}}
 @keyframes dem-boom{0%{transform:scale(.3);opacity:0}40%{transform:scale(1.3);opacity:1}100%{transform:scale(1.8);opacity:0}}
@@ -1687,6 +1691,319 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <!-- NAGE SYNC zone -->
   <div id="ns-zone" style="background:linear-gradient(180deg,#001428 0%,#002040 50%,#001028 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,150,255,.15)">
 
+  <!-- MÉLI-MÉLO zone -->
+  <div id="melimelo-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#120a1f 0%,#1a0f2e 100%);border-radius:16px;padding:14px;border:1px solid rgba(160,80,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
+      <div>
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
+        <div style="font-family:var(--fh);font-size:28px;color:#c060ff;line-height:1" id="meli-score">0</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">TEMPS</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-timer">60</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">MOT</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-qnum">1/5</div>
+      </div>
+    </div>
+    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
+      <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
+    </div>
+    <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
+      5 noms de sportifs mélangés à remettre dans l'ordre<br>
+      ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
+      ⏱ 60 secondes pour les 5 mots
+      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
+    </div>
+    <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
+      <div id="meli-scrambled" style="font-family:var(--fh);font-size:32px;color:#c060ff;text-align:center;letter-spacing:8px;padding:16px;background:rgba(160,80,255,.08);border:2px solid rgba(160,80,255,.25);border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="meli-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(160,80,255,.4);color:var(--txt);font-size:17px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);letter-spacing:2px;outline:none;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')meliSubmit()">
+        <button onclick="meliSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="meli-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+      <button onclick="meliSkip()" style="background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">⏭ Passer — 0 pt (révèle la réponse)</button>
+    </div>
+  </div>
+
+  <!-- PLATEAU zone -->
+  <div id="trivpursuit-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#080812 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(180,140,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
+      <div><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#b48fff;line-height:1" id="triv-score">0</div></div>
+      <div style="text-align:right"><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">PARTS</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="triv-parts">0/6</div></div>
+    </div>
+    <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
+      6 camemberts alternent avec 12 cases-questions · Chaque camembert = <strong style="color:#b48fff">+50 pts</strong><br>
+      ❓ Réponds pour traverser une case-question · Faux → case effondrée 💀<br>
+      Cerné des 2 côtés → fin · Score conservé
+      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
+    </div>
+    <div id="triv-board-wrap" style="display:none;position:relative">
+      <canvas id="triv-canvas" style="width:100%;display:block;border-radius:50%;cursor:pointer"></canvas>
+      <div id="triv-center-info" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:52%">
+        <div style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-family:var(--fh)" id="triv-center-type"></div>
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-top:2px;line-height:1.3" id="triv-center-name"></div>
+      </div>
+    </div>
+    <div id="triv-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:10px;letter-spacing:2px;font-family:var(--fh);text-align:center;padding:4px 0" id="triv-q-theme"></div>
+      <div id="triv-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="triv-in" placeholder="Ta réponse…" autocomplete="off"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(180,140,255,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
+          onkeydown="if(event.key==='Enter')trivSubmit()">
+        <button onclick="trivSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="triv-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+    </div>
+    <div id="triv-move-btns" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:11px;color:rgba(180,140,255,.5);text-align:center;letter-spacing:1px;font-family:var(--fh)">OÙ ALLER ?</div>
+      <div style="display:flex;gap:8px">
+        <button id="triv-left-btn" onclick="trivMove('left')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">◀ GAUCHE</button>
+        <button id="triv-right-btn" onclick="trivMove('right')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">DROITE ▶</button>
+      </div>
+      <div id="triv-move-hint" style="font-size:11px;color:var(--mute);text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- À PRENDRE OU À LAISSER zone -->
+  <div id="apol-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0f0800 0%,#1c1200 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,0,.25)">
+
+    <!-- Header visuel : coffre animé -->
+    <div style="text-align:center;padding:10px 0;position:relative">
+      <div id="apol-box-big" style="font-size:72px;display:inline-block;animation:boxGlow 2s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(255,180,0,.5))">📦</div>
+      <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5);margin-top:4px">À PRENDRE OU À LAISSER</div>
+    </div>
+
+    <!-- Score + Q -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
+      <div><div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#ffb400;line-height:1" id="apol-score">0</div></div>
+      <div style="text-align:right"><div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div></div>
+    </div>
+
+    <!-- Règles -->
+    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">tenter la boîte</strong><br>
+      📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
+      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
+    </div>
+
+    <!-- Questions -->
+    <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      </div>
+      <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,180,0,.15)"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(255,180,0,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
+          onkeydown="if(event.key==='Enter')apolSubmit()">
+        <button onclick="apolSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="apol-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+    </div>
+
+    <!-- Dilemme final -->
+    <div id="apol-dilemme" style="display:none;flex-direction:column;gap:14px">
+      <div style="text-align:center">
+        <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
+        <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
+        <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou tenter une boîte ?</div>
+      </div>
+      <!-- Bouton garder -->
+      <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <!-- 5 boîtes visuelles -->
+      <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
+      <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+      <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
+    </div>
+  </div>
+  <!-- BADMINTON zone -->
+  <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
+    <!-- Court SVG visuel -->
+    <div style="background:rgba(0,100,50,.15);border:1px solid rgba(0,220,120,.2);border-radius:12px;padding:10px;position:relative;overflow:hidden">
+      <svg viewBox="0 0 300 130" style="width:100%;display:block">
+        <rect x="15" y="8" width="270" height="114" fill="none" stroke="rgba(0,220,120,.35)" stroke-width="1.5"/>
+        <line x1="150" y1="8" x2="150" y2="122" stroke="rgba(0,220,120,.25)" stroke-width="1"/>
+        <line x1="15" y1="65" x2="285" y2="65" stroke="rgba(0,220,120,.4)" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <line x1="58" y1="8" x2="58" y2="122" stroke="rgba(0,220,120,.18)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="242" y1="8" x2="242" y2="122" stroke="rgba(0,220,120,.18)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="150" y1="2" x2="150" y2="128" stroke="rgba(255,255,255,.5)" stroke-width="2.5"/>
+        <circle cx="150" cy="2" r="3.5" fill="rgba(255,255,255,.5)"/>
+        <circle cx="150" cy="128" r="3.5" fill="rgba(255,255,255,.5)"/>
+        <text x="80" y="68" font-size="22" text-anchor="middle" dominant-baseline="middle" style="animation:shuttleFloat 2s ease-in-out infinite">🏸</text>
+        <text x="220" y="68" font-size="22" text-anchor="middle" dominant-baseline="middle">🏃</text>
+        <text x="48" y="100" font-size="30" font-weight="bold" text-anchor="middle" fill="rgba(0,220,120,.9)" id="bad-court-score">0</text>
+        <text x="252" y="30" font-size="9" text-anchor="middle" fill="rgba(0,220,120,.4)">TEMPS</text>
+        <text x="252" y="50" font-size="24" font-weight="bold" text-anchor="middle" fill="rgba(0,220,120,.8)" id="bad-court-timer">180</text>
+      </svg>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px">
+      <div><span style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION </span><span style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="bad-qnum">0/10</span></div>
+      <div><span style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">SCORE </span><span style="font-family:var(--fh);font-size:20px;color:#00dc78" id="bad-score">0</span></div>
+    </div>
+    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="bad-timer-bar" style="height:100%;background:linear-gradient(90deg,#00dc78,#00ff99);width:100%;transition:width .5s linear"></div></div>
+    <div style="display:none"><span id="bad-timer">180</span></div>
+    <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
+      🏸 <strong style="color:var(--txt)">Smash</strong> — 2× chrono · <strong style="color:#ffd700">40 pts</strong> &nbsp;|&nbsp; 🦅 <strong style="color:var(--txt)">Dégagé</strong> — +8s · <strong style="color:#88aaff">10 pts</strong> &nbsp;|&nbsp; ➡️ <strong style="color:var(--txt)">Drive</strong> — <strong style="color:#00dc78">20 pts</strong>
+      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
+    </div>
+    <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
+      <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px">
+        <span style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">THÈME</span>
+        <div style="font-family:var(--fh);font-size:15px;color:#00dc78;margin-top:2px" id="bad-theme-text"></div>
+      </div>
+      <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:10px;opacity:.7">2× · 40pts</span></button>
+        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🦅<br>DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s · 10pts</span></button>
+        <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
+      </div>
+    </div>
+    <div id="bad-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div id="bad-tactic-badge" style="text-align:center;font-size:11px;font-family:var(--fh);letter-spacing:1px;color:var(--mute)"></div>
+      <div id="bad-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
+      <div id="bad-choices" style="display:flex;flex-direction:column;gap:7px"></div>
+      <div id="bad-degage-countdown" style="display:none;text-align:center;font-family:var(--fh);font-size:22px;color:#88aaff;padding:4px"></div>
+    </div>
+    <div id="bad-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+  </div>
+  <!-- MÉLI-MÉLO zone -->
+  <div id="melimelo-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#120a1f 0%,#1a0f2e 100%);border-radius:16px;padding:14px;border:1px solid rgba(160,80,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
+      <div>
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
+        <div style="font-family:var(--fh);font-size:28px;color:#c060ff;line-height:1" id="meli-score">0</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">TEMPS</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-timer">60</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">MOT</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-qnum">1/5</div>
+      </div>
+    </div>
+    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
+      <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
+    </div>
+    <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
+      5 noms de sportifs mélangés à remettre dans l'ordre<br>
+      ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
+      ⏱ 60 secondes pour les 5 mots
+      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
+    </div>
+    <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
+      <div id="meli-scrambled" style="font-family:var(--fh);font-size:32px;color:#c060ff;text-align:center;letter-spacing:8px;padding:16px;background:rgba(160,80,255,.08);border:2px solid rgba(160,80,255,.25);border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="meli-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(160,80,255,.4);color:var(--txt);font-size:17px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);letter-spacing:2px;outline:none;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')meliSubmit()">
+        <button onclick="meliSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="meli-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+      <button onclick="meliSkip()" style="background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">⏭ Passer — 0 pt (révèle la réponse)</button>
+    </div>
+  </div>
+
+  <!-- PLATEAU zone -->
+  <div id="trivpursuit-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#080812 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(180,140,255,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
+      <div><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#b48fff;line-height:1" id="triv-score">0</div></div>
+      <div style="text-align:right"><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">PARTS</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="triv-parts">0/6</div></div>
+    </div>
+    <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
+      6 camemberts alternent avec 12 cases-questions · Chaque camembert = <strong style="color:#b48fff">+50 pts</strong><br>
+      ❓ Réponds pour traverser une case-question · Faux → case effondrée 💀<br>
+      Cerné des 2 côtés → fin · Score conservé
+      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
+    </div>
+    <div id="triv-board-wrap" style="display:none;position:relative">
+      <canvas id="triv-canvas" style="width:100%;display:block;border-radius:50%;cursor:pointer"></canvas>
+      <div id="triv-center-info" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:52%">
+        <div style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-family:var(--fh)" id="triv-center-type"></div>
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-top:2px;line-height:1.3" id="triv-center-name"></div>
+      </div>
+    </div>
+    <div id="triv-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:10px;letter-spacing:2px;font-family:var(--fh);text-align:center;padding:4px 0" id="triv-q-theme"></div>
+      <div id="triv-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="triv-in" placeholder="Ta réponse…" autocomplete="off"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(180,140,255,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
+          onkeydown="if(event.key==='Enter')trivSubmit()">
+        <button onclick="trivSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="triv-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+    </div>
+    <div id="triv-move-btns" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:11px;color:rgba(180,140,255,.5);text-align:center;letter-spacing:1px;font-family:var(--fh)">OÙ ALLER ?</div>
+      <div style="display:flex;gap:8px">
+        <button id="triv-left-btn" onclick="trivMove('left')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">◀ GAUCHE</button>
+        <button id="triv-right-btn" onclick="trivMove('right')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">DROITE ▶</button>
+      </div>
+      <div id="triv-move-hint" style="font-size:11px;color:var(--mute);text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- À PRENDRE OU À LAISSER zone -->
+  <div id="apol-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0f0a00 0%,#1a1200 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,0,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
+      <div>
+        <div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
+        <div style="font-family:var(--fh);font-size:28px;color:#ffb400;line-height:1" id="apol-score">0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div>
+        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div>
+      </div>
+    </div>
+    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#ffb400;margin-bottom:8px;letter-spacing:2px">📦 À PRENDRE OU À LAISSER</div>
+      5 questions à 20 pts chacune<br>
+      À la fin : <strong style="color:var(--txt)">garder ton score</strong> ou <strong style="color:#ffb400">tenter la boîte</strong><br>
+      📦 La boîte peut tout changer…
+      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">📦 OUVRIR LE DEAL</button>
+    </div>
+    <!-- Questions -->
+    <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      </div>
+      <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
+          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(255,180,0,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
+          onkeydown="if(event.key==='Enter')apolSubmit()">
+        <button onclick="apolSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
+      </div>
+      <div id="apol-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
+    </div>
+    <!-- Dilemme final -->
+    <div id="apol-dilemme" style="display:none;flex-direction:column;gap:10px">
+      <div style="text-align:center;font-family:var(--fh);font-size:13px;letter-spacing:2px;color:rgba(255,180,0,.6)">LE GRAND DILEMME</div>
+      <div style="text-align:center;font-family:var(--fh);font-size:42px;color:#ffb400;text-shadow:0 0 24px #ffb40066" id="apol-dilemme-score">0</div>
+      <div style="text-align:center;font-size:13px;color:var(--mute)">pts acquis — que fais-tu ?</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="apolKeep()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px;line-height:1.5">✅ GARDER<br><span style="font-size:11px;opacity:.7">Je garde mes points</span></button>
+        <button onclick="apolBox()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px;line-height:1.5">📦 LA BOÎTE<br><span style="font-size:11px;opacity:.7">Je tente ma chance</span></button>
+      </div>
+    </div>
+    <!-- Révélation boîte -->
+    <div id="apol-box-reveal" style="display:none;flex-direction:column;align-items:center;gap:12px">
+      <div style="font-family:var(--fh);font-size:13px;color:rgba(255,180,0,.6);letter-spacing:2px">LA BOÎTE CONTIENT…</div>
+      <div id="apol-box-icon" style="font-size:80px;animation:equiCellPop .5s ease-out">📦</div>
+      <div id="apol-box-label" style="font-family:var(--fh);font-size:36px;color:#ffb400"></div>
+      <div id="apol-box-result" style="font-size:14px;color:var(--mute)"></div>
+    </div>
+  </div>
+
   <!-- BADMINTON zone -->
   <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
 
@@ -1722,6 +2039,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
     <!-- Phase 2 : choix tactique -->
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
+      <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px;margin-bottom:2px">
+        <span style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">THÈME</span>
+        <div style="font-family:var(--fh);font-size:15px;color:#00dc78;margin-top:2px" id="bad-theme-text"></div>
+      </div>
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
         <button onclick="badChoixTactic('smash')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🏸 SMASH<br><span style="font-size:10px;opacity:.7">2× chrono · 40pts</span></button>
@@ -2076,7 +2397,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div class="v-name" id="v-name"></div>
   <div class="v-card">
     <div class="v-card-lbl">Score final</div>
-    <div class="v-card-val" id="v-sc">0</div>
+    <div class="v-card-val" id="v-sc">—</div>
     <div class="v-card-sub" id="v-sub"></div>
     <div class="v-stats">
       <div class="v-stat"><div class="v-stat-val" id="v-revealed">0</div><div class="v-stat-lbl" id="v-revealed-lbl">révélés</div></div>
@@ -2492,6 +2813,15 @@ async function loadAthlete(){
     } else if(data.type==='badminton'){
       document.getElementById('std-ans-area').style.display='none';
       setupBadminton(data);
+    } else if(data.type==='melimelo'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupMeliMelo(data);
+    } else if(data.type==='apol'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupApol(data);
+    } else if(data.type==='trivpursuit'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupTrivPursuit(data);
     } else if(data.type==='roulette'){
       setupRoulette(data);
     } else if(data.type==='escalade'){
@@ -2525,7 +2855,7 @@ async function loadAthlete(){
 }
 
 // -- HIDE ALL ZONES --------------------------------------------------------
-const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone','equi-zone','badminton-zone'];
+const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trappe-zone','demineur-zone','chase-zone','scout-zone','replique-zone','blackjack-zone','grimpe-zone','biathlon-zone','mf-zone','haltero-zone','arc-zone','ns-zone','assaut-zone','var-zone','rvlf-zone','plongee-zone','escalade-zone','roulette-zone','bowling-zone','equi-zone','badminton-zone','melimelo-zone','apol-zone','trivpursuit-zone'];
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
@@ -2550,7 +2880,7 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸','melimelo':'🔀','apol':'📦','trivpursuit':'🎯',
   'var':'📺'
 };
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
@@ -4211,13 +4541,16 @@ function rvlfUpdateUI(){
   if(stopBtn)stopBtn.textContent='🏁 Arrêter et garder mes points ('+RVLF.score+' pts)';
   // Joker buttons
   const cardsLeft=10-RVLF.qIdx;
+  const isLastQ=cardsLeft<=1; // dernière question — aucun joker autorisé
   ['lien','schrodinger','balise'].forEach((j,idx)=>{
     const btn=document.getElementById('rvlf-j'+(idx+1));
     if(!btn)return;
     const used=!RVLF.jokers[j];
     const noCards=(j==='lien'||j==='schrodinger')&&cardsLeft<1;
-    btn.style.opacity=(used||noCards)?'0.3':'1';
-    btn.disabled=used||RVLF.done||noCards;
+    const disabled=used||noCards||isLastQ;
+    btn.style.opacity=disabled?'0.3':'1';
+    btn.disabled=disabled||RVLF.done;
+    if(isLastQ&&!used) btn.title='Joker indisponible sur la dernière question';
   });
   const bInfo=document.getElementById('rvlf-balise-info');
   if(bInfo)bInfo.style.display=RVLF.balise?'block':'none';
@@ -4509,6 +4842,13 @@ function rvlfJoker(type){
   if(RVLF.done||!RVLF.jokers[type])return;
   const qs=RVLF.data?.rvlfQuestions||[];
   const cardsLeft=10-RVLF.qIdx;
+  // Aucun joker sur la dernière question
+  if(cardsLeft<=1){
+    const fb=document.getElementById('rvlf-fb');
+    if(fb){fb.textContent='🃏 Jokers indisponibles sur la dernière question.';fb.style.color='var(--mute)';}
+    setTimeout(()=>{if(fb)fb.textContent='';},1500);
+    return;
+  }
   // Check if enough cards for this joker
   if(type==='lien'&&cardsLeft<1){
     const fb=document.getElementById('rvlf-fb');
@@ -9192,6 +9532,9 @@ function bowlingFinish(){
   document.getElementById('bowling-input-wrap').style.display='none';
   document.getElementById('bowling-q').style.display='none';
   GAME.score=finalScore;setScore(finalScore,true);
+  const vScBowl=document.getElementById('v-sc');if(vScBowl)vScBowl.textContent=finalScore;
+  const vNameBowl=document.getElementById('v-name');if(vNameBowl)vNameBowl.textContent=BOWL.data?.bowlingTheme||'Bowling Quiz';
+  const vSubBowl=document.getElementById('v-sub');if(vSubBowl)vSubBowl.textContent='Score sur 300 frames';
   setVictoryIcon('bowling');submitScore(finalScore);
   setTimeout(()=>show('sv'),2000);
 }
@@ -9635,7 +9978,7 @@ function equiFlecheGiveUp(){
   document.activeElement?.blur();
   const obs=EQUI.data.equiObstacles[EQUI.current];
   const words=[obs.answer,obs.answer2,obs.answer3,obs.answer4].filter(Boolean);
-  const state=EQUI.flecheState[EQUI.current];
+  const state=EQUI.flecheState[EQUI.current]||{earnedTotal:0,solved:[],gaveUp:false};
   state.gaveUp=true;
   // Garde les points déjà acquis sur les mots trouvés — seuls les mots restants valent 0
   const earned=state.earnedTotal||0;
@@ -10103,6 +10446,9 @@ function equiFinish(){
   }
   equiDrawTrack(EQUI.canvasW||360, 0);
   GAME.score=final; setScore(final,true);
+  const vScEqui=document.getElementById('v-sc');if(vScEqui)vScEqui.textContent=final;
+  const vNameEqui=document.getElementById('v-name');if(vNameEqui)vNameEqui.textContent='Équitation CSO';
+  const vSubEqui=document.getElementById('v-sub');if(vSubEqui)vSubEqui.textContent='🏇 Parcours terminé · '+final+'/200 pts';
   setVictoryIcon('equitation'); submitScore(final);
   setTimeout(()=>show('sv'),2500);
 }
@@ -10547,14 +10893,17 @@ function badStart(){
 function badTickTimer(){
   if(BAD.done) return;
   BAD.timerLeft=Math.max(0,BAD.timerLeft-1);
+  const t=BAD.timerLeft;
   const el=document.getElementById('bad-timer');
   const bar=document.getElementById('bad-timer-bar');
-  if(el){
-    el.textContent=BAD.timerLeft;
-    el.style.color=BAD.timerLeft<=30?'var(--red)':BAD.timerLeft<=60?'#ffaa00':'var(--txt)';
+  const courtTimer=document.getElementById('bad-court-timer');
+  if(el)el.textContent=t;
+  if(bar) bar.style.width=(t/180*100)+'%';
+  if(courtTimer){
+    courtTimer.textContent=t;
+    courtTimer.setAttribute('fill',t<=30?'rgba(255,80,80,.9)':t<=60?'rgba(255,170,0,.8)':'rgba(0,220,120,.8)');
   }
-  if(bar) bar.style.width=(BAD.timerLeft/180*100)+'%';
-  if(BAD.timerLeft<=0) badFinish();
+  if(t<=0) badFinish();
 }
 
 function badStartTimer(){
@@ -10574,6 +10923,16 @@ function badShowTactic(){
   document.getElementById('bad-fb').textContent='';
   const total=(BAD.data.badmintonQuestions||[]).length;
   document.getElementById('bad-qnum').textContent=BAD.qIdx+'/'+total;
+  // Thème de la prochaine question
+  const q=(BAD.data.badmintonQuestions||[])[BAD.qIdx];
+  const themeEl=document.getElementById('bad-theme-display');
+  const themeText=document.getElementById('bad-theme-text');
+  if(q?.theme&&q.theme.trim()){
+    if(themeEl)themeEl.style.display='block';
+    if(themeText)themeText.textContent=q.theme;
+  } else {
+    if(themeEl)themeEl.style.display='none';
+  }
 }
 
 function badChoixTactic(tactic){
@@ -10681,6 +11040,8 @@ function badAnswer(choiceIdx,choices){
     }
   }
   document.getElementById('bad-score').textContent=BAD.score;
+  const courtScore=document.getElementById('bad-court-score');
+  if(courtScore)courtScore.textContent=BAD.score;
   GAME.score=BAD.score; setScore(BAD.score,false);
 
   BAD.qIdx++;
@@ -10708,6 +11069,629 @@ function badFinish(){
   const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=BAD.qIdx+'/'+total+' questions · '+score+' pts';
   setVictoryIcon('badminton');
   submitScore(score);
+  setTimeout(()=>show('sv'),800);
+}
+
+// --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// PLATEAU (Trivial Pursuit sportif)
+// Structure: 18 cases en cercle — 6 camemberts + 12 questions
+// Index : 0=CAM0, 1=Q(0-1)a, 2=Q(0-1)b, 3=CAM1, 4=Q(1-2)a, ...
+// --------------------------------------------------------------------------
+const TRIV={
+  data:null, cases:[], playerPos:-1, score:0, done:false,
+  phase:'start', // start|choose|move|question|end
+  pendingDir:null, canvas:null, ctx:null,
+  COLORS:['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085']
+};
+
+function trivBuildCases(data){
+  // 18 cases: CAM at 0,3,6,9,12,15 | Q at others
+  const themes=data.trivThemes||[];
+  const qs=data.trivQuestions||[];
+  const cases=[];
+  for(let i=0;i<18;i++){
+    if(i%3===0){
+      const themeIdx=i/3;
+      cases.push({type:'cam',themeIdx,name:themes[themeIdx]?.name||'Thème '+(themeIdx+1),color:themes[themeIdx]?.color||TRIV.COLORS[themeIdx],state:'normal',idx:i});
+    } else {
+      // Question index: between segment s and s+1 → 2 questions per gap
+      const gapIdx=Math.floor(i/3); // 0-5
+      const posInGap=(i%3)-1; // 0 or 1
+      const qIdx=gapIdx*2+posInGap;
+      const q=qs[qIdx]||{question:'?',answer:'',tol:1,sectionIdx:gapIdx};
+      cases.push({type:'q',q,sectionIdx:gapIdx,state:'normal',idx:i});
+    }
+  }
+  return cases;
+}
+
+function setupTrivPursuit(data){
+  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start';
+  TRIV.cases=trivBuildCases(data);
+  const badge=document.getElementById('type-badge');
+  if(badge){badge.textContent='🎯 Trivial Pursuit';badge.className='type-badge';}
+  document.getElementById('game-tip').textContent='6 thèmes · 12 questions · Max 300 pts';
+  hideAllZones();
+  document.getElementById('trivpursuit-zone').style.display='flex';
+  document.getElementById('triv-rules').style.display='block';
+  document.getElementById('triv-board-wrap').style.display='none';
+  document.getElementById('triv-question-wrap').style.display='none';
+  document.getElementById('triv-move-btns').style.display='none';
+  document.getElementById('triv-score').textContent='0';
+  document.getElementById('triv-parts').textContent='0/6';
+  GAME.score=0;setScore(0,false);
+}
+
+function trivStartChoose(){
+  document.getElementById('triv-rules').style.display='none';
+  document.getElementById('triv-board-wrap').style.display='block';
+  TRIV.phase='choose';
+  trivInitCanvas();
+  trivDraw();
+  document.getElementById('triv-center-type').textContent='CHOISIR';
+  document.getElementById('triv-center-name').textContent='Ta case de départ';
+}
+
+function trivInitCanvas(){
+  const canvas=document.getElementById('triv-canvas');
+  if(!canvas)return;
+  const size=Math.min(window.innerWidth-60,360);
+  canvas.width=size; canvas.height=size;
+  TRIV.canvas=canvas; TRIV.ctx=canvas.getContext('2d');
+  canvas.onclick=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+    const cx=(e.clientX-rect.left)*scaleX, cy=(e.clientY-rect.top)*scaleY;
+    trivHandleClick(cx,cy);
+  };
+}
+
+function trivDraw(){
+  const canvas=TRIV.canvas; if(!canvas)return;
+  const ctx=TRIV.ctx;
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H/2;
+  const R=W/2-6; // outer radius
+  const rCam=R, rInner=R*0.28; // camembert full, question narrower
+  const rQOuter=R*0.85, rQInner=R*0.45;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Draw background circle
+  ctx.beginPath(); ctx.arc(cx,cy,R+2,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.fill();
+
+  const N=18;
+  const startAngle=-Math.PI/2; // top
+
+  TRIV.cases.forEach((c,i)=>{
+    const a0=startAngle+(i/N)*Math.PI*2;
+    const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const isCam=c.type==='cam';
+    const isPlayer=TRIV.playerPos===i;
+    const isCollapsed=c.state==='collapsed';
+    const isCollected=c.state==='collected';
+    const isPassed=c.state==='passed';
+
+    // Draw segment
+    ctx.beginPath();
+    if(isCam){
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,rCam,a0,a1);
+    } else {
+      ctx.arc(cx,cy,rQOuter,a0,a1);
+      ctx.arc(cx,cy,rQInner,a1,a0,true);
+    }
+    ctx.closePath();
+
+    let fill;
+    if(isCollapsed) fill='#1a1a1a';
+    else if(isCam&&isCollected) fill=c.color;
+    else if(isCam) fill=c.color+'44';
+    else if(isPassed) fill='rgba(255,255,255,.12)';
+    else fill='rgba(255,255,255,.07)';
+    ctx.fillStyle=fill;
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle=isCollapsed?'rgba(255,0,0,.3)':isCam?c.color+'88':'rgba(255,255,255,.15)';
+    ctx.lineWidth=isPlayer?3:1;
+    ctx.stroke();
+
+    // Collapsed X
+    if(isCollapsed){
+      const midA=(a0+a1)/2;
+      const midR=isCam?rCam*0.6:(rQOuter+rQInner)/2;
+      const px=cx+Math.cos(midA)*midR, py=cy+Math.sin(midA)*midR;
+      ctx.fillStyle='rgba(255,50,50,.7)'; ctx.font='bold 14px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✕',px,py);
+    }
+
+    // Cam: theme letter/emoji if space
+    if(isCam&&!isCollapsed){
+      const midA=(a0+a1)/2;
+      const midR=rCam*0.62;
+      const px=cx+Math.cos(midA)*midR, py=cy+Math.sin(midA)*midR;
+      ctx.save();
+      ctx.translate(px,py);
+      ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.6)';
+      ctx.font=`bold ${Math.round(R*0.09)}px var(--fh, sans-serif)`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      // Show theme initial
+      ctx.fillText((c.name||'?')[0].toUpperCase(),'0','0');
+      ctx.restore();
+    }
+
+    // Player indicator
+    if(isPlayer){
+      const midA=(a0+a1)/2;
+      const midR=isCam?rCam*0.45:(rQOuter+rQInner)/2;
+      const px=cx+Math.cos(midA)*midR, py=cy+Math.sin(midA)*midR;
+      ctx.beginPath(); ctx.arc(px,py,R*0.085,0,Math.PI*2);
+      ctx.fillStyle='#fff';
+      ctx.shadowColor='#fff'; ctx.shadowBlur=12;
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // Highlight adjacent to player
+    if(TRIV.phase==='move'&&TRIV.playerPos>=0){
+      const left=(TRIV.playerPos-1+18)%18;
+      const right=(TRIV.playerPos+1)%18;
+      if((i===left||i===right)&&c.state!=='collapsed'){
+        const midA=(a0+a1)/2;
+        const midR=isCam?rCam*0.75:(rQOuter+rQInner)/2;
+        const px=cx+Math.cos(midA)*midR, py=cy+Math.sin(midA)*midR;
+        ctx.beginPath(); ctx.arc(px,py,R*0.06,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.4)';
+        ctx.fill();
+      }
+    }
+  });
+
+  // Center circle
+  ctx.beginPath(); ctx.arc(cx,cy,rInner*0.95,0,Math.PI*2);
+  ctx.fillStyle='rgba(8,8,18,.9)'; ctx.fill();
+  ctx.strokeStyle='rgba(180,140,255,.3)'; ctx.lineWidth=1.5; ctx.stroke();
+}
+
+function trivHandleClick(mx,my){
+  const canvas=TRIV.canvas; if(!canvas)return;
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const dx=mx-cx, dy=my-cy;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const R=canvas.width/2-6;
+  if(dist<R*0.28||dist>R)return; // inside center or outside
+
+  // Find which segment was clicked
+  let angle=Math.atan2(dy,dx)+Math.PI/2;
+  if(angle<0)angle+=Math.PI*2;
+  const segIdx=Math.floor(angle/(Math.PI*2/18))%18;
+
+  if(TRIV.phase==='choose'){
+    trivPlacePlayer(segIdx);
+  } else if(TRIV.phase==='move'){
+    const left=(TRIV.playerPos-1+18)%18;
+    const right=(TRIV.playerPos+1)%18;
+    if(segIdx===left)trivMove('left');
+    else if(segIdx===right)trivMove('right');
+  }
+}
+
+function trivPlacePlayer(pos){
+  TRIV.playerPos=pos;
+  TRIV.phase='move';
+  const c=TRIV.cases[pos];
+  if(c.type==='cam'&&c.state==='normal'){
+    c.state='collected';
+    TRIV.score+=50;
+    trivUpdateScore();
+  }
+  trivDraw();
+  trivShowMoveButtons();
+  trivUpdateCenterInfo();
+}
+
+function trivUpdateScore(){
+  const collected=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='collected').length;
+  document.getElementById('triv-score').textContent=TRIV.score;
+  document.getElementById('triv-parts').textContent=collected+'/6';
+  GAME.score=TRIV.score; setScore(TRIV.score,false);
+}
+
+function trivUpdateCenterInfo(){
+  const c=TRIV.cases[TRIV.playerPos];
+  if(!c)return;
+  const typeEl=document.getElementById('triv-center-type');
+  const nameEl=document.getElementById('triv-center-name');
+  if(c.type==='cam'){
+    if(typeEl){typeEl.textContent='CAMEMBERT';typeEl.style.color=c.color;}
+    if(nameEl){nameEl.textContent=c.name;nameEl.style.color=c.color;}
+  } else {
+    const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
+    if(typeEl){typeEl.textContent='CASE QUESTION';typeEl.style.color='rgba(180,140,255,.6)';}
+    if(nameEl){nameEl.textContent=sec?sec.name:'';nameEl.style.color='rgba(255,255,255,.5)';}
+  }
+}
+
+function trivShowMoveButtons(){
+  const btns=document.getElementById('triv-move-btns');
+  if(btns)btns.style.display='flex';
+  trivUpdateMoveButtons();
+}
+
+function trivUpdateMoveButtons(){
+  const left=(TRIV.playerPos-1+18)%18;
+  const right=(TRIV.playerPos+1)%18;
+  const lc=TRIV.cases[left], rc=TRIV.cases[right];
+  const lBtn=document.getElementById('triv-left-btn');
+  const rBtn=document.getElementById('triv-right-btn');
+  const hint=document.getElementById('triv-move-hint');
+  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
+  // Check encircled
+  if(lc.state==='collapsed'&&rc.state==='collapsed'){
+    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
+    setTimeout(()=>trivFinish('encircled'),1000);
+  } else {
+    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
+  }
+}
+
+function trivMove(dir){
+  if(TRIV.done)return;
+  const target=dir==='left'?(TRIV.playerPos-1+18)%18:(TRIV.playerPos+1)%18;
+  const c=TRIV.cases[target];
+  if(c.state==='collapsed')return;
+  document.getElementById('triv-move-btns').style.display='none';
+  TRIV.pendingDir=dir;
+
+  if(c.type==='cam'){
+    // Atterrir sur un camembert
+    TRIV.playerPos=target;
+    if(c.state==='normal'){c.state='collected';TRIV.score+=50;trivUpdateScore();}
+    trivDraw();
+    trivUpdateCenterInfo();
+    const fb=document.getElementById('triv-fb');
+    if(c.state==='collected'||c.state==='normal'){
+      if(fb){fb.textContent='🟣 '+c.name+' +50 pts !';fb.style.color=c.color;}
+      setTimeout(()=>{if(fb)fb.textContent='';},1200);
+    }
+    setTimeout(()=>{
+      if(!TRIV.done){trivShowMoveButtons();}
+    },1300);
+  } else {
+    // Case question → afficher la question
+    TRIV.phase='question';
+    trivShowQuestion(target);
+  }
+}
+
+function trivShowQuestion(targetPos){
+  const c=TRIV.cases[targetPos];
+  const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
+  const themeColor=sec?.color||'#b48fff';
+  document.getElementById('triv-question-wrap').style.display='flex';
+  const themeEl=document.getElementById('triv-q-theme');
+  if(themeEl){themeEl.textContent='❓ '+(sec?.name||'Question');themeEl.style.color=themeColor;}
+  document.getElementById('triv-q-text').textContent=c.q?.question||'?';
+  document.getElementById('triv-in').value='';
+  document.getElementById('triv-fb').textContent='';
+  TRIV._pendingTarget=targetPos;
+  setTimeout(()=>document.getElementById('triv-in')?.focus(),100);
+}
+
+function trivSubmit(){
+  if(TRIV.done)return;
+  const inp=document.getElementById('triv-in');
+  const val=(inp?.value||'').trim();if(!val)return;
+  const targetPos=TRIV._pendingTarget;
+  const c=TRIV.cases[targetPos];
+  const tol=c.q?.tol!=null?parseInt(c.q.tol):1;
+  const correct=levenshtein(normStr(val),normStr(c.q?.answer||''))<=tol;
+  const fb=document.getElementById('triv-fb');
+  const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
+  if(correct){
+    c.state='passed';
+    TRIV.playerPos=targetPos;
+    if(fb){fb.textContent='✅ Bonne réponse !';fb.style.color='var(--neon)';}
+    trivDraw();trivUpdateCenterInfo();
+    setTimeout(()=>{
+      document.getElementById('triv-question-wrap').style.display='none';
+      if(fb)fb.textContent='';
+      TRIV.phase='move';
+      trivShowMoveButtons();
+      trivDraw();
+    },1000);
+  } else {
+    c.state='collapsed';
+    if(fb){fb.innerHTML=`❌ Faux ! C'était <strong>${c.q?.answer||'?'}</strong> — case effondrée !`;fb.style.color='var(--red)';}
+    trivDraw();
+    // Player stays, don't move
+    setTimeout(()=>{
+      document.getElementById('triv-question-wrap').style.display='none';
+      if(fb)fb.textContent='';
+      TRIV.phase='move';
+      trivShowMoveButtons();
+      trivDraw();
+    },2000);
+  }
+}
+
+function trivCheckAllCollected(){
+  return TRIV.cases.filter(c=>c.type==='cam').every(c=>c.state==='collected');
+}
+
+function trivFinish(reason){
+  if(TRIV.done)return;
+  TRIV.done=true;
+  document.getElementById('triv-move-btns').style.display='none';
+  document.getElementById('triv-question-wrap').style.display='none';
+  const collected=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='collected').length;
+  const score=TRIV.score;
+  GAME.score=score; setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Trivial Pursuit';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent=collected+'/6 thèmes collectés · '+score+' pts'+(reason==='encircled'?' · Cerné !':'');
+  setVictoryIcon('trivpursuit'); submitScore(score);
+  setTimeout(()=>show('sv'),800);
+}
+
+// MÉLI-MÉLO
+// --------------------------------------------------------------------------
+const MELI={data:null,qIdx:0,score:0,done:false,timerLeft:60,timerInt:null};
+
+function setupMeliMelo(data){
+  MELI.data=data; MELI.qIdx=0; MELI.score=0; MELI.done=false; MELI.timerLeft=data.meliTimer||60;
+  if(MELI.timerInt){clearInterval(MELI.timerInt);MELI.timerInt=null;}
+  const badge=document.getElementById('type-badge');
+  if(badge){badge.textContent='🔀 Méli-Mélo';badge.className='type-badge';}
+  document.getElementById('game-tip').innerHTML='5 anagrammes · 20 pts chacun · 60 secondes';
+  hideAllZones();
+  document.getElementById('melimelo-zone').style.display='flex';
+  document.getElementById('meli-rules').style.display='block';
+  document.getElementById('meli-game').style.display='none';
+  document.getElementById('meli-score').textContent='0';
+  document.getElementById('meli-timer').textContent=MELI.timerLeft;
+  document.getElementById('meli-qnum').textContent='1/'+(data.meliWords||[]).length;
+  document.getElementById('meli-timer-bar').style.width='100%';
+  GAME.score=0; setScore(0,false);
+}
+
+function meliStart(){
+  document.getElementById('meli-rules').style.display='none';
+  document.getElementById('meli-game').style.display='flex';
+  meliShowWord();
+  meliStartTimer();
+}
+
+function meliStartTimer(){
+  if(MELI.timerInt)clearInterval(MELI.timerInt);
+  MELI.timerInt=setInterval(()=>{
+    if(MELI.done)return;
+    MELI.timerLeft=Math.max(0,MELI.timerLeft-1);
+    const el=document.getElementById('meli-timer');
+    const bar=document.getElementById('meli-timer-bar');
+    const total=MELI.data.meliTimer||60;
+    if(el){el.textContent=MELI.timerLeft;el.style.color=MELI.timerLeft<=10?'var(--red)':MELI.timerLeft<=20?'#ffaa00':'var(--txt)';}
+    if(bar)bar.style.width=(MELI.timerLeft/total*100)+'%';
+    if(MELI.timerLeft<=0)meliFinish();
+  },1000);
+}
+
+function meliShowWord(){
+  const words=MELI.data.meliWords||[];
+  if(MELI.qIdx>=words.length){meliFinish();return;}
+  const w=words[MELI.qIdx];
+  document.getElementById('meli-scrambled').textContent=w.scrambled||'?';
+  document.getElementById('meli-qnum').textContent=(MELI.qIdx+1)+'/'+words.length;
+  document.getElementById('meli-in').value='';
+  document.getElementById('meli-fb').textContent='';
+  setTimeout(()=>document.getElementById('meli-in')?.focus(),100);
+}
+
+function meliSubmit(){
+  if(MELI.done)return;
+  const inp=document.getElementById('meli-in');
+  const val=(inp?.value||'').trim().toUpperCase();
+  if(!val)return;
+  const words=MELI.data.meliWords||[];
+  const w=words[MELI.qIdx];
+  const correct=normStr(val)===normStr(w.answer);
+  const fb=document.getElementById('meli-fb');
+  if(correct){
+    MELI.score+=20;
+    document.getElementById('meli-score').textContent=MELI.score;
+    GAME.score=MELI.score; setScore(MELI.score,false);
+    if(fb){fb.textContent='✅ +20 pts !';fb.style.color='var(--neon)';}
+    MELI.qIdx++;
+    setTimeout(()=>{
+      if(MELI.done)return;
+      if(MELI.qIdx>=(MELI.data.meliWords||[]).length)meliFinish();
+      else meliShowWord();
+    },900);
+  } else {
+    if(fb){fb.textContent='❌ Essaie encore !';fb.style.color='var(--red)';}
+    inp.value='';inp.focus();
+  }
+}
+
+function meliSkip(){
+  if(MELI.done)return;
+  const words=MELI.data.meliWords||[];
+  const w=words[MELI.qIdx];
+  const fb=document.getElementById('meli-fb');
+  if(fb){fb.textContent="C'était : "+w.answer;fb.style.color='var(--mute)';}
+  MELI.qIdx++;
+  setTimeout(()=>{
+    if(MELI.done)return;
+    if(MELI.qIdx>=words.length)meliFinish();
+    else meliShowWord();
+  },1200);
+}
+
+function meliFinish(){
+  if(MELI.done)return;
+  MELI.done=true;
+  if(MELI.timerInt){clearInterval(MELI.timerInt);MELI.timerInt=null;}
+  const score=MELI.score;
+  GAME.score=score; setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Méli-Mélo';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=MELI.qIdx+'/'+(MELI.data.meliWords||[]).length+' trouvés · '+score+' pts';
+  setVictoryIcon('melimelo'); submitScore(score);
+  setTimeout(()=>show('sv'),600);
+}
+
+// --------------------------------------------------------------------------
+// À PRENDRE OU À LAISSER
+// --------------------------------------------------------------------------
+const APOL={
+  data:null, qIdx:0, score:0, done:false, activeBoxes:[],
+  boxItems:[
+    {label:'+10 pts',value:10,type:'add',prob:25,emoji:'💚'},
+    {label:'−10 pts',value:-10,type:'add',prob:25,emoji:'🔴'},
+    {label:'+20 pts',value:20,type:'add',prob:15,emoji:'💛'},
+    {label:'−20 pts',value:-20,type:'add',prob:15,emoji:'🟠'},
+    {label:'× 2',value:2,type:'mult',prob:10,emoji:'⚡'},
+    {label:'÷ 2',value:0.5,type:'mult',prob:10,emoji:'💀'}
+  ]
+};
+
+function setupApol(data){
+  APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false; APOL.activeBoxes=[];
+  const badge=document.getElementById('type-badge');
+  if(badge){badge.textContent='📦 À prendre ou à laisser';badge.className='type-badge';}
+  document.getElementById('game-tip').innerHTML='5 questions · Puis le grand dilemme !';
+  hideAllZones();
+  document.getElementById('apol-zone').style.display='flex';
+  document.getElementById('apol-rules').style.display='block';
+  document.getElementById('apol-question-wrap').style.display='none';
+  document.getElementById('apol-dilemme').style.display='none';
+  document.getElementById('apol-box-reveal').style.display='none';
+  document.getElementById('apol-score').textContent='0';
+  document.getElementById('apol-qnum').textContent='1/5';
+  GAME.score=0; setScore(0,false);
+}
+
+function apolStart(){
+  document.getElementById('apol-rules').style.display='none';
+  apolShowQuestion();
+}
+
+function apolShowQuestion(){
+  const qs=APOL.data.apolQuestions||[];
+  if(APOL.qIdx>=qs.length){apolShowDilemme();return;}
+  const q=qs[APOL.qIdx];
+  document.getElementById('apol-q-text').textContent=q.question||'?';
+  document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+qs.length;
+  document.getElementById('apol-in').value='';
+  document.getElementById('apol-fb').textContent='';
+  // Thème
+  if(q.theme&&q.theme.trim()){
+    if(themeEl)themeEl.style.display='block';
+    if(themeText)themeText.textContent=q.theme;
+  } else {
+    if(themeEl)themeEl.style.display='none';
+  }
+  document.getElementById('apol-question-wrap').style.display='flex';
+  setTimeout(()=>document.getElementById('apol-in')?.focus(),100);
+}
+
+function apolSubmit(){
+  if(APOL.done)return;
+  const inp=document.getElementById('apol-in');
+  const val=(inp?.value||'').trim();
+  if(!val)return;
+  const qs=APOL.data.apolQuestions||[];
+  const q=qs[APOL.qIdx];
+  const tol=q.tol!=null?parseInt(q.tol):1;
+  const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
+  const fb=document.getElementById('apol-fb');
+  if(correct){
+    APOL.score+=20;
+    document.getElementById('apol-score').textContent=APOL.score;
+    GAME.score=APOL.score; setScore(APOL.score,false);
+    if(fb){fb.textContent='✅ +20 pts !';fb.style.color='#00dc78';}
+  } else {
+    if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
+  }
+  APOL.qIdx++;
+  setTimeout(()=>{
+    if(APOL.qIdx>=(APOL.data.apolQuestions||[]).length) apolShowDilemme();
+    else apolShowQuestion();
+  },1400);
+}
+
+function apolShowDilemme(){
+  document.getElementById('apol-question-wrap').style.display='none';
+  document.getElementById('apol-dilemme-score').textContent=APOL.score;
+
+  // Mélanger les 6 items, prendre 5 au hasard (le 6ème absent)
+  const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
+  APOL.activeBoxes=allItems.slice(0,5); // 5 boîtes, 1 absent
+
+  // Générer les 5 boîtes visuelles
+  const grid=document.getElementById('apol-boxes-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  APOL.activeBoxes.forEach((item,i)=>{
+    const btn=document.createElement('button');
+    btn.id='apol-box-'+i;
+    btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;cursor:pointer;font-size:28px;min-height:80px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
+    btn.style.animationDelay=(i*0.3)+'s';
+    btn.innerHTML='📦<span style="font-size:9px;font-family:var(--fh);letter-spacing:1px;color:rgba(255,180,0,.5)">'+(i+1)+'</span>';
+    btn.onclick=()=>apolOpenBox(i,btn);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('apol-box-result').textContent='';
+  document.getElementById('apol-dilemme').style.display='flex';
+}
+
+function apolKeep(){
+  apolFinish(APOL.score,'✅ Score conservé !');
+}
+
+function apolOpenBox(boxIdx,btn){
+  if(APOL.done||btn.disabled)return;
+  // Désactiver toutes les boîtes immédiatement
+  (APOL.activeBoxes||[]).forEach((_,i)=>{
+    const b=document.getElementById('apol-box-'+i);
+    if(b){b.disabled=true;b.style.opacity=i===boxIdx?'1':'0.2';b.style.cursor='default';b.style.animation='none';}
+  });
+
+  const item=APOL.activeBoxes[boxIdx];
+  let finalScore;
+  if(item.type==='add') finalScore=Math.max(0,APOL.score+item.value);
+  else finalScore=Math.round(APOL.score*item.value);
+
+  // Révéler la boîte choisie avec animation
+  const revColor=(item.value>0&&item.type==='add')||(item.value>1&&item.type==='mult')?'#00dc78':'#ff4444';
+  btn.innerHTML=item.emoji+'<span style="font-size:11px;font-family:var(--fh);color:'+revColor+'">'+item.label+'</span>';
+  btn.style.borderColor=revColor;
+  btn.style.background=revColor+'22';
+  btn.style.fontSize='32px';
+
+  if(navigator.vibrate)navigator.vibrate([80,30,160]);
+  const res=document.getElementById('apol-box-result');
+  if(res){
+    res.innerHTML=`<div style="font-size:15px;font-weight:800;color:${revColor}">${item.label}</div><div style="font-size:12px;color:var(--mute);margin-top:2px">${APOL.score} pts → <strong style="color:${revColor}">${finalScore} pts</strong></div>`;
+  }
+  setTimeout(()=>apolFinish(finalScore,'📦 '+item.label+' · '+APOL.score+' → '+finalScore+' pts'),2000);
+}
+
+function apolFinish(finalScore,msg){
+  APOL.done=true;
+  GAME.score=finalScore; setScore(finalScore,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='À prendre ou à laisser';
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=msg;
+  setVictoryIcon('apol'); submitScore(finalScore);
   setTimeout(()=>show('sv'),800);
 }
 
