@@ -1834,6 +1834,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
       <button id="apol-continue-btn" onclick="apolContinue()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(100,180,255,.4);background:rgba(100,180,255,.08);color:#64b4ff;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px"></button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
+      <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
+        Chaque boîte cache un de ces bonus (répartis aléatoirement, l'un absent) :<br>
+        <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
+      </div>
       <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
     </div>
@@ -11239,11 +11243,18 @@ function trivMove(dir){
       trivShowQuestion(target);
     }
   } else {
-    // Case-question : pion affiché sur la cible, on pose la question
-    // Si faux → pion revient à la position précédente
-    TRIV._prevPos=prev;
-    TRIV.phase='question';
-    trivShowQuestion(target);
+    // Case-question
+    if(c.state==='passed'){
+      // Déjà répondue → traversée libre, pas de question
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='✅ Déjà validée — passage libre';fb.style.color='var(--neon)';}
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},800);
+    } else {
+      // Case-question : pion affiché sur la cible, on pose la question
+      TRIV._prevPos=prev;
+      TRIV.phase='question';
+      trivShowQuestion(target);
+    }
   }
 }
 
@@ -11545,21 +11556,22 @@ function apolSubmit(){
     if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
   }
   APOL.qIdx++;
-  const remaining=qs.length-APOL.qIdx;
-  setTimeout(()=>apolShowDilemme(remaining),1200);
+  setTimeout(()=>{
+    if(APOL.qIdx>=qs.length) apolShowDilemme();
+    else apolShowQuestion();
+  },1400);
 }
 
 function apolContinue(){
-  // Joueur choisit de continuer vers la question suivante
   document.getElementById('apol-dilemme').style.display='none';
   apolShowQuestion();
 }
 
-function apolShowDilemme(remaining){
+function apolShowDilemme(){
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
 
-  // Mélanger les 6 items, prendre 5 au hasard
+  // Mélanger les 6 items, 5 dans les boîtes, 1 absent
   const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
   APOL.activeBoxes=allItems.slice(0,5);
 
@@ -11578,16 +11590,9 @@ function apolShowDilemme(remaining){
     });
   }
 
-  // Bouton continuer visible seulement s'il reste des questions
+  // Masquer bouton continuer (fin des questions)
   const continueBtn=document.getElementById('apol-continue-btn');
-  if(continueBtn){
-    if(remaining>0){
-      continueBtn.style.display='block';
-      continueBtn.textContent='➡️ CONTINUER ('+remaining+' question'+(remaining>1?'s':'')+' restante'+(remaining>1?'s':'')+')';
-    } else {
-      continueBtn.style.display='none';
-    }
-  }
+  if(continueBtn)continueBtn.style.display='none';
 
   document.getElementById('apol-box-result').textContent='';
   document.getElementById('apol-dilemme').style.display='flex';
