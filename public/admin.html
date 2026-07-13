@@ -1594,17 +1594,22 @@ async function startEdit(id){
   }
   if(a.type==='melimelo'){
     meliWords=[...(a.meliWords||[])];
+    window.meliWords=meliWords;
     const mt=document.getElementById('meli-timer-admin');if(mt)mt.value=a.meliTimer||60;
     setTimeout(()=>meliAdminRender(),50);
   }
   if(a.type==='apol'){
     apolQuestions=[...(a.apolQuestions||[])];
+    window.apolQuestions=apolQuestions;
     setTimeout(()=>apolAdminRender(),50);
   }
   if(a.type==='trivpursuit'){
     trivThemes=(a.trivThemes||[]).map(t=>({name:t.name||'',color:t.color||'#888',question:t.question||'',answer:t.answer||'',tol:t.tol!=null?t.tol:1}));
-    // Pad to 6 if needed
     while(trivThemes.length<6) trivThemes.push({name:'',color:TRIV_COLORS[trivThemes.length]||'#888',question:'',answer:'',tol:1});
+    window.trivThemes=trivThemes;
+    trivQuestions=(a.trivQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',tol:q.tol!=null?q.tol:1,sectionIdx:q.sectionIdx||0}));
+    while(trivQuestions.length<6) trivQuestions.push({question:'',answer:'',tol:1,sectionIdx:trivQuestions.length});
+    window.trivQuestions=trivQuestions;
     trivQuestions=[...(a.trivQuestions||[])];
     setTimeout(()=>trivAdminRender(),50);
   }
@@ -2129,12 +2134,17 @@ function equiAdminRender(){
 
 // ── BOWLING ADMIN ─────────────────────────────────────────────────────────
 let bowlingQuestions=[];
-let badmintonQuestions=[];
+let badmintonQuestions=[];window.badmintonQuestions=badmintonQuestions;
 let meliWords=[];
 let apolQuestions=[];
 const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
 let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i],question:'',answer:'',tol:1}));
 let trivQuestions=Array.from({length:6},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:i,theme:''}));
+// Expose to window so inline oninput handlers can access them
+window.trivThemes=trivThemes;
+window.trivQuestions=trivQuestions;
+window.apolQuestions=apolQuestions;
+window.meliWords=meliWords;
 
 function trivDrawAdminPreview(){
   const canvas=document.getElementById('triv-admin-preview');
@@ -2280,7 +2290,7 @@ function meliAdminRender(){
 }
 function meliAdminAddWord(){
   if(meliWords.length>=5){alert('5 mots maximum');return;}
-  meliWords.push({scrambled:'',answer:'',indice:''});
+  meliWords.push({scrambled:'',answer:'',indice:''});window.meliWords=meliWords;
   meliAdminRender();checkReady();
 }
 
@@ -2310,7 +2320,7 @@ function apolAdminRender(){
 }
 function apolAdminAddQ(){
   if(apolQuestions.length>=5){alert('5 questions maximum');return;}
-  apolQuestions.push({question:'',theme:'',answer:'',tol:1});
+  apolQuestions.push({question:'',theme:'',answer:'',tol:1});window.apolQuestions=apolQuestions;
   apolAdminRender();checkReady();
 }
 
@@ -2348,7 +2358,7 @@ function badAdminRender(){
 
 function badAdminAddQ(){
   if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
-  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',correct:0});
+  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',correct:0});window.badmintonQuestions=badmintonQuestions;
   badAdminRender();checkReady();
 }
   equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
