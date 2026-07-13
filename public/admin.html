@@ -4036,6 +4036,18 @@ document.getElementById('btn-save').onclick=async()=>{
     const data=await res.json();
     if(data.success){
       showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
+      // Show quick preview button with the correct ID
+      if(data.id){
+        const msg=document.getElementById('save-msg');
+        if(msg){
+          const previewBtn=document.createElement('button');
+          previewBtn.className='btn btn-sm';
+          previewBtn.style.cssText='margin-top:8px;width:100%;background:rgba(0,200,255,.15);color:#00c8ff;border:1px solid rgba(0,200,255,.3)';
+          previewBtn.textContent='▶ Tester ce jeu';
+          previewBtn.onclick=()=>previewAthlete(data.id);
+          msg.appendChild(previewBtn);
+        }
+      }
       cancelEdit();loadAthletes();
     } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
   }catch(e){console.error('Save error:',e);showMsg('save-msg','err','❌ Erreur : '+e.message)}
