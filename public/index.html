@@ -1739,22 +1739,33 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- PLATEAU zone -->
   <div id="trivpursuit-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#080812 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(180,140,255,.2)">
+    <!-- Score + compteur visuel camemberts -->
     <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
       <div><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#b48fff;line-height:1" id="triv-score">0</div></div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh);margin-bottom:5px">CAMEMBERTS</div>
+        <div id="triv-cam-dots" style="display:flex;gap:5px;justify-content:center"></div>
+      </div>
       <div style="text-align:right"><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">PARTS</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="triv-parts">0/6</div></div>
+    </div>
+    <!-- Info case courante bien visible -->
+    <div id="triv-current-info" style="display:none;background:rgba(180,140,255,.1);border:1px solid rgba(180,140,255,.3);border-radius:10px;padding:10px 14px;text-align:center">
+      <div style="font-size:10px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)" id="triv-pos-label">POSITION</div>
+      <div style="font-size:16px;font-weight:800;color:#b48fff;margin-top:2px" id="triv-pos-name"></div>
     </div>
     <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
-      6 camemberts alternent avec 12 cases-questions · Chaque camembert = <strong style="color:#b48fff">+50 pts</strong><br>
-      ❓ Réponds pour traverser une case-question · Faux → case effondrée 💀<br>
-      Cerné des 2 côtés → fin · Score conservé
+      6 camemberts alternent avec 6 cases-questions<br>
+      🟣 <strong style="color:var(--txt)">Camembert</strong> — réponds pour collecter +50 pts · Faux → effondré<br>
+      ❓ <strong style="color:var(--txt)">Case-question</strong> — réponds pour traverser · Faux → effondrée<br>
+      💀 Cerné des 2 côtés → fin · Score conservé
       <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
     </div>
     <div id="triv-board-wrap" style="display:none;position:relative">
-      <canvas id="triv-canvas" style="width:100%;display:block;border-radius:50%;cursor:pointer"></canvas>
-      <div id="triv-center-info" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:52%">
+      <canvas id="triv-canvas" style="width:100%;display:block;cursor:pointer"></canvas>
+      <div id="triv-center-info" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:44%">
         <div style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-family:var(--fh)" id="triv-center-type"></div>
-        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-top:2px;line-height:1.3" id="triv-center-name"></div>
+        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.8);margin-top:2px;line-height:1.3" id="triv-center-name"></div>
       </div>
     </div>
     <div id="triv-question-wrap" style="display:none;flex-direction:column;gap:8px">
@@ -10789,7 +10800,7 @@ function badShowQuestion(){
 
   // Choix QCM
   const choicesEl=document.getElementById('bad-choices');
-  const choices=[q.a,q.b,q.c,q.d];
+  const choices=[q.a,q.b,q.c];
   choicesEl.innerHTML='';
   choices.forEach((ch,i)=>{
     if(!ch) return;
@@ -10903,20 +10914,24 @@ const TRIV={
 };
 
 function trivBuildCases(data){
-  // 12 cases: CAM at 0,2,4,6,8,10 | Q at 1,3,5,7,9,11
-  // Structure: CAM0-Q0-CAM1-Q1-CAM2-Q2-CAM3-Q3-CAM4-Q4-CAM5-Q5
   const themes=data.trivThemes||[];
   const qs=data.trivQuestions||[];
   const cases=[];
   for(let i=0;i<12;i++){
     if(i%2===0){
       const themeIdx=i/2;
-      cases.push({type:'cam',themeIdx,name:themes[themeIdx]?.name||'Thème '+(themeIdx+1),color:themes[themeIdx]?.color||TRIV.COLORS[themeIdx%6],state:'normal',idx:i});
+      const t=themes[themeIdx]||{};
+      cases.push({
+        type:'cam', themeIdx,
+        name:t.name||'Thème '+(themeIdx+1),
+        color:t.color||TRIV.COLORS[themeIdx%6],
+        question:t.question||'?', answer:t.answer||'', tol:t.tol!=null?parseInt(t.tol):1,
+        state:'normal', idx:i
+      });
     } else {
       const qIdx=Math.floor(i/2);
       const q=qs[qIdx]||{question:'?',answer:'',tol:1};
-      const themeIdx=qIdx; // question belongs to theme on its left
-      cases.push({type:'q',q,sectionIdx:qIdx,themeIdx,state:'normal',idx:i});
+      cases.push({type:'q',q,sectionIdx:qIdx,themeIdx:qIdx,state:'normal',idx:i});
     }
   }
   return cases;
@@ -10956,80 +10971,135 @@ function trivInitCanvas(){
 function trivDraw(){
   const canvas=TRIV.canvas; if(!canvas)return;
   const ctx=TRIV.ctx;
-  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-6,rInner=R*0.28;
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-8,rInner=R*0.32;
   ctx.clearRect(0,0,W,H);
-  ctx.beginPath();ctx.arc(cx,cy,R+2,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();
+
+  // Fond sombre
+  ctx.beginPath();ctx.arc(cx,cy,R+4,0,Math.PI*2);
+  ctx.fillStyle='#06060f';ctx.fill();
+
   const N=12,startAngle=-Math.PI/2;
+
   TRIV.cases.forEach((c,i)=>{
     const a0=startAngle+(i/N)*Math.PI*2;
     const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const midA=(a0+a1)/2;
     const isCam=c.type==='cam';
     const isPlayer=TRIV.playerPos===i;
     const isCollapsed=c.state==='collapsed';
     const isCollected=c.state==='collected';
     const isPassed=c.state==='passed';
     const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#888');
+
+    // Draw segment
     ctx.beginPath();
     if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
-    else{ctx.arc(cx,cy,R*0.85,a0,a1);ctx.arc(cx,cy,R*0.46,a1,a0,true);}
+    else{ctx.arc(cx,cy,R*0.84,a0,a1);ctx.arc(cx,cy,R*0.44,a1,a0,true);}
     ctx.closePath();
-    let fill=isCollapsed?'#1a1a1a':isCam&&isCollected?color:isCam?color+'44':isPassed?color+'44':color+'22';
-    ctx.fillStyle=fill;ctx.fill();
-    ctx.strokeStyle=isCollapsed?'rgba(255,0,0,.3)':color+(isCam?'88':'44');
-    ctx.lineWidth=isPlayer?3:1;ctx.stroke();
-    const midA=(a0+a1)/2;
+
     if(isCollapsed){
-      const midR=isCam?R*0.6:(R*0.85+R*0.46)/2;
-      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
-      ctx.fillStyle='rgba(255,50,50,.8)';ctx.font='bold 15px sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✕',px,py);
+      // Noir total
+      ctx.fillStyle='#000';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;ctx.stroke();
+    } else if(isCam&&isCollected){
+      // Camembert collecté : couleur pleine
+      ctx.fillStyle=color;ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=isPlayer?3:1.5;ctx.stroke();
+    } else if(isCam){
+      // Camembert non collecté : couleur foncée
+      ctx.fillStyle=color+'33';ctx.fill();
+      ctx.strokeStyle=color+'66';ctx.lineWidth=isPlayer?3:1.5;ctx.stroke();
+    } else if(isPassed){
+      // Case-question passée
+      ctx.fillStyle=color+'22';ctx.fill();
+      ctx.strokeStyle=color+'44';ctx.lineWidth=1;ctx.stroke();
+    } else {
+      // Case-question normale
+      ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.stroke();
     }
-    if(isCam&&!isCollapsed){
-      const px=cx+Math.cos(midA)*R*0.58,py=cy+Math.sin(midA)*R*0.58;
-      ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.7)';
-      ctx.font='bold '+Math.round(R*0.1)+'px sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText((c.name||'?')[0].toUpperCase(),px,py);
-      if(isCollected){
-        ctx.font=Math.round(R*0.07)+'px sans-serif';
-        ctx.fillStyle='rgba(255,255,255,.6)';
-        ctx.fillText('✓',cx+Math.cos(midA)*R*0.83,cy+Math.sin(midA)*R*0.83);
-      }
-    }
-    if(!isCam&&!isCollapsed){
-      const midR=(R*0.85+R*0.46)/2;
-      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
-      ctx.fillStyle=isPassed?color:'rgba(255,255,255,.5)';
-      ctx.font='bold '+Math.round(R*0.09)+'px sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(isPassed?'✓':'?',px,py);
-    }
-    if(isPlayer){
-      const midR=isCam?R*0.55:(R*0.85+R*0.46)/2;
-      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
-      ctx.beginPath();ctx.arc(px,py,R*0.09,0,Math.PI*2);
-      ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
-    }
-    if(TRIV.phase==='move'&&TRIV.playerPos>=0){
-      const left=(TRIV.playerPos-1+12)%12,right=(TRIV.playerPos+1)%12;
-      if((i===left||i===right)&&c.state!=='collapsed'){
-        const midR=isCam?R*0.82:(R*0.85+R*0.46)/2;
+
+    if(!isCollapsed){
+      // Texte
+      if(isCam){
+        const px=cx+Math.cos(midA)*R*0.62,py=cy+Math.sin(midA)*R*0.62;
+        ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.6)';
+        ctx.font='bold '+Math.round(R*0.11)+'px sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText((c.name||'?')[0].toUpperCase(),px,py);
+      } else {
+        const midR=(R*0.84+R*0.44)/2;
         const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
-        ctx.beginPath();ctx.arc(px,py,R*0.065,0,Math.PI*2);
-        ctx.fillStyle='rgba(255,255,255,.35)';ctx.fill();
+        ctx.fillStyle=isPassed?color+'cc':'rgba(255,255,255,.4)';
+        ctx.font='bold '+Math.round(R*0.1)+'px sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(isPassed?'✓':'?',px,py);
       }
     }
-    // In choose phase, highlight question cells
-    if(TRIV.phase==='choose'&&!isCam&&!isCollapsed){
-      const midR=(R*0.85+R*0.46)/2;
+
+    // Pion : TRÈS visible - grand cercle blanc pulsant
+    if(isPlayer){
+      const midR=isCam?R*0.62:(R*0.84+R*0.44)/2;
       const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
-      ctx.beginPath();ctx.arc(px,py,R*0.07,0,Math.PI*2);
+      // Halo
+      ctx.beginPath();ctx.arc(px,py,R*0.145,0,Math.PI*2);
       ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill();
+      // Cercle
+      ctx.beginPath();ctx.arc(px,py,R*0.1,0,Math.PI*2);
+      ctx.fillStyle='#fff';
+      ctx.shadowColor='#fff';ctx.shadowBlur=18;
+      ctx.fill();ctx.shadowBlur=0;
+      // Bordure colorée
+      ctx.strokeStyle=isCam?color:'#b48fff';
+      ctx.lineWidth=2;ctx.stroke();
+    }
+
+    // Adjacents highlight en phase move
+    if(TRIV.phase==='move'&&TRIV.playerPos>=0&&!isPlayer&&!isCollapsed){
+      const left=(TRIV.playerPos-1+12)%12,right=(TRIV.playerPos+1)%12;
+      if(i===left||i===right){
+        const midR=isCam?R*0.62:(R*0.84+R*0.44)/2;
+        const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+        ctx.beginPath();ctx.arc(px,py,R*0.075,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
+      }
+    }
+
+    // Cases dispo en phase choose
+    if(TRIV.phase==='choose'&&!isCam&&!isCollapsed){
+      const midR=(R*0.84+R*0.44)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.beginPath();ctx.arc(px,py,R*0.085,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.15)';
+      ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;
+      ctx.fill();ctx.stroke();
     }
   });
-  ctx.beginPath();ctx.arc(cx,cy,rInner*0.95,0,Math.PI*2);
-  ctx.fillStyle='rgba(8,8,18,.9)';ctx.fill();
-  ctx.strokeStyle='rgba(180,140,255,.3)';ctx.lineWidth=1.5;ctx.stroke();
+
+  // Centre
+  ctx.beginPath();ctx.arc(cx,cy,rInner,0,Math.PI*2);
+  ctx.fillStyle='#06060f';ctx.fill();
+  ctx.strokeStyle='rgba(180,140,255,.4)';ctx.lineWidth=2;ctx.stroke();
+
+  // Mise à jour compteur camemberts
+  trivUpdateCamDots();
+}
+
+function trivUpdateCamDots(){
+  const el=document.getElementById('triv-cam-dots');
+  if(!el)return;
+  el.innerHTML='';
+  TRIV.cases.filter(c=>c.type==='cam').forEach(c=>{
+    const dot=document.createElement('div');
+    const isCollected=c.state==='collected';
+    const isCollapsed=c.state==='collapsed';
+    dot.style.cssText=`width:18px;height:18px;border-radius:50%;transition:all .3s;
+      background:${isCollapsed?'#111':isCollected?c.color:c.color+'33'};
+      border:2px solid ${isCollapsed?'rgba(255,255,255,.05)':c.color};
+      box-shadow:${isCollected?'0 0 8px '+c.color:''};`;
+    el.appendChild(dot);
+  });
 }
 
 function trivStartChoose(){
@@ -11087,16 +11157,28 @@ function trivUpdateScore(){
 function trivUpdateCenterInfo(){
   const c=TRIV.cases[TRIV.playerPos];
   if(!c)return;
+  // Centre du canvas
   const typeEl=document.getElementById('triv-center-type');
   const nameEl=document.getElementById('triv-center-name');
+  // Info block au-dessus
+  const posLabel=document.getElementById('triv-pos-label');
+  const posName=document.getElementById('triv-pos-name');
+  const currentInfo=document.getElementById('triv-current-info');
   if(c.type==='cam'){
-    if(typeEl){typeEl.textContent='CAMEMBERT';typeEl.style.color=c.color;}
+    const label=c.state==='collected'?'✅ COLLECTÉ':'🟣 CAMEMBERT';
+    if(typeEl){typeEl.textContent=label;typeEl.style.color=c.color;}
     if(nameEl){nameEl.textContent=c.name;nameEl.style.color=c.color;}
+    if(posLabel)posLabel.textContent=c.state==='collected'?'✅ COLLECTÉ':'🟣 SUR CAMEMBERT';
+    if(posName){posName.textContent=c.name;posName.style.color=c.color;}
   } else {
-    const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
-    if(typeEl){typeEl.textContent='CASE QUESTION';typeEl.style.color='rgba(180,140,255,.6)';}
-    if(nameEl){nameEl.textContent=sec?sec.name:'';nameEl.style.color='rgba(255,255,255,.5)';}
+    const camName=TRIV.cases[c.themeIdx*2]?.name||'?';
+    const camColor=TRIV.cases[c.themeIdx*2]?.color||'#b48fff';
+    if(typeEl){typeEl.textContent='❓ CASE-QUESTION';typeEl.style.color='rgba(255,255,255,.4)';}
+    if(nameEl){nameEl.textContent=camName;nameEl.style.color=camColor;}
+    if(posLabel)posLabel.textContent='❓ SUR CASE-QUESTION';
+    if(posName){posName.textContent='Thème : '+camName;posName.style.color=camColor;}
   }
+  if(currentInfo)currentInfo.style.display='block';
 }
 
 function trivShowMoveButtons(){
@@ -11155,27 +11237,17 @@ function trivMove(dir){
 function trivShowQuestion(targetPos){
   const c=TRIV.cases[targetPos];
   const isCam=c.type==='cam';
-  const theme=isCam?c:TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
-  const themeColor=theme?.color||'#b48fff';
+  const themeColor=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
+  const themeName=isCam?c.name:(TRIV.cases[c.themeIdx*2]?.name||'Question');
 
-  // Get question data
-  let qText,qAnswer,qTol;
-  if(isCam){
-    // Question du camembert (depuis les themes)
-    const td=TRIV.data.trivThemes?.[c.themeIdx]||{};
-    qText=td.question||'?';
-    qAnswer=td.answer||'';
-    qTol=td.tol!=null?parseInt(td.tol):1;
-  } else {
-    const q=c.q||{};
-    qText=q.question||'?';
-    qAnswer=q.answer||'';
-    qTol=q.tol!=null?parseInt(q.tol):1;
-  }
+  // Question data: directly on the case
+  const qText=isCam?c.question:(c.q?.question||'?');
+  const qAnswer=isCam?c.answer:(c.q?.answer||'');
+  const qTol=isCam?c.tol:(c.q?.tol!=null?parseInt(c.q.tol):1);
 
   const themeEl=document.getElementById('triv-q-theme');
   if(themeEl){
-    themeEl.textContent=(isCam?'🟣 ':'❓ ')+(theme?.name||'Question');
+    themeEl.textContent=(isCam?'🟣 ':'❓ ')+themeName;
     themeEl.style.color=themeColor;
   }
   document.getElementById('triv-q-text').textContent=qText;
