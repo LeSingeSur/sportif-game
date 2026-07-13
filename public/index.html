@@ -1791,29 +1791,22 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 
   <!-- À PRENDRE OU À LAISSER zone -->
   <div id="apol-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0f0800 0%,#1c1200 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,0,.25)">
-
-    <!-- Header visuel : coffre animé -->
-    <div style="text-align:center;padding:10px 0;position:relative">
-      <div id="apol-box-big" style="font-size:72px;display:inline-block;animation:boxGlow 2s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(255,180,0,.5))">📦</div>
-      <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5);margin-top:4px">À PRENDRE OU À LAISSER</div>
+    <div style="text-align:center;padding:8px 0">
+      <div id="apol-box-big" style="font-size:64px;display:inline-block;animation:boxGlow 2s ease-in-out infinite;filter:drop-shadow(0 0 16px rgba(255,180,0,.4))">📦</div>
+      <div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;color:rgba(255,180,0,.5);margin-top:4px">À PRENDRE OU À LAISSER</div>
     </div>
-
-    <!-- Score + Q -->
     <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
       <div><div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#ffb400;line-height:1" id="apol-score">0</div></div>
       <div style="text-align:right"><div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div></div>
     </div>
-
     <!-- Règles -->
     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">tenter la boîte</strong><br>
+      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">ouvrir une boîte</strong><br>
       📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
     </div>
-
     <!-- Questions -->
     <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
-      </div>
       <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,180,0,.15)"></div>
       <div style="display:flex;gap:8px">
         <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
@@ -1823,24 +1816,28 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div id="apol-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
     </div>
-
+    <!-- Dilemme final -->
+    
+  
     <!-- Dilemme final -->
     <div id="apol-dilemme" style="display:none;flex-direction:column;gap:14px">
       <div style="text-align:center">
         <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
-        <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou tenter une boîte ?</div>
+        <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
       <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
-      <button id="apol-continue-btn" onclick="apolContinue()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(100,180,255,.4);background:rgba(100,180,255,.08);color:#64b4ff;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px"></button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
-        Chaque boîte cache un de ces bonus (répartis aléatoirement, l'un absent) :<br>
+        Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
         <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
       </div>
       <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
-    </div>
+    </div></div>
+
+    <!-- Dilemme final -->
+    
 
   <!-- BADMINTON zone -->
   <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
@@ -11264,17 +11261,30 @@ function trivShowQuestion(targetPos){
   const themeColor=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
   const themeName=isCam?c.name:(TRIV.cases[c.themeIdx*2]?.name||'Question');
 
-  // Question data: directly on the case
-  const qText=isCam?c.question:(c.q?.question||'?');
-  const qAnswer=isCam?c.answer:(c.q?.answer||'');
-  const qTol=isCam?c.tol:(c.q?.tol!=null?parseInt(c.q.tol):1);
+  // Toujours lire depuis TRIV.data pour les camemberts (données fraîches)
+  let qText,qAnswer,qTol;
+  if(isCam){
+    const td=TRIV.data?.trivThemes?.[c.themeIdx]||{};
+    qText=td.question||c.question||'';
+    qAnswer=td.answer||c.answer||'';
+    qTol=td.tol!=null?parseInt(td.tol):(c.tol!=null?parseInt(c.tol):1);
+    if(!qText){
+      // Pas de question configurée
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='⚠️ Question non configurée — camembert accordé !';fb.style.color='#ffb400';}
+      c.state='collected'; TRIV.score+=50; trivUpdateScore(); trivDraw();
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();trivDraw();},1500);
+      return;
+    }
+  } else {
+    qText=c.q?.question||'';
+    qAnswer=c.q?.answer||'';
+    qTol=c.q?.tol!=null?parseInt(c.q.tol):1;
+  }
 
   const themeEl=document.getElementById('triv-q-theme');
-  if(themeEl){
-    themeEl.textContent=(isCam?'🟣 ':'❓ ')+themeName;
-    themeEl.style.color=themeColor;
-  }
-  document.getElementById('triv-q-text').textContent=qText;
+  if(themeEl){themeEl.textContent=(isCam?'🟣 ':'❓ ')+themeName;themeEl.style.color=themeColor;}
+  document.getElementById('triv-q-text').textContent=qText||'?';
   document.getElementById('triv-in').value='';
   document.getElementById('triv-fb').textContent='';
   TRIV._pendingTarget=targetPos;
