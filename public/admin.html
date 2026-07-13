@@ -2244,17 +2244,18 @@ function meliAdminRender(){
   list.innerHTML='';
   meliWords.forEach((w,i)=>{
     const d=document.createElement('div');
-    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;gap:8px;align-items:center';
-    d.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
-      <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="meliWords[${i}].scrambled=this.value.toUpperCase();checkReady();"
-        style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
-      <span style="color:var(--mute)">→</span>
-      <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
-        style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
-      <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
-    </div>
-    <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="meliWords[${i}].indice=this.value;checkReady();"
-      style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none;margin-top:4px">`;
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`<div style="display:flex;gap:8px;align-items:center">
+        <span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
+        <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="meliWords[${i}].scrambled=this.value.toUpperCase();checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+        <span style="color:var(--mute)">→</span>
+        <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+        <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="meliWords[${i}].indice=this.value;checkReady();"
+        style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none">`;
     list.appendChild(d);
   });
 }

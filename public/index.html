@@ -10939,6 +10939,99 @@ function setupTrivPursuit(data){
   GAME.score=0;setScore(0,false);
 }
 
+function trivInitCanvas(){
+  const canvas=document.getElementById('triv-canvas');
+  if(!canvas)return;
+  const size=Math.min(window.innerWidth-60,360);
+  canvas.width=size; canvas.height=size;
+  TRIV.canvas=canvas; TRIV.ctx=canvas.getContext('2d');
+  canvas.onclick=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+    const cx=(e.clientX-rect.left)*scaleX, cy=(e.clientY-rect.top)*scaleY;
+    trivHandleClick(cx,cy);
+  };
+}
+
+function trivDraw(){
+  const canvas=TRIV.canvas; if(!canvas)return;
+  const ctx=TRIV.ctx;
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-6,rInner=R*0.28;
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();ctx.arc(cx,cy,R+2,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();
+  const N=12,startAngle=-Math.PI/2;
+  TRIV.cases.forEach((c,i)=>{
+    const a0=startAngle+(i/N)*Math.PI*2;
+    const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const isCam=c.type==='cam';
+    const isPlayer=TRIV.playerPos===i;
+    const isCollapsed=c.state==='collapsed';
+    const isCollected=c.state==='collected';
+    const isPassed=c.state==='passed';
+    const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#888');
+    ctx.beginPath();
+    if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
+    else{ctx.arc(cx,cy,R*0.85,a0,a1);ctx.arc(cx,cy,R*0.46,a1,a0,true);}
+    ctx.closePath();
+    let fill=isCollapsed?'#1a1a1a':isCam&&isCollected?color:isCam?color+'44':isPassed?color+'44':color+'22';
+    ctx.fillStyle=fill;ctx.fill();
+    ctx.strokeStyle=isCollapsed?'rgba(255,0,0,.3)':color+(isCam?'88':'44');
+    ctx.lineWidth=isPlayer?3:1;ctx.stroke();
+    const midA=(a0+a1)/2;
+    if(isCollapsed){
+      const midR=isCam?R*0.6:(R*0.85+R*0.46)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.fillStyle='rgba(255,50,50,.8)';ctx.font='bold 15px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✕',px,py);
+    }
+    if(isCam&&!isCollapsed){
+      const px=cx+Math.cos(midA)*R*0.58,py=cy+Math.sin(midA)*R*0.58;
+      ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.7)';
+      ctx.font='bold '+Math.round(R*0.1)+'px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText((c.name||'?')[0].toUpperCase(),px,py);
+      if(isCollected){
+        ctx.font=Math.round(R*0.07)+'px sans-serif';
+        ctx.fillStyle='rgba(255,255,255,.6)';
+        ctx.fillText('✓',cx+Math.cos(midA)*R*0.83,cy+Math.sin(midA)*R*0.83);
+      }
+    }
+    if(!isCam&&!isCollapsed){
+      const midR=(R*0.85+R*0.46)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.fillStyle=isPassed?color:'rgba(255,255,255,.5)';
+      ctx.font='bold '+Math.round(R*0.09)+'px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(isPassed?'✓':'?',px,py);
+    }
+    if(isPlayer){
+      const midR=isCam?R*0.55:(R*0.85+R*0.46)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.beginPath();ctx.arc(px,py,R*0.09,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
+    }
+    if(TRIV.phase==='move'&&TRIV.playerPos>=0){
+      const left=(TRIV.playerPos-1+12)%12,right=(TRIV.playerPos+1)%12;
+      if((i===left||i===right)&&c.state!=='collapsed'){
+        const midR=isCam?R*0.82:(R*0.85+R*0.46)/2;
+        const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+        ctx.beginPath();ctx.arc(px,py,R*0.065,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.35)';ctx.fill();
+      }
+    }
+    // In choose phase, highlight question cells
+    if(TRIV.phase==='choose'&&!isCam&&!isCollapsed){
+      const midR=(R*0.85+R*0.46)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.beginPath();ctx.arc(px,py,R*0.07,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill();
+    }
+  });
+  ctx.beginPath();ctx.arc(cx,cy,rInner*0.95,0,Math.PI*2);
+  ctx.fillStyle='rgba(8,8,18,.9)';ctx.fill();
+  ctx.strokeStyle='rgba(180,140,255,.3)';ctx.lineWidth=1.5;ctx.stroke();
+}
+
 function trivStartChoose(){
   document.getElementById('triv-rules').style.display='none';
   document.getElementById('triv-board-wrap').style.display='block';
