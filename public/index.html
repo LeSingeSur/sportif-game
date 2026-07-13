@@ -2786,6 +2786,9 @@ async function loadAthlete(){
     }
     const data=await res.json();
     if(!PREVIEW_MODE && data.done){show('sd');return}
+    // Toujours cacher toutes les zones avant de dispatcher
+    hideAllZones();
+    document.getElementById('std-ans-area').style.display='none';
     GAME.athleteId=data.id; GAME.type=data.type||'text'; GAME.active=true;
     // Toujours stocker la réponse correcte dès le chargement
     GAME.athleteName=data.answer||data.biatTheme||data.bjTheme||data.repliqueAuthor||GAME.athleteName||'';

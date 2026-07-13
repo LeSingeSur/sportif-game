@@ -1258,7 +1258,8 @@ const ADMIN_GAME_ICONS={
   blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
   trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
   grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
-  haltero:'🏋️',tirarlarc:'🎯',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',equitation:'🏇',var:'📺'
+  haltero:'🏋️',tirarlarc:'🏹',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',equitation:'🏇',var:'📺',
+  rvlf:'⏳',plongee:'🤿',escalade:'🧗',badminton:'🏸',melimelo:'🔀',apol:'📦',trivpursuit:'🎯'
 };
 function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
 
@@ -1461,8 +1462,8 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?"🚴 Alpe d'Huez":a.type==='biathlon'?'🎿 Biathlon':'📝 Texte';
-    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?"🚴 Alpe d'Huez":a.type==='biathlon'?'🎿 Biathlon':a.type==='maillonfaible'?'🔗 Maillon Faible':a.type==='haltero'?'🏋️ Haltéro':a.type==='tirarlarc'?'🏹 Tir à l\'Arc':a.type==='nagesync'?'🏊 Natation':a.type==='assaut'?'⚔️ Assaut':a.type==='var'?'📺 VAR':a.type==='rvlf'?'⏳ RVLF':a.type==='plongee'?'🤿 Plongée':a.type==='escalade'?'🧗 Escalade':a.type==='roulette'?'🔫 Roulette':a.type==='bowling'?'🎳 Bowling':a.type==='equitation'?'🏇 Équitation':a.type==='badminton'?'🏸 Badminton':a.type==='melimelo'?'🔀 Méli-Mélo':a.type==='apol'?'📦 À P.O.A.L.':a.type==='trivpursuit'?'🎯 Trivial Pursuit':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':a.type==='badminton'||a.type==='melimelo'||a.type==='apol'||a.type==='trivpursuit'?'img':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
