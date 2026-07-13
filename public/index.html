@@ -11133,19 +11133,18 @@ function trivMove(dir){
   TRIV.pendingDir=dir;
 
   if(c.type==='cam'){
-    // Atterrir sur un camembert
     TRIV.playerPos=target;
-    if(c.state==='normal'){c.state='collected';TRIV.score+=50;trivUpdateScore();}
-    trivDraw();
-    trivUpdateCenterInfo();
-    const fb=document.getElementById('triv-fb');
-    if(c.state==='collected'||c.state==='normal'){
-      if(fb){fb.textContent='🟣 '+c.name+' +50 pts !';fb.style.color=c.color;}
-      setTimeout(()=>{if(fb)fb.textContent='';},1200);
+    trivDraw();trivUpdateCenterInfo();
+    if(c.state==='collected'){
+      // Déjà collecté — traversée libre
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='🟣 '+c.name+' déjà collecté !';fb.style.color=c.color;}
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();trivDraw();},1000);
+    } else {
+      // Doit répondre à la question du camembert pour le collecter
+      TRIV.phase='question';
+      trivShowQuestion(target);
     }
-    setTimeout(()=>{
-      if(!TRIV.done){trivShowMoveButtons();}
-    },1300);
   } else {
     // Case question → afficher la question
     TRIV.phase='question';
@@ -11155,15 +11154,37 @@ function trivMove(dir){
 
 function trivShowQuestion(targetPos){
   const c=TRIV.cases[targetPos];
-  const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
-  const themeColor=sec?.color||'#b48fff';
-  document.getElementById('triv-question-wrap').style.display='flex';
+  const isCam=c.type==='cam';
+  const theme=isCam?c:TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
+  const themeColor=theme?.color||'#b48fff';
+
+  // Get question data
+  let qText,qAnswer,qTol;
+  if(isCam){
+    // Question du camembert (depuis les themes)
+    const td=TRIV.data.trivThemes?.[c.themeIdx]||{};
+    qText=td.question||'?';
+    qAnswer=td.answer||'';
+    qTol=td.tol!=null?parseInt(td.tol):1;
+  } else {
+    const q=c.q||{};
+    qText=q.question||'?';
+    qAnswer=q.answer||'';
+    qTol=q.tol!=null?parseInt(q.tol):1;
+  }
+
   const themeEl=document.getElementById('triv-q-theme');
-  if(themeEl){themeEl.textContent='❓ '+(sec?.name||'Question');themeEl.style.color=themeColor;}
-  document.getElementById('triv-q-text').textContent=c.q?.question||'?';
+  if(themeEl){
+    themeEl.textContent=(isCam?'🟣 ':'❓ ')+(theme?.name||'Question');
+    themeEl.style.color=themeColor;
+  }
+  document.getElementById('triv-q-text').textContent=qText;
   document.getElementById('triv-in').value='';
   document.getElementById('triv-fb').textContent='';
   TRIV._pendingTarget=targetPos;
+  TRIV._pendingAnswer=qAnswer;
+  TRIV._pendingTol=qTol;
+  document.getElementById('triv-question-wrap').style.display='flex';
   setTimeout(()=>document.getElementById('triv-in')?.focus(),100);
 }
 
@@ -11173,27 +11194,51 @@ function trivSubmit(){
   const val=(inp?.value||'').trim();if(!val)return;
   const targetPos=TRIV._pendingTarget;
   const c=TRIV.cases[targetPos];
-  const tol=c.q?.tol!=null?parseInt(c.q.tol):1;
-  const correct=levenshtein(normStr(val),normStr(c.q?.answer||''))<=tol;
+  const isCam=c.type==='cam';
+  const tol=TRIV._pendingTol!=null?TRIV._pendingTol:1;
+  const correctAnswer=TRIV._pendingAnswer||'';
+  const correct=levenshtein(normStr(val),normStr(correctAnswer))<=tol;
   const fb=document.getElementById('triv-fb');
-  const sec=TRIV.cases.find(cc=>cc.type==='cam'&&cc.themeIdx===c.sectionIdx);
+  const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
+
   if(correct){
-    c.state='passed';
-    TRIV.playerPos=targetPos;
-    if(fb){fb.textContent='✅ Bonne réponse !';fb.style.color='var(--neon)';}
-    trivDraw();trivUpdateCenterInfo();
-    setTimeout(()=>{
-      document.getElementById('triv-question-wrap').style.display='none';
-      if(fb)fb.textContent='';
-      TRIV.phase='move';
-      trivShowMoveButtons();
-      trivDraw();
-    },1000);
+    if(isCam){
+      // Camembert collecté !
+      c.state='collected';
+      TRIV.score+=50;
+      trivUpdateScore();
+      if(fb){fb.textContent='🟣 '+c.name+' collecté ! +50 pts';fb.style.color=color;}
+      trivDraw();trivUpdateCenterInfo();
+      setTimeout(()=>{
+        document.getElementById('triv-question-wrap').style.display='none';
+        if(fb)fb.textContent='';
+        TRIV.phase='move';
+        trivShowMoveButtons();
+        trivDraw();
+        if(trivCheckAllCollected())trivFinish('complete');
+      },1200);
+    } else {
+      // Case-question passée
+      c.state='passed';
+      if(fb){fb.textContent='✅ Bonne réponse !';fb.style.color='var(--neon)';}
+      trivDraw();trivUpdateCenterInfo();
+      setTimeout(()=>{
+        document.getElementById('triv-question-wrap').style.display='none';
+        if(fb)fb.textContent='';
+        TRIV.phase='move';
+        trivShowMoveButtons();
+        trivDraw();
+      },1000);
+    }
   } else {
+    // Faux → effondré (camembert ou case-question)
     c.state='collapsed';
-    if(fb){fb.innerHTML=`❌ Faux ! C'était <strong>${c.q?.answer||'?'}</strong> — case effondrée !`;fb.style.color='var(--red)';}
+    if(fb){
+      const label=isCam?'camembert effondré !':'case effondrée !';
+      fb.innerHTML=`❌ Raté ! C'était <strong>${correctAnswer}</strong> — ${label}`;
+      fb.style.color='var(--red)';
+    }
     trivDraw();
-    // Player stays, don't move
     setTimeout(()=>{
       document.getElementById('triv-question-wrap').style.display='none';
       if(fb)fb.textContent='';
