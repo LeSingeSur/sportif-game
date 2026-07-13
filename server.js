@@ -284,13 +284,14 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
-      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', correct:q.correct!=null?parseInt(q.correct):0
     }));
     base.badTheme = athlete.badTheme||'Badminton Quiz';
     base.maxScore = 300;
   } else if (athlete.type === 'trivpursuit') {
     base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
-      name:t.name||'Thème', color:t.color||'#888888'
+      name:t.name||'Thème', color:t.color||'#888888',
+      question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
     base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
       question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
@@ -706,13 +707,14 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
-      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', d:q.d||'', correct:q.correct!=null?parseInt(q.correct):0
+      question:q.question||'', theme:q.theme||'', a:q.a||'', b:q.b||'', c:q.c||'', correct:q.correct!=null?parseInt(q.correct):0
     }));
     base.badTheme = athlete.badTheme||'Badminton Quiz';
     base.maxScore = 300;
   } else if (athlete.type === 'trivpursuit') {
     base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
-      name:t.name||'Thème', color:t.color||'#888888'
+      name:t.name||'Thème', color:t.color||'#888888',
+      question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
     base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
       question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
@@ -1135,7 +1137,7 @@ app.post('/api/admin/athlete', (req, res) => {
     meliWords:          type === 'melimelo' ? (req.body.meliWords||[]) : undefined,
     meliTimer:          type === 'melimelo' ? (parseInt(req.body.meliTimer)||60) : undefined,
     apolQuestions:      type === 'apol' ? (req.body.apolQuestions||[]) : undefined,
-    trivThemes:         type === 'trivpursuit' ? (req.body.trivThemes||[]) : undefined,
+    trivThemes:         type === 'trivpursuit' ? (req.body.trivThemes||[]).map(t=>({...t,question:t.question||'',answer:t.answer||'',tol:parseInt(t.tol)||1})) : undefined,
     trivQuestions:      type === 'trivpursuit' ? (req.body.trivQuestions||[]) : undefined,
     rouletteSeed:       type === 'roulette' ? (parseInt(req.body.rouletteSeed)||Date.now()) : undefined,
     mfQuestions:        type === 'maillonfaible' ? (req.body.mfQuestions||[]) : undefined,
