@@ -292,14 +292,15 @@ app.get('/api/preview', (req, res) => {
     base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
       name:t.name||'Thème', color:t.color||'#888888'
     }));
-    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,12).map(q=>({
-      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
     }));
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
       scrambled:(w.scrambled||'').toUpperCase().trim(),
-      answer:(w.answer||'').toUpperCase().trim()
+      answer:(w.answer||'').toUpperCase().trim(),
+      indice:w.indice||''
     }));
     base.meliTimer = athlete.meliTimer||60;
     base.maxScore = 100;
@@ -713,8 +714,8 @@ app.get('/api/athlete', (req, res) => {
     base.trivThemes = (athlete.trivThemes||[]).slice(0,6).map(t=>({
       name:t.name||'Thème', color:t.color||'#888888'
     }));
-    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,12).map(q=>({
-      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
     }));
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
