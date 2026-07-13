@@ -1800,6 +1800,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="text-align:right"><div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div></div>
     </div>
     <!-- Règles -->
+    <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">ouvrir une boîte</strong><br>
       📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
@@ -10927,7 +10928,7 @@ function trivBuildCases(data){
         type:'cam', themeIdx,
         name:t.name||'Thème '+(themeIdx+1),
         color:t.color||TRIV.COLORS[themeIdx%6],
-        question:t.question||'?', answer:t.answer||'', tol:t.tol!=null?parseInt(t.tol):1,
+        question:t.question||'', answer:t.answer||'', tol:t.tol!=null?parseInt(t.tol):1,
         state:'normal', idx:i
       });
     } else {
@@ -11514,11 +11515,15 @@ function setupApol(data){
   document.getElementById('game-tip').innerHTML='5 questions · Puis le grand dilemme !';
   hideAllZones();
   document.getElementById('apol-zone').style.display='flex';
+  const apolQs=data.apolQuestions||[];
   document.getElementById('apol-rules').style.display='block';
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme').style.display='none';
   document.getElementById('apol-score').textContent='0';
-  document.getElementById('apol-qnum').textContent='1/5';
+  document.getElementById('apol-qnum').textContent='1/'+(apolQs.length||5);
+  // Warn if no questions configured
+  const apolWarn=document.getElementById('apol-no-q-warn');
+  if(apolWarn) apolWarn.style.display=apolQs.length===0?'block':'none';
   GAME.score=0; setScore(0,false);
 }
 
@@ -11529,6 +11534,10 @@ function apolStart(){
 
 function apolShowQuestion(){
   const qs=APOL.data.apolQuestions||[];
+  if(!qs.length){
+    // Pas de questions configurées - aller direct au dilemme avec score 0
+    apolShowDilemme();return;
+  }
   if(APOL.qIdx>=qs.length){apolShowDilemme();return;}
   const q=qs[APOL.qIdx];
   document.getElementById('apol-q-text').textContent=q.question||'?';
