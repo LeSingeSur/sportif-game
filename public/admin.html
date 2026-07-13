@@ -2130,7 +2130,7 @@ let meliWords=[];
 let apolQuestions=[];
 const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
 let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i]}));
-let trivQuestions=Array.from({length:12},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:Math.floor(i/2)}));
+let trivQuestions=Array.from({length:6},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:i,theme:''}));
 
 function trivDrawAdminPreview(){
   const canvas=document.getElementById('triv-admin-preview');
@@ -2141,12 +2141,12 @@ function trivDrawAdminPreview(){
   // Background
   ctx.beginPath();ctx.arc(cx,cy,R+3,0,Math.PI*2);
   ctx.fillStyle='rgba(0,0,0,.5)';ctx.fill();
-  const N=18;const startAngle=-Math.PI/2;
+  const N=12;const startAngle=-Math.PI/2;
   for(let i=0;i<N;i++){
     const a0=startAngle+(i/N)*Math.PI*2;
     const a1=startAngle+((i+1)/N)*Math.PI*2;
-    const isCam=i%3===0;
-    const themeIdx=isCam?i/3:Math.floor(i/3);
+    const isCam=i%2===0;
+    const themeIdx=isCam?i/2:Math.floor(i/2);
     const color=trivThemes[themeIdx]?.color||'#666';
     ctx.beginPath();
     if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
@@ -2215,12 +2215,12 @@ function trivAdminRender(){
       <span style="color:var(--mute)"> → 2 cases-questions → </span>
       <span style="color:${nextT.color}">🟣 ${nextT.name||'Camembert '+((sec+1)%6+1)}</span>
     </div>`;
-    [0,1].forEach(pos=>{
-      const qi=sec*2+pos;
+    [0].forEach(pos=>{
+      const qi=sec;
       const q=trivQuestions[qi]||{question:'',answer:'',tol:1};
       const row=document.createElement('div');
       row.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
-      row.innerHTML=`<div style="font-size:10px;color:var(--mute)">❓ Case-question ${pos+1} (entre ces 2 camemberts)</div>
+      row.innerHTML=`<div style="font-size:10px;color:var(--mute)">❓ Case-question (entre ces 2 camemberts)</div>
         <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
           style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
         <div style="display:flex;gap:6px">
@@ -2760,7 +2760,7 @@ function checkReady(){
   }
   else if(currentType==='trivpursuit'){
     hasContent=trivThemes.length===6&&trivThemes.every(t=>t.name)&&
-      trivQuestions.length===12&&trivQuestions.every(q=>q.question&&q.answer);
+      trivQuestions.length===6&&trivQuestions.every(q=>q.question&&q.answer);
   }
   else if(currentType==='roulette'){
     const txt=(document.getElementById('roulette-text')?.value||'').trim();
