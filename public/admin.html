@@ -2302,7 +2302,7 @@ function apolAdminRender(){
     d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
     d.innerHTML=`<div style="display:flex;justify-content:space-between">
         <span style="font-size:11px;color:#ffb400;font-family:var(--fh)">Q${i+1}</span>
-        <button onclick="apolQuestions.splice(${i},1);apolAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer">✕</button>
+        <button onclick="apolQuestions.splice(${i},1);window.apolQuestions=apolQuestions;apolAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer">✕</button>
       </div>
       <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="setApolQ(${i},'theme',this.value)"
         style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">

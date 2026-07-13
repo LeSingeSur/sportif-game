@@ -1712,12 +1712,29 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
       <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
     </div>
-    <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
-      5 noms de sportifs mélangés à remettre dans l'ordre<br>
-      ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
-      ⏱ 60 secondes pour les 5 mots
-      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
+    <div id="meli-rules" style="background:rgba(160,80,255,.08);border:1px solid rgba(160,80,255,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
+      <div style="font-family:var(--fh);font-size:15px;color:#c060ff;margin-bottom:10px;letter-spacing:2px;text-align:center">🔀 MÉLI-MÉLO</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🔤</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Les lettres d'un nom de sportif ont été <strong style="color:#c060ff">mélangées</strong> — retrouve le nom original</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">💡</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Un <strong style="color:rgba(255,200,50,.9)">indice</strong> peut apparaître pour t'aider</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">✅</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Bonne réponse = <strong style="color:#c060ff">+20 pts</strong></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">⏭</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">"Passer" révèle la réponse — 0 pt sur ce mot</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">⏱</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">60 secondes</strong> pour les 5 mots · Max <strong style="color:#c060ff">100 pts</strong></span>
+      </div>
+      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(160,80,255,.3)">🔀 C'EST PARTI !</button>
     </div>
     <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
       <div id="meli-indice" style="display:none;text-align:center;background:rgba(255,200,50,.06);border:1px solid rgba(255,200,50,.2);border-radius:10px;padding:8px 14px">
@@ -1753,13 +1770,29 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:10px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)" id="triv-pos-label">POSITION</div>
       <div style="font-size:16px;font-weight:800;color:#b48fff;margin-top:2px" id="triv-pos-name"></div>
     </div>
-    <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
-      6 camemberts alternent avec 6 cases-questions<br>
-      🟣 <strong style="color:var(--txt)">Camembert</strong> — réponds pour collecter +50 pts · Faux → effondré<br>
-      ❓ <strong style="color:var(--txt)">Case-question</strong> — réponds pour traverser · Faux → effondrée<br>
-      💀 Cerné des 2 côtés → fin · Score conservé
-      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
+    <div id="triv-rules" style="background:rgba(180,140,255,.08);border:1px solid rgba(180,140,255,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
+      <div style="font-family:var(--fh);font-size:15px;color:#b48fff;margin-bottom:10px;letter-spacing:2px;text-align:center">🎯 TRIVIAL PURSUIT</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🗺️</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Plateau circulaire de <strong style="color:#b48fff">12 cases</strong> : 6 camemberts thématiques alternant avec 6 cases-questions</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🟣</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Atterrir sur un <strong style="color:var(--txt)">camembert</strong> → réponds à sa question · Juste = <strong style="color:#b48fff">+50 pts</strong> collecté · Faux = effondré 💀</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">❓</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Traverser une <strong style="color:var(--txt)">case-question</strong> → réponds · Juste = tu passes · Faux = effondrée 💀 · Tu recules</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">✅</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Cases-questions déjà validées = passage libre sans question</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">💀</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Cerné des 2 côtés OU plus de cases utiles → fin · Score conservé · Max <strong style="color:#b48fff">300 pts</strong></span>
+      </div>
+      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(180,140,255,.3)">🎯 CHOISIR MA CASE</button>
     </div>
     <div id="triv-board-wrap" style="display:none;position:relative">
       <canvas id="triv-canvas" style="width:100%;display:block;cursor:pointer"></canvas>
@@ -1801,10 +1834,29 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Règles -->
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
-    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">ouvrir une boîte</strong><br>
-      📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
-      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
+    <div id="apol-rules" style="background:rgba(255,180,0,.07);border:1px solid rgba(255,180,0,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
+      <div style="font-family:var(--fh);font-size:15px;color:#ffb400;margin-bottom:10px;letter-spacing:2px;text-align:center">📦 À PRENDRE OU À LAISSER</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">❓</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">5 questions</strong> à réponse libre · Bonne réponse = <strong style="color:#ffb400">+20 pts</strong></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">📦</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">À la fin : <strong style="color:#00dc78">garder</strong> ton score OU <strong style="color:#ffb400">ouvrir une boîte</strong></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🎰</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">5 boîtes affichées · chacune cache un bonus ou malus · l'une des 6 possibilités est absente</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">⚡</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Possibilités : +10, −10, +20, −20, ×2, ÷2 — la roue tourne et s'arrête sur ton sort !</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">💰</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Max <strong style="color:#ffb400">200 pts</strong> avant la boîte · Le ×2 peut tout changer</span>
+      </div>
+      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL !</button>
     </div>
     <!-- Questions -->
     <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
@@ -1865,12 +1917,29 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="bad-timer-bar" style="height:100%;background:linear-gradient(90deg,#00dc78,#00ff99);width:100%;transition:width .5s linear"></div></div>
     <div style="display:none"><span id="bad-timer">180</span></div>
-    <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      🏸 <strong style="color:#ffd700">SMASH</strong> — 2× chrono · <strong style="color:#ffd700">+30 pts</strong> · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
-      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
-      ➡️ <strong style="color:#00dc78">DRIVE</strong> — normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux · Cap <strong style="color:var(--txt)">300 pts</strong>
-      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
+    <div id="bad-rules" style="background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
+      <div style="font-family:var(--fh);font-size:15px;color:#00dc78;margin-bottom:10px;letter-spacing:2px;text-align:center">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🎯</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5">Avant chaque question, choisis ta <strong style="color:var(--txt)">tactique</strong> selon le thème affiché</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🏸</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#ffd700">SMASH</strong> — chrono 2× plus vite · <strong style="color:#ffd700">+30 pts</strong> si juste · <strong style="color:var(--red)">−10 pts</strong> si faux</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">🦅</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé pendant la question · <strong style="color:#88aaff">+10 pts</strong> si juste · 0 si faux</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">➡️</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#00dc78">DRIVE</strong> — chrono normal · <strong style="color:#00dc78">+20 pts</strong> si juste · 0 si faux</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:18px;flex-shrink:0">⏱</span>
+        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">180 secondes</strong> pour les 10 questions · Cap à <strong style="color:#00dc78">300 pts</strong></span>
+      </div>
+      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(0,220,120,.3)">🏸 ENGAGER !</button>
     </div>
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
       <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px">
@@ -10941,7 +11010,7 @@ function trivBuildCases(data){
 }
 
 function setupTrivPursuit(data){
-  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start';
+  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start'; TRIV._prevPos=null;
   TRIV.cases=trivBuildCases(data);
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='🎯 Trivial Pursuit';badge.className='type-badge';}
@@ -11145,6 +11214,7 @@ function trivHandleClick(mx,my){
 function trivPlacePlayer(pos){
   const c=TRIV.cases[pos];
   TRIV.playerPos=pos;
+  TRIV._prevPos=null; // Pas de position précédente au départ
   trivDraw();
   trivUpdateCenterInfo();
   // Si case-question au départ → répondre avant de pouvoir se déplacer
@@ -11205,16 +11275,30 @@ function trivUpdateMoveButtons(){
   const lBtn=document.getElementById('triv-left-btn');
   const rBtn=document.getElementById('triv-right-btn');
   const hint=document.getElementById('triv-move-hint');
-  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
-  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
-  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
-  // Check encircled
+  const name=c=>c.type==='cam'?(c.state==='collected'?'✅ '+c.name:c.state==='collapsed'?'💀 '+c.name:'🟣 '+c.name):'❓ Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.25':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.25':'1';}
+  // Fin si cerné
   if(lc.state==='collapsed'&&rc.state==='collapsed'){
-    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
-    setTimeout(()=>trivFinish('encircled'),1000);
-  } else {
-    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
+    if(hint)hint.textContent='💀 Cerné des deux côtés — fin !';
+    setTimeout(()=>trivFinish('encircled'),1200);
+    return;
   }
+  // Fin si plus aucun camembert accessible (tous collectés ou effondrés)
+  const remaining=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='normal').length;
+  if(remaining===0){
+    if(hint)hint.textContent='🎯 Plus de camembert disponible — fin !';
+    setTimeout(()=>trivFinish('complete'),1200);
+    return;
+  }
+  // Fin si plus aucun mouvement utile (toutes cases non-effondrées déjà validées)
+  const allDone=TRIV.cases.every(c=>c.state==='collapsed'||c.state==='collected'||c.state==='passed');
+  if(allDone){
+    if(hint)hint.textContent='🏆 Toutes les cases validées — fin !';
+    setTimeout(()=>trivFinish('complete'),1200);
+    return;
+  }
+  if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
 }
 
 function trivMove(dir){
@@ -11534,23 +11618,13 @@ function apolStart(){
 
 function apolShowQuestion(){
   const qs=APOL.data.apolQuestions||[];
-  if(!qs.length){
-    // Pas de questions configurées - aller direct au dilemme avec score 0
-    apolShowDilemme();return;
-  }
+  if(!qs.length){apolShowDilemme();return;}
   if(APOL.qIdx>=qs.length){apolShowDilemme();return;}
   const q=qs[APOL.qIdx];
   document.getElementById('apol-q-text').textContent=q.question||'?';
   document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+qs.length;
   document.getElementById('apol-in').value='';
   document.getElementById('apol-fb').textContent='';
-  // Thème
-  if(q.theme&&q.theme.trim()){
-    if(themeEl)themeEl.style.display='block';
-    if(themeText)themeText.textContent=q.theme;
-  } else {
-    if(themeEl)themeEl.style.display='none';
-  }
   document.getElementById('apol-question-wrap').style.display='flex';
   setTimeout(()=>document.getElementById('apol-in')?.focus(),100);
 }
