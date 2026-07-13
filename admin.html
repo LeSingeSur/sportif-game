@@ -16,8 +16,8 @@ body{font-family:var(--ff);background:var(--bg);color:var(--txt);min-height:100v
 .admin-title{font-size:28px;font-weight:800;color:var(--neon);letter-spacing:1px}
 .admin-sub{font-size:12px;color:var(--mute);margin-top:3px}
 /* NAV TABS */
-.nav-tabs{display:flex;gap:6px;padding:0 16px;margin-bottom:16px}
-.nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:9px 18px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;transition:all .15s;flex:1;text-align:center}
+.nav-tabs{display:flex;gap:5px;padding:0 12px;margin-bottom:12px;flex-wrap:nowrap}
+.nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:8px 10px;font-size:11px;font-weight:700;color:var(--mute);cursor:pointer;transition:all .15s;flex:1;text-align:center;white-space:nowrap}
 .nav-tab.active{border-color:var(--neon);color:var(--neon);background:rgba(212,255,0,.06)}
 .tab-content{padding:0 16px}
 /* CARDS */
@@ -172,9 +172,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 
   <!-- NAV -->
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showAdminTab('defis')">📋 Défis</button>
-    <button class="nav-tab" onclick="showAdminTab('classement')">🏆 Classement</button>
-    <button class="nav-tab" onclick="showAdminTab('musique')">🎵 Musique</button>
+    <button class="nav-tab active" onclick="showAdminTab('defis')">Défis</button>
+    <button class="nav-tab" onclick="showAdminTab('classement')">Classement</button>
+    <button class="nav-tab" onclick="showAdminTab('musique')">Musique</button>
+    <button class="nav-tab" onclick="showAdminTab('comptes')">Comptes</button>
+    <button class="nav-tab" onclick="showAdminTab('equipes')">Équipes</button>
+    <button class="nav-tab" onclick="showAdminTab('idees')">💡 Idées</button>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -205,7 +208,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-desc">Cumule sans dépasser</div>
           </div>
           <div class="type-opt" id="type-image" onclick="selectType('image')">
-            <div class="type-ico">🖼</div>
+            <div class="type-ico">📸</div>
             <div class="type-name">Image</div>
             <div class="type-desc">Photo masquée</div>
           </div>
@@ -215,7 +218,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div class="type-desc">Chrono dégressif</div>
           </div>
           <div class="type-opt" id="type-sportus" onclick="selectType('sportus')">
-            <div class="type-ico">🎯</div>
+            <div class="type-ico">🔡</div>
             <div class="type-name">Sportus</div>
             <div class="type-desc">Motus sportif</div>
           </div>
@@ -251,9 +254,440 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           </div>
           <div class="type-opt" id="type-grimpe" onclick="selectType('grimpe')">
             <div class="type-ico">🚴</div>
-            <div class="type-name">La Grimpée</div>
+            <div class="type-name">L'Alpe d'Huez</div>
             <div class="type-desc">Cyclisme physique</div>
           </div>
+          <div class="type-opt" id="type-equitation" onclick="selectType('equitation')">
+            <div class="type-ico">🏇</div>
+            <div class="type-name">Équitation CSO</div>
+            <div class="type-desc">4 obstacles variés · Max 200 pts</div>
+          </div>
+          <div class="type-opt" id="type-bowling" onclick="selectType('bowling')">
+            <div class="type-ico">🎳</div>
+            <div class="type-name">Bowling Quiz</div>
+            <div class="type-desc">Réponses numériques · Strikes & Spares · Max 300</div>
+          </div>
+          <div class="type-opt" id="type-badminton" onclick="selectType('badminton')">
+            <div class="type-ico">🏸</div>
+            <div class="type-name">Badminton Quiz</div>
+            <div class="type-desc">10 QCM · 3 tactiques · 180s · Max 200</div>
+          </div>
+          <div class="type-opt" id="type-melimelo" onclick="selectType('melimelo')">
+            <div class="type-ico">🔀</div>
+            <div class="type-name">Méli-Mélo</div>
+            <div class="type-desc">5 anagrammes · 20 pts chacun · 60s · Max 100</div>
+          </div>
+          <div class="type-opt" id="type-apol" onclick="selectType('apol')">
+            <div class="type-ico">📦</div>
+            <div class="type-name">À prendre ou à laisser</div>
+            <div class="type-desc">5 questions · Dilemme final · Max 200</div>
+          </div>
+          <div class="type-opt" id="type-trivpursuit" onclick="selectType('trivpursuit')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Trivial Pursuit</div>
+            <div class="type-desc">6 thèmes · 12 questions · Plateau circulaire · Max 300</div>
+          </div>
+          <div class="type-opt" id="type-roulette" onclick="selectType('roulette')">
+            <div class="type-ico">🔫</div>
+            <div class="type-name">Roulette Russe</div>
+            <div class="type-desc">Texte masqué · Pistolet · 100 ou 0</div>
+          </div>
+          <div class="type-opt" id="type-tirarlarc" onclick="selectType('tirarlarc')">
+            <div class="type-ico">🎯</div>
+            <div class="type-name">Tir à l'Arc</div>
+            <div class="type-desc">3 cibles · Stats · Précision</div>
+          </div>
+          <div class="type-opt" id="type-nagesync" onclick="selectType('nagesync')">
+            <div class="type-ico">🏊</div>
+            <div class="type-name">Natation</div>
+            <div class="type-desc">5 sportifs · 5 couloirs</div>
+          </div>
+          <div class="type-opt" id="type-haltero" onclick="selectType('haltero')">
+            <div class="type-ico">🏋️</div>
+            <div class="type-name">Haltéro-Quiz</div>
+            <div class="type-desc">Arraché + Épaulé-Jeté</div>
+          </div>
+          <div class="type-opt" id="type-maillonfaible" onclick="selectType('maillonfaible')">
+            <div class="type-ico">🔗</div>
+            <div class="type-name">Maillon Faible</div>
+            <div class="type-desc">Chaîne de questions</div>
+          </div>
+          <div class="type-opt" id="type-biathlon" onclick="selectType('biathlon')">
+            <div class="type-ico">🎿</div>
+            <div class="type-name">Biathlon</div>
+            <div class="type-desc">Course + Tir</div>
+          </div>
+          <div class="type-opt" id="type-var" onclick="selectType('var')">
+            <div class="type-ico">📺</div>
+            <div class="type-name">La VAR</div>
+            <div class="type-desc">Trouve l'erreur factuelle</div>
+          </div>
+          <div class="type-opt" id="type-escalade" onclick="selectType('escalade')">
+            <div class="type-ico">🧗</div>
+            <div class="type-name">L'Escalade</div>
+            <div class="type-desc">Voie facile/difficile · Crochet · Switch</div>
+          </div>
+          <div class="type-opt" id="type-plongee" onclick="selectType('plongee')">
+            <div class="type-ico">🤿</div>
+            <div class="type-name">La Plongée</div>
+            <div class="type-desc">O2 · Trésors · Remontée</div>
+          </div>
+          <div class="type-opt" id="type-rvlf" onclick="selectType('rvlf')">
+            <div class="type-ico">⏳</div>
+            <div class="type-name">Retour vers le Futur</div>
+            <div class="type-desc">10 questions · Jokers temporels</div>
+          </div>
+        </div>
+      </div>
+
+      
+      
+      <!-- ESCALADE FIELDS -->
+      <div id="escalade-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🧗 8 questions · Voie facile (15pts→12pts) · Voie difficile (25pts→20pts) · 1 crochet · Switch après Q4 · 30s/question
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">THÈME DU JEU</div>
+        <input type="text" id="escalade-theme" placeholder="Ex: Cyclisme, Football, Tennis…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;margin-bottom:12px;outline:none">
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">8 QUESTIONS</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Tolérance ortho (0-3)</label><input type="number" id="escalade-tol" value="1" min="0" max="3" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+        </div>
+        <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Chaque question a une version facile et une version difficile (optionnelle — si vide = même question)</div>
+        <button id="escalade-ai-btn" onclick="escaladeGenerateDifficile()" type="button" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(212,255,0,.4);background:rgba(212,255,0,.08);color:var(--neon);font-family:var(--fh);font-size:12px;cursor:pointer;letter-spacing:1px;margin-bottom:8px">🔀 INVERSER AUTO LES QUESTIONS DIFFICILES</button>
+        <div id="escalade-ai-status" style="font-size:11px;color:var(--mute);text-align:center;min-height:14px;margin-bottom:4px"></div>
+        <div id="escalade-q-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        <button class="btn btn-s" id="btn-add-escalade-q" style="margin-top:8px">➕ Question (max 8)</button>
+      </div>
+
+      <!-- PLONGÉE FIELDS -->
+      <div id="plongee-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🤿 5 paliers · descente + remontée · 1000 O2 · Score = trésors ramenés vivants
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PARAMÈTRES O2</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Base (O2/s)</label><input type="number" id="plongee-o2base" value="6" min="1" max="30" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par trésor (O2/s)</label><input type="number" id="plongee-o2treasure" value="2" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par erreur (O2/s)</label><input type="number" id="plongee-o2error" value="2" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Tolérance ortho (0-3)</label><input type="number" id="plongee-tol" value="1" min="0" max="3" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">5 PALIERS (descente + remontée)</div>
+        <div id="plongee-paliers-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- RVLF FIELDS -->
+      <div id="rvlf-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          ⏳ 10 questions · 1 bonne / 1 fausse · 20 pts/bonne · 30s/question · 3 jokers temporels · 1 mauvaise = Game Over
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">10 QUESTIONS (exactement)</div>
+        <div id="rvlf-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" id="btn-add-rvlf-q" style="margin-top:8px">➕ Question (max 10)</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px;background:var(--c2);border-radius:8px">
+          <input type="checkbox" id="rvlf-notimer" style="width:20px;height:20px;cursor:pointer;accent-color:var(--neon)">
+          <label for="rvlf-notimer" style="cursor:pointer;font-size:13px;color:var(--txt)">⏱️ Sans limite de temps par question</label>
+        </div>
+      </div>
+
+      <!-- VAR FIELDS -->
+      <div id="var-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          📺 Un paragraphe avec une erreur factuelle cachée · Le joueur clique le segment faux + tape la correction · 50 pts par étape · −10 pts par erreur
+        </div>
+        <div class="field">
+          <label>Paragraphe (8-10 lignes, journalistique)</label>
+          <textarea id="var-text-in" placeholder="Ex: Le 12 juillet 1998, l'équipe de France..." style="min-height:120px;width:100%"></textarea>
+          <button class="btn btn-s" onclick="varGenerateChips()" style="margin-top:6px;width:100%">🔄 Générer les segments cliquables</button>
+        </div>
+        <div id="var-chips-wrap" style="display:none">
+          <div class="field">
+            <label>Segments cliquables <span style="color:var(--mute);font-size:11px">1 clic = sélectionner · 2 clics = marquer comme faux · 2 adjacents = fusionner · clic ailleurs = séparer en mots</span></label>
+            <div id="var-chips" style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--c1);border-radius:8px;min-height:40px"></div>
+          </div>
+          <div class="field">
+            <label>Segment faux <span style="color:var(--mute);font-size:11px">(clique-le dans les segments ci-dessus)</span></label>
+            <input type="text" id="var-wrong-in" placeholder="Ex: 290 jours" readonly style="background:var(--c2)">
+          </div>
+          <div class="field">
+            <label>Bonnes réponses acceptées <span style="color:var(--mute);font-size:11px">(séparées par ";" — ex: 199 jours;199)</span></label>
+            <input type="text" id="var-correct-in" placeholder="Ex: 199 jours;199">
+          </div>
+          <div class="field">
+            <label>Tolérance orthographe <span style="color:var(--mute);font-size:11px">(nb de caractères différents acceptés)</span></label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-s" onclick="varSetTol(0)" id="var-tol-0" style="flex:1">0 — Exact</button>
+              <button class="btn btn-s" onclick="varSetTol(1)" id="var-tol-1" style="flex:1">1 car.</button>
+              <button class="btn btn-s" onclick="varSetTol(2)" id="var-tol-2" style="flex:1">2 car.</button>
+            </div>
+            <input type="hidden" id="var-tol-in" value="1">
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- ÉQUITATION FIELDS -->
+      <div id="equi-fields" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+          <label style="font-size:11px;color:var(--mute);white-space:nowrap">⏱ Temps limite (s)</label>
+          <input type="number" id="equi-time-limit" value="60" min="20" max="300"
+            style="flex:1;background:var(--c1);border:1px solid rgba(0,200,80,.3);color:#00c850;font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+        </div>
+        <div id="equi-obs-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- BOWLING FIELDS -->
+      <div id="bowling-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎳 Questions numériques · 2 essais/frame · Strikes & Spares · Max 300 pts<br>
+          <strong style="color:var(--neon)">12 questions</strong> numériques · 10 frames + 2 bonus pour le 10e frame · 2e essai sur la même question
+        </div>
+        <div id="bowling-q-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" id="btn-add-bowling" onclick="bowlingAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+        <div id="bowling-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
+      </div>
+
+      <!-- BADMINTON FIELDS -->
+      <div id="badminton-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🏸 10 QCM · 4 choix par question · 3 tactiques (Smash/Dégagé/Drive) · 180s · Max 200 pts
+        </div>
+        <label style="font-size:11px;color:var(--mute)">Thème (affiché en fin)</label>
+        <input type="text" id="bad-theme" placeholder="Ex: Carrière de Zlatan" oninput="checkReady()"
+          style="width:100%;background:var(--c1);border:none;color:var(--neon);font-size:14px;border-radius:6px;padding:7px 10px;margin-bottom:10px;outline:none">
+        <div id="bad-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" onclick="badAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+        <div id="bad-admin-status" style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px"></div>
+      </div>
+
+      <!-- MÉLI-MÉLO FIELDS -->
+      <div id="melimelo-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🔀 5 anagrammes max · Saisir le mot mélangé + la réponse
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <label style="font-size:11px;color:var(--mute);white-space:nowrap">⏱ Timer (s)</label>
+          <input type="number" id="meli-timer-admin" value="60" min="20" max="120"
+            style="width:80px;background:var(--c1);border:none;color:var(--neon);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+        </div>
+        <div id="meli-word-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" onclick="meliAdminAddWord()" style="margin-top:6px">➕ Ajouter un mot</button>
+      </div>
+
+      <!-- APOL FIELDS -->
+      <div id="apol-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          📦 5 questions texte libre · 20 pts chacune · Dilemme auto-configuré
+        </div>
+        <div id="apol-q-list-admin" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" onclick="apolAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
+      </div>
+
+      <!-- PLATEAU FIELDS -->
+      <div id="trivpursuit-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎯 6 camemberts (thèmes, +50 pts automatique) · 12 cases-questions (2 entre chaque) · Max 300 pts
+        </div>
+        <!-- Mini plateau preview -->
+        <div style="text-align:center;margin-bottom:12px;background:rgba(0,0,0,.4);border-radius:14px;padding:14px;border:1px solid rgba(180,140,255,.2)">
+          <div style="font-size:10px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh);margin-bottom:10px">APERÇU DU PLATEAU</div>
+          <canvas id="triv-admin-preview" width="280" height="280" style="border-radius:50%;max-width:100%;cursor:default"></canvas>
+          <div style="font-size:10px;color:var(--mute);margin-top:8px">🟣 Camemberts · ❓ Cases-questions entre chaque thème</div>
+        </div>
+        <div id="triv-cam-q-warn" style="display:none;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.4);border-radius:8px;padding:8px 12px;font-size:11px;color:#ffb400;margin-bottom:8px">
+          ⚠️ Certains camemberts n'ont pas de question — supprime et recrée cet athlete pour activer les questions.
+        </div>
+        <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+        <!-- 12 questions grouped by section -->
+        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
+        <div id="triv-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- ROULETTE FIELDS -->
+      <div id="roulette-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🔫 Colle un texte sur un sportif · Configure % visible · Chargeur · Position balle · 100 ou 0 pts
+        </div>
+
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">SPORTIF À DEVINER</div>
+        <input type="text" id="roulette-answer" placeholder="Ex: Roger Federer" oninput="roulettePreview();checkReady();"
+          style="width:100%;background:var(--c1);border:none;color:var(--neon);font-size:14px;border-radius:6px;padding:7px 10px;margin-bottom:10px;outline:none">
+
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:6px">TEXTE (colle ~200 mots)</div>
+        <textarea id="roulette-text" rows="6" placeholder="Colle ici le texte sur le sportif..." oninput="roulettePreview();checkReady();"
+          style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:8px 10px;outline:none;resize:vertical;line-height:1.6"></textarea>
+
+        <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:10px">
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">% visible (0-100)</label>
+            <input type="number" id="roulette-pct" value="40" min="10" max="90"
+              oninput="roulettePreview();"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">Taille chargeur</label>
+            <input type="number" id="roulette-chambers" value="6" min="3" max="12"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">Position balle</label>
+            <input type="number" id="roulette-bullet" value="4" min="1" max="12"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">Tolérance ortho</label>
+            <input type="number" id="roulette-tol" value="1" min="0" max="3"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--mute)">% révélé/tir</label>
+            <input type="number" id="roulette-reveal-step" value="10" min="1" max="50"
+              style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center">
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px">
+          <label style="font-size:11px;color:var(--mute)">Indice Délateur <span style="color:rgba(255,200,0,.5)">(joker 10 pts · ex: "Joueur de tennis suisse")</span></label>
+          <input type="text" id="roulette-hint" placeholder="Un indice sur le sportif…"
+            style="width:100%;background:var(--c1);border:1px solid rgba(255,200,0,.2);color:#ffc800;font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-top:4px">
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px">APERÇU LIVE</div>
+          <button onclick="rouletteShuffleSeed()" type="button" style="background:rgba(212,255,0,.1);border:1px solid rgba(212,255,0,.4);color:var(--neon);font-size:11px;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:var(--fh);letter-spacing:1px">🎲 RE-MÉLANGER</button>
+        </div>
+        <div id="roulette-preview" style="background:var(--c1);border-radius:8px;padding:10px;font-size:12px;line-height:1.8;color:var(--txt);max-height:150px;overflow-y:auto;word-break:break-word"></div>
+        <div id="roulette-preview-stats" style="font-size:10px;color:var(--mute);margin-top:4px;text-align:right"></div>
+      </div>
+
+      <!-- ASSAUT FIELDS --><!-- ASSAUT FIELDS -->
+      <div id="assaut-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          ⚔️ 6 questions · 🤺 Touche +1 · ⚔️ Contre-attaque −1 · 🎭 Feinte −2 · 🛡️ 1 parade · Score = position × 10
+        </div>
+        <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">5 QUESTIONS (3 choix chacune)</div>
+        <div id="assaut-p1-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn btn-s" id="btn-add-assaut-p1" style="margin-top:6px">➕ Question (max 5)</button>
+      </div>
+
+      <!-- TIR À L'ARC FIELDS -->
+      <div id="tirarlarc-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🎯 3 cibles · Joueur choisit 11m/22m/33m · Écart ± par distance dans chaque cible · Bonus +1pt si 3/3
+        </div>
+        <div id="arc-cibles-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-s" id="btn-add-arc" style="margin-top:8px">➕ Ajouter une cible (max 3)</button>
+        <div id="arc-count" style="font-size:11px;color:var(--mute);margin-top:4px">0/3 cibles</div>
+      </div>
+
+      <!-- NAGE SYNC FIELDS -->
+      <div id="nagesync-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
+          🏊 Jusqu'à 10 couloirs + 10 sportifs · Score = 100/nb sportifs par bonne réponse · −25% par essai
+        </div>
+        <label>Caractéristiques des couloirs (1 par ligne)</label>
+        <span class="hint">Ex: "France" ou "100m papillon" ou "5 titres"</span>
+        <div id="ns-couloirs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        <button class="btn btn-s" id="btn-add-couloir" style="margin-top:6px">➕ Couloir (max 8)</button>
+        <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+        <label>Sportifs (1 par ligne) + couloir correct</label>
+        <span class="hint">Le numéro du couloir (1-5) où ce sportif doit être placé</span>
+        <div id="ns-sportifs-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        <button class="btn btn-s" id="btn-add-sportif" style="margin-top:6px">➕ Sportif (max 10)</button>
+      </div>
+
+      <!-- HALTERO FIELDS -->
+      <div id="haltero-fields" style="display:none">
+        <!-- ARRACHÉ -->
+        <div class="field">
+          <div style="font-family:var(--fh);font-size:13px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">🏋️ ARRACHÉ (100 pts max)</div>
+          <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:10px">
+            Comparaison de 2 sportifs · Le joueur choisit 1-5 questions · 20 pts chacune · Tout ou rien · 2 essais
+          </div>
+          <label>Sportif 1</label>
+          <input type="text" id="ha-s1" placeholder="Ex: Federer" style="margin-bottom:6px">
+          <label>Sportif 2</label>
+          <input type="text" id="ha-s2" placeholder="Ex: Nadal" style="margin-bottom:8px">
+          <label>5 questions de comparaison (dans l'ordre de difficulté)</label>
+          <span class="hint">Format : Critère | Réponse (S1 ou S2)</span>
+          <div id="ha-q-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+          <button class="btn btn-s" id="btn-add-ha-q" style="margin-top:8px">➕ Ajouter une question</button>
+          <div id="ha-q-count" style="font-size:12px;color:var(--mute);margin-top:4px">0/5 questions</div>
+        </div>
+        <!-- ÉPAULÉ-JETÉ -->
+        <div class="field" style="border-top:1px solid rgba(255,255,255,.07);padding-top:14px">
+          <div style="font-family:var(--fh);font-size:13px;color:var(--cyan);letter-spacing:2px;margin-bottom:8px">💪 ÉPAULÉ-JETÉ (100 pts max)</div>
+          <div style="background:var(--c2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--mute);margin-bottom:10px">
+            1 thème · 25/50/75/100 pts · Épaulé = 1-4 QCM progressifs (Duo→Trio→Carré→Cash) · Jeté = 1 question finale · 2 essais
+          </div>
+          <label>Thème du quiz</label>
+          <input type="text" id="hej-theme" placeholder="Ex: Les légendes du tennis masculin" style="margin-bottom:8px">
+          <label>4 questions Épaulé (difficulté croissante)</label>
+          <span class="hint">Q1=Duo(2 choix) Q2=Trio(3) Q3=Carré(4) Q4=Cash(saisie libre)</span>
+          <div id="hej-q-list" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+          <button class="btn btn-s" id="btn-add-hej-q" style="margin-top:8px">➕ Ajouter une question Épaulé</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <label>Question Jeté (finale)</label>
+          <span class="hint">Correspond au palier choisi par le joueur (Duo/Trio/Carré/Cash)</span>
+          <input type="text" id="hej-jete-q" placeholder="Question finale…" style="margin-bottom:4px">
+          <input type="text" id="hej-jete-a" placeholder="Bonne réponse…" style="border:1px solid var(--neon);color:var(--neon);margin-bottom:4px">
+          <input type="text" id="hej-jete-w1" placeholder="Mauvaise réponse 1…" style="margin-bottom:4px">
+          <input type="text" id="hej-jete-w2" placeholder="Mauvaise réponse 2…" style="margin-bottom:4px">
+          <input type="text" id="hej-jete-w3" placeholder="Mauvaise réponse 3…">
+        </div>
+      </div>
+
+      <!-- MAILLON FAIBLE FIELDS -->
+      <div id="maillonfaible-fields" style="display:none">
+        <div style="background:var(--c2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);margin-bottom:8px">
+          🔗 Chaîne de 10 questions · Paliers : 8 → 19 → 31 → 45 (La Moitié) → 61 → 80 → 100 pts (max) · Vrai/Faux · Banque sécurise les pts
+        </div>
+        <div class="field">
+          <label>Questions (10 obligatoires)</label>
+          <span class="hint">Une par ligne : Question | Bonne réponse | Faux1 | Faux2 | Faux3</span>
+          <div id="mf-questions-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          <button class="btn btn-s" id="btn-add-mf-q" style="margin-top:8px">➕ Ajouter une question</button>
+          <div id="mf-count" style="font-size:12px;color:var(--mute);margin-top:4px">0/10 questions</div>
+        </div>
+      </div>
+
+      <!-- BIATHLON FIELDS -->
+      <div id="biathlon-fields" style="display:none">
+        <div class="field">
+          <label>🎿 Étape 1 — Thème du sprint</label>
+          <input type="text" id="biat-theme-in" placeholder="Ex: Légendes du Tennis">
+          <span class="hint">Thème affiché au joueur pour son annonce.</span>
+        </div>
+        <div class="field">
+          <label>⏱ Temps pour choisir l'annonce (secondes)</label>
+          <input type="number" id="biat-announce-time-in" value="45" min="10" max="120" style="max-width:100px">
+          <span class="hint">Défaut : 45s. Le joueur a ce temps pour annoncer son chiffre avant de démarrer le sprint.</span>
+        </div>
+        <div class="field">
+          <label>Réponses valides (étape 1)</label>
+          <span class="hint">Le joueur doit taper ces noms pendant le sprint de 60s.</span>
+          <textarea id="biat-sprint-bulk" placeholder="Djokovic&#10;Federer;Roger Federer&#10;Nadal;Rafael Nadal" style="min-height:80px;margin-top:6px"></textarea>
+          <button class="btn btn-s" id="btn-biat-sprint-bulk" style="margin-top:6px">📋 Importer</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <div id="biat-sprint-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-biat-sprint" style="margin-top:8px">➕ Ajouter</button>
+          <div id="biat-sprint-count" style="font-size:12px;color:var(--mute);margin-top:4px">0 réponse(s)</div>
+        </div>
+        <div class="field">
+          <label>🎯 Étape 2 — Stand de tir (3 questions QCM)</label>
+          <span class="hint">3 questions obligatoires. Les choix s'adaptent au BPM du joueur.</span>
+          <div id="biat-qcm-list" style="display:flex;flex-direction:column;gap:12px;margin-top:8px"></div>
+          <button class="btn btn-s" id="btn-add-biat-qcm" style="margin-top:8px">➕ Ajouter une question</button>
+        </div>
+        <div class="field">
+          <label>🏁 Étape 3 — Sprint final (classement)</label>
+          <span class="hint">5 éléments à classer dans le bon ordre.</span>
+          <input type="text" id="biat-order-question-in" placeholder="Ex: Classe du plus récent au plus ancien" style="margin-bottom:8px">
+          <div id="biat-order-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-biat-order" style="margin-top:8px">➕ Ajouter un élément (dans l'ordre correct)</button>
+          <span class="hint" style="margin-top:4px">Entre les éléments dans le bon ordre — le 1er sera la bonne position 1.</span>
         </div>
       </div>
 
@@ -303,15 +737,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="grimpe-theme-in" placeholder="Ex: Alpe d'Huez — Identifie ces coureurs !">
         </div>
         <div class="field">
-          <label>Réponses acceptées (une par ligne ou séparées par ;)</label>
-          <textarea id="grimpe-answers-in" placeholder="Vingegaard;Jonas Vingegaard&#10;Pogacar&#10;Merckx;Eddy Merckx" style="min-height:120px"></textarea>
-          <span class="hint">Le joueur doit trouver un maximum de réponses. Une réponse = avance sur la montée.</span>
-          <div style="font-size:11px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
+          <label>Réponses acceptées</label>
+          <span class="hint">Une réponse par ligne. Variantes séparées par ; (ex: Vingegaard;Jonas Vingegaard). Tolérance 1 faute.</span>
+          <textarea id="grimpe-bulk-in" placeholder="Pogacar&#10;Vingegaard;Jonas Vingegaard&#10;Van Aert" style="min-height:70px;margin-top:6px"></textarea>
+          <button class="btn btn-s" id="btn-grimpe-bulk" style="margin-top:6px">📋 Importer</button>
+          <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
+          <div id="grimpe-items-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-s" id="btn-add-grimpe-item" style="margin-top:8px">➕ Ajouter une réponse</button>
+          <div style="font-size:12px;color:var(--mute);margin-top:4px" id="grimpe-count">0 réponse(s)</div>
         </div>
         <div class="field">
           <label>⚡ Paramètres jeu (cases)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Cases/réponse (X)</div><input type="number" id="grimpe-cases-per-answer" value="6" min="1" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Cases/réponse (X)</div><input type="number" id="grimpe-cases-per-answer" value="7" min="1" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Vitesse Pogi (cases/s)</div><input type="number" id="grimpe-pogi-speed" value="1.11" min="0.5" max="3" step="0.01" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Inertie (cases/s max)</div><input type="number" id="grimpe-inertie" value="0.4" min="0" max="2" step="0.05" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Chrono question (s)</div><input type="number" id="grimpe-timer" value="25" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
@@ -323,18 +761,14 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">😮 Fatigue après (s)</div><input type="number" id="grimpe-fatigue-thresh" value="30" min="10" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🍌 Fringale blocage (s)</div><input type="number" id="grimpe-fringale-block" value="10" min="5" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison blocage (s)</div><input type="number" id="grimpe-crevaison-block" value="13" min="5" max="60" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison perte (cases)</div><input type="number" id="grimpe-crevaison-loss" value="5" min="0" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
+            <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">🔧 Crevaison perte (cases)</div><input type="number" id="grimpe-crevaison-loss" value="0" min="0" max="20" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
           </div>
         </div>
         <div class="field">
-          <label>🍬 Gel (boost inertie GM)</label>
+          <label>🍬 Gel (boost inertie)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Boost gel (cases/s)</div><input type="number" id="grimpe-gel-speed" value="2" min="0.5" max="10" step="0.5" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
             <div><div style="font-size:11px;color:var(--mute);margin-bottom:3px">Durée gel (s)</div><input type="number" id="grimpe-gel-dur" value="10" min="3" max="30" style="width:100%;text-align:center;font-size:16px;font-weight:800"></div>
-          </div>
-          <div style="margin-top:8px">
-            <input type="text" id="grimpe-gel-athlete-id" placeholder="ID joueur (copier depuis classement)" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--c3);background:var(--c2);color:var(--txt);font-size:13px;margin-bottom:6px">
-            <button onclick="const aid=document.getElementById('grimpe-gel-athlete-id').value.trim();if(!aid){alert('Entrez un ID joueur');return;}fetch('/api/grimpe-gel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({athleteId:aid,password:adminPw})}).then(r=>r.json()).then(d=>alert(d.ok?'Gel activé !':'Erreur: '+JSON.stringify(d)))" style="width:100%;padding:10px;background:#ffdd00;color:#000;font-weight:800;border:none;border-radius:8px;cursor:pointer;font-size:14px">🍬 Activer GEL maintenant</button>
           </div>
         </div>
         <div style="font-size:11px;color:var(--mute);background:var(--c2);border-radius:10px;padding:10px 12px;line-height:1.7">
@@ -462,14 +896,43 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <input type="text" id="prix-unit-in" placeholder="Ex: titres, cm, ans, buts…">
         </div>
         <div class="field">
-          <label>🌡️ Échelle de chaleur — seuils personnalisables</label>
-          <div id="chaleur-config" style="margin:8px 0;display:flex;flex-direction:column;gap:6px"></div>
-          <div id="chaleur-preview" style="background:var(--c2);border-radius:12px;padding:12px;margin-top:6px;text-align:center;font-size:22px;transition:background .3s">
-            <span id="chaleur-prev-ico">🌡️</span> <span id="chaleur-prev-label" style="font-family:var(--fh);font-size:16px">CHAUD</span>
+          <label>🌡️ Seuils de chaleur — entrer les valeurs limites</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <div style="font-size:11px;color:var(--mute);margin-bottom:8px">Écart maximum accepté depuis la bonne réponse (ex: cible=2025, BRÛLANT=5 → accepte 2020 à 2030)</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🧊</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#4fc3f7;width:70px">FROID</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-froid" min="0" step="1" value="" placeholder="ex: 500"
+                style="width:90px;background:var(--c1);border:1px solid #4fc3f755;color:#4fc3f7;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-froid-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🌤️</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#fff176;width:70px">TIÈDE</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-tiede" min="0" step="1" value="" placeholder="ex: 200"
+                style="width:90px;background:var(--c1);border:1px solid #fff17655;color:#fff176;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-tiede-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🌡️</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#ff9800;width:70px">CHAUD</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-chaud" min="0" step="1" value="" placeholder="ex: 50"
+                style="width:90px;background:var(--c1);border:1px solid #ff980055;color:#ff9800;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-chaud-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🔥</span>
+              <span style="font-family:var(--fh);font-size:11px;color:#ff4020;width:70px">BRÛLANT</span>
+              <span style="font-size:11px;color:var(--mute)">écart ≤</span>
+              <input type="number" id="cseuil-brulant" min="0" step="1" value="" placeholder="ex: 10"
+                style="width:90px;background:var(--c1);border:1px solid #ff402055;color:#ff4020;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;outline:none">
+              <span id="cseuil-brulant-unit" style="font-size:11px;color:var(--mute)"></span>
+            </div>
           </div>
-          <input type="range" id="chaleur-test-slider" min="0" max="100" value="75"
-            style="width:100%;accent-color:var(--neon);margin-top:8px;cursor:pointer">
-          <span class="hint">Glisse le curseur du bas pour tester l'échelle en temps réel.</span>
+          <span class="hint" style="margin-top:6px;display:block">⛄ GLACIAL = écart > seuil FROID · Les seuils doivent être croissants : BRÛLANT &lt; CHAUD &lt; TIÈDE &lt; FROID</span>
         </div>
         <div class="field">
           <label>Tolérance ±</label>
@@ -658,7 +1121,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   <div id="tab-classement" class="tab-content" style="display:none">
     <div class="card">
       <div class="card-title">🌍 Classement Global</div>
-      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px">Chargement…</div></div>
+      <div id="admin-global-scores"><div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun score pour l'instant.</div></div>
     </div>
     <div class="card">
       <div class="card-title">📊 Scores par défi</div>
@@ -682,6 +1145,24 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       </div>
       <button class="btn btn-p" id="btn-save-music" onclick="saveMusic()" style="margin-top:8px">💾 Enregistrer la musique</button>
       <div class="msg" id="music-msg"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🎉 Popup de bienvenue</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--c2);border-radius:10px;padding:10px 12px">
+        <input type="checkbox" id="popup-active-in" style="width:18px;height:18px;cursor:pointer;accent-color:var(--neon)">
+        <label for="popup-active-in" style="font-size:13px;color:var(--txt);cursor:pointer;font-weight:700">Afficher le popup aux joueurs</label>
+      </div>
+      <div class="field"><label>Titre</label><input type="text" id="popup-title-in" placeholder="Ex: Bienvenue au Grand Chelem 2025 !"></div>
+      <div class="field"><label>Message</label><textarea id="popup-msg-in" placeholder="Ex: Bonsoir à tous ! Le jeu commence dans quelques instants..." style="min-height:70px"></textarea></div>
+      <div class="field" style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:0 0 70px"><label>Emoji</label><input type="text" id="popup-emoji-in" placeholder="🏆" maxlength="4" style="text-align:center;font-size:22px"></div>
+        <div style="flex:1"><label>Couleur bouton</label><input type="color" id="popup-color-in" value="#d4ff00" style="width:100%;height:38px;border-radius:8px;border:none;cursor:pointer"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <button class="btn btn-p" onclick="savePopup()">💾 Sauvegarder</button>
+        <button class="btn" onclick="clearPopup()">🗑 Désactiver</button>
+        <span id="popup-msg-status" style="font-size:12px;color:var(--neon)"></span>
+      </div>
     </div>
     <div class="card" style="margin-top:12px">
       <div class="card-title">🖼 Image de bienvenue</div>
@@ -710,8 +1191,79 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
   </div>
 </div>
 
+  <!-- TAB: IDÉES -->
+  <div id="tab-idees" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">💡 Boîte à idées</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="idees-count" style="font-size:12px;color:var(--mute)">—</div>
+        <button class="btn" onclick="loadIdees()" style="padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      </div>
+      <div id="idees-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
+  <!-- TAB: ÉQUIPES -->
+  <div id="tab-equipes" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">👥 Gestion des équipes</div>
+      <!-- Créer équipe -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;background:var(--c2);border-radius:12px;padding:12px">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--mute)">NOUVELLE ÉQUIPE</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="team-emoji-in" placeholder="👥" maxlength="4" style="width:52px;text-align:center;font-size:20px;background:var(--c1);border:none;border-radius:8px;color:var(--txt);padding:6px">
+          <input type="text" id="team-name-in" placeholder="Nom de l'équipe…" style="flex:1;background:var(--c1);border:none;border-radius:8px;color:var(--txt);padding:6px 10px;font-size:14px">
+          <input type="color" id="team-color-in" value="#6366f1" style="width:40px;height:38px;border-radius:8px;border:none;cursor:pointer;padding:2px">
+        </div>
+        <button class="btn btn-p" onclick="createTeam()" style="padding:10px">➕ Créer l'équipe</button>
+      </div>
+      <!-- Config min joueurs -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <label style="font-size:13px;color:var(--mute);flex:1">Joueurs min pour classement équipe</label>
+        <input type="number" id="team-min-in" value="4" min="1" max="20" style="width:60px;background:var(--c2);border:none;border-radius:8px;color:var(--txt);padding:6px;text-align:center;font-size:16px;font-weight:700">
+      </div>
+      <!-- Liste équipes -->
+      <div id="teams-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <!-- Joueurs par équipe -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">👥 Joueurs par équipe</div>
+      <button class="btn" onclick="loadTeamPlayers()" style="margin-bottom:12px;padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      <div id="team-players-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <!-- Classement équipes -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">🏆 Classement équipes</div>
+      <button class="btn" onclick="loadTeamScores()" style="margin-bottom:12px;padding:6px 14px;font-size:12px">🔄 Actualiser</button>
+      <div id="team-scores-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+
+  <!-- TAB: COMPTES -->
+  <div id="tab-comptes" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">👤 Comptes joueurs</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="comptes-count" style="font-size:12px;color:var(--mute)">—</div>
+        <button class="btn" style="padding:6px 14px;font-size:12px" onclick="loadComptes()">🔄 Actualiser</button>
+      </div>
+      <div id="comptes-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto">
+        <div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun compte créé.</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 <script>
+const ADMIN_GAME_ICONS={
+  blackjack:'🃏',image:'📸',buzz:'⚡',sportus:'🔡',prix:'💰',
+  trappe:'🕳️',demineur:'💣',chase:'🏃',scout:'🔍',replique:'💬',
+  grimpe:'🚴',text:'📝',biathlon:'🎿',maillonfaible:'🔗',
+  haltero:'🏋️',tirarlarc:'🏹',nagesync:'🏊',assaut:'⚔️',roulette:'🔫',bowling:'🎳',equitation:'🏇',var:'📺',
+  rvlf:'⏳',plongee:'🤿',escalade:'🧗',badminton:'🏸',melimelo:'🔀',apol:'📦',trivpursuit:'🎯'
+};
+function getGameIcon(type){return ADMIN_GAME_ICONS[type]||'🎮';}
+
 const EMOJIS=['⚽','🎾','🏀','🏈','⚾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🤸','🏊','🚴','🏃','⛷️','🤺','🏇','🎿','🏋️','🤼','⛳','🎯'];
 let adminPw='', selEmoji='🏆', editId=null, currentType='blackjack';
 let buzzClues=[], buzzDecrement=2, buzzFreezeDuration=3;
@@ -794,11 +1346,37 @@ document.getElementById('emoji-in').addEventListener('input',e=>{selEmoji=e.targ
 // Type selector
 function selectType(type){
   currentType=type;
-  ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique'].forEach(t=>{
+  ['grimpe','blackjack','image','buzz','sportus','prix','trappe','demineur','chase','scout','replique',
+   'biathlon','maillonfaible','haltero','equitation','bowling','roulette','tirarlarc','nagesync','var','rvlf','plongee','escalade'].forEach(t=>{
     const el=document.getElementById('type-'+t);
     if(el) el.classList.toggle('sel',t===type);
   });
   document.getElementById('grimpe-fields').style.display    = type==='grimpe'?'block':'none';
+  document.getElementById('biathlon-fields').style.display      = type==='biathlon'?'block':'none';
+  document.getElementById('maillonfaible-fields').style.display = type==='maillonfaible'?'block':'none';
+  document.getElementById('haltero-fields').style.display       = type==='haltero'?'block':'none';
+  const assautF=document.getElementById('assaut-fields');if(assautF)assautF.style.display='none';
+  document.getElementById('equi-fields').style.display        = type==='equitation'?'block':'none';
+  if(type==='equitation')setTimeout(()=>equiAdminRender(),50);
+  document.getElementById('bowling-fields').style.display      = type==='bowling'?'block':'none';
+  if(type==='bowling')setTimeout(()=>bowlingAdminRender(),50);
+  document.getElementById('badminton-fields').style.display    = type==='badminton'?'block':'none';
+  if(type==='badminton')setTimeout(()=>badAdminRender(),50);
+  document.getElementById('melimelo-fields').style.display     = type==='melimelo'?'block':'none';
+  if(type==='melimelo')setTimeout(()=>meliAdminRender(),50);
+  document.getElementById('apol-fields').style.display         = type==='apol'?'block':'none';
+  if(type==='apol')setTimeout(()=>apolAdminRender(),50);
+  document.getElementById('trivpursuit-fields').style.display      = type==='trivpursuit'?'block':'none';
+  if(type==='trivpursuit')setTimeout(()=>trivAdminRender(),50);
+  document.getElementById('roulette-fields').style.display     = type==='roulette'?'block':'none';
+  if(type==='roulette')setTimeout(()=>roulettePreview(),50);
+  document.getElementById('tirarlarc-fields').style.display    = type==='tirarlarc'?'block':'none';
+  document.getElementById('nagesync-fields').style.display     = type==='nagesync'?'block':'none';
+  document.getElementById('var-fields').style.display          = type==='var'?'block':'none';
+  document.getElementById('rvlf-fields').style.display         = type==='rvlf'?'block':'none';
+  document.getElementById('plongee-fields').style.display      = type==='plongee'?'block':'none';
+  document.getElementById('escalade-fields').style.display    = type==='escalade'?'block':'none';
+  if(type==='escalade')setTimeout(()=>renderEscaladeQuestions(),50);
   document.getElementById('blackjack-fields').style.display  = type==='blackjack'?'block':'none';
   document.getElementById('image-fields').style.display      = type==='image'?'block':'none';
   document.getElementById('buzz-fields').style.display       = type==='buzz'?'block':'none';
@@ -809,7 +1387,7 @@ function selectType(type){
   document.getElementById('chase-fields').style.display      = type==='chase'?'block':'none';
   document.getElementById('scout-fields').style.display      = type==='scout'?'block':'none';
   document.getElementById('replique-fields').style.display   = type==='replique'?'block':'none';
-  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe';
+  const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut'||type==='var'||type==='rvlf'||type==='plongee'||type==='escalade'||type==='roulette'||type==='bowling'||type==='equitation'||type==='badminton'||type==='melimelo'||type==='apol'||type==='trivpursuit';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
   checkReady();
@@ -819,11 +1397,15 @@ function selectType(type){
 function showAdminTab(tab){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   event.target.classList.add('active');
-  document.getElementById('tab-defis').style.display=tab==='defis'?'block':'none';
-  document.getElementById('tab-classement').style.display=tab==='classement'?'block':'none';
-  document.getElementById('tab-musique').style.display=tab==='musique'?'block':'none';
+  ['defis','classement','musique','comptes','equipes','idees'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.style.display=tab===t?'block':'none';
+  });
   if(tab==='classement') loadAdminScores();
-  if(tab==='musique') loadMusicConfig();
+  if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
+  if(tab==='comptes') loadComptes();
+  if(tab==='equipes') loadEquipes();
+  if(tab==='idees') loadIdees();
 }
 
 async function loadMusicConfig(){
@@ -881,8 +1463,8 @@ async function loadAthletes(){
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
   athletes.forEach((a,i)=>{
-    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?"🚴 Alpe d'Huez":'📝 Texte';
-    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':'txt';
+    const typeLabel=a.type==='image'?'🖼 Image':a.type==='buzz'?'⚡ Buzz':a.type==='sportus'?'🎯 Sportus':a.type==='prix'?'💰 Juste Prix':a.type==='trappe'?'🕳️ Trappe':a.type==='demineur'?'💣 Démineur':a.type==='chase'?'🏃 Chase':a.type==='scout'?'🔍 Scout':a.type==='replique'?'💬 Réplique':a.type==='blackjack'?'🃏 Blackjack':a.type==='grimpe'?"🚴 Alpe d'Huez":a.type==='biathlon'?'🎿 Biathlon':a.type==='maillonfaible'?'🔗 Maillon Faible':a.type==='haltero'?'🏋️ Haltéro':a.type==='tirarlarc'?'🏹 Tir à l\'Arc':a.type==='nagesync'?'🏊 Natation':a.type==='assaut'?'⚔️ Assaut':a.type==='var'?'📺 VAR':a.type==='rvlf'?'⏳ RVLF':a.type==='plongee'?'🤿 Plongée':a.type==='escalade'?'🧗 Escalade':a.type==='roulette'?'🔫 Roulette':a.type==='bowling'?'🎳 Bowling':a.type==='equitation'?'🏇 Équitation':a.type==='badminton'?'🏸 Badminton':a.type==='melimelo'?'🔀 Méli-Mélo':a.type==='apol'?'📦 À P.O.A.L.':a.type==='trivpursuit'?'🎯 Trivial Pursuit':'📝 Texte';
+    const typeClass=a.type==='image'?'img':a.type==='buzz'?'buzz':a.type==='sportus'?'sportus':a.type==='prix'?'prix':a.type==='trappe'?'trappe':a.type==='demineur'?'demineur':a.type==='chase'?'chase':a.type==='scout'?'sportus':a.type==='replique'?'buzz':a.type==='blackjack'?'prix':a.type==='badminton'||a.type==='melimelo'||a.type==='apol'||a.type==='trivpursuit'?'img':'txt';
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
@@ -899,7 +1481,7 @@ async function loadAthletes(){
     d.innerHTML=`
       <div class="ath-top">
         <div style="cursor:grab;font-size:18px;padding:0 6px;color:var(--mute);touch-action:none" class="drag-handle">⠿</div>
-        <div class="ath-ico">${a.emoji}</div>
+        <div class="ath-ico">${getGameIcon(a.type)}</div>
         <div class="ath-info">
           <div class="ath-name">#${i+1} ${esc(a.answer)}</div>
           <div class="ath-meta">
@@ -970,10 +1552,157 @@ async function startEdit(id){
   document.getElementById('answer-in').value=a.answer;
   document.getElementById('emoji-in').value=a.emoji; selEmoji=a.emoji;
   selectType(a.type||'blackjack');
+  if(a.type==='biathlon'){
+    if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value=a.biatTheme||'';
+    if(document.getElementById('biat-announce-time-in'))document.getElementById('biat-announce-time-in').value=a.biatAnnounceTime||45;
+    if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value=a.biatOrderQuestion||'';
+    biatSprintItems=[...(a.biatSprintAnswers||[])];
+    biatQCMItems=(a.biatQCM||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
+    biatOrderItems=[...(a.biatOrder||[])];
+    setTimeout(()=>{renderBiatSprint();renderBiatQCM();renderBiatOrder();},50);
+  }
+  if(a.type==='maillonfaible'){
+    mfQuestions=(a.mfQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||[''])]}));
+    setTimeout(()=>renderMFQuestions(),50);
+  }
+  if(a.type==='pentathlon'){
+    const p=a.pentathlon||{};
+    pentaEscrimeQ=[...(p.escrime?.questions||[])].map(q=>({q:q.q||'',a:q.a||'',w:[...(q.w||[])]}));
+    pentaNatationQ=[...(p.natation?.questions||[])].map(q=>({q:q.q||'',a:q.a||''}));
+    pentaEquitationQ=[...(p.equitation?.obstacles||[])].map(o=>({q:o.q||'',a:o.a||'',level:o.level||'moyen'}));
+    pentaLaserrunQ=[...(p.laserrun?.cycles||[])].map(c=>({
+      vf:{q:c.vf?.q||'',a:c.vf?.a||'Vrai'},
+      tir:{q:c.tir?.q||'',a:c.tir?.a||'',max:c.tir?.max||100}
+    }));
+    if(document.getElementById('penta-natation-timer'))document.getElementById('penta-natation-timer').value=p.natation?.timer||45;
+    if(document.getElementById('penta-laserrun-timer'))document.getElementById('penta-laserrun-timer').value=p.laserrun?.timer||60;
+    setTimeout(()=>{renderPentaEscrime();renderPentaNatation();renderPentaEquitation();renderPentaLaserrun();},50);
+  }
+  if(a.type==='equitation'){
+    equiObstacles=[...(a.equiObstacles||equiObstacles)];
+    const tl=document.getElementById('equi-time-limit');if(tl)tl.value=a.equiTimeLimit||60;
+    setTimeout(()=>equiAdminRender(),50);
+  }
+  if(a.type==='bowling'){
+    bowlingQuestions=[...(a.bowlingQuestions||[])];
+    setTimeout(()=>bowlingAdminRender(),50);
+  }
+  if(a.type==='badminton'){
+    badmintonQuestions=[...(a.badmintonQuestions||[])];
+    const bt=document.getElementById('bad-theme');if(bt)bt.value=a.badTheme||'';
+    setTimeout(()=>badAdminRender(),50);
+  }
+  if(a.type==='melimelo'){
+    meliWords=[...(a.meliWords||[])];
+    window.meliWords=meliWords;
+    const mt=document.getElementById('meli-timer-admin');if(mt)mt.value=a.meliTimer||60;
+    setTimeout(()=>meliAdminRender(),50);
+  }
+  if(a.type==='apol'){
+    apolQuestions=[...(a.apolQuestions||[])];
+    window.apolQuestions=apolQuestions;
+    setTimeout(()=>apolAdminRender(),50);
+  }
+  if(a.type==='trivpursuit'){
+    trivThemes=(a.trivThemes||[]).map(t=>({name:t.name||'',color:t.color||'#888',question:t.question||'',answer:t.answer||'',tol:t.tol!=null?t.tol:1}));
+    while(trivThemes.length<6) trivThemes.push({name:'',color:TRIV_COLORS[trivThemes.length]||'#888',question:'',answer:'',tol:1});
+    window.trivThemes=trivThemes;
+    trivQuestions=(a.trivQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',tol:q.tol!=null?q.tol:1,sectionIdx:q.sectionIdx||0}));
+    while(trivQuestions.length<6) trivQuestions.push({question:'',answer:'',tol:1,sectionIdx:trivQuestions.length});
+    window.trivQuestions=trivQuestions;
+    trivQuestions=[...(a.trivQuestions||[])];
+    setTimeout(()=>trivAdminRender(),50);
+  }
+  if(a.type==='roulette'){
+    const rt=document.getElementById('roulette-text');if(rt)rt.value=a.rouletteText||'';
+    const ra=document.getElementById('roulette-answer');if(ra)ra.value=a.rouletteAnswer||'';
+    const rh=document.getElementById('roulette-hint');if(rh)rh.value=a.rouletteHint||'';
+    const rp=document.getElementById('roulette-pct');if(rp)rp.value=a.roulettePct||40;
+    const rc=document.getElementById('roulette-chambers');if(rc)rc.value=a.rouletteChambers||6;
+    const rb=document.getElementById('roulette-bullet');if(rb)rb.value=a.rouletteBullet||4;
+    const rtol=document.getElementById('roulette-tol');if(rtol)rtol.value=a.rouletteTol||1;
+    const rrs=document.getElementById('roulette-reveal-step');if(rrs)rrs.value=a.rouletteRevealStep||5;
+    if(a.rouletteSeed)rouletteSeed=a.rouletteSeed;
+    setTimeout(()=>roulettePreview(),50);
+  }
+  if(a.type==='escalade'){
+    escaladeQuestions=[...(a.escaladeQuestions||[])];
+    const et=document.getElementById('escalade-theme');if(et)et.value=a.escaladeTheme||'';
+    const etol=document.getElementById('escalade-tol');if(etol)etol.value=a.escaladeTol||1;
+    setTimeout(()=>renderEscaladeQuestions(),50);
+  }
+  if(a.type==='plongee'){
+    plongeePaliers=[...(a.plongeePaliers||[])];
+    document.getElementById('plongee-o2base').value=a.plongeeO2Base||8;
+    document.getElementById('plongee-o2treasure').value=a.plongeeO2Treasure||1;
+    document.getElementById('plongee-o2error').value=a.plongeeO2Error||2;
+    setTimeout(()=>renderPlongeePaliers(),50);
+  }
+  if(a.type==='rvlf'){
+    rvlfQuestions=[...(a.rvlfQuestions||[])];
+    const cb=document.getElementById('rvlf-notimer');
+    if(cb)cb.checked=!!a.rvlfNoTimer;
+    setTimeout(()=>renderRvlfQuestions(),50);
+  }
+  if(a.type==='var'){
+    document.getElementById('var-text-in').value=a.varText||'';
+    document.getElementById('var-wrong-in').value=a.varWrong||'';
+    document.getElementById('var-correct-in').value=a.varCorrect||'';
+    checkReady();
+  }
+  if(a.type==='assaut'){
+    assautP1=[...(a.phase1||[])];
+    setTimeout(()=>renderAssautP1(),50);
+  }
+  if(a.type==='tirarlarc'){
+    arcCibles=[...(a.cibles||[])].map(c=>({
+      stat:c.stat||'',
+      value:c.value!==undefined&&c.value!==null?Number(c.value):0,
+      max:c.max!==undefined&&c.max!==null?Number(c.max):100,
+      tol11:c.tol11||null,
+      tol22:c.tol22||null,
+      tol33:c.tol33||null
+    }));
+    setTimeout(()=>renderArcCibles(),50);
+  }
+  if(a.type==='nagesync'){
+    nsCouloirs=[...(a.couloirs||[])];
+    nsSportifs=[...(a.sportifs||[])];
+    setTimeout(()=>{
+      renderNsCouloirs();renderNsSportifs();
+      if(!nsCouloirs.length&&!nsSportifs.length){
+        const hint=document.createElement('div');
+        hint.style.cssText='background:rgba(255,60,60,.1);border:1px solid var(--red);border-radius:8px;padding:10px;font-size:12px;color:var(--red);margin-top:8px';
+        hint.innerHTML='⚠️ Ce jeu a été créé avec une ancienne version. Ressaisis les couloirs et sportifs ci-dessous puis republier.';
+        const fields=document.getElementById('nagesync-fields');
+        if(fields)fields.insertBefore(hint,fields.firstChild.nextSibling);
+      }
+    },50);
+  }
+  if(a.type==='haltero'){
+    const ar=a.halteroArache||{};
+    const ej=a.halteroEpaule||{};
+    if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value=ar.sportif1||'';
+    if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value=ar.sportif2||'';
+    if(document.getElementById('hej-theme'))document.getElementById('hej-theme').value=ej.theme||'';
+    if(document.getElementById('hej-jete-q'))document.getElementById('hej-jete-q').value=ej.jete?.question||'';
+    if(document.getElementById('hej-jete-a'))document.getElementById('hej-jete-a').value=ej.jete?.answer||'';
+    ['w1','w2','w3'].forEach((w,i)=>{
+      const el=document.getElementById('hej-jete-'+w);
+      if(el)el.value=ej.jete?.wrong?.[i]||'';
+    });
+    haQuestions=(ar.questions||[]).map(q=>({criterion:q.criterion||'',answer:q.answer||'s1'}));
+    hejQuestions=(ej.questions||[]).map(q=>({question:q.question||'',answer:q.answer||'',wrong:[...(q.wrong||['','',''])]}));
+    setTimeout(()=>{renderHAQuestions();renderHEJQuestions();},50);
+  }
   if(a.type==='grimpe'){
     document.getElementById('grimpe-theme-in').value=a.grimpeTheme||'';
-    document.getElementById('grimpe-answers-in').value=(a.grimpeAnswers||[]).join('\n');
-    document.getElementById('grimpe-count').textContent=(a.grimpeAnswers||[]).length+' réponse(s)';
+    grimpeItems=(a.grimpeAnswers||[]).map((ans,i)=>{
+      const full=a.grimpeAnswersFull;
+      if(full&&full[i]) return full[i].join(';');
+      return ans;
+    });
+    renderGrimpeItems();
     const p=a.grimpeParams||{};
     const setF=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined)el.value=val;};
     setF('grimpe-cases-per-answer', p.casesPerAnswer||6);
@@ -1087,6 +1816,785 @@ async function startEdit(id){
   document.getElementById('btn-save').scrollIntoView({behavior:'smooth'});
 }
 
+function selectPrixSensib(seuilsArr){
+  if(!Array.isArray(seuilsArr)||seuilsArr.length<5)return;
+  // seuils are now raw values directly
+  const ids=['cseuil-froid','cseuil-tiede','cseuil-chaud','cseuil-brulant'];
+  ids.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    const val=seuilsArr[i+1];
+    if(el)el.value=(val===Infinity||val===null||val===undefined)?'':val;
+  });
+}
+
+document.getElementById('var-text-in').addEventListener('input',()=>{
+  checkReady();
+  // Show correction fields as soon as text is entered
+  const txt=document.getElementById('var-text-in').value.trim();
+  if(txt.length>10) document.getElementById('var-chips-wrap').style.display='block';
+});
+document.getElementById('var-correct-in').addEventListener('input',checkReady);
+document.getElementById('var-wrong-in').addEventListener('input',checkReady);
+document.getElementById('var-correct-in').addEventListener('input',checkReady);
+
+function varSetTol(n){
+  document.getElementById('var-tol-in').value=n;
+  [0,1,2].forEach(i=>{
+    const btn=document.getElementById('var-tol-'+i);
+    if(btn)btn.style.background=i===n?'var(--neon)':'';;
+    if(btn)btn.style.color=i===n?'#000':'';
+  });
+}
+varSetTol(1); // default
+
+// ── VAR CHIP EDITOR ──────────────────────────────────────────────────────
+let varChips=[]; // array of {text, clickable}
+let varSelectedIdx=null; // index of first selected chip for merge
+
+function varTokenize(text){
+  const STOP=new Set(['le','la','les','de','du','des','un','une','en','au','aux','et','ou','que','qui','il','elle','on','ils','elles','se','sa','son','ses','ce','cet','cette','ces','par','sur','sous','dans','avec','pour','sans','entre','vers','dont','ne','pas','plus','si','y','est','sont','a','ont','été','avoir','faire','même','très','bien','comme','tout','tous','leur','leurs']);
+  const parts=[];
+  const re=/([a-zA-ZÀ-ÿ]+(?:'[a-zA-ZÀ-ÿ]+)?|\d+(?:[.,]\d+)?|[^\w\s]|\s+)/g;
+  let mm;
+  while((mm=re.exec(text))!==null) parts.push(mm[0]);
+  const segs=[];
+  let i=0;
+  while(i<parts.length){
+    const p=parts[i];
+    if(/^\s+$/.test(p)){i++;continue;}
+    const wordLow=p.toLowerCase().replace(/['']/g,"'").split("'")[0];
+    if(STOP.has(wordLow)){
+      let group=p;i++;
+      while(i<parts.length&&/^\s+$/.test(parts[i])){group+=parts[i];i++;}
+      if(i<parts.length&&!/^\s+$/.test(parts[i])&&!/^[.,;:!?]$/.test(parts[i])){group+=parts[i];i++;}
+      segs.push(group);
+    } else if(/^[.,;:!?()\[\]"«»\-]$/.test(p)){
+      if(segs.length>0) segs[segs.length-1]+=p; else segs.push(p);
+      i++;
+    } else {
+      segs.push(p);i++;
+    }
+  }
+  return segs;
+}
+
+function varGenerateChips(){
+  const text=document.getElementById('var-text-in').value.trim();
+  if(!text)return;
+  varChips=varTokenize(text).map(t=>({text:t}));
+  varSelectedIdx=null;
+  document.getElementById('var-wrong-in').value='';
+  document.getElementById('var-chips-wrap').style.display='block';
+  varRenderChips();
+}
+
+function varRenderChips(){
+  const el=document.getElementById('var-chips');
+  el.innerHTML='';
+  varChips.forEach((chip,i)=>{
+    const span=document.createElement('span');
+    span.textContent=chip.text;
+    const isWrong=document.getElementById('var-wrong-in').value===chip.text;
+    const isSelected=varSelectedIdx===i;
+    span.style.cssText=`display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid ${isWrong?'var(--red)':isSelected?'var(--neon)':'rgba(255,255,255,.15)'};background:${isWrong?'rgba(255,60,60,.2)':isSelected?'rgba(212,255,0,.15)':'var(--c2)'};color:${isWrong?'var(--red)':isSelected?'var(--neon)':'var(--txt)'};transition:all .15s`;
+    span.onclick=()=>varChipClick(i);
+    el.appendChild(span);
+  });
+}
+
+function varChipClick(i){
+  const wrongVal=document.getElementById('var-wrong-in').value;
+  // If chip is already marked as wrong — deselect it
+  if(wrongVal===varChips[i].text){
+    document.getElementById('var-wrong-in').value='';
+    varSelectedIdx=null;
+    varRenderChips();
+    checkReady();
+    return;
+  }
+  if(varSelectedIdx===null){
+    varSelectedIdx=i;
+    varRenderChips();
+  } else if(varSelectedIdx===i){
+    // Same chip clicked twice — mark as wrong segment
+    document.getElementById('var-wrong-in').value=varChips[i].text;
+    varSelectedIdx=null;
+    varRenderChips();
+    checkReady();
+  } else if(Math.abs(varSelectedIdx-i)===1){
+    // Adjacent — merge
+    const a=Math.min(varSelectedIdx,i);
+    const b=Math.max(varSelectedIdx,i);
+    varChips[a]={text:varChips[a].text+' '+varChips[b].text};
+    varChips.splice(b,1);
+    varSelectedIdx=null;
+    document.getElementById('var-wrong-in').value='';
+    varRenderChips();
+  } else {
+    // Non-adjacent — split selected chip into individual words
+    const chip=varChips[varSelectedIdx];
+    const words=chip.text.trim().split(/\s+/);
+    if(words.length>1){
+      varChips.splice(varSelectedIdx,1,...words.map(w=>({text:w})));
+    }
+    varSelectedIdx=null;
+    document.getElementById('var-wrong-in').value='';
+    varRenderChips();
+  }
+}
+
+// ── ROULETTE RUSSE ADMIN ──────────────────────────────────────────────────
+let rouletteSeed=Date.now();
+function rouletteShuffleSeed(){rouletteSeed=Date.now()+Math.floor(Math.random()*1e6);roulettePreview();}
+// Seeded PRNG (mulberry32)
+function rouletteRng(seed){
+  return function(){
+    let t=seed+=0x6D2B79F5;
+    t=Math.imul(t^t>>>15,t|1);
+    t^=t+Math.imul(t^t>>>7,t|61);
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+
+// ── ÉQUITATION ADMIN ──────────────────────────────────────────────────────
+let equiObstacles=[
+  {type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},
+  {type:'riviere',question:'',answer:'',multiplier:0},
+  {type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},
+  {type:'mots',question:'',answer:'',gridSize:0}
+];
+
+const EQUI_TYPES={
+  fleche:'🏹 Mot fléché (4 mots)',
+  riviere:'〜 Rivière (Numérique)',
+  vf:'✓✗ Triple Vrai/Faux',
+  mots:'🔤 Grille de mots'
+};
+
+function equiGenerateWordGridPreview(word,trapWords,customSize){
+  const clean=s=>(s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
+  const target=clean(word);
+  if(!target) return {grid:[['?']],size:1};
+  const traps=(trapWords||[]).map(clean).filter(t=>t.length>=2).slice(0,4);
+  const allWords=[target,...traps];
+  const totalLen=allWords.reduce((a,w)=>a+w.length,0);
+  const maxLen=Math.max(...allWords.map(w=>w.length));
+  const autoSize=Math.min(12,Math.max(7,maxLen+2,Math.ceil(Math.sqrt(totalLen*2.2))));
+  const size=customSize>0?Math.max(maxLen,Math.min(14,customSize)):autoSize;
+  const grid=Array.from({length:size},()=>Array(size).fill(null));
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  function tryPlace(w){
+    let tries=0;
+    while(tries<400){
+      tries++;
+      const dir=dirs[Math.floor(Math.random()*dirs.length)];
+      const r0=Math.floor(Math.random()*size), c0=Math.floor(Math.random()*size);
+      const rEnd=r0+dir[0]*(w.length-1), cEnd=c0+dir[1]*(w.length-1);
+      if(rEnd<0||rEnd>=size||cEnd<0||cEnd>=size) continue;
+      let ok=true;
+      for(let i=0;i<w.length;i++){if(grid[r0+dir[0]*i][c0+dir[1]*i]!==null){ok=false;break;}}
+      if(!ok) continue;
+      for(let i=0;i<w.length;i++) grid[r0+dir[0]*i][c0+dir[1]*i]=w[i];
+      return true;
+    }
+    return false;
+  }
+  tryPlace(target);
+  traps.forEach(t=>tryPlace(t));
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(grid[r][c]===null) grid[r][c]=String.fromCharCode(65+Math.floor(Math.random()*26));
+  }
+  return {grid,size};
+}
+
+function equiRegenerateGridPreview(i){
+  const obs=equiObstacles[i];
+  const wg=equiGenerateWordGridPreview(obs.answer,obs.trapWords,obs.gridSize);
+  const prev=document.getElementById('equi-grid-preview-'+i);
+  if(prev){
+    prev.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${wg.size},1fr);gap:2px;max-width:${wg.size*22}px;margin:0 auto">`+
+      wg.grid.map(row=>row.map(ch=>`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(0,200,80,.08);border:1px solid rgba(0,200,80,.2);border-radius:3px;font-family:var(--fh);font-size:11px;color:var(--txt)">${ch}</div>`).join('')).join('')+
+      `</div>`;
+  }
+}
+
+function equiAddTrapWord(i){
+  const inp=document.getElementById('equi-trap-in-'+i);
+  const val=(inp?.value||'').trim();
+  if(!val)return;
+  equiObstacles[i].trapWords=equiObstacles[i].trapWords||[];
+  if(equiObstacles[i].trapWords.length>=4){alert('4 mots pièges maximum');return;}
+  if(equiObstacles[i].trapWords.some(t=>t.toLowerCase()===val.toLowerCase())){alert('Déjà ajouté');return;}
+  equiObstacles[i].trapWords.push(val);
+  equiAdminRender();
+  checkReady();
+}
+
+function equiAdminRender(){
+  const list=document.getElementById('equi-obs-list');
+  if(!list)return;
+  list.innerHTML='';
+  equiObstacles.forEach((obs,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c1);border-radius:10px;padding:10px;border:1px solid rgba(0,200,80,.15)';
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-family:var(--fh);font-size:11px;color:#00c850">OBSTACLE ${i+1}</span>
+      <select onchange="equiObstacles[${i}].type=this.value;equiAdminRender();checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px;outline:none">
+        ${Object.entries(EQUI_TYPES).map(([v,l])=>`<option value="${v}"${obs.type===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>
+    <input value="${(obs.question||'').replace(/"/g,'&quot;')}" placeholder="${obs.type==='vf'?'Affirmation 1…':obs.type==='fleche'?'Indice mot 1…':obs.type==='mots'?'Indice / thème (ex: pays europeen)…':'Question…'}"
+      oninput="equiObstacles[${i}].question=this.value;checkReady();"
+      style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+    ${obs.type==='fleche'?`
+      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Mot 1…"
+        oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 2…"
+        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer2||'').replace(/"/g,'&quot;')}" placeholder="Mot 2…"
+        oninput="equiObstacles[${i}].answer2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question3||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 3…"
+        oninput="equiObstacles[${i}].question3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer3||'').replace(/"/g,'&quot;')}" placeholder="Mot 3…"
+        oninput="equiObstacles[${i}].answer3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:8px">
+      <input value="${(obs.question4||'').replace(/"/g,'&quot;')}" placeholder="Indice mot 4…"
+        oninput="equiObstacles[${i}].question4=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <input value="${(obs.answer4||'').replace(/"/g,'&quot;')}" placeholder="Mot 4…"
+        oninput="equiObstacles[${i}].answer4=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none">
+      <div style="font-size:10px;color:var(--mute);margin-top:6px">🏹 4 mots, ordre libre · la grille maximise les intersections automatiquement.</div>`:
+    obs.type==='vf'?`
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 1 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf-${i}" ${obs.answer==='faux'?'checked':''} onchange="equiObstacles[${i}].answer='faux';checkReady();"> Faux</label>
+      </div>
+      <input value="${(obs.question2||'').replace(/"/g,'&quot;')}" placeholder="Affirmation 2…"
+        oninput="equiObstacles[${i}].question2=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 2 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer2='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf2-${i}" ${obs.answer2==='faux'?'checked':''} onchange="equiObstacles[${i}].answer2='faux';checkReady();"> Faux</label>
+      </div>
+      <input value="${(obs.question3||'').replace(/"/g,'&quot;')}" placeholder="Affirmation 3…"
+        oninput="equiObstacles[${i}].question3=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:2px">Réponse affirmation 3 :</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf3-${i}" ${obs.answer3==='vrai'?'checked':''} onchange="equiObstacles[${i}].answer3='vrai';checkReady();"> Vrai</label>
+        <label style="display:flex;align-items:center;gap:4px;color:var(--txt);font-size:12px"><input type="radio" name="equi-vf3-${i}" ${obs.answer3==='faux'?'checked':''} onchange="equiObstacles[${i}].answer3='faux';checkReady();"> Faux</label>
+      </div>`:
+    obs.type==='mots'?`
+      <input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Mot à trouver dans la grille…"
+        oninput="equiObstacles[${i}].answer=this.value;checkReady();equiRegenerateGridPreview(${i});"
+        style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:6px">
+      <div style="font-size:10px;color:var(--mute);margin-bottom:4px">Mots pièges (optionnel, max 4) :</div>
+      <div style="display:flex;gap:4px;margin-bottom:6px">
+        <input id="equi-trap-in-${i}" placeholder="Ajouter un mot piège…"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();equiAddTrapWord(${i});}"
+          style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+        <button onclick="equiAddTrapWord(${i})" type="button" style="padding:5px 12px;border-radius:4px;border:none;background:rgba(0,200,80,.15);color:var(--neon);cursor:pointer;font-size:13px;font-weight:700">+</button>
+      </div>
+      ${(obs.trapWords&&obs.trapWords.length)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        ${obs.trapWords.map((tw,ti)=>`<span style="background:rgba(255,100,50,.12);border:1px solid rgba(255,100,50,.3);color:#ff8855;font-size:11px;padding:3px 8px;border-radius:99px;display:inline-flex;align-items:center;gap:5px">🪤 ${tw}<span onclick="equiObstacles[${i}].trapWords.splice(${ti},1);equiAdminRender();checkReady();" style="cursor:pointer;color:rgba(255,140,90,.8);font-weight:900">✕</span></span>`).join('')}
+      </div>`:''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <label style="font-size:10px;color:var(--mute);white-space:nowrap">Taille grille</label>
+        <input value="${obs.gridSize||''}" type="number" placeholder="auto" min="7" max="14"
+          oninput="equiObstacles[${i}].gridSize=parseInt(this.value)||0;equiRegenerateGridPreview(${i});"
+          style="width:60px;background:var(--c2);border:1px solid rgba(0,200,80,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
+        <button onclick="equiRegenerateGridPreview(${i})" type="button" style="padding:5px 10px;border-radius:4px;border:none;background:rgba(0,200,80,.15);color:var(--neon);cursor:pointer;font-size:11px">🎲 Régénérer</button>
+      </div>
+      <div style="font-size:9px;color:var(--mute);text-align:center;margin-bottom:4px">Aperçu (régénéré aléatoirement à chaque partie) :</div>
+      <div id="equi-grid-preview-${i}" style="min-height:20px"></div>`:
+    obs.type==='riviere'?`
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input value="${obs.answer||''}" placeholder="Réponse (nombre)" type="number"
+          oninput="equiObstacles[${i}].answer=this.value;equiAdminRender();checkReady();"
+          style="flex:2;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+        <input value="${obs.multiplier||Math.max(1,Math.ceil(Math.abs(obs.answer||1)*0.05))}" placeholder="mult"
+          oninput="equiObstacles[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
+          style="flex:1;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
+      </div>`:
+    `<input value="${(obs.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse exacte…"
+      oninput="equiObstacles[${i}].answer=this.value;checkReady();"
+      style="width:100%;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 10px;outline:none;margin-bottom:4px">`}`;
+    list.appendChild(div);
+  });
+  equiObstacles.forEach((obs,i)=>{ if(obs.type==='mots'&&obs.answer) equiRegenerateGridPreview(i); });
+}
+
+// ── BOWLING ADMIN ─────────────────────────────────────────────────────────
+let bowlingQuestions=[];
+let badmintonQuestions=[];window.badmintonQuestions=badmintonQuestions;
+let meliWords=[];
+let apolQuestions=[];
+const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
+let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i],question:'',answer:'',tol:1}));
+let trivQuestions=Array.from({length:6},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:i,theme:''}));
+// Expose to window so inline oninput handlers can access them
+window.trivThemes=trivThemes;
+window.trivQuestions=trivQuestions;
+window.apolQuestions=apolQuestions;
+window.meliWords=meliWords;
+
+function trivDrawAdminPreview(){
+  const canvas=document.getElementById('triv-admin-preview');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=280,H=280,cx=140,cy=140,R=126,rInner=36;
+  ctx.clearRect(0,0,W,H);
+  // Background
+  ctx.beginPath();ctx.arc(cx,cy,R+3,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fill();
+  const N=12;const startAngle=-Math.PI/2;
+  for(let i=0;i<N;i++){
+    const a0=startAngle+(i/N)*Math.PI*2;
+    const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const isCam=i%2===0;
+    const themeIdx=isCam?i/2:Math.floor(i/2);
+    const color=trivThemes[themeIdx]?.color||'#666';
+    ctx.beginPath();
+    if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
+    else{ctx.arc(cx,cy,R*0.84,a0,a1);ctx.arc(cx,cy,R*0.46,a1,a0,true);}
+    ctx.closePath();
+    ctx.fillStyle=isCam?color+'cc':color+'33';
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=1.5;ctx.stroke();
+    const midA=(a0+a1)/2;
+    if(isCam){
+      const px=cx+Math.cos(midA)*R*0.65,py=cy+Math.sin(midA)*R*0.65;
+      ctx.fillStyle='rgba(255,255,255,.95)';
+      ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      const name=trivThemes[themeIdx]?.name||('T'+(themeIdx+1));
+      // Wrap to 2 lines if needed
+      const words=name.split(' ');
+      if(words.length>1&&name.length>8){
+        ctx.fillText(words[0].slice(0,7),px,py-6);
+        ctx.fillText(words.slice(1).join(' ').slice(0,7),px,py+6);
+      } else {
+        ctx.fillText(name.slice(0,8),px,py);
+      }
+    } else {
+      const rMid=(R*0.84+R*0.46)/2;
+      const px=cx+Math.cos(midA)*rMid,py=cy+Math.sin(midA)*rMid;
+      ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('?',px,py);
+    }
+  }
+  // Center
+  ctx.beginPath();ctx.arc(cx,cy,rInner,0,Math.PI*2);
+  ctx.fillStyle='rgba(12,12,25,.95)';ctx.fill();
+  ctx.strokeStyle='rgba(180,140,255,.3)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.font='20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('🎯',cx,cy);
+}
+
+function trivAdminRender(){
+  // Themes
+  const tList=document.getElementById('triv-theme-list');
+  if(!tList)return;
+  tList.innerHTML='<div style="font-size:10px;color:var(--mute);margin-bottom:8px">🟣 Chaque <strong>camembert</strong> est collecté automatiquement quand le joueur y atterrit (+50 pts). Configure son nom et sa couleur.</div>';
+  trivThemes.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center';
+    d.innerHTML=`<span style="font-size:11px;font-family:var(--fh);color:${t.color};min-width:16px">🟣${i+1}</span>
+      <input value="${(t.name||'').replace(/"/g,'&quot;')}" placeholder="Nom du camembert (ex: Football)" oninput="trivThemes[${i}].name=this.value;checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:${t.color};font-size:13px;border-radius:6px;padding:6px 9px;outline:none">
+      <input type="color" value="${t.color}" oninput="trivThemes[${i}].color=this.value;trivAdminRender();"
+        style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">`;
+    tList.appendChild(d);
+  });
+  // Questions grouped by section
+  const qList=document.getElementById('triv-q-list');
+  if(!qList)return;
+  qList.innerHTML='<div style="font-size:10px;color:var(--mute);margin-bottom:8px">❓ Les <strong>cases-questions</strong> sont entre chaque camembert. Pour passer d\'un camembert au suivant, le joueur doit répondre à 2 questions.</div>';
+  for(let sec=0;sec<6;sec++){
+    const t=trivThemes[sec];
+    const nextT=trivThemes[(sec+1)%6];
+    const secDiv=document.createElement('div');
+    secDiv.style.cssText=`border-left:3px solid ${t.color};padding-left:10px;margin-bottom:8px`;
+    const color=t.color||TRIV_COLORS[sec];
+    secDiv.innerHTML=`<div style="font-size:10px;letter-spacing:1px;font-family:var(--fh);margin-bottom:6px">
+      <span style="color:${color}">🟣 ${t.name||'Camembert '+(sec+1)}</span>
+      <span style="color:var(--mute)"> → case-question → </span>
+      <span style="color:${nextT.color}">🟣 ${nextT.name||'Camembert '+((sec+1)%6+1)}</span>
+    </div>
+    <div style="background:${color}18;border-left:2px solid ${color};border-radius:0 8px 8px 0;padding:8px;margin-bottom:6px">
+      <div style="font-size:10px;color:${color};margin-bottom:5px">🟣 Question du camembert "${t.name||'Thème '+(sec+1)}"</div>
+      <input value="${(t.question||'').replace(/"/g,'&quot;')}" placeholder="Question pour collecter ce camembert…" oninput="trivThemes[${sec}].question=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none;margin-bottom:5px">
+      <div style="display:flex;gap:6px">
+        <input value="${(t.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivThemes[${sec}].answer=this.value;checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:${color};font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+        <label style="font-size:10px;color:var(--mute);align-self:center">Tol.</label>
+        <input type="number" value="${t.tol!=null?t.tol:1}" min="0" max="3" oninput="trivThemes[${sec}].tol=parseInt(this.value)||0;checkReady();"
+          style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:5px;outline:none;text-align:center">
+      </div>
+    </div>`;
+    [0].forEach(pos=>{
+      const qi=sec;
+      const q=trivQuestions[qi]||{question:'',answer:'',tol:1};
+      const row=document.createElement('div');
+      row.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
+      row.innerHTML=`<div style="font-size:10px;color:var(--mute)">❓ Case-question (entre ces 2 camemberts)</div>
+        <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+        <div style="display:flex;gap:6px">
+          <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivQuestions[${qi}].answer=this.value;checkReady();"
+            style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+          <label style="font-size:10px;color:var(--mute);align-self:center;white-space:nowrap">Tol.</label>
+          <input type="number" value="${q.tol||1}" min="0" max="3" oninput="trivQuestions[${qi}].tol=parseInt(this.value)||0;checkReady();"
+            style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:5px;outline:none;text-align:center">
+        </div>`;
+      secDiv.appendChild(row);
+    });
+    qList.appendChild(secDiv);
+  }
+  const hasAllCamQ=trivThemes.every(t=>t.question&&t.answer);
+  const warn=document.getElementById('triv-cam-q-warn');
+  if(warn) warn.style.display=hasAllCamQ?'none':'block';
+  // Draw preview
+  setTimeout(trivDrawAdminPreview,50);
+}
+
+function meliAdminRender(){
+  const list=document.getElementById('meli-word-list');if(!list)return;
+  list.innerHTML='';
+  meliWords.forEach((w,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`<div style="display:flex;gap:8px;align-items:center">
+        <span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
+        <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="meliWords[${i}].scrambled=this.value.toUpperCase();checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+        <span style="color:var(--mute)">→</span>
+        <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+        <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="meliWords[${i}].indice=this.value;checkReady();"
+        style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none">`;
+    list.appendChild(d);
+  });
+}
+function meliAdminAddWord(){
+  if(meliWords.length>=5){alert('5 mots maximum');return;}
+  meliWords.push({scrambled:'',answer:'',indice:''});window.meliWords=meliWords;
+  meliAdminRender();checkReady();
+}
+
+function apolAdminRender(){
+  const list=document.getElementById('apol-q-list-admin');if(!list)return;
+  list.innerHTML='';
+  apolQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`<div style="display:flex;justify-content:space-between">
+        <span style="font-size:11px;color:#ffb400;font-family:var(--fh)">Q${i+1}</span>
+        <button onclick="apolQuestions.splice(${i},1);apolAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer">✕</button>
+      </div>
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="apolQuestions[${i}].theme=this.value;checkReady();"
+        style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="apolQuestions[${i}].question=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="apolQuestions[${i}].answer=this.value;checkReady();"
+          style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+        <label style="font-size:11px;color:var(--mute);white-space:nowrap">Tol.</label>
+        <input type="number" value="${q.tol||1}" min="0" max="3" oninput="apolQuestions[${i}].tol=parseInt(this.value)||0;checkReady();"
+          style="width:50px;background:var(--c2);border:none;color:var(--mute);font-size:13px;border-radius:6px;padding:6px;outline:none;text-align:center">
+      </div>`;
+    list.appendChild(d);
+  });
+}
+function apolAdminAddQ(){
+  if(apolQuestions.length>=5){alert('5 questions maximum');return;}
+  apolQuestions.push({question:'',theme:'',answer:'',tol:1});window.apolQuestions=apolQuestions;
+  apolAdminRender();checkReady();
+}
+
+function badAdminRender(){
+  const list=document.getElementById('bad-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(!badmintonQuestions.length){
+    list.innerHTML='<div style="font-size:11px;color:var(--mute);text-align:center;padding:10px">Aucune question. Cliquez ➕ pour en ajouter.</div>';
+    return;
+  }
+  badmintonQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    d.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--neon);font-family:var(--fh)">Q${i+1}</span>
+        <button onclick="badmintonQuestions.splice(${i},1);badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Carrière, Records…)" oninput="badmintonQuestions[${i}].theme=this.value;checkReady();"
+        style="width:100%;background:rgba(0,180,100,.06);border:1px solid rgba(0,180,100,.2);color:#00c870;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="badmintonQuestions[${i}].question=this.value;checkReady();"
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
+      ${['a','b','c'].map((ch,ci)=>`
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="radio" name="bad-correct-${i}" value="${ci}" ${q.correct==ci?'checked':''} onchange="badmintonQuestions[${i}].correct=${ci};checkReady();" style="accent-color:var(--neon);width:14px;height:14px;flex-shrink:0" title="Bonne réponse">
+          <input value="${(q[ch]||'').replace(/"/g,'&quot;')}" placeholder="Choix ${ch.toUpperCase()}…" oninput="badmintonQuestions[${i}]['${ch}']=this.value;checkReady();"
+            style="flex:1;background:${q.correct==ci?'rgba(0,200,80,.1)':'var(--c2)'};border:${q.correct==ci?'1px solid rgba(0,200,80,.3)':'none'};color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+        </div>`).join('')}`;
+    list.appendChild(d);
+  });
+  const status=document.getElementById('bad-admin-status');
+  if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées';
+}
+
+function badAdminAddQ(){
+  if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
+  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',correct:0});window.badmintonQuestions=badmintonQuestions;
+  badAdminRender();checkReady();
+}
+  equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
+function bowlingAdminRender(){
+  const list=document.getElementById('bowling-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  bowlingQuestions.forEach((q,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:6px;align-items:center;background:var(--c1);border-radius:6px;padding:6px 8px';
+    row.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--mute);min-width:24px">${i+1}</span>
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question numérique…" oninput="bowlingQuestions[${i}].question=this.value;checkReady();"
+        style="flex:3;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
+      <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;bowlingAdminRender();checkReady();"
+        style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+        <div style="font-size:9px;color:#ffc800;text-align:center">mult ×</div>
+        <input value="${q.multiplier||Math.max(1,Math.ceil(Math.abs(q.answer||1)*0.05))}" 
+          title="Auto = réponse × 0.05. Modifie pour override (ex: 5 pour années, 10000 pour prix)"
+          oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
+          style="width:100%;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
+      </div>
+      <button onclick="bowlingQuestions.splice(${i},1);bowlingAdminRender();checkReady();" style="padding:4px 8px;border-radius:4px;border:none;background:rgba(255,60,60,.2);color:var(--red);cursor:pointer;font-size:12px">✕</button>`;
+    list.appendChild(row);
+  });
+  const st=document.getElementById('bowling-admin-status');
+  if(st){const n=bowlingQuestions.length;st.textContent=n+'/12 questions'+(n>=12?' ✅ Prêt !':' — encore '+(12-n)+' à ajouter');st.style.color=n>=12?'var(--neon)':n>=8?'#ffaa00':'var(--mute)';}
+}
+function bowlingAdminAddQ(){bowlingQuestions.push({question:'',answer:0});bowlingAdminRender();checkReady();}
+
+function roulettePreview(){
+  const txt=(document.getElementById('roulette-text')?.value||'').trim();
+  const pct=parseInt(document.getElementById('roulette-pct')?.value||40);
+  const preview=document.getElementById('roulette-preview');
+  const stats=document.getElementById('roulette-preview-stats');
+  if(!preview||!txt){if(preview)preview.innerHTML='<span style="color:var(--mute)">Colle un texte pour voir l\'aperçu…</span>';return;}
+  const words=txt.split(/(\s+)/);
+  const realWords=words.filter(w=>w.trim().length>0);
+  const total=realWords.length;
+  const visibleCount=Math.round(total*pct/100);
+  // Random shuffle (seeded) — pick which words to HIDE
+  const rng=rouletteRng(rouletteSeed);
+  const indices=realWords.map((_,i)=>i);
+  // Fisher-Yates shuffle
+  for(let i=indices.length-1;i>0;i--){
+    const j=Math.floor(rng()*(i+1));
+    [indices[i],indices[j]]=[indices[j],indices[i]];
+  }
+  const toShow=new Set(indices.slice(0,visibleCount));
+  let wordIdx=0;
+  const html=words.map(w=>{
+    if(!w.trim())return w;
+    const show=toShow.has(wordIdx);
+    wordIdx++;
+    if(show)return`<span style="color:var(--txt)">${w}</span>`;
+    return`<span style="background:rgba(255,50,50,.15);color:transparent;border-radius:2px;user-select:none">${'█'.repeat(Math.min(w.length,8))}</span>`;
+  }).join('');
+  preview.innerHTML=html;
+  if(stats)stats.textContent=visibleCount+'/'+total+' mots visibles ('+pct+'%) · seed '+rouletteSeed;
+  checkReady();
+}
+
+// ── ESCALADE IA — génération questions difficiles ─────────────────────────
+function escaladeAutoInverse(qFacile, aFacile){
+  const a=aFacile.trim();
+  const q=qFacile.trim().replace(/\?\s*$/,'').trim();
+
+  // Remove common French question starters
+  const body=q
+    .replace(/^(quel(le)?s?\s+(est|sont|a|ont|fut|furent|sera|seront)\s+(le|la|les|l')?\s*)/i,'')
+    .replace(/^(quel(le)?s?\s+)/i,'')
+    .replace(/^(qui\s+(est|a|fut|sont|était)\s*)/i,'')
+    .replace(/^(dans quel(le)?\s+)/i,'')
+    .replace(/^(en quelle\s+\w+\s+)/i,'')
+    .replace(/^(combien\s+de\s+)/i,'')
+    .replace(/^(combien\s+)/i,'')
+    .replace(/^(lequel|laquelle)\s+/i,'')
+    .trim();
+  const B=body.charAt(0).toUpperCase()+body.slice(1);
+
+  // Answer is a year
+  if(/^\d{4}$/.test(a)&&+a>=1900&&+a<=2030)
+    return {qDifficile:`${B} — en quelle année ?`,aDifficile:a};
+
+  // Answer is a number
+  if(/^\d+(\s*(fois|points?|buts?|médailles?|km|m|s|min))?$/i.test(a))
+    return {qDifficile:`Quel est le chiffre associé à : ${B} ?`,aDifficile:a};
+
+  // Question contains a year → invert to ask for it
+  const yearMatch=q.match(/\b(19|20)\d{2}\b/);
+  if(yearMatch)
+    return {qDifficile:`${a} — ${B.replace(yearMatch[0],'____')} ?`,aDifficile:yearMatch[0]};
+
+  // Default: answer as subject, body as context, ask for precision
+  return {qDifficile:`${a} — ${B} ?`,aDifficile:a};
+}
+
+function escaladeGenerateDifficile(){
+  const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile);
+  if(filled.length===0){alert('Remplis d\'abord les questions faciles.');return;}
+  const status=document.getElementById('escalade-ai-status');
+  escaladeQuestions.forEach(q=>{
+    if(!q.qFacile||!q.aFacile)return;
+    const inv=escaladeAutoInverse(q.qFacile,q.aFacile);
+    q.qDifficile=inv.qDifficile;
+    q.aDifficile=inv.aDifficile;
+  });
+  renderEscaladeQuestions();
+  if(status){status.textContent='✅ '+filled.length+' questions inversées générées — vérifie et ajuste !';status.style.color='var(--neon)';}
+}
+
+// ── ESCALADE ADMIN ────────────────────────────────────────────────────────
+let escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',asDifficileList:'',nbRequired:1}));
+
+function renderEscaladeQuestions(){
+  const list=document.getElementById('escalade-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  escaladeQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-family:var(--fh);font-size:11px;color:var(--neon)';
+    hdr.textContent='QUESTION '+(i+1)+'/8';
+    // Facile
+    const fLbl=document.createElement('div');fLbl.style.cssText='font-size:10px;color:#64c8ff';fLbl.textContent='🟢 Voie FACILE (15 pts)';
+    const fqIn=document.createElement('input');fqIn.type='text';fqIn.value=q.qFacile||'';fqIn.placeholder='Question version facile…';
+    fqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    fqIn.oninput=e=>{escaladeQuestions[i].qFacile=e.target.value;checkReady();};
+    const faIn=document.createElement('input');faIn.type='text';faIn.value=q.aFacile||'';faIn.placeholder='✅ Réponse facile';
+    faIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    faIn.oninput=e=>{escaladeQuestions[i].aFacile=e.target.value;checkReady();};
+    // Difficile (optionnel)
+    const dLbl=document.createElement('div');dLbl.style.cssText='font-size:10px;color:#ff6633';dLbl.textContent='🔴 Voie DIFFICILE (25 pts) — optionnel, si vide = même question';
+    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=q.qDifficile||'';dqIn.placeholder='Question version difficile (inversée/enrichie)…';
+    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    dqIn.oninput=e=>{escaladeQuestions[i].qDifficile=e.target.value;};
+    const daIn=document.createElement('input');daIn.type='text';daIn.value=q.aDifficile||'';daIn.placeholder='✅ Réponse(s) difficile — séparer par ";" si plusieurs';
+    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:#ff9966;font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    daIn.oninput=e=>{escaladeQuestions[i].aDifficile=e.target.value;};
+    // Nb required if multiple answers
+    const nbRow=document.createElement('div');nbRow.style.cssText='display:flex;gap:8px;align-items:center';
+    const nbLbl=document.createElement('span');nbLbl.style.cssText='font-size:10px;color:var(--mute)';nbLbl.textContent='Réponses requises (si plusieurs):';
+    const nbIn=document.createElement('input');nbIn.type='number';nbIn.min=1;nbIn.max=10;nbIn.value=q.nbRequired||1;
+    nbIn.style.cssText='width:50px;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none;text-align:center';
+    nbIn.oninput=e=>{escaladeQuestions[i].nbRequired=parseInt(e.target.value)||1;};
+    nbRow.append(nbLbl,nbIn);
+    d.append(hdr,fLbl,fqIn,faIn,dLbl,dqIn,daIn,nbRow);
+    list.appendChild(d);
+  });
+  const btn=document.getElementById('btn-add-escalade-q');
+  if(btn)btn.style.display='none'; // always 8 questions
+  checkReady();
+}
+// Auto-render
+setTimeout(()=>renderEscaladeQuestions(),150);
+document.getElementById('escalade-theme').addEventListener('input',checkReady);
+
+// ── PLONGÉE ADMIN ─────────────────────────────────────────────────────────
+const PLONGEE_TRESOR=[10,20,35,55,80];
+let plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
+
+function renderPlongeePaliers(){
+  const list=document.getElementById('plongee-paliers-list');
+  if(!list)return;
+  list.innerHTML='';
+  const depths=['20m','40m','60m','80m','100m'];
+  plongeePaliers.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;justify-content:space-between;align-items:center';
+    hdr.innerHTML=`<span style="font-family:var(--fh);font-size:12px;color:var(--neon)">PALIER ${i+1} — ${depths[i]}</span><span style="font-size:11px;color:#ffc800">💰 ${p.tresor} pts</span>`;
+    // Down question
+    const dqLbl=document.createElement('div');dqLbl.style.cssText='font-size:10px;color:#64c8ff';dqLbl.textContent='⬇️ Question descente';
+    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=p.qDown||'';dqIn.placeholder='Question pour descendre à ce palier…';
+    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    dqIn.oninput=e=>{plongeePaliers[i].qDown=e.target.value;checkReady();};
+    const daIn=document.createElement('input');daIn.type='text';daIn.value=p.aDown||'';daIn.placeholder='✅ Réponse…';
+    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    daIn.oninput=e=>{plongeePaliers[i].aDown=e.target.value;checkReady();};
+    // Up question
+    const uqLbl=document.createElement('div');uqLbl.style.cssText='font-size:10px;color:#ff9966';uqLbl.textContent='⬆️ Question remontée';
+    const uqIn=document.createElement('input');uqIn.type='text';uqIn.value=p.qUp||'';uqIn.placeholder='Question pour remonter depuis ce palier…';
+    uqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,150,100,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    uqIn.oninput=e=>{plongeePaliers[i].qUp=e.target.value;checkReady();};
+    const uaIn=document.createElement('input');uaIn.type='text';uaIn.value=p.aUp||'';uaIn.placeholder='✅ Réponse…';
+    uaIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    uaIn.oninput=e=>{plongeePaliers[i].aUp=e.target.value;checkReady();};
+    d.append(hdr,dqLbl,dqIn,daIn,uqLbl,uqIn,uaIn);
+    list.appendChild(d);
+  });
+  checkReady();
+}
+// Auto-render on load
+setTimeout(()=>renderPlongeePaliers(),100);
+
+// ── RVLF ADMIN ──────────────────────────────────────────────────────────
+let rvlfQuestions=[];
+function renderRvlfQuestions(){
+  const list=document.getElementById('rvlf-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  rvlfQuestions.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:10px;color:var(--neon);font-family:var(--fh)';
+    lbl.textContent='CARTE '+(i+1)+'/10';
+    const inQ=document.createElement('input');
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:6px 8px;outline:none';
+    inQ.oninput=e=>{rvlfQuestions[i].q=e.target.value;checkReady();};
+    const inA=document.createElement('input');
+    inA.type='text';inA.value=q.a||'';inA.placeholder='✅ Bonne réponse';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inA.oninput=e=>{rvlfQuestions[i].a=e.target.value;checkReady();};
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='❌ Mauvaise réponse (leurre plausible)';
+    inW.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.2);color:var(--red);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inW.oninput=e=>{rvlfQuestions[i].w=e.target.value;checkReady();};
+    const del=document.createElement('button');
+    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
+    del.onclick=()=>{rvlfQuestions.splice(i,1);renderRvlfQuestions();};
+    d.append(lbl,inQ,inA,inW,del);
+    list.appendChild(d);
+  });
+  const btn=document.getElementById('btn-add-rvlf-q');
+  if(btn)btn.style.display=rvlfQuestions.length>=10?'none':'block';
+  checkReady();
+}
+document.getElementById('btn-add-rvlf-q').onclick=()=>{
+  if(rvlfQuestions.length>=10)return;
+  rvlfQuestions.push({q:'',a:'',w:''});renderRvlfQuestions();
+};
+
 function cancelEdit(){
   editId=null; buzzClues=[];
   document.getElementById('coeff-in').value = 1;
@@ -1100,8 +2608,18 @@ function cancelEdit(){
   document.getElementById('bj-target-in').value='';
   document.getElementById('bj-answers-in').value='';
   document.getElementById('bj-answers-count').textContent='0 entrée(s)';
-  document.getElementById('grimpe-theme-in').value='';
-  document.getElementById('grimpe-answers-in').value='';
+  document.getElementById('grimpe-theme-in').value='';grimpeItems=[];if(typeof renderGrimpeItems==='function')renderGrimpeItems();
+  if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value='';
+  mfQuestions=[];renderMFQuestions();
+  assautQuestions=[];arcCibles=[];nsCouloirs=[];nsSportifs=[];
+  haQuestions=[];hejQuestions=[];
+  if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value='';
+  if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value='';
+  if(document.getElementById('hej-theme'))document.getElementById('hej-theme').value='';
+  if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value='';
+  biatSprintItems=[];biatQCMItems=[];biatOrderItems=[];
+  renderBiatSprint();renderBiatQCM();renderBiatOrder();
+  
   document.getElementById('grimpe-count').textContent='0 réponse(s)';
   document.getElementById('img-url-in').value='';
   imgSrc='url'; imgBase64='';
@@ -1116,7 +2634,20 @@ function cancelEdit(){
   document.getElementById('prix-target-in').value='';
   document.getElementById('prix-unit-in').value='';
   document.getElementById('prix-tolerance-in').value='0';
-  selectPrixSensib([0,10,40,70,90]);
+  document.getElementById('var-text-in').value='';
+  document.getElementById('var-wrong-in').value='';
+  document.getElementById('var-correct-in').value='';
+  rvlfQuestions=[];renderRvlfQuestions();
+  const rvlfCb=document.getElementById('rvlf-notimer');if(rvlfCb)rvlfCb.checked=false;
+  plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
+  renderPlongeePaliers();
+  escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',nbRequired:1}));
+  bowlingQuestions=[];
+  renderEscaladeQuestions();
+  const et=document.getElementById('escalade-theme');if(et)et.value='';
+  const etol2=document.getElementById('escalade-tol');if(etol2)etol2.value=1;
+  const ptol2=document.getElementById('plongee-tol');if(ptol2)ptol2.value=1;
+  if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
   document.getElementById('trappe-q-in').value='';
   ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
   selectTrappeCorrect(0);
@@ -1203,9 +2734,97 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton'||currentType==='melimelo'||currentType==='apol'||currentType==='trivpursuit') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
-  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&parseGrimpeAnswers().length>=1;
+  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
+  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
+  else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
+  else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
+  else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
+  else if(currentType==='nagesync') hasContent=true;
+  else if(currentType==='escalade'){
+    const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile).length;
+    hasContent=filled===8;
+    // Show counter
+    const list=document.getElementById('escalade-q-list');
+    if(list){
+      const existing=list.querySelector('.esc-counter');
+      if(existing)existing.remove();
+      if(filled<8){
+        const ctr=document.createElement('div');
+        ctr.className='esc-counter';
+        ctr.style.cssText='font-size:11px;color:var(--mute);text-align:center;padding:4px';
+        ctr.textContent=filled+'/8 questions complètes';
+        list.appendChild(ctr);
+      }
+    }
+  }
+  else if(currentType==='plongee'){
+    hasContent=plongeePaliers.length===5&&plongeePaliers.every(p=>p.qDown&&p.aDown&&p.qUp&&p.aUp);
+  }
+  else if(currentType==='rvlf'){
+    hasContent=rvlfQuestions.length===10&&rvlfQuestions.every(q=>q.q&&q.a&&q.w);
+    const btn=document.getElementById('btn-add-rvlf-q');
+    const remaining=10-rvlfQuestions.length;
+    if(btn&&remaining>0)btn.textContent='➕ Question ('+rvlfQuestions.length+'/10 — encore '+remaining+')';
+    else if(btn)btn.textContent='✅ 10 questions saisies';
+  }
+  else if(currentType==='equitation'){
+    hasContent=equiObstacles.length===4&&equiObstacles.every(o=>{
+      const baseOk=o.question&&(o.answer||o.answer==='0');
+      if(o.type==='vf') return baseOk&&o.question2&&o.answer2&&o.question3&&o.answer3;
+      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3&&!!o.question4&&!!o.answer4;
+      if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
+      return baseOk;
+    });
+  }
+  else if(currentType==='bowling'){
+    hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
+  }
+  else if(currentType==='badminton'){
+    hasContent=badmintonQuestions.length>=1&&badmintonQuestions.every(q=>q.question&&q.a&&q.b&&q.correct!==undefined);
+    const status=document.getElementById('bad-admin-status');
+    if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées'+(badmintonQuestions.length<10?' (minimum 1)':'');
+  }
+  else if(currentType==='melimelo'){
+    hasContent=meliWords.length>=1&&meliWords.every(w=>w.scrambled&&w.answer);
+  }
+  else if(currentType==='apol'){
+    hasContent=apolQuestions.length>=1&&apolQuestions.every(q=>q.question&&q.answer);
+  }
+  else if(currentType==='trivpursuit'){
+    hasContent=trivThemes.length===6&&trivThemes.every(t=>t.name&&t.question&&t.answer)&&
+      trivQuestions.length===6&&trivQuestions.every(q=>q.question&&q.answer);
+  }
+  else if(currentType==='roulette'){
+    const txt=(document.getElementById('roulette-text')?.value||'').trim();
+    const ans=(document.getElementById('roulette-answer')?.value||'').trim();
+    const chambers=parseInt(document.getElementById('roulette-chambers')?.value||6);
+    const bullet=parseInt(document.getElementById('roulette-bullet')?.value||4);
+    const wordCount=txt.split(/\s+/).filter(Boolean).length;
+    hasContent=wordCount>=5&&ans.length>0&&bullet<=chambers;
+    // Show hint
+    const stats=document.getElementById('roulette-preview-stats');
+    if(stats){
+      if(ans.length===0) stats.textContent='⚠️ Sportif manquant';
+      else if(wordCount<5) stats.textContent='⚠️ Texte trop court ('+wordCount+' mots)';
+      else if(bullet>chambers) stats.textContent='⚠️ Position balle ('+bullet+') > taille chargeur ('+chambers+')';
+      else stats.textContent=wordCount+' mots · seed '+rouletteSeed;
+    }
+  }
+  else if(currentType==='var'){
+    const txt=(document.getElementById('var-text-in')?.value||'').trim();
+    const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
+    const correct=(document.getElementById('var-correct-in')?.value||'').trim();
+    // Normalize whitespace for the includes check
+    const txtNorm=txt.replace(/\s+/g,' ');
+    const wrongNorm=wrong.replace(/\s+/g,' ');
+    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txtNorm.includes(wrongNorm);
+  }
+  else if(currentType==='haltero'){
+    const s1=document.getElementById('ha-s1');
+    hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
+  }
   else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
   else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
   else if(currentType==='buzz') hasContent=buzzClues.length>0;
@@ -1347,17 +2966,636 @@ document.getElementById('prix-question-in').addEventListener('input',checkReady)
 document.getElementById('prix-target-in').addEventListener('input',checkReady);
 
 // ── GRIMPE ────────────────────────────────────────────────────────────────
+// ── ASSAUT ADMIN ──────────────────────────────────────────────────────────
+let assautP1=[];
+
+function renderAssautP1(){
+  const list=document.getElementById('assaut-p1-list');
+  if(!list)return;
+  list.innerHTML='';
+  assautP1.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:10px;color:var(--neon)';lbl.textContent='Q'+(i+1)+'/6';
+    // Question
+    const inQ=document.createElement('input');
+    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question…';
+    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inQ.oninput=e=>{assautP1[i].q=e.target.value;checkReady();};
+    // Bonne réponse
+    const inA=document.createElement('input');
+    inA.type='text';inA.value=q.a||'';inA.placeholder='🤺 Touche — bonne réponse (+1 case)';
+    inA.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inA.oninput=e=>{assautP1[i].a=e.target.value;checkReady();};
+    // Mauvaise réponse
+    const inW=document.createElement('input');
+    inW.type='text';inW.value=q.w||'';inW.placeholder='⚔️ Contre-attaque — mauvaise réponse (−1 case)';
+    inW.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,255,255,.1);color:var(--mute);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inW.oninput=e=>{assautP1[i].w=e.target.value;checkReady();};
+    // Piège
+    const inP=document.createElement('input');
+    inP.type='text';inP.value=q.p||'';inP.placeholder='🎭 Feinte (−2 cases) — réponse plausible mais fausse';
+    inP.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.3);color:var(--red);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
+    inP.oninput=e=>{assautP1[i].p=e.target.value;checkReady();};
+    // Delete
+    const del=document.createElement('button');
+    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
+    del.onclick=()=>{assautP1.splice(i,1);renderAssautP1();};
+    d.append(lbl,inQ,inA,inW,inP,del);
+    list.appendChild(d);
+  });
+  checkReady();
+}
+document.getElementById('btn-add-assaut-p1').onclick=()=>{
+  if(assautP1.length>=6)return alert('6 questions max');
+  assautP1.push({q:'',a:'',w:'',p:''});renderAssautP1();
+};
+// ── TIR À L'ARC ADMIN ─────────────────────────────────────────────────────
+
+let arcCibles=[];
+const DIFF_PTS={facile:11,moyen:22,difficile:33};
+
+function renderArcCibles(){
+  const list=document.getElementById('arc-cibles-list');
+  const count=document.getElementById('arc-count');
+  if(!list)return;
+  list.innerHTML='';
+  arcCibles.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px';
+    // Label
+    const label=document.createElement('div');
+    label.style.cssText='font-family:var(--fh);font-size:11px;color:var(--neon);letter-spacing:1px';
+    label.textContent='🎯 CIBLE '+(i+1);
+    // Stat
+    const inStat=document.createElement('input');
+    inStat.type='text';inStat.value=c.stat||'';inStat.placeholder='Stat à deviner (ex: Buts en carrière)…';
+    inStat.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 10px;outline:none';
+    inStat.oninput=e=>{arcCibles[i].stat=e.target.value;checkReady();};
+    // Valeur + Max slider
+    const rowTop=document.createElement('div');rowTop.style.cssText='display:flex;gap:6px';
+    const inVal=document.createElement('input');
+    inVal.type='number';inVal.value=c.value||'';inVal.placeholder='Valeur exacte';
+    inVal.style.cssText='flex:1;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:6px 8px;outline:none';
+    inVal.oninput=e=>{arcCibles[i].value=parseInt(e.target.value)||0;arcRenderRanges(i);checkReady();};
+    const inMax=document.createElement('input');
+    inMax.type='number';inMax.value=c.max||'';inMax.placeholder='Max slider (ex: 2× la valeur)';
+    inMax.style.cssText='flex:1;background:var(--c1);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:6px 8px;outline:none';
+    inMax.oninput=e=>{arcCibles[i].max=parseInt(e.target.value)||100;};
+    rowTop.append(inVal,inMax);
+    // 3 tolerance fields per distance
+    const tolTitle=document.createElement('div');
+    tolTitle.style.cssText='font-size:10px;color:var(--mute);margin-top:2px';
+    tolTitle.textContent='Écart accepté ± par distance (% de la valeur exacte)';
+    const tolRow=document.createElement('div');tolRow.style.cssText='display:flex;gap:6px';
+    [['facile','🟢 11m','var(--neon)','tol11'],['moyen','🟡 22m','#f59e0b','tol22'],['difficile','🔴 33m','var(--red)','tol33']].forEach(([key,lbl,col,field])=>{
+      const wrap=document.createElement('div');wrap.style.cssText='flex:1;display:flex;flex-direction:column;gap:2px';
+      const l=document.createElement('div');l.style.cssText='font-size:10px;color:'+col;l.textContent=lbl;
+      const inp=document.createElement('input');
+      inp.type='number';inp.value=c[field]||'';inp.placeholder='%';
+      inp.min=1;inp.max=50;
+      inp.style.cssText='width:100%;background:var(--c1);border:1px solid '+col.replace(')',', .4)').replace('var(','rgba(')+';color:'+col+';font-size:13px;font-weight:700;border-radius:6px;padding:5px 8px;outline:none';
+      inp.style.cssText='width:100%;background:var(--c1);border:none;color:'+col+';font-size:13px;font-weight:700;border-radius:6px;padding:5px 8px;outline:none';
+      inp.oninput=e=>{arcCibles[i][field]=parseInt(e.target.value)||null;arcRenderRanges(i);};
+      wrap.append(l,inp);tolRow.appendChild(wrap);
+    });
+    // Range preview
+    const rangeDiv=document.createElement('div');
+    rangeDiv.id='arc-range-'+i;
+    rangeDiv.style.cssText='font-size:11px;color:var(--mute);line-height:2;background:var(--c1);border-radius:6px;padding:6px 10px';
+    rangeDiv.textContent='Entrez la valeur exacte pour voir les plages';
+    // Delete
+    const del=document.createElement('button');
+    del.textContent='🗑 Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;align-self:flex-start';
+    del.onclick=()=>{arcCibles.splice(i,1);renderArcCibles();};
+    d.append(label,inStat,rowTop,tolTitle,tolRow,rangeDiv,del);
+    list.appendChild(d);
+    setTimeout(()=>arcRenderRanges(i),10);
+  });
+  if(count)count.textContent=arcCibles.length+'/3 cibles';
+  checkReady();
+}
+
+function arcRenderRanges(i){
+  const c=arcCibles[i]; if(!c)return;
+  const el=document.getElementById('arc-range-'+i); if(!el)return;
+  const v=c.value||0; if(!v){el.textContent='Entrez la valeur exacte pour voir les plages';return;}
+  // Use per-cible tolerance only (no global fallback — fields removed)
+  const t11=c.tol11||20; const t22=c.tol22||8; const t33=c.tol33||3;
+  const r11=Math.round(v*t11/100); const r22=Math.round(v*t22/100); const r33=Math.round(v*t33/100);
+  el.innerHTML=
+    '🟢 11m (±'+t11+'%) : <strong style="color:var(--neon)">'+(v-r11)+'</strong> → <strong style="color:var(--neon)">'+(v+r11)+'</strong><br>'+
+    '🟡 22m (±'+t22+'%) : <strong style="color:#f59e0b">'+(v-r22)+'</strong> → <strong style="color:#f59e0b">'+(v+r22)+'</strong><br>'+
+    '🔴 33m (±'+t33+'%) : <strong style="color:var(--red)">'+(v-r33)+'</strong> → <strong style="color:var(--red)">'+(v+r33)+'</strong>';
+}
+
+function arcUpdateRanges(i){arcRenderRanges(i);}
+document.getElementById('btn-add-arc').onclick=()=>{
+  if(arcCibles.length>=3)return alert('3 cibles max');
+  arcCibles.push({stat:'',value:0,max:100,tol11:null,tol22:null,tol33:null});
+  renderArcCibles();
+};
+
+// ── NAGE SYNC ADMIN ────────────────────────────────────────────────────────
+let nsCouloirs=[], nsSportifs=[];
+
+function renderNsCouloirs(){
+  const list=document.getElementById('ns-couloirs-list');
+  if(!list)return;
+  list.innerHTML='';
+  nsCouloirs.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;gap:6px;align-items:center';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-family:var(--fh);font-size:11px;color:var(--cyan);min-width:22px';
+    lbl.textContent=(i+1);
+    const inp=document.createElement('input');
+    inp.type='text';inp.value=c.label||'';inp.placeholder='Ex: France ou 5 titres…';
+    inp.style.cssText='flex:1;background:var(--c1);border:1px solid rgba(0,229,200,.3);color:var(--txt);font-size:12px;border-radius:6px;padding:5px 8px;outline:none';
+    inp.oninput=e=>{nsCouloirs[i].label=e.target.value;checkReady();};
+    const del=document.createElement('button');
+    del.textContent='✕';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:13px';
+    del.onclick=()=>{nsCouloirs.splice(i,1);renderNsCouloirs();renderNsSportifs();};
+    d.append(lbl,inp,del);
+    list.appendChild(d);
+  });
+  checkReady();
+}
+function renderNsSportifs(){
+  const list=document.getElementById('ns-sportifs-list');
+  if(!list)return;
+  list.innerHTML='';
+  nsSportifs.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;flex-direction:column;gap:4px;background:var(--c2);border-radius:8px;padding:8px 10px';
+    const inp=document.createElement('input');
+    inp.type='text';inp.value=s.nom||'';inp.placeholder='Nom du sportif…';
+    inp.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 10px;outline:none';
+    inp.oninput=e=>{nsSportifs[i].nom=e.target.value;checkReady();};
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:10px;color:var(--mute)';lbl.textContent='→ Couloir(s) :';
+    // Multiple checkboxes for each couloir
+    const cbWrap=document.createElement('div');
+    cbWrap.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
+    const maxCouloirs=Math.max(8,nsCouloirs.length);
+    const selectedCouloirs=Array.isArray(s.correct)?s.correct:[s.correct].filter(x=>x!==undefined);
+    for(let n=0;n<maxCouloirs;n++){
+      const label=document.createElement('label');
+      label.style.cssText='display:flex;align-items:center;gap:3px;cursor:pointer;background:var(--c1);border-radius:6px;padding:4px 8px;font-size:11px;color:'+(selectedCouloirs.includes(n)?'var(--neon)':'var(--mute)')+';border:1px solid '+(selectedCouloirs.includes(n)?'var(--neon)':'rgba(255,255,255,.1)');
+      const cb=document.createElement('input');
+      cb.type='checkbox';cb.checked=selectedCouloirs.includes(n);cb.style.cssText='accent-color:var(--neon)';
+      cb.onchange=(()=>{
+        const idx_i=i;
+        const idx_n=n;
+        return ()=>{
+          const cur=Array.isArray(nsSportifs[idx_i].correct)?[...nsSportifs[idx_i].correct]:[nsSportifs[idx_i].correct].filter(x=>x!==undefined&&x!==null);
+          if(cb.checked){if(!cur.includes(idx_n))cur.push(idx_n);}
+          else{const pos=cur.indexOf(idx_n);if(pos>-1)cur.splice(pos,1);}
+          nsSportifs[idx_i].correct=cur.length===1?cur[0]:cur;
+          // Update label style without full re-render
+          label.style.color=cb.checked?'var(--neon)':'var(--mute)';
+          label.style.borderColor=cb.checked?'var(--neon)':'rgba(255,255,255,.1)';
+        };
+      })();
+      label.append(cb,document.createTextNode('C'+(n+1)));
+      cbWrap.appendChild(label);
+    }
+    row.append(lbl,cbWrap);
+    const del=document.createElement('button');
+    del.textContent='✕ Supprimer';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px;align-self:flex-start';
+    del.onclick=()=>{nsSportifs.splice(i,1);renderNsSportifs();};
+    d.append(inp,row,del);
+    list.appendChild(d);
+  });
+  checkReady();
+}
+document.getElementById('btn-add-couloir').onclick=()=>{
+  if(nsCouloirs.length>=8)return alert('8 couloirs max');
+  nsCouloirs.push({label:''});renderNsCouloirs();renderNsSportifs();
+};
+document.getElementById('btn-add-sportif').onclick=()=>{
+  if(nsSportifs.length>=10)return alert('10 sportifs max');
+  nsSportifs.push({nom:'',correct:0});renderNsSportifs();
+};
+
+// ── HALTERO ADMIN ─────────────────────────────────────────────────────────
+let haQuestions=[], hejQuestions=[];
+
+function renderHAQuestions(){
+  const list=document.getElementById('ha-q-list');
+  const count=document.getElementById('ha-q-count');
+  if(!list)return;
+  list.innerHTML='';
+  haQuestions.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    const s1=document.getElementById('ha-s1')?.value.trim()||'S1';
+    const s2=document.getElementById('ha-s2')?.value.trim()||'S2';
+    div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">Q${i+1} · 20 pts</div>
+      <input type="text" value="${(q.criterion||'').replace(/"/g,'&quot;')}" placeholder="Ex: Titres du Grand Chelem" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:6px;outline:none">
+      <div style="display:flex;gap:8px">
+        <button id="ha-s1-${i}" onclick="haSetAnswer(${i},'s1')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${q.answer==='s1'?'var(--neon)':'rgba(255,255,255,.1)'};background:${q.answer==='s1'?'rgba(212,255,0,.1)':'var(--c1)'};color:${q.answer==='s1'?'var(--neon)':'var(--mute)'};font-size:12px;font-weight:800;cursor:pointer;font-family:var(--ff)">${s1}</button>
+        <button id="ha-s2-${i}" onclick="haSetAnswer(${i},'s2')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${q.answer==='s2'?'var(--cyan)':'rgba(255,255,255,.1)'};background:${q.answer==='s2'?'rgba(0,229,200,.1)':'var(--c1)'};color:${q.answer==='s2'?'var(--cyan)':'var(--mute)'};font-size:12px;font-weight:800;cursor:pointer;font-family:var(--ff)">${s2}</button>
+      </div>
+      <button onclick="haQuestions.splice(${i},1);renderHAQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:6px">🗑 Supprimer</button>`;
+    const inp=div.querySelector('input');
+    inp.addEventListener('input',e=>{haQuestions[i].criterion=e.target.value;});
+    list.appendChild(div);
+  });
+  if(count)count.textContent=haQuestions.length+'/5 questions';
+  checkReady();
+}
+
+function haSetAnswer(i,val){haQuestions[i].answer=val;renderHAQuestions();}
+
+function renderHEJQuestions(){
+  const list=document.getElementById('hej-q-list');
+  if(!list)return;
+  list.innerHTML='';
+  const levels=['Duo (2 choix)','Trio (3 choix)','Carré (4 choix)','Cash (saisie libre)'];
+  hejQuestions.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    const nChoices=i+2<=4?i+2:0;
+    div.innerHTML=`<div style="font-size:11px;color:var(--cyan);margin-bottom:6px">Q${i+1} — ${levels[i]||'?'}</div>
+      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:4px;outline:none">
+      <input type="text" value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">
+      ${[0,1,2].slice(0,Math.max(0,nChoices-1)).map(j=>`<input type="text" value="${(q.wrong&&q.wrong[j]||'').replace(/"/g,'&quot;')}" placeholder="Leurre ${j+1}…" style="width:100%;background:var(--c1);border:none;color:var(--mute);font-size:11px;border-radius:6px;padding:4px 8px;margin-bottom:3px;outline:none">`).join('')}
+      <button onclick="hejQuestions.splice(${i},1);renderHEJQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px">🗑 Supprimer</button>`;
+    const inputs=div.querySelectorAll('input');
+    inputs[0].addEventListener('input',e=>{hejQuestions[i].question=e.target.value;});
+    inputs[1].addEventListener('input',e=>{hejQuestions[i].answer=e.target.value;});
+    for(let j=0;j<3;j++){
+      if(inputs[2+j]) inputs[2+j].addEventListener('input',e=>{
+        if(!hejQuestions[i].wrong)hejQuestions[i].wrong=['','',''];
+        hejQuestions[i].wrong[j]=e.target.value;
+      });
+    }
+    list.appendChild(div);
+  });
+  checkReady();
+}
+
+const _btnAddHA=document.getElementById('btn-add-ha-q');
+if(_btnAddHA)_btnAddHA.onclick=()=>{
+  if(haQuestions.length>=5)return alert('5 questions max');
+  haQuestions.push({criterion:'',answer:'s1'});
+  renderHAQuestions();
+};
+// Listeners pour checkReady
+['ha-s1','ha-s2','hej-theme'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
+const _btnAddHEJ=document.getElementById('btn-add-hej-q');
+if(_btnAddHEJ)_btnAddHEJ.onclick=()=>{
+  if(hejQuestions.length>=4)return alert('4 questions max');
+  hejQuestions.push({question:'',answer:'',wrong:['','','']});
+  renderHEJQuestions();
+};
+
+// ── MAILLON FAIBLE ADMIN ──────────────────────────────────────────────────
+let mfQuestions=[];
+
+function renderMFQuestions(){
+  const list=document.getElementById('mf-questions-list');
+  const count=document.getElementById('mf-count');
+  if(!list)return;
+  list.innerHTML='';
+  const CUMUL=[8,19,31,45,61,80,100];
+  mfQuestions.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    const isVrai=(q.answer||'Vrai')==='Vrai';
+    div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">Q${i+1} — Palier ${i+1} → ${CUMUL[i]||'?'} pts</div>
+      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Affirmation vraie ou fausse…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:8px;outline:none">
+      <div style="display:flex;gap:8px">
+        <button id="mf-vrai-${i}" onclick="mfSetAnswer(${i},'Vrai')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${isVrai?'var(--neon)':'rgba(255,255,255,.1)'};background:${isVrai?'rgba(212,255,0,.1)':'var(--c1)'};color:${isVrai?'var(--neon)':'var(--mute)'};font-weight:800;cursor:pointer;font-family:var(--ff)">✅ VRAI</button>
+        <button id="mf-faux-${i}" onclick="mfSetAnswer(${i},'Faux')" style="flex:1;padding:8px;border-radius:8px;border:2px solid ${!isVrai?'var(--red)':'rgba(255,255,255,.1)'};background:${!isVrai?'rgba(255,60,60,.1)':'var(--c1)'};color:${!isVrai?'var(--red)':'var(--mute)'};font-weight:800;cursor:pointer;font-family:var(--ff)">❌ FAUX</button>
+      </div>
+      <button onclick="mfQuestions.splice(${i},1);renderMFQuestions()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:8px">🗑 Supprimer</button>`;
+    const inp=div.querySelector('input');
+    inp.addEventListener('input',e=>{mfQuestions[i].question=e.target.value;});
+    list.appendChild(div);
+  });
+  if(count)count.textContent=mfQuestions.filter(q=>q.question&&q.answer).length+'/10 questions';
+  checkReady();
+}
+
+function mfSetAnswer(i,val){mfQuestions[i].answer=val;renderMFQuestions();}
+const _btnAddMF=document.getElementById('btn-add-mf-q');
+if(_btnAddMF)_btnAddMF.onclick=()=>{
+  if(mfQuestions.length>=10)return alert('10 questions max');
+  mfQuestions.push({question:'',answer:'Vrai',wrong:[]});
+  renderMFQuestions();
+};
+
+// ── BIATHLON ADMIN ─────────────────────────────────────────────────────────
+let biatSprintItems=[], biatQCMItems=[], biatOrderItems=[];
+
+function renderBiatSprint(){
+  const list=document.getElementById('biat-sprint-list');
+  if(!list)return;
+  list.innerHTML='';
+  biatSprintItems.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:6px;background:var(--c2);border-radius:8px;padding:6px 8px';
+    div.innerHTML=`<input type="text" value="${item.replace(/"/g,'&quot;')}" style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" placeholder="Ex: Federer;Roger Federer"><button onclick="biatSprintItems.splice(${i},1);renderBiatSprint()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:0 4px">×</button>`;
+    div.querySelector('input').addEventListener('input',e=>{biatSprintItems[i]=e.target.value;});
+    list.appendChild(div);
+  });
+  const c=document.getElementById('biat-sprint-count');
+  if(c)c.textContent=biatSprintItems.filter(x=>x.trim()).length+' réponse(s)';
+  checkReady();
+
+  checkReady();}
+
+function renderBiatQCM(){
+  const list=document.getElementById('biat-qcm-list');
+  if(!list)return;
+  list.innerHTML='';
+  biatQCMItems.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px';
+    div.innerHTML=`<div style="font-size:11px;color:var(--neon);margin-bottom:6px">CIBLE ${i+1}</div>
+      <input type="text" value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:6px;outline:none">
+      <input type="text" value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Bonne réponse…" style="width:100%;background:var(--c1);border:1px solid var(--neon);color:var(--neon);font-size:13px;border-radius:6px;padding:6px 8px;margin-bottom:4px;outline:none">
+      <div style="font-size:11px;color:var(--mute);margin-bottom:4px">3 mauvaises réponses (leurres) :</div>
+      ${[0,1,2].map(j=>`<input type="text" value="${(q.wrong&&q.wrong[j]||'').replace(/"/g,'&quot;')}" placeholder="Leurre ${j+1}…" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:5px 8px;margin-bottom:4px;outline:none">`).join('')}
+      <button onclick="biatQCMItems.splice(${i},1);renderBiatQCM()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:4px">🗑 Supprimer</button>`;
+    // Bind inputs
+    const inputs=div.querySelectorAll('input');
+    inputs[0].addEventListener('input',e=>{biatQCMItems[i].question=e.target.value;});
+    inputs[1].addEventListener('input',e=>{biatQCMItems[i].answer=e.target.value;});
+    inputs[2].addEventListener('input',e=>{if(!biatQCMItems[i].wrong)biatQCMItems[i].wrong=['','',''];biatQCMItems[i].wrong[0]=e.target.value;});
+    inputs[3].addEventListener('input',e=>{if(!biatQCMItems[i].wrong)biatQCMItems[i].wrong=['','',''];biatQCMItems[i].wrong[1]=e.target.value;});
+    inputs[4].addEventListener('input',e=>{if(!biatQCMItems[i].wrong)biatQCMItems[i].wrong=['','',''];biatQCMItems[i].wrong[2]=e.target.value;});
+    list.appendChild(div);
+  });
+  checkReady();
+
+  checkReady();}
+
+function renderBiatOrder(){
+  const list=document.getElementById('biat-order-list');
+  if(!list)return;
+  list.innerHTML='';
+  biatOrderItems.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:8px;padding:6px 8px';
+    div.innerHTML=`<span style="font-size:12px;color:var(--neon);font-weight:800;min-width:18px">${i+1}.</span><input type="text" value="${item.replace(/"/g,'&quot;')}" style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" placeholder="Ex: Federer (1998)"><button onclick="biatOrderItems.splice(${i},1);renderBiatOrder()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:0 4px">×</button>`;
+    div.querySelector('input').addEventListener('input',e=>{biatOrderItems[i]=e.target.value;});
+    list.appendChild(div);
+  });
+  checkReady();
+
+  checkReady();}
+
+const _biatBulkBtn=document.getElementById('btn-biat-sprint-bulk');
+if(_biatBulkBtn)_biatBulkBtn.onclick=()=>{
+  const bulk=document.getElementById('biat-sprint-bulk').value;
+  biatSprintItems.push(...bulk.split('\n').map(l=>l.trim()).filter(Boolean));
+  document.getElementById('biat-sprint-bulk').value='';
+  renderBiatSprint();
+};
+const _biatAddSprint=document.getElementById('btn-add-biat-sprint');
+if(_biatAddSprint)_biatAddSprint.onclick=()=>{biatSprintItems.push('');renderBiatSprint();const ins=document.getElementById('biat-sprint-list').querySelectorAll('input');if(ins.length)ins[ins.length-1].focus();};
+// Listeners checkReady pour champs biathlon
+['biat-theme-in','biat-order-question-in','biat-announce-time-in'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',checkReady);
+});
+const _biatAddQCM=document.getElementById('btn-add-biat-qcm');
+if(_biatAddQCM)_biatAddQCM.onclick=()=>{if(biatQCMItems.length>=3)return alert('3 questions max');biatQCMItems.push({question:'',answer:'',wrong:['','','']});renderBiatQCM();};
+const _biatAddOrder=document.getElementById('btn-add-biat-order');
+if(_biatAddOrder)_biatAddOrder.onclick=()=>{if(biatOrderItems.length>=5)return alert('5 éléments max');biatOrderItems.push('');renderBiatOrder();const ins=document.getElementById('biat-order-list').querySelectorAll('input');if(ins.length)ins[ins.length-1].focus();};
+
+// ── GRIMPE ITEMS ───────────────────────────────────────────────────────────
+let grimpeItems=[];
+function renderGrimpeItems(){
+  const list=document.getElementById('grimpe-items-list');
+  if(!list)return;
+  list.innerHTML='';
+  grimpeItems.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:6px;background:var(--c2);border-radius:8px;padding:6px 8px';
+    div.innerHTML=`<input type="text" value="${item.replace(/"/g,'&quot;')}" style="flex:1;background:transparent;border:none;color:var(--txt);font-size:13px;outline:none" placeholder="Ex: Pogacar;Tadej Pogacar"><button onclick="grimpeItems.splice(${i},1);renderGrimpeItems();checkReady()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>`;
+    div.querySelector('input').addEventListener('input',e=>{grimpeItems[i]=e.target.value;checkReady();});
+    list.appendChild(div);
+  });
+  const countEl=document.getElementById('grimpe-count');
+  if(countEl)countEl.textContent=grimpeItems.filter(x=>x.trim()).length+' réponse(s)';
+}
 function parseGrimpeAnswers(){
-  const raw=document.getElementById('grimpe-answers-in').value;
-  return raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
+  return grimpeItems.map(x=>x.trim()).filter(Boolean).map(line=>line.split(';')[0].trim()).filter(Boolean);
+}
+function parseGrimpeAnswersFull(){
+  return grimpeItems.map(x=>x.trim()).filter(Boolean).map(line=>line.split(';').map(s=>s.trim()).filter(Boolean));
 }
 function grimpeParam(id,def){ const v=parseInt(document.getElementById(id)?.value); return isNaN(v)?def:v; }
 document.getElementById('grimpe-theme-in').addEventListener('input',checkReady);
-document.getElementById('grimpe-answers-in').addEventListener('input',e=>{
-  const arr=parseGrimpeAnswers();
-  document.getElementById('grimpe-count').textContent=arr.length+' réponse(s)';
-  checkReady();
-});
+document.getElementById('btn-grimpe-bulk').onclick=()=>{
+  const bulk=document.getElementById('grimpe-bulk-in').value;
+  const items=bulk.split('\n').map(l=>l.trim()).filter(Boolean);
+  grimpeItems.push(...items);
+  document.getElementById('grimpe-bulk-in').value='';
+  renderGrimpeItems();checkReady();
+};
+document.getElementById('btn-add-grimpe-item').onclick=()=>{
+  grimpeItems.push('');renderGrimpeItems();
+  const inputs=document.getElementById('grimpe-items-list').querySelectorAll('input');
+  if(inputs.length)inputs[inputs.length-1].focus();
+};
+
+// ── POPUP BIENVENUE ─────────────────────────────────────────────────────────
+async function loadPopupConfig(){
+  try{
+    const r=await fetch('/api/popup');
+    const d=await r.json();
+    document.getElementById('popup-active-in').checked=!!d.active;
+    document.getElementById('popup-title-in').value=d.title||'';
+    document.getElementById('popup-msg-in').value=d.message||'';
+    document.getElementById('popup-emoji-in').value=d.emoji||'🏆';
+    document.getElementById('popup-color-in').value=d.color||'#d4ff00';
+  }catch(e){}
+}
+async function savePopup(){
+  const active=document.getElementById('popup-active-in').checked;
+  const title=document.getElementById('popup-title-in').value.trim();
+  const message=document.getElementById('popup-msg-in').value.trim();
+  const emoji=document.getElementById('popup-emoji-in').value.trim()||'🏆';
+  const color=document.getElementById('popup-color-in').value||'#d4ff00';
+  const r=await fetch('/api/admin/popup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,title,message,emoji,color,active})});
+  const d=await r.json();
+  document.getElementById('popup-msg-status').textContent=d.ok?'✅ Sauvegardé':'❌ Erreur';
+  setTimeout(()=>{document.getElementById('popup-msg-status').textContent='';},2000);
+}
+async function clearPopup(){
+  document.getElementById('popup-active-in').checked=false;
+  await fetch('/api/admin/popup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,title:'',message:'',emoji:'🏆',color:'#d4ff00',active:false})});
+  document.getElementById('popup-title-in').value='';
+  document.getElementById('popup-msg-in').value='';
+  document.getElementById('popup-msg-status').textContent='✅ Popup désactivé';
+  setTimeout(()=>{document.getElementById('popup-msg-status').textContent='';},2000);
+}
+
+// ── COMPTES ─────────────────────────────────────────────────────────────────
+// ── ÉQUIPES ADMIN ──────────────────────────────────────────────────────────
+let _adminTeams=[];
+
+async function loadEquipes(){
+  const r=await fetch('/api/teams');
+  const d=await r.json();
+  _adminTeams=d.teams||[];
+  renderTeamsList();
+}
+
+function renderTeamsList(){
+  const list=document.getElementById('teams-list');
+  if(!list)return;
+  if(!_adminTeams.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:12px">Aucune équipe créée.</div>';return;}
+  list.innerHTML='';
+  _adminTeams.forEach(t=>{
+    const div=document.createElement('div');
+    div.style.cssText=`display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;border:2px solid ${t.color};background:${t.color}22`;
+    div.innerHTML=`<span style="font-size:22px">${t.emoji}</span>
+      <div style="flex:1;font-weight:700;font-size:15px;color:${t.color}">${t.name}</div>
+      <button onclick="deleteTeam('${t.id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">🗑</button>`;
+    list.appendChild(div);
+  });
+}
+
+async function createTeam(){
+  const name=document.getElementById('team-name-in').value.trim();
+  const emoji=document.getElementById('team-emoji-in').value.trim()||'👥';
+  const color=document.getElementById('team-color-in').value||'#6366f1';
+  if(!name)return alert('Nom obligatoire');
+  const r=await fetch('/api/admin/teams',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,name,emoji,color})});
+  const d=await r.json();
+  if(d.ok){document.getElementById('team-name-in').value='';document.getElementById('team-emoji-in').value='';loadEquipes();}
+  else alert('Erreur: '+d.error);
+}
+
+async function deleteTeam(id){
+  if(!confirm('Supprimer cette équipe ?'))return;
+  await fetch('/api/admin/teams/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadEquipes();loadTeamPlayers();
+}
+
+async function loadTeamPlayers(){
+  const list=document.getElementById('team-players-list');
+  list.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement...</div>';
+  const r=await fetch('/api/admin/team-players?password='+encodeURIComponent(adminPw));
+  const d=await r.json();
+  list.innerHTML='';
+  (d.groups||[]).forEach(g=>{
+    if(!g.players.length)return;
+    const div=document.createElement('div');
+    div.style.cssText=`border:1px solid ${g.team.color||'#666'};border-radius:12px;padding:10px 12px`;
+    div.innerHTML=`<div style="font-weight:700;font-size:13px;color:${g.team.color||'#fff'};margin-bottom:8px">${g.team.emoji} ${g.team.name} (${g.players.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${g.players.map(p=>`<div style="display:flex;align-items:center;gap:4px;background:var(--c2);border-radius:8px;padding:4px 10px;font-size:12px">
+        ${p.pseudo}
+        <select onchange="movePlayer('${p.pseudo}',this.value)" style="background:var(--c1);border:none;color:var(--mute);font-size:10px;cursor:pointer;border-radius:4px;padding:2px">
+          <option value="">↕ Déplacer</option>
+          ${_adminTeams.map(t=>`<option value="${t.id}" ${t.id===p.teamId?'selected':''}>${t.emoji} ${t.name}</option>`).join('')}
+          <option value="none">❓ Sans équipe</option>
+        </select>
+      </div>`).join('')}</div>`;
+    list.appendChild(div);
+  });
+}
+
+async function movePlayer(pseudo,teamId){
+  if(!teamId)return;
+  await fetch('/api/account/set-team',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pseudo,teamId:teamId==='none'?null:teamId})});
+  setTimeout(loadTeamPlayers,300);
+}
+
+async function loadTeamScores(){
+  const min=document.getElementById('team-min-in').value||4;
+  const r=await fetch('/api/scores/teams?min='+min);
+  const d=await r.json();
+  const list=document.getElementById('team-scores-list');
+  if(!d.teams||!d.teams.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center">Aucun score équipe.</div>';return;}
+  list.innerHTML='';
+  d.teams.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText=`display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:${t.color}22;border:1px solid ${t.color}`;
+    div.innerHTML=`<div style="font-family:var(--fh);font-size:20px;color:var(--mute);min-width:24px">${i+1}.</div>
+      <div style="font-size:22px">${t.emoji}</div>
+      <div style="flex:1"><div style="font-weight:700;color:${t.color}">${t.name}</div>
+        <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)${!t.qualified?' — pas assez de joueurs':''}</div></div>
+      ${t.qualified?`<div style="font-family:var(--fh);font-size:22px;color:${t.color}">${t.avg}</div>
+        <div style="font-size:11px;color:var(--mute)">pts moy.</div>`:'<div style="font-size:12px;color:var(--mute)">—</div>'}`;
+    list.appendChild(div);
+  });
+}
+
+async function loadIdees(){
+  const r=await fetch('/api/suggestions');
+  const d=await r.json();
+  const list=document.getElementById('idees-list');
+  const count=document.getElementById('idees-count');
+  const sug=d.suggestions||[];
+  if(count)count.textContent=sug.length+' idée(s)';
+  list.innerHTML='';
+  if(!sug.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucune idée soumise.</div>';return;}
+  sug.forEach(s=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--c2);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start';
+    div.innerHTML=`<div style="flex:1">
+      <div style="font-size:13px;color:var(--txt);line-height:1.5">${s.text}</div>
+      <div style="font-size:11px;color:var(--mute);margin-top:4px">
+        👤 ${s.pseudo} · ${new Date(s.date).toLocaleDateString('fr-FR')} · 👍 ${s.votes||0} vote(s)
+      </div>
+    </div>
+    <button onclick="deleteIdee('${s.id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">🗑</button>`;
+    list.appendChild(div);
+  });
+}
+
+async function deleteIdee(id){
+  await fetch('/api/suggestion/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadIdees();
+}
+
+async function loadComptes(){
+  const list=document.getElementById('comptes-list');
+  const countEl=document.getElementById('comptes-count');
+  list.innerHTML='<div style="color:var(--mute);font-size:13px">Chargement...</div>';
+  try{
+    const res=await fetch('/api/admin/accounts?password='+encodeURIComponent(adminPw));
+    const data=await res.json();
+    if(!data.accounts){list.innerHTML='<div style="color:var(--red)">Erreur</div>';return;}
+    countEl.textContent=data.accounts.length+' compte(s)';
+    if(!data.accounts.length){list.innerHTML='<div style="color:var(--mute);text-align:center;padding:16px">Aucun compte créé.</div>';return;}
+    list.innerHTML='';
+    data.accounts.forEach(a=>{
+      const isIPPseudo=/^[\d\.:a-f]{7,}$/i.test(a.pseudo);
+      const div=document.createElement('div');
+      div.style.cssText='display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:10px 14px'+(isIPPseudo?';opacity:0.6':'');
+      const date=a.createdAt?new Date(a.createdAt).toLocaleDateString('fr-FR'):'';
+      const ipStr=a.ip?`<span style="font-size:10px;color:var(--mute);margin-left:6px">${a.ip}</span>`:'';
+      const pseudoDisplay=isIPPseudo?`<span style="color:var(--red)">${esc(a.pseudo)} ⚠️</span>`:esc(a.pseudo||'(sans pseudo)');
+      div.innerHTML=`<div><div style="font-weight:700;font-size:14px">${pseudoDisplay}${ipStr}</div><div style="font-size:11px;color:var(--mute)">${date}${a.teamId?' · 👥':''}</div></div><button onclick="deleteCompte('${esc(a.pseudo)}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑</button>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML='<div style="color:var(--red)">Erreur réseau</div>';}
+}
+async function deleteCompte(pseudo){
+  if(!confirm('Supprimer "'+pseudo+'" ?'))return;
+  const res=await fetch('/api/account/'+encodeURIComponent(pseudo),{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  const d=await res.json();
+  if(d.ok)loadComptes();else alert('Erreur: '+(d.error||'inconnue'));
+}
+
 
 // ── BLACKJACK ──────────────────────────────────────────────────────────────
 function parseBJAnswers(){
@@ -1365,7 +3603,7 @@ function parseBJAnswers(){
   const lines=raw.replace(/;/g,'\n').split('\n').map(l=>l.trim()).filter(Boolean);
   const obj={};
   lines.forEach(l=>{
-    const m=l.match(/^(.+?)=(\d+)$/);
+    const m=l.match(/^(.+?)\s*=\s*(\d+)$/);
     if(m) obj[m[1].trim()]=parseInt(m[2]);
   });
   return {obj, count:Object.keys(obj).length};
@@ -1546,134 +3784,6 @@ function removeDemItem(i){
 });
 
 // Chaleur configurator — seuils des 5 niveaux (affichage uniquement, pas le score)
-// chaleurSeuils[i] = seuil min du niveau i (le joueur voit ce niveau si displayPrecision >= seuil)
-let chaleurSeuils = [0, 10, 40, 70, 90]; // GLACIAL, FROID, TIÈDE, CHAUD, BRÛLANT
-const CHALEUR_DEF = [
-  {ico:'⛄', label:'GLACIAL',  color:'#1565c0'},
-  {ico:'🧊', label:'FROID',    color:'#4fc3f7'},
-  {ico:'🌤️', label:'TIÈDE',    color:'#fff176'},
-  {ico:'🌡️', label:'CHAUD',    color:'#ff9800'},
-  {ico:'🔥', label:'BRÛLANT',  color:'#ff4020'},
-];
-
-function getChaleurTarget(){
-  const t=parseFloat(document.getElementById('prix-target-in').value);
-  return isNaN(t)||t<=0 ? null : t;
-}
-
-function seuilToDisplay(seuil, target){
-  // seuil = min/max ratio * 100 (ex: 90 = guess/target = 0.9)
-  // En valeur brute : guess = target * seuil/100 ou target * 100/seuil
-  if(!target) return (100-seuil).toFixed(0)+'% d\'écart';
-  // La valeur brute qui donne ce ratio : target * seuil/100 (en dessous) ou target * 100/seuil (au dessus)
-  // On affiche l'écart brut : target - target*seuil/100 = target*(1-seuil/100)
-  const ecartBrut = Math.round(target * (1 - seuil/100));
-  const unit = document.getElementById('prix-unit-in').value.trim();
-  return '±' + ecartBrut + (unit?' '+unit:'');
-}
-
-function seuilFromRawEcart(ecartBrut, target){
-  // Inverse : ratio = 1 - ecartBrut/target → seuil = (1 - ecartBrut/target)*100
-  return Math.round((1 - ecartBrut/target)*100);
-}
-
-function buildChaleurConfig(){
-  const target = getChaleurTarget();
-  const container=document.getElementById('chaleur-config');
-  container.innerHTML='';
-  chaleurSeuils.forEach((seuil,i)=>{
-    const def=CHALEUR_DEF[i];
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px';
-    const maxVal = i===4 ? 99 : (chaleurSeuils[i+1]-1);
-    const minVal = i===0 ? 0 : (chaleurSeuils[i-1]+1);
-    const displayVal = i===0 ? (target?'> ±'+Math.round(target*(1-chaleurSeuils[1]/100)):'loin') : seuilToDisplay(seuil, target);
-    row.innerHTML=`
-      <span style="font-size:18px;width:28px;text-align:center">${def.ico}</span>
-      <span style="font-family:var(--fh);font-size:11px;color:${def.color};width:56px">${def.label}</span>
-      <input type="range" min="${minVal}" max="${maxVal}" value="${seuil}" data-idx="${i}"
-        style="flex:1;accent-color:${def.color};cursor:pointer" class="chaleur-seuil-range"
-        ${i===0?'disabled':''}
-      >
-      <input type="number" id="cseuil-val-${i}" data-idx="${i}"
-        value="${target ? Math.round(target*(seuil/100)) : seuil}"
-        min="0" step="1"
-        style="width:52px;background:var(--c2);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 6px;font-size:11px;color:${i===0?'var(--mute)':'var(--txt)'};text-align:center"
-        ${i===0?'disabled':''}
-        class="chaleur-seuil-num"
-      >
-    `;
-    container.appendChild(row);
-    if(i>0){
-      row.querySelector('.chaleur-seuil-range').addEventListener('input', e=>{
-        const idx=parseInt(e.target.dataset.idx);
-        const val=parseInt(e.target.value);
-        chaleurSeuils[idx]=val;
-        // Only push the NEXT (higher) level up to avoid collision — never push down
-        if(idx<4 && chaleurSeuils[idx+1]<=val) chaleurSeuils[idx+1]=val+1;
-        buildChaleurConfig();
-        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-      });
-      row.querySelector('.chaleur-seuil-num').addEventListener('change', e=>{
-        const idx=parseInt(e.target.dataset.idx);
-        const target2=getChaleurTarget();
-        let newSeuil;
-        if(target2){
-          // User typed a raw value — convert back to seuil %
-          const rawVal=parseFloat(e.target.value)||0;
-          newSeuil=Math.round((rawVal/target2)*100);
-        } else {
-          newSeuil=parseInt(e.target.value)||0;
-        }
-        newSeuil=Math.max(chaleurSeuils[idx-1]+1, Math.min(idx<4?chaleurSeuils[idx+1]-1:99, newSeuil));
-        chaleurSeuils[idx]=newSeuil;
-        buildChaleurConfig();
-        updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-      });
-    }
-  });
-}
-
-function updateChaleurPreview(pct){
-  const target = getChaleurTarget();
-  let lvl=CHALEUR_DEF[0];
-  chaleurSeuils.forEach((s,i)=>{if(pct>=s)lvl=CHALEUR_DEF[i];});
-  const prev=document.getElementById('chaleur-preview');
-  prev.style.background=lvl.color+'22';
-  prev.style.border='1px solid '+lvl.color+'55';
-  document.getElementById('chaleur-prev-ico').textContent=lvl.ico;
-  document.getElementById('chaleur-prev-label').style.color=lvl.color;
-  const unit = document.getElementById('prix-unit-in').value.trim();
-  if(target){
-    const ecartBrut = Math.round(target*(1-pct/100));
-    const guessEx   = Math.round(target*(pct/100));
-    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — écart ±${ecartBrut}${unit?' '+unit:''} (ex: ${guessEx})`;
-  } else {
-    document.getElementById('chaleur-prev-label').textContent=`${lvl.label} — ${(100-pct)}% d'écart`;
-  }
-}
-
-// Rebuild when target or unit changes
-document.getElementById('prix-target-in').addEventListener('input',()=>{
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-});
-document.getElementById('prix-unit-in').addEventListener('input',()=>{
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-});
-
-document.getElementById('chaleur-test-slider').addEventListener('input',e=>{
-  updateChaleurPreview(parseInt(e.target.value));
-});
-
-function selectPrixSensib(seuilsArr){
-  if(Array.isArray(seuilsArr)) chaleurSeuils=[...seuilsArr];
-  buildChaleurConfig();
-  updateChaleurPreview(parseInt(document.getElementById('chaleur-test-slider').value));
-}
-buildChaleurConfig();
-updateChaleurPreview(75);
 
 // Coefficient preview
 document.getElementById('coeff-in').addEventListener('input', e=>{
@@ -1826,7 +3936,48 @@ document.getElementById('btn-save').onclick=async()=>{
   const rqTolerance      = currentType==='replique'?parseInt(document.getElementById('rq-tolerance-in').value)||0:1;
   const rqTimeVal        = currentType==='replique'?rqTime:60;
   const grimpeTheme = currentType==='grimpe'?document.getElementById('grimpe-theme-in').value.trim():'';
+  const biatTheme = currentType==='biathlon'?document.getElementById('biat-theme-in').value.trim():'';
+  const mfQuestionsData = currentType==='maillonfaible'?mfQuestions:[];
+  const assautData = currentType==='assaut'?{
+    phase1: assautP1
+  }:null;
+  const arcTolData = currentType==='tirarlarc'?{
+    facile:parseFloat(document.getElementById('arc-tol-facile')?.value)||20,
+    moyen:parseFloat(document.getElementById('arc-tol-moyen')?.value)||8,
+    difficile:parseFloat(document.getElementById('arc-tol-difficile')?.value)||3
+  }:{};
+  const arcCiblesData = currentType==='tirarlarc'?arcCibles.map(c=>({
+    stat:c.stat||'',
+    value:c.value!==undefined&&c.value!==null?Number(c.value):0,
+    max:c.max!==undefined&&c.max!==null?Number(c.max):100,
+    tol11:c.tol11||null,tol22:c.tol22||null,tol33:c.tol33||null
+  })):[];
+  const nsSyncData = currentType==='nagesync'?{couloirs:nsCouloirs,sportifs:nsSportifs}:{};
+  const halteroArache = currentType==='haltero'?{
+    sportif1:document.getElementById('ha-s1')?.value.trim()||'',
+    sportif2:document.getElementById('ha-s2')?.value.trim()||'',
+    questions:haQuestions
+  }:{};
+  const halteroEpaule = currentType==='haltero'?{
+    theme:document.getElementById('hej-theme')?.value.trim()||'',
+    questions:hejQuestions,
+    jete:{
+      question:document.getElementById('hej-jete-q')?.value.trim()||'',
+      answer:document.getElementById('hej-jete-a')?.value.trim()||'',
+      wrong:[
+        document.getElementById('hej-jete-w1')?.value.trim()||'',
+        document.getElementById('hej-jete-w2')?.value.trim()||'',
+        document.getElementById('hej-jete-w3')?.value.trim()||''
+      ]
+    }
+  }:{};
+  const biatAnnounceTime = currentType==='biathlon'?parseInt(document.getElementById('biat-announce-time-in').value)||45:45;
+  const biatSprintAnswers = currentType==='biathlon'?biatSprintItems.map(x=>x.trim()).filter(Boolean):[];
+  const biatQCM = currentType==='biathlon'?biatQCMItems:[];
+  const biatOrderQuestion = currentType==='biathlon'?document.getElementById('biat-order-question-in').value.trim():'';
+  const biatOrder = currentType==='biathlon'?biatOrderItems.map(x=>x.trim()).filter(Boolean):[];
   const grimpeAnswers = currentType==='grimpe'?parseGrimpeAnswers():[];
+  const grimpeAnswersFull = currentType==='grimpe'?parseGrimpeAnswersFull():[];
   const grimpeParams = currentType==='grimpe'?{
     casesPerAnswer: parseFloat(document.getElementById('grimpe-cases-per-answer')?.value)||6,
     pogiSpeed:      parseFloat(document.getElementById('grimpe-pogi-speed')?.value)||1.11,
@@ -1842,11 +3993,18 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||'La Grimpée'):rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Escrime':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':currentType==='badminton'?(document.getElementById('bad-theme')?.value||'Badminton Quiz'):currentType==='melimelo'?'Méli-Mélo':currentType==='apol'?'À prendre ou à laisser':currentType==='trivpursuit'?'Trivial Pursuit':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
-  const prixSensib=currentType==='prix'?chaleurSeuils:[0,10,40,70,90];
+  const prixSensib=(()=>{
+    if(currentType!=='prix')return[0,Infinity,Infinity,Infinity,Infinity];
+    const v1=parseFloat(document.getElementById('cseuil-froid')?.value)||Infinity;
+    const v2=parseFloat(document.getElementById('cseuil-tiede')?.value)||Infinity;
+    const v3=parseFloat(document.getElementById('cseuil-chaud')?.value)||Infinity;
+    const v4=parseFloat(document.getElementById('cseuil-brulant')?.value)||Infinity;
+    return[0,v1,v2,v3,v4];
+  })();
   btn.disabled=true;
 
   // Validate image via proxy only for URL mode
@@ -1874,13 +4032,53 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeParams};
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined,
+  plongeePaliers:currentType==='plongee'?plongeePaliers:undefined,
+  plongeeO2Base:currentType==='plongee'?parseInt(document.getElementById('plongee-o2base')?.value||8):undefined,
+  plongeeO2Treasure:currentType==='plongee'?parseInt(document.getElementById('plongee-o2treasure')?.value||1):undefined,
+  plongeeO2Error:currentType==='plongee'?parseInt(document.getElementById('plongee-o2error')?.value||2):undefined,
+  escaladeQuestions:currentType==='escalade'?escaladeQuestions:undefined,
+  escaladeTheme:currentType==='escalade'?document.getElementById('escalade-theme')?.value.trim():undefined,
+  plongeeTol:currentType==='plongee'?parseInt(document.getElementById('plongee-tol')?.value||1):undefined,
+  escaladeTol:currentType==='escalade'?parseInt(document.getElementById('escalade-tol')?.value||1):undefined,
+  rouletteText:currentType==='roulette'?(document.getElementById('roulette-text')?.value||'').trim():undefined,
+  rouletteAnswer:currentType==='roulette'?(document.getElementById('roulette-answer')?.value||'').trim():undefined,
+  rouletteHint:currentType==='roulette'?(document.getElementById('roulette-hint')?.value||'').trim():undefined,
+  roulettePct:currentType==='roulette'?parseInt(document.getElementById('roulette-pct')?.value||40):undefined,
+  rouletteChambers:currentType==='roulette'?parseInt(document.getElementById('roulette-chambers')?.value||6):undefined,
+  rouletteBullet:currentType==='roulette'?parseInt(document.getElementById('roulette-bullet')?.value||4):undefined,
+  rouletteTol:currentType==='roulette'?parseInt(document.getElementById('roulette-tol')?.value||1):undefined,
+  rouletteRevealStep:currentType==='roulette'?parseInt(document.getElementById('roulette-reveal-step')?.value||5):undefined,
+  rouletteSeed:currentType==='roulette'?rouletteSeed:undefined,
+  bowlingQuestions:currentType==='bowling'?bowlingQuestions:undefined,
+  badmintonQuestions:currentType==='badminton'?badmintonQuestions:undefined,
+  badTheme:currentType==='badminton'?(document.getElementById('bad-theme')?.value||'Badminton Quiz'):undefined,
+  meliWords:currentType==='melimelo'?meliWords:undefined,
+  meliTimer:currentType==='melimelo'?parseInt(document.getElementById('meli-timer-admin')?.value||60):undefined,
+  apolQuestions:currentType==='apol'?apolQuestions:undefined,
+  trivThemes:currentType==='trivpursuit'?trivThemes:undefined,
+  trivQuestions:currentType==='trivpursuit'?trivQuestions:undefined,
+  equiObstacles:currentType==='equitation'?equiObstacles:undefined,
+  equiTimeLimit:currentType==='equitation'?parseInt(document.getElementById('equi-time-limit')?.value||60):undefined};
   if(editId)body.editId=editId;
+  if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
   try{
     const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();
     if(data.success){
       showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
+      // Show quick preview button with the correct ID
+      if(data.id){
+        const msg=document.getElementById('save-msg');
+        if(msg){
+          const previewBtn=document.createElement('button');
+          previewBtn.className='btn btn-sm';
+          previewBtn.style.cssText='margin-top:8px;width:100%;background:rgba(0,200,255,.15);color:#00c8ff;border:1px solid rgba(0,200,255,.3)';
+          previewBtn.textContent='▶ Tester ce jeu';
+          previewBtn.onclick=()=>previewAthlete(data.id);
+          msg.appendChild(previewBtn);
+        }
+      }
       cancelEdit();loadAthletes();
     } else showMsg('save-msg','err','❌ '+(data.error||'Erreur'));
   }catch(e){console.error('Save error:',e);showMsg('save-msg','err','❌ Erreur : '+e.message)}
@@ -1915,21 +4113,20 @@ async function loadAdminScores(){
     const athletes=await res.json();
     sel.innerHTML='';
     athletes.forEach((a,i)=>{
-      const typeLabel=a.type==='image'?'🖼':a.type==='buzz'?'⚡':'📝';
       const d=document.createElement('div');
       d.style.cssText='display:flex;align-items:center;gap:10px;background:var(--c2);border-radius:10px;padding:10px 12px;cursor:pointer';
-      d.innerHTML=`<div style="font-size:20px">${a.emoji}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)} ${typeLabel}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
-      d.onclick=()=>showAthleteScores(a.id, a.answer);
+      d.innerHTML=`<div style="font-size:20px">${getGameIcon(a.type)}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">#${i+1} ${esc(a.answer)}</div><div style="font-size:11px;color:var(--mute)">${a.playerCount} joueur${a.playerCount!==1?'s':''} · top: ${a.topScore??'—'}</div></div><div style="font-size:12px;color:var(--orange);font-weight:700">Voir →</div>`;
+      d.onclick=()=>showAthleteScores(a.id, a.answer||'Défi');
       sel.appendChild(d);
     });
     if(!athletes.length) sel.innerHTML='<div style="color:var(--mute);font-size:13px">Aucun défi.</div>';
   }catch(err){sel.innerHTML='<div style="color:var(--red);font-size:13px">Erreur.</div>';}
 }
 
-async function showAthleteScores(id){
-  const btn=document.querySelector(`.btn-scores[onclick="showAthleteScores(${id})"]`);
-  const name=btn?btn.dataset.name:'Défi';
+async function showAthleteScores(id,name='Défi'){
+  const currentAthId=id;
   document.getElementById('modal-title-text').textContent='📊 '+name;
+  document.getElementById('modal-body').dataset.athId=id;
   document.getElementById('modal-body').innerHTML='<div style="color:var(--mute);text-align:center;padding:20px">Chargement…</div>';
   document.getElementById('scores-modal').classList.add('on');
   try{
@@ -1943,11 +4140,33 @@ async function showAthleteScores(id){
     body.innerHTML='';
     data.scores.forEach((e,i)=>{
       const medals=['🥇','🥈','🥉'];
-      const d=document.createElement('div');d.className='score-item';
-      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div><div class="score-info"><div class="score-pseudo">${esc(e.pseudo)}</div><div class="score-date">${new Date(e.date).toLocaleDateString('fr-FR')} ${new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div><div class="score-pts">${e.score}</div>`;
+      const d=document.createElement('div');d.className='score-item';d.style.cssText='display:flex;align-items:center;gap:8px;background:var(--c2);border-radius:10px;padding:8px 12px;margin-bottom:6px';
+      d.innerHTML=`<div class="score-rank">${medals[i]||'#'+(i+1)}</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:13px">${esc(e.pseudo)}</div><div style="font-size:11px;color:var(--mute)">${new Date(e.date).toLocaleDateString('fr-FR')}</div></div>
+        <input type="number" value="${e.score}" min="0" max="9999" style="width:60px;background:var(--c1);border:1px solid rgba(255,255,255,.1);color:var(--neon);font-size:14px;font-weight:800;border-radius:6px;padding:4px 6px;text-align:center;font-family:var(--ff)" id="score-inp-${i}">
+        <button onclick="editScore('${id}','${esc(e.pseudo)}',${i})" style="background:var(--neon);color:#000;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer">✓</button>
+        <button onclick="deleteScore('${id}','${esc(e.pseudo)}')" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">🗑</button>`;
       body.appendChild(d);
     });
   }catch(err){document.getElementById('modal-body').innerHTML='<div style="color:var(--red);text-align:center;padding:20px">Erreur.</div>';}
+}
+
+async function editScore(athleteId,pseudo,idx){
+  const inp=document.getElementById('score-inp-'+idx);
+  const newScore=parseInt(inp?.value)||0;
+  const r=await fetch('/api/admin/score/edit',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,athleteId,pseudo,newScore})});
+  const d=await r.json();
+  if(d.ok){inp.style.borderColor='var(--neon)';setTimeout(()=>inp.style.borderColor='rgba(255,255,255,.1)',1000);}
+  else alert('Erreur: '+d.error);
+}
+
+async function deleteScore(athleteId,pseudo){
+  if(!confirm('Supprimer le score de '+pseudo+' ?')) return;
+  const r=await fetch('/api/admin/score/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:adminPw,athleteId,pseudo})});
+  const d=await r.json();
+  if(d.ok) showAthleteScores(athleteId, document.getElementById('modal-title-text').textContent.replace('📊 ',''));
 }
 
 document.getElementById('modal-close-btn').onclick=()=>document.getElementById('scores-modal').classList.remove('on');
