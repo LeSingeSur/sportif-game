@@ -1157,7 +1157,7 @@ app.post('/api/admin/athlete', (req, res) => {
     const prevPublished = athletes[idx].published; // preserve published status on edit
     athletes[idx] = { ...athletes[idx], ...athleteData, published: prevPublished };
     saveData();
-    return res.json({ success: true, edited: true, answer: athletes[idx].answer });
+    return res.json({ success: true, edited: true, id: athletes[idx].id, answer: athletes[idx].answer });
   }
 
   const newId = Date.now();
