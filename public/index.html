@@ -1832,6 +1832,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou tenter une boîte ?</div>
       </div>
       <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-continue-btn" onclick="apolContinue()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(100,180,255,.4);background:rgba(100,180,255,.08);color:#64b4ff;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px"></button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
@@ -11140,11 +11141,19 @@ function trivHandleClick(mx,my){
 }
 
 function trivPlacePlayer(pos){
+  const c=TRIV.cases[pos];
   TRIV.playerPos=pos;
-  TRIV.phase='move';
   trivDraw();
-  trivShowMoveButtons();
   trivUpdateCenterInfo();
+  // Si case-question au départ → répondre avant de pouvoir se déplacer
+  if(c.type==='q'){
+    TRIV.phase='question';
+    trivShowQuestion(pos);
+  } else {
+    // Camembert au départ → impossible (restreint dans trivHandleClick), mais sécurité
+    TRIV.phase='move';
+    trivShowMoveButtons();
+  }
 }
 
 function trivUpdateScore(){
@@ -11208,27 +11217,31 @@ function trivUpdateMoveButtons(){
 
 function trivMove(dir){
   if(TRIV.done)return;
+  const prev=TRIV.playerPos;
   const target=dir==='left'?(TRIV.playerPos-1+12)%12:(TRIV.playerPos+1)%12;
   const c=TRIV.cases[target];
   if(c.state==='collapsed')return;
   document.getElementById('triv-move-btns').style.display='none';
-  TRIV.pendingDir=dir;
+
+  // Déplacer le pion immédiatement (visuel)
+  TRIV.playerPos=target;
+  trivDraw();
+  trivUpdateCenterInfo();
 
   if(c.type==='cam'){
-    TRIV.playerPos=target;
-    trivDraw();trivUpdateCenterInfo();
     if(c.state==='collected'){
-      // Déjà collecté — traversée libre
+      // Camembert déjà collecté → traversée libre
       const fb=document.getElementById('triv-fb');
       if(fb){fb.textContent='🟣 '+c.name+' déjà collecté !';fb.style.color=c.color;}
-      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();trivDraw();},1000);
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},1000);
     } else {
-      // Doit répondre à la question du camembert pour le collecter
       TRIV.phase='question';
       trivShowQuestion(target);
     }
   } else {
-    // Case question → afficher la question
+    // Case-question : pion affiché sur la cible, on pose la question
+    // Si faux → pion revient à la position précédente
+    TRIV._prevPos=prev;
     TRIV.phase='question';
     trivShowQuestion(target);
   }
@@ -11303,10 +11316,12 @@ function trivSubmit(){
       },1000);
     }
   } else {
-    // Faux → effondré (camembert ou case-question)
+    // Faux → effondré
     c.state='collapsed';
+    // Pour une case-question : pion revient à la position précédente
+    if(!isCam&&TRIV._prevPos!=null) TRIV.playerPos=TRIV._prevPos;
     if(fb){
-      const label=isCam?'camembert effondré !':'case effondrée !';
+      const label=isCam?'camembert effondré !':'case effondrée — tu recules !';
       fb.innerHTML=`❌ Raté ! C'était <strong>${correctAnswer}</strong> — ${label}`;
       fb.style.color='var(--red)';
     }
@@ -11530,33 +11545,49 @@ function apolSubmit(){
     if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
   }
   APOL.qIdx++;
-  setTimeout(()=>{
-    if(APOL.qIdx>=(APOL.data.apolQuestions||[]).length) apolShowDilemme();
-    else apolShowQuestion();
-  },1400);
+  const remaining=qs.length-APOL.qIdx;
+  setTimeout(()=>apolShowDilemme(remaining),1200);
 }
 
-function apolShowDilemme(){
+function apolContinue(){
+  // Joueur choisit de continuer vers la question suivante
+  document.getElementById('apol-dilemme').style.display='none';
+  apolShowQuestion();
+}
+
+function apolShowDilemme(remaining){
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
 
-  // Mélanger les 6 items, prendre 5 au hasard (le 6ème absent)
+  // Mélanger les 6 items, prendre 5 au hasard
   const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
-  APOL.activeBoxes=allItems.slice(0,5); // 5 boîtes, 1 absent
+  APOL.activeBoxes=allItems.slice(0,5);
 
-  // Générer les 5 boîtes visuelles
+  // Générer les 5 boîtes
   const grid=document.getElementById('apol-boxes-grid');
-  if(!grid)return;
-  grid.innerHTML='';
-  APOL.activeBoxes.forEach((item,i)=>{
-    const btn=document.createElement('button');
-    btn.id='apol-box-'+i;
-    btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;cursor:pointer;font-size:28px;min-height:80px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
-    btn.style.animationDelay=(i*0.3)+'s';
-    btn.innerHTML='📦<span style="font-size:9px;font-family:var(--fh);letter-spacing:1px;color:rgba(255,180,0,.5)">'+(i+1)+'</span>';
-    btn.onclick=()=>apolOpenBox(i,btn);
-    grid.appendChild(btn);
-  });
+  if(grid){
+    grid.innerHTML='';
+    APOL.activeBoxes.forEach((item,i)=>{
+      const btn=document.createElement('button');
+      btn.id='apol-box-'+i;
+      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;cursor:pointer;font-size:28px;min-height:80px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
+      btn.style.animationDelay=(i*0.3)+'s';
+      btn.innerHTML='📦<span style="font-size:9px;font-family:var(--fh);letter-spacing:1px;color:rgba(255,180,0,.5)">'+(i+1)+'</span>';
+      btn.onclick=()=>apolOpenBox(i,btn);
+      grid.appendChild(btn);
+    });
+  }
+
+  // Bouton continuer visible seulement s'il reste des questions
+  const continueBtn=document.getElementById('apol-continue-btn');
+  if(continueBtn){
+    if(remaining>0){
+      continueBtn.style.display='block';
+      continueBtn.textContent='➡️ CONTINUER ('+remaining+' question'+(remaining>1?'s':'')+' restante'+(remaining>1?'s':'')+')';
+    } else {
+      continueBtn.style.display='none';
+    }
+  }
 
   document.getElementById('apol-box-result').textContent='';
   document.getElementById('apol-dilemme').style.display='flex';
