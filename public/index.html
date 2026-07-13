@@ -1722,6 +1722,10 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
     </div>
     <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
+      <div id="meli-indice" style="display:none;text-align:center;background:rgba(255,200,50,.06);border:1px solid rgba(255,200,50,.2);border-radius:10px;padding:8px 14px">
+        <span style="font-size:10px;color:rgba(255,200,50,.5);letter-spacing:2px;font-family:var(--fh)">💡 INDICE</span>
+        <div style="font-size:13px;color:rgba(255,200,50,.9);margin-top:2px" id="meli-indice-text"></div>
+      </div>
       <div id="meli-scrambled" style="font-family:var(--fh);font-size:32px;color:#c060ff;text-align:center;letter-spacing:8px;padding:16px;background:rgba(160,80,255,.08);border:2px solid rgba(160,80,255,.25);border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center"></div>
       <div style="display:flex;gap:8px">
         <input type="text" id="meli-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false"
@@ -1818,17 +1822,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou tenter une boîte ?</div>
       </div>
-      <!-- Bouton garder -->
       <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
-      <!-- 5 boîtes visuelles -->
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
     </div>
   </div>
+
   <!-- BADMINTON zone -->
   <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
-    <!-- Court SVG visuel -->
     <div style="background:rgba(0,100,50,.15);border:1px solid rgba(0,220,120,.2);border-radius:12px;padding:10px;position:relative;overflow:hidden">
       <svg viewBox="0 0 300 130" style="width:100%;display:block">
         <rect x="15" y="8" width="270" height="114" fill="none" stroke="rgba(0,220,120,.35)" stroke-width="1.5"/>
@@ -1854,11 +1856,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="display:none"><span id="bad-timer">180</span></div>
     <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      Avant chaque question, choisis ta tactique :<br>
-      🏸 <strong style="color:#ffd700">SMASH</strong> — chrono 2× plus vite · <strong style="color:#ffd700">+30 pts</strong> si juste · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
-      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé pendant la question · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
-      ➡️ <strong style="color:#00dc78">DRIVE</strong> — chrono normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux<br>
-      ⏱ 180s pour tout finir · Cap à <strong style="color:var(--txt)">300 pts</strong>
+      🏸 <strong style="color:#ffd700">SMASH</strong> — 2× chrono · <strong style="color:#ffd700">+30 pts</strong> · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
+      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
+      ➡️ <strong style="color:#00dc78">DRIVE</strong> — normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux · Cap <strong style="color:var(--txt)">300 pts</strong>
       <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
     </div>
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
@@ -1868,8 +1868,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
-        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:10px;opacity:.7">× · 30pts</span></button>
-        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🦅<br>DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s · 10pts</span></button>
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:10px;opacity:.7">2× · 30pts</span></button>
+        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🦅<br>DÉGAGÉ<br><span style="font-size:10px;opacity:.7">Gelé · 10pts</span></button>
         <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
       </div>
     </div>
@@ -1879,219 +1879,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div id="bad-choices" style="display:flex;flex-direction:column;gap:7px"></div>
       <div id="bad-degage-countdown" style="display:none;text-align:center;font-family:var(--fh);font-size:22px;color:#88aaff;padding:4px"></div>
     </div>
-    <div id="bad-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
-  </div>
-  <!-- MÉLI-MÉLO zone -->
-  <div id="melimelo-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#120a1f 0%,#1a0f2e 100%);border-radius:16px;padding:14px;border:1px solid rgba(160,80,255,.2)">
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
-      <div>
-        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
-        <div style="font-family:var(--fh);font-size:28px;color:#c060ff;line-height:1" id="meli-score">0</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">TEMPS</div>
-        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-timer">60</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:rgba(160,80,255,.6);letter-spacing:2px;font-family:var(--fh)">MOT</div>
-        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="meli-qnum">1/5</div>
-      </div>
-    </div>
-    <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
-      <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
-    </div>
-    <div     <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
-      Les lettres d'un nom de sportif ont été <strong style="color:#c060ff">mélangées</strong> — retrouve le nom original<br>
-      ✅ Bonne réponse = <strong style="color:#c060ff">+20 pts</strong> · Insensible aux accents<br>
-      ⏭ "Passer" révèle la réponse — 0 pt sur ce mot<br>
-      ⏱ <strong style="color:var(--txt)">60 secondes</strong> pour 5 mots · Max <strong style="color:var(--txt)">100 pts</strong>
-      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
-    </div>
-      5 noms de sportifs mélangés à remettre dans l'ordre<br>
-      ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
-      ⏱ 60 secondes pour les 5 mots
-      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
-    </div>
-    <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
-    <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
-      <div id="meli-indice" style="display:none;text-align:center;background:rgba(255,200,50,.06);border:1px solid rgba(255,200,50,.2);border-radius:10px;padding:8px 14px">
-        <span style="font-size:10px;color:rgba(255,200,50,.5);letter-spacing:2px;font-family:var(--fh)">💡 INDICE</span>
-        <div style="font-size:13px;color:rgba(255,200,50,.9);margin-top:2px" id="meli-indice-text"></div>
-      </div>
-      <div id="meli-scrambled" style="font-family:var(--fh);font-size:32px;color:#c060ff;text-align:center;letter-spacing:8px;padding:16px;background:rgba(160,80,255,.08);border:2px solid rgba(160,80,255,.25);border-radius:12px;min-height:70px;display:flex;align-items:center;justify-content:center"></div>
-        <input type="text" id="meli-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false"
-          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(160,80,255,.4);color:var(--txt);font-size:17px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);letter-spacing:2px;outline:none;text-transform:uppercase"
-          oninput="this.value=this.value.toUpperCase()"
-          onkeydown="if(event.key==='Enter')meliSubmit()">
-        <button onclick="meliSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
-      </div>
-      <div id="meli-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
-      <button onclick="meliSkip()" style="background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px;border-radius:var(--r);padding:8px;cursor:pointer;width:100%!important">⏭ Passer — 0 pt (révèle la réponse)</button>
-    </div>
-  </div>
-
-  <!-- PLATEAU zone -->
-  <div id="trivpursuit-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#080812 0%,#0d0d20 100%);border-radius:16px;padding:14px;border:1px solid rgba(180,140,255,.2)">
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
-      <div><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div><div style="font-family:var(--fh);font-size:28px;color:#b48fff;line-height:1" id="triv-score">0</div></div>
-      <div style="text-align:right"><div style="font-size:9px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)">PARTS</div><div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="triv-parts">0/6</div></div>
-    </div>
-    <div     <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
-      Un plateau de <strong style="color:#b48fff">18 cases</strong> en cercle : 6 camemberts thématiques alternant avec 12 cases-questions (2 entre chaque thème)<br>
-      🟣 <strong style="color:var(--txt)">Camembert</strong> = collecté automatiquement · <strong style="color:#b48fff">+50 pts</strong><br>
-      ❓ <strong style="color:var(--txt)">Case-question</strong> = réponds pour traverser · Faux = case <strong style="color:var(--red)">effondrée</strong> (bloquée)<br>
-      ↔️ Chaque tour : tu vas à gauche ou à droite d'une case<br>
-      💀 Cerné des 2 côtés = fin du jeu · Score conservé · Max <strong style="color:var(--txt)">300 pts</strong>
-      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
-    </div>
-      6 camemberts alternent avec 12 cases-questions · Chaque camembert = <strong style="color:#b48fff">+50 pts</strong><br>
-      ❓ Réponds pour traverser une case-question · Faux → case effondrée 💀<br>
-      Cerné des 2 côtés → fin · Score conservé
-      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
-    </div>
-    <div id="triv-board-wrap" style="display:none;position:relative">
-      <canvas id="triv-canvas" style="width:100%;display:block;border-radius:50%;cursor:pointer"></canvas>
-      <div id="triv-center-info" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:52%">
-        <div style="font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-family:var(--fh)" id="triv-center-type"></div>
-        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-top:2px;line-height:1.3" id="triv-center-name"></div>
-      </div>
-    </div>
-    <div id="triv-question-wrap" style="display:none;flex-direction:column;gap:8px">
-      <div style="font-size:10px;letter-spacing:2px;font-family:var(--fh);text-align:center;padding:4px 0" id="triv-q-theme"></div>
-      <div id="triv-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="triv-in" placeholder="Ta réponse…" autocomplete="off"
-          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(180,140,255,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
-          onkeydown="if(event.key==='Enter')trivSubmit()">
-        <button onclick="trivSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
-      </div>
-      <div id="triv-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
-    </div>
-    <div id="triv-move-btns" style="display:none;flex-direction:column;gap:8px">
-      <div style="font-size:11px;color:rgba(180,140,255,.5);text-align:center;letter-spacing:1px;font-family:var(--fh)">OÙ ALLER ?</div>
-      <div style="display:flex;gap:8px">
-        <button id="triv-left-btn" onclick="trivMove('left')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">◀ GAUCHE</button>
-        <button id="triv-right-btn" onclick="trivMove('right')" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(180,140,255,.3);background:rgba(180,140,255,.07);color:#b48fff;font-family:var(--fh);font-size:13px;cursor:pointer">DROITE ▶</button>
-      </div>
-      <div id="triv-move-hint" style="font-size:11px;color:var(--mute);text-align:center"></div>
-    </div>
-  </div>
-
-  <!-- À PRENDRE OU À LAISSER zone -->
-  <div id="apol-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#0f0a00 0%,#1a1200 100%);border-radius:16px;padding:14px;border:1px solid rgba(255,180,0,.2)">
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);border-radius:10px;padding:8px 14px">
-      <div>
-        <div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
-        <div style="font-family:var(--fh);font-size:28px;color:#ffb400;line-height:1" id="apol-score">0</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div>
-        <div style="font-family:var(--fh);font-size:28px;color:var(--txt);line-height:1" id="apol-qnum">1/5</div>
-      </div>
-    </div>
-    <div     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#ffb400;margin-bottom:8px;letter-spacing:2px">📦 À PRENDRE OU À LAISSER</div>
-      <strong style="color:var(--txt)">5 questions</strong> à réponse libre · <strong style="color:#ffb400">+20 pts</strong> par bonne réponse<br>
-      À la fin, tu as le choix :<br>
-      ✅ <strong style="color:#00dc78">GARDER</strong> — tu sécurises ton score<br>
-      📦 <strong style="color:#ffb400">LA BOÎTE</strong> — 5 boîtes s'affichent, chacune cache un bonus ou un malus · tu en choisis une<br>
-      La 6ème possibilité n'est dans aucune boîte — tu ne sauras jamais laquelle · Max <strong style="color:var(--txt)">200 pts</strong>
-      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
-    </div>
-      5 questions à 20 pts chacune<br>
-      À la fin : <strong style="color:var(--txt)">garder ton score</strong> ou <strong style="color:#ffb400">tenter la boîte</strong><br>
-      📦 La boîte peut tout changer…
-      <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">📦 OUVRIR LE DEAL</button>
-    </div>
-    <!-- Questions -->
-    <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
-      </div>
-      <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
-          style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(255,180,0,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
-          onkeydown="if(event.key==='Enter')apolSubmit()">
-        <button onclick="apolSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
-      </div>
-      <div id="apol-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
-    </div>
-    <!-- Dilemme final -->
-    <div id="apol-dilemme" style="display:none;flex-direction:column;gap:10px">
-      <div style="text-align:center;font-family:var(--fh);font-size:13px;letter-spacing:2px;color:rgba(255,180,0,.6)">LE GRAND DILEMME</div>
-      <div style="text-align:center;font-family:var(--fh);font-size:42px;color:#ffb400;text-shadow:0 0 24px #ffb40066" id="apol-dilemme-score">0</div>
-      <div style="text-align:center;font-size:13px;color:var(--mute)">pts acquis — que fais-tu ?</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="apolKeep()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px;line-height:1.5">✅ GARDER<br><span style="font-size:11px;opacity:.7">Je garde mes points</span></button>
-        <button onclick="apolBox()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px;line-height:1.5">📦 LA BOÎTE<br><span style="font-size:11px;opacity:.7">Je tente ma chance</span></button>
-      </div>
-    </div>
-    <!-- Révélation boîte -->
-    <div id="apol-box-reveal" style="display:none;flex-direction:column;align-items:center;gap:12px">
-      <div style="font-family:var(--fh);font-size:13px;color:rgba(255,180,0,.6);letter-spacing:2px">LA BOÎTE CONTIENT…</div>
-      <div id="apol-box-icon" style="font-size:80px;animation:equiCellPop .5s ease-out">📦</div>
-      <div id="apol-box-label" style="font-family:var(--fh);font-size:36px;color:#ffb400"></div>
-      <div id="apol-box-result" style="font-size:14px;color:var(--mute)"></div>
-    </div>
-  </div>
-
-  <!-- BADMINTON zone -->
-  <div id="badminton-zone" style="display:none;flex-direction:column;gap:10px;width:100%;background:linear-gradient(180deg,#00130a 0%,#001f12 100%);border-radius:16px;padding:14px;border:1px solid rgba(0,220,120,.18)">
-
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.4);border-radius:10px;padding:8px 14px">
-      <div>
-        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">SCORE</div>
-        <div style="font-family:var(--fh);font-size:28px;color:#00dc78" id="bad-score">0</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">TEMPS</div>
-        <div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="bad-timer">180</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">QUESTION</div>
-        <div style="font-family:var(--fh);font-size:28px;color:var(--txt)" id="bad-qnum">0/10</div>
-      </div>
-    </div>
-    <div style="height:4px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
-      <div id="bad-timer-bar" style="height:100%;background:#00dc78;width:100%;transition:width .5s linear"></div>
-    </div>
-
-    <!-- Phase 1 : règles + start -->
-    <div id="bad-rules" style="background:rgba(0,0,0,.4);border:1px solid rgba(0,220,120,.2);border-radius:12px;padding:14px;font-size:12px;line-height:1.9;color:var(--mute)">
-      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      Avant chaque question, choisis ta tactique :<br>
-      🏸 <strong style="color:var(--txt)">Smash</strong> — chrono 2× plus vite · <strong style="color:#ffd700">40 pts</strong> si juste<br>
-      🦅 <strong style="color:var(--txt)">Dégagé</strong> — 8s offertes · <strong style="color:#88aaff">10 pts</strong> si juste<br>
-      ➡️ <strong style="color:var(--txt)">Drive</strong> — neutre · <strong style="color:#00dc78">20 pts</strong> si juste<br>
-      ⏱ 180 secondes pour tout finir · Mauvaise réponse = 0 pt
-      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
-    </div>
-
-    <!-- Phase 2 : choix tactique -->
-    <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
-      <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px;margin-bottom:2px">
-        <span style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh)">THÈME</span>
-        <div style="font-family:var(--fh);font-size:15px;color:#00dc78;margin-top:2px" id="bad-theme-text"></div>
-      </div>
-      <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="badChoixTactic('smash')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🏸 SMASH<br><span style="font-size:10px;opacity:.7">2× · 30pts</span></button>
-        <button onclick="badChoixTactic('degage')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">🦅 DÉGAGÉ<br><span style="font-size:10px;opacity:.7">+8s offerts · 10pts</span></button>
-        <button onclick="badChoixTactic('drive')" style="flex:1;padding:10px 4px;border-radius:10px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:12px;cursor:pointer;line-height:1.5">➡️ DRIVE<br><span style="font-size:10px;opacity:.7">Neutre · 20pts</span></button>
-      </div>
-    </div>
-
-    <!-- Phase 3 : question QCM -->
-    <div id="bad-question-wrap" style="display:none;flex-direction:column;gap:8px">
-      <div id="bad-tactic-badge" style="text-align:center;font-size:11px;font-family:var(--fh);letter-spacing:1px;color:var(--mute)"></div>
-      <div id="bad-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
-      <div id="bad-choices" style="display:flex;flex-direction:column;gap:7px"></div>
-      <div id="bad-degage-countdown" style="display:none;text-align:center;font-family:var(--fh);font-size:20px;color:#88aaff"></div>
-    </div>
-
-    <!-- Feedback -->
     <div id="bad-fb" class="fb" style="text-align:center;font-size:15px;min-height:20px"></div>
   </div>
 
