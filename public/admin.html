@@ -2232,13 +2232,13 @@ function trivAdminRender(){
     </div>
     <div style="background:${color}18;border-left:2px solid ${color};border-radius:0 8px 8px 0;padding:8px;margin-bottom:6px">
       <div style="font-size:10px;color:${color};margin-bottom:5px">🟣 Question du camembert "${t.name||'Thème '+(sec+1)}"</div>
-      <input value="${(t.question||'').replace(/"/g,'&quot;')}" placeholder="Question pour collecter ce camembert…" oninput="trivThemes[${sec}].question=this.value;checkReady();"
+      <input value="${(t.question||'').replace(/"/g,'&quot;')}" placeholder="Question pour collecter ce camembert…" oninput="setTrivTheme(${sec},'question',this.value)"
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none;margin-bottom:5px">
       <div style="display:flex;gap:6px">
-        <input value="${(t.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivThemes[${sec}].answer=this.value;checkReady();"
+        <input value="${(t.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="setTrivTheme(${sec},'answer',this.value)"
           style="flex:1;background:var(--c2);border:none;color:${color};font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
         <label style="font-size:10px;color:var(--mute);align-self:center">Tol.</label>
-        <input type="number" value="${t.tol!=null?t.tol:1}" min="0" max="3" oninput="trivThemes[${sec}].tol=parseInt(this.value)||0;checkReady();"
+        <input type="number" value="${t.tol!=null?t.tol:1}" min="0" max="3" oninput="setTrivTheme(${sec},'tol',this.value)"
           style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:5px;outline:none;text-align:center">
       </div>
     </div>`;
@@ -2248,13 +2248,13 @@ function trivAdminRender(){
       const row=document.createElement('div');
       row.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
       row.innerHTML=`<div style="font-size:10px;color:var(--mute)">❓ Case-question (entre ces 2 camemberts)</div>
-        <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
+        <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setTrivQ(${qi},'question',this.value)"
           style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
         <div style="display:flex;gap:6px">
-          <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivQuestions[${qi}].answer=this.value;checkReady();"
+          <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="setTrivQ(${qi},'answer',this.value)"
             style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
           <label style="font-size:10px;color:var(--mute);align-self:center;white-space:nowrap">Tol.</label>
-          <input type="number" value="${q.tol||1}" min="0" max="3" oninput="trivQuestions[${qi}].tol=parseInt(this.value)||0;checkReady();"
+          <input type="number" value="${q.tol||1}" min="0" max="3" oninput="setTrivQ(${qi},'tol',this.value)"
             style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:5px;outline:none;text-align:center">
         </div>`;
       secDiv.appendChild(row);
@@ -2276,14 +2276,14 @@ function meliAdminRender(){
     d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
     d.innerHTML=`<div style="display:flex;gap:8px;align-items:center">
         <span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
-        <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="meliWords[${i}].scrambled=this.value.toUpperCase();checkReady();"
+        <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="setMeliW(${i},'scrambled',this.value)"
           style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
         <span style="color:var(--mute)">→</span>
-        <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
+        <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="setMeliW(${i},'answer',this.value)"
           style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
         <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
       </div>
-      <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="meliWords[${i}].indice=this.value;checkReady();"
+      <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="setMeliW(${i},'indice',this.value)"
         style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none">`;
     list.appendChild(d);
   });
@@ -2304,15 +2304,15 @@ function apolAdminRender(){
         <span style="font-size:11px;color:#ffb400;font-family:var(--fh)">Q${i+1}</span>
         <button onclick="apolQuestions.splice(${i},1);apolAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer">✕</button>
       </div>
-      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="apolQuestions[${i}].theme=this.value;checkReady();"
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="setApolQ(${i},'theme',this.value)"
         style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
-      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="apolQuestions[${i}].question=this.value;checkReady();"
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setApolQ(${i},'question',this.value)"
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
       <div style="display:flex;gap:6px;align-items:center">
-        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="apolQuestions[${i}].answer=this.value;checkReady();"
+        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="setApolQ(${i},'answer',this.value)"
           style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
         <label style="font-size:11px;color:var(--mute);white-space:nowrap">Tol.</label>
-        <input type="number" value="${q.tol||1}" min="0" max="3" oninput="apolQuestions[${i}].tol=parseInt(this.value)||0;checkReady();"
+        <input type="number" value="${q.tol||1}" min="0" max="3" oninput="setApolQ(${i},'tol',this.value)"
           style="width:50px;background:var(--c2);border:none;color:var(--mute);font-size:13px;border-radius:6px;padding:6px;outline:none;text-align:center">
       </div>`;
     list.appendChild(d);
@@ -4175,6 +4175,17 @@ document.getElementById('scores-modal').onclick=(e)=>{if(e.target===document.get
 document.getElementById('btn-game').onclick=()=>window.location.href='/';
 function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;if(type==='ok')setTimeout(()=>el.className='msg',5000)}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Fonctions globales pour oninput - garanties accessibles
+function setTrivTheme(i,f,v){
+  if(!trivThemes[i])return;
+  trivThemes[i][f]=f==='tol'?parseInt(v)||0:v;
+  checkReady();
+  if(f==='name'||f==='color')setTimeout(trivAdminRender,10);
+}
+function setTrivQ(i,f,v){if(!trivQuestions[i])return;trivQuestions[i][f]=f==='tol'?parseInt(v)||0:v;checkReady();}
+function setApolQ(i,f,v){if(!apolQuestions[i])return;apolQuestions[i][f]=f==='tol'?parseInt(v)||0:v;checkReady();}
+function setMeliW(i,f,v){if(!meliWords[i])return;meliWords[i][f]=f==='scrambled'||f==='answer'?v.toUpperCase():v;checkReady();}
 </script>
 </body>
 </html>
