@@ -488,13 +488,18 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
       <!-- PLATEAU FIELDS -->
       <div id="trivpursuit-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          🎯 6 thèmes (camemberts) + 12 questions (2 entre chaque thème) · Max 300 pts
+          🎯 6 camemberts (thèmes, +50 pts automatique) · 12 cases-questions (2 entre chaque) · Max 300 pts
+        </div>
+        <!-- Mini plateau preview -->
+        <div style="text-align:center;margin-bottom:12px">
+          <canvas id="triv-admin-preview" width="200" height="200" style="border-radius:50%;background:rgba(0,0,0,.3)"></canvas>
+          <div style="font-size:10px;color:var(--mute);margin-top:4px">Aperçu du plateau (mis à jour en direct)</div>
         </div>
         <!-- 6 themes -->
-        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">THÈMES (camemberts)</div>
+        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">🟣 CAMEMBERTS (thèmes)</div>
         <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
         <!-- 12 questions grouped by section -->
-        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">QUESTIONS (2 par section)</div>
+        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
         <div id="triv-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
@@ -2126,16 +2131,58 @@ const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
 let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i]}));
 let trivQuestions=Array.from({length:12},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:Math.floor(i/2)}));
 
+function trivDrawAdminPreview(){
+  const canvas=document.getElementById('triv-admin-preview');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=200,H=200,cx=100,cy=100,R=90,rInner=26;
+  ctx.clearRect(0,0,W,H);
+  const N=18;const startAngle=-Math.PI/2;
+  for(let i=0;i<N;i++){
+    const a0=startAngle+(i/N)*Math.PI*2;
+    const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const isCam=i%3===0;
+    const themeIdx=isCam?i/3:Math.floor(i/3);
+    const color=trivThemes[themeIdx]?.color||'#888';
+    ctx.beginPath();
+    if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
+    else{ctx.arc(cx,cy,R*0.86,a0,a1);ctx.arc(cx,cy,R*0.48,a1,a0,true);}
+    ctx.closePath();
+    ctx.fillStyle=isCam?color+'cc':color+'44';
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;ctx.stroke();
+    // Label for cam
+    if(isCam){
+      const midA=(a0+a1)/2;
+      const px=cx+Math.cos(midA)*R*0.62,py=cy+Math.sin(midA)*R*0.62;
+      ctx.fillStyle='rgba(255,255,255,.9)';
+      ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      const name=trivThemes[themeIdx]?.name||'';
+      ctx.fillText(name.slice(0,4),px,py);
+    } else {
+      const midA=(a0+a1)/2;
+      const px=cx+Math.cos(midA)*(R*0.86+R*0.48)/2,py=cy+Math.sin(midA)*(R*0.86+R*0.48)/2;
+      ctx.fillStyle='rgba(255,255,255,.4)';
+      ctx.font='8px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('?',px,py);
+    }
+  }
+  // Center circle
+  ctx.beginPath();ctx.arc(cx,cy,rInner,0,Math.PI*2);
+  ctx.fillStyle='rgba(20,20,35,.9)';ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.stroke();
+}
+
 function trivAdminRender(){
   // Themes
   const tList=document.getElementById('triv-theme-list');
   if(!tList)return;
-  tList.innerHTML='';
+  tList.innerHTML='<div style="font-size:10px;color:var(--mute);margin-bottom:8px">🟣 Chaque <strong>camembert</strong> est collecté automatiquement quand le joueur y atterrit (+50 pts). Configure son nom et sa couleur.</div>';
   trivThemes.forEach((t,i)=>{
     const d=document.createElement('div');
     d.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center';
-    d.innerHTML=`<span style="font-size:11px;font-family:var(--fh);color:${t.color};min-width:16px">${i+1}</span>
-      <input value="${(t.name||'').replace(/"/g,'&quot;')}" placeholder="Thème ${i+1} (ex: Football)" oninput="trivThemes[${i}].name=this.value;checkReady();"
+    d.innerHTML=`<span style="font-size:11px;font-family:var(--fh);color:${t.color};min-width:16px">🟣${i+1}</span>
+      <input value="${(t.name||'').replace(/"/g,'&quot;')}" placeholder="Nom du camembert (ex: Football)" oninput="trivThemes[${i}].name=this.value;checkReady();"
         style="flex:1;background:var(--c2);border:none;color:${t.color};font-size:13px;border-radius:6px;padding:6px 9px;outline:none">
       <input type="color" value="${t.color}" oninput="trivThemes[${i}].color=this.value;trivAdminRender();"
         style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">`;
@@ -2144,18 +2191,24 @@ function trivAdminRender(){
   // Questions grouped by section
   const qList=document.getElementById('triv-q-list');
   if(!qList)return;
-  qList.innerHTML='';
+  qList.innerHTML='<div style="font-size:10px;color:var(--mute);margin-bottom:8px">❓ Les <strong>cases-questions</strong> sont entre chaque camembert. Pour passer d\'un camembert au suivant, le joueur doit répondre à 2 questions.</div>';
   for(let sec=0;sec<6;sec++){
     const t=trivThemes[sec];
+    const nextT=trivThemes[(sec+1)%6];
     const secDiv=document.createElement('div');
-    secDiv.style.cssText=`border-left:3px solid ${t.color};padding-left:10px;margin-bottom:4px`;
-    secDiv.innerHTML=`<div style="font-size:10px;color:${t.color};letter-spacing:1px;font-family:var(--fh);margin-bottom:6px">${t.name||'Thème '+(sec+1)} — entre T${sec+1} et T${(sec+1)%6+1}</div>`;
+    secDiv.style.cssText=`border-left:3px solid ${t.color};padding-left:10px;margin-bottom:8px`;
+    secDiv.innerHTML=`<div style="font-size:10px;letter-spacing:1px;font-family:var(--fh);margin-bottom:6px">
+      <span style="color:${t.color}">🟣 ${t.name||'Camembert '+(sec+1)}</span>
+      <span style="color:var(--mute)"> → 2 cases-questions → </span>
+      <span style="color:${nextT.color}">🟣 ${nextT.name||'Camembert '+((sec+1)%6+1)}</span>
+    </div>`;
     [0,1].forEach(pos=>{
       const qi=sec*2+pos;
       const q=trivQuestions[qi]||{question:'',answer:'',tol:1};
       const row=document.createElement('div');
       row.style.cssText='background:var(--c1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;margin-bottom:5px';
-      row.innerHTML=`<input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Q${qi+1} · Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
+      row.innerHTML=`<div style="font-size:10px;color:var(--mute)">❓ Case-question ${pos+1} (entre ces 2 camemberts)</div>
+        <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="trivQuestions[${qi}].question=this.value;checkReady();"
           style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
         <div style="display:flex;gap:6px">
           <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="trivQuestions[${qi}].answer=this.value;checkReady();"
@@ -2168,6 +2221,8 @@ function trivAdminRender(){
     });
     qList.appendChild(secDiv);
   }
+  // Draw preview
+  setTimeout(trivDrawAdminPreview,50);
 }
 
 function meliAdminRender(){
@@ -2632,7 +2687,7 @@ function updateAliases(){
   checkReady();
 }
 function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton') ? true : !!document.getElementById('answer-in').value.trim();
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton'||currentType==='melimelo'||currentType==='apol'||currentType==='trivpursuit') ? true : !!document.getElementById('answer-in').value.trim();
   let hasContent=false;
   if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
   else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
@@ -3891,7 +3946,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const bjTheme = currentType==='blackjack'?document.getElementById('bj-theme-in').value.trim():'';
   const bjTarget = currentType==='blackjack'?parseInt(document.getElementById('bj-target-in').value)||50:50;
   const bjAnswers = currentType==='blackjack'?parseBJAnswers().obj:{};
-  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Escrime':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':rawAnswer;
+  const answer = currentType==='prix'?(question||'Juste Prix'):currentType==='trappe'?'La Trappe':currentType==='demineur'?'Le Démineur':currentType==='chase'?(chaseTheme||'The Chase'):currentType==='replique'?(repliqueAuthor||'Réplique'):currentType==='blackjack'?(bjTheme||'Blackjack'):currentType==='grimpe'?(grimpeTheme||"L'Alpe d'Huez"):currentType==='biathlon'?(biatTheme||'Biathlon'):currentType==='maillonfaible'?'Maillon Faible':currentType==='haltero'?'Haltéro-Quiz':currentType==='assaut'?'L\'Escrime':currentType==='tirarlarc'?'Tir à l\'Arc':currentType==='nagesync'?'Natation':currentType==='badminton'?(document.getElementById('bad-theme')?.value||'Badminton Quiz'):currentType==='melimelo'?'Méli-Mélo':currentType==='apol'?'À prendre ou à laisser':currentType==='trivpursuit'?'Trivial Pursuit':rawAnswer;
   const targetValue=currentType==='prix'?document.getElementById('prix-target-in').value.trim():'';
   const unit=currentType==='prix'?document.getElementById('prix-unit-in').value.trim():'';
   const prixTolerance=currentType==='prix'?document.getElementById('prix-tolerance-in').value.trim():0;
