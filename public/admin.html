@@ -2250,13 +2250,16 @@ function meliAdminRender(){
       <span style="color:var(--mute)">→</span>
       <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="meliWords[${i}].answer=this.value.toUpperCase();checkReady();"
         style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
-      <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>`;
+      <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="meliWords[${i}].indice=this.value;checkReady();"
+      style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none;margin-top:4px">`;
     list.appendChild(d);
   });
 }
 function meliAdminAddWord(){
   if(meliWords.length>=5){alert('5 mots maximum');return;}
-  meliWords.push({scrambled:'',answer:''});
+  meliWords.push({scrambled:'',answer:'',indice:''});
   meliAdminRender();checkReady();
 }
 
