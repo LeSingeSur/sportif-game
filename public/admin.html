@@ -496,8 +496,9 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           <canvas id="triv-admin-preview" width="280" height="280" style="border-radius:50%;max-width:100%;cursor:default"></canvas>
           <div style="font-size:10px;color:var(--mute);margin-top:8px">🟣 Camemberts · ❓ Cases-questions entre chaque thème</div>
         </div>
-        <!-- 6 themes -->
-        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">🟣 CAMEMBERTS (thèmes)</div>
+        <div id="triv-cam-q-warn" style="display:none;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.4);border-radius:8px;padding:8px 12px;font-size:11px;color:#ffb400;margin-bottom:8px">
+          ⚠️ Certains camemberts n'ont pas de question — supprime et recrée cet athlete pour activer les questions.
+        </div>
         <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
         <!-- 12 questions grouped by section -->
         <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
@@ -2250,6 +2251,9 @@ function trivAdminRender(){
     });
     qList.appendChild(secDiv);
   }
+  const hasAllCamQ=trivThemes.every(t=>t.question&&t.answer);
+  const warn=document.getElementById('triv-cam-q-warn');
+  if(warn) warn.style.display=hasAllCamQ?'none':'block';
   // Draw preview
   setTimeout(trivDrawAdminPreview,50);
 }

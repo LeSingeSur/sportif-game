@@ -11604,7 +11604,8 @@ function apolKeep(){
 
 function apolOpenBox(boxIdx,btn){
   if(APOL.done||btn.disabled)return;
-  // Désactiver toutes les boîtes immédiatement
+
+  // Désactiver toutes les boîtes
   (APOL.activeBoxes||[]).forEach((_,i)=>{
     const b=document.getElementById('apol-box-'+i);
     if(b){b.disabled=true;b.style.opacity=i===boxIdx?'1':'0.2';b.style.cursor='default';b.style.animation='none';}
@@ -11614,20 +11615,93 @@ function apolOpenBox(boxIdx,btn){
   let finalScore;
   if(item.type==='add') finalScore=Math.max(0,APOL.score+item.value);
   else finalScore=Math.round(APOL.score*item.value);
-
-  // Révéler la boîte choisie avec animation
   const revColor=(item.value>0&&item.type==='add')||(item.value>1&&item.type==='mult')?'#00dc78':'#ff4444';
-  btn.innerHTML=item.emoji+'<span style="font-size:11px;font-family:var(--fh);color:'+revColor+'">'+item.label+'</span>';
-  btn.style.borderColor=revColor;
-  btn.style.background=revColor+'22';
-  btn.style.fontSize='32px';
 
-  if(navigator.vibrate)navigator.vibrate([80,30,160]);
+  // Cacher grille, montrer roue
+  const grid=document.getElementById('apol-boxes-grid');
   const res=document.getElementById('apol-box-result');
-  if(res){
-    res.innerHTML=`<div style="font-size:15px;font-weight:800;color:${revColor}">${item.label}</div><div style="font-size:12px;color:var(--mute);margin-top:2px">${APOL.score} pts → <strong style="color:${revColor}">${finalScore} pts</strong></div>`;
+  if(grid)grid.style.display='none';
+
+  // Créer canvas roue
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:10px';
+  const label=document.createElement('div');
+  label.style.cssText='font-size:11px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)';
+  label.textContent='LA BOÎTE TOURNE…';
+  const cvs=document.createElement('canvas');
+  cvs.width=220;cvs.height=220;
+  cvs.style.cssText='width:220px;height:220px;border-radius:50%;';
+  wrap.appendChild(label);wrap.appendChild(cvs);
+  const dilemme=document.getElementById('apol-dilemme');
+  if(dilemme)dilemme.insertBefore(wrap,res);
+
+  // Les items de la roue = les 6 possibilités
+  const wheelItems=APOL.boxItems;
+  const N=wheelItems.length;
+  const ctx=cvs.getContext('2d');
+  const cx=110,cy=110,R=100;
+  let angle=0;
+  // Calculer l'angle cible pour s'arrêter sur item
+  const itemIdx=wheelItems.findIndex(w=>w.label===item.label);
+  const sliceAngle=Math.PI*2/N;
+  // Tours : 5 + atterrir au milieu de la bonne slice
+  const targetAngle=Math.PI*2*6+(itemIdx*sliceAngle+sliceAngle/2);
+
+  function drawWheel(rot){
+    ctx.clearRect(0,0,220,220);
+    wheelItems.forEach((w,i)=>{
+      const a0=-Math.PI/2+rot+i*sliceAngle;
+      const a1=a0+sliceAngle;
+      const c=w.type==='add'&&w.value>0?'#27ae60':w.type==='add'&&w.value<0?'#e74c3c':w.value>1?'#2980b9':'#8e44ad';
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);ctx.closePath();
+      ctx.fillStyle=c+'cc';ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;ctx.stroke();
+      // Label
+      const midA=a0+sliceAngle/2;
+      ctx.save();ctx.translate(cx+Math.cos(midA)*R*0.65,cy+Math.sin(midA)*R*0.65);
+      ctx.rotate(midA+Math.PI/2);
+      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(w.label,0,0);ctx.restore();
+    });
+    // Centre
+    ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);
+    ctx.fillStyle='#111';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.stroke();
+    // Aiguille (flèche en haut)
+    ctx.beginPath();ctx.moveTo(cx,cy-R-4);
+    ctx.lineTo(cx-8,cy-R+12);ctx.lineTo(cx+8,cy-R+12);ctx.closePath();
+    ctx.fillStyle='#fff';ctx.fill();
   }
-  setTimeout(()=>apolFinish(finalScore,'📦 '+item.label+' · '+APOL.score+' → '+finalScore+' pts'),2000);
+
+  // Animation : éasing exponentielle qui ralentit
+  const startTime=Date.now();
+  const duration=3500;
+  function animate(){
+    const elapsed=Date.now()-startTime;
+    const t=Math.min(elapsed/duration,1);
+    const ease=1-Math.pow(1-t,4); // ease-out quart
+    angle=ease*targetAngle;
+    drawWheel(angle);
+    if(t<1){
+      requestAnimationFrame(animate);
+    } else {
+      // Arrêt — afficher résultat
+      label.textContent='LA BOÎTE CONTIENT…';
+      label.style.color=revColor;
+      if(navigator.vibrate)navigator.vibrate([100,50,200]);
+      const finalLabel=document.createElement('div');
+      finalLabel.style.cssText=`font-family:var(--fh);font-size:32px;color:${revColor};text-align:center;text-shadow:0 0 20px ${revColor}88`;
+      finalLabel.textContent=item.label;
+      wrap.appendChild(finalLabel);
+      const scoreLabel=document.createElement('div');
+      scoreLabel.style.cssText='font-size:13px;color:var(--mute);text-align:center';
+      scoreLabel.innerHTML=`${APOL.score} pts → <strong style="color:${revColor}">${finalScore} pts</strong>`;
+      wrap.appendChild(scoreLabel);
+      setTimeout(()=>apolFinish(finalScore,'📦 '+item.label+' · '+APOL.score+' → '+finalScore+' pts'),1800);
+    }
+  }
+  animate();
 }
 
 function apolFinish(finalScore,msg){
