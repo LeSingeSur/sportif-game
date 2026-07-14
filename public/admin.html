@@ -2268,6 +2268,29 @@ function trivAdminRender(){
   setTimeout(trivDrawAdminPreview,50);
 }
 
+function meliScramble(answer){
+  // Mélange les lettres de la réponse (garantit différent de l'original)
+  const letters=answer.toUpperCase().split('');
+  let shuffled;
+  let attempts=0;
+  do {
+    for(let j=letters.length-1;j>0;j--){
+      const k=Math.floor(Math.random()*(j+1));
+      [letters[j],letters[k]]=[letters[k],letters[j]];
+    }
+    shuffled=letters.join('');
+    attempts++;
+  } while(shuffled===answer.toUpperCase()&&attempts<20);
+  return shuffled;
+}
+function meliGenScramble(i){
+  const ans=(meliWords[i]&&meliWords[i].answer)||'';
+  if(!ans.trim()){alert('Renseigne d\'abord la solution !');return;}
+  meliWords[i].scrambled=meliScramble(ans);
+  window.meliWords=meliWords;
+  meliAdminRender();checkReady();
+}
+
 function meliAdminRender(){
   const list=document.getElementById('meli-word-list');if(!list)return;
   list.innerHTML='';
@@ -2276,12 +2299,14 @@ function meliAdminRender(){
     d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
     d.innerHTML=`<div style="display:flex;gap:8px;align-items:center">
         <span style="font-family:var(--fh);font-size:11px;color:var(--neon);min-width:16px">${i+1}</span>
-        <input value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="setMeliW(${i},'scrambled',this.value)"
+        <input id="meli-scrambled-${i}" value="${(w.scrambled||'').replace(/"/g,'&quot;')}" placeholder="RENMYA (mélangé)" oninput="setMeliW(${i},'scrambled',this.value)"
           style="flex:1;background:var(--c2);border:none;color:#c060ff;font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
+        <button onclick="meliGenScramble(${i})" title="Générer automatiquement"
+          style="background:rgba(192,96,255,.15);border:1px solid rgba(192,96,255,.3);color:#c060ff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;white-space:nowrap">🔀 Auto</button>
         <span style="color:var(--mute)">→</span>
         <input value="${(w.answer||'').replace(/"/g,'&quot;')}" placeholder="NEYMAR (solution)" oninput="setMeliW(${i},'answer',this.value)"
           style="flex:1;background:var(--c2);border:none;color:var(--txt);font-size:14px;font-family:var(--fh);letter-spacing:3px;border-radius:6px;padding:7px 9px;outline:none;text-transform:uppercase">
-        <button onclick="meliWords.splice(${i},1);meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+        <button onclick="meliWords.splice(${i},1);window.meliWords=meliWords;meliAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
       </div>
       <input value="${(w.indice||'').replace(/"/g,'&quot;')}" placeholder="💡 Indice (optionnel) — ex: Footballeur brésilien" oninput="setMeliW(${i},'indice',this.value)"
         style="width:100%;background:rgba(255,200,50,.05);border:1px solid rgba(255,200,50,.2);color:rgba(255,200,50,.8);font-size:12px;border-radius:6px;padding:6px 9px;outline:none">`;
@@ -2338,15 +2363,15 @@ function badAdminRender(){
     d.innerHTML=`
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;color:var(--neon);font-family:var(--fh)">Q${i+1}</span>
-        <button onclick="badmintonQuestions.splice(${i},1);badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+        <button onclick="badmintonQuestions.splice(${i},1);window.badmintonQuestions=badmintonQuestions;badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
       </div>
-      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Carrière, Records…)" oninput="badmintonQuestions[${i}].theme=this.value;checkReady();"
+      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Carrière, Records…)" oninput="setBadQ(${i},'theme',this.value)"
         style="width:100%;background:rgba(0,180,100,.06);border:1px solid rgba(0,180,100,.2);color:#00c870;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
-      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="badmintonQuestions[${i}].question=this.value;checkReady();"
+      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setBadQ(${i},'question',this.value)"
         style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
       ${['a','b','c'].map((ch,ci)=>`
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="radio" name="bad-correct-${i}" value="${ci}" ${q.correct==ci?'checked':''} onchange="badmintonQuestions[${i}].correct=${ci};checkReady();" style="accent-color:var(--neon);width:14px;height:14px;flex-shrink:0" title="Bonne réponse">
+          <input type="radio" name="bad-correct-${i}" value="${ci}" ${q.correct==ci?'checked':''} onchange="setBadQCorrect(${i},${ci})" style="accent-color:var(--neon);width:14px;height:14px;flex-shrink:0" title="Bonne réponse">
           <input value="${(q[ch]||'').replace(/"/g,'&quot;')}" placeholder="Choix ${ch.toUpperCase()}…" oninput="badmintonQuestions[${i}]['${ch}']=this.value;checkReady();"
             style="flex:1;background:${q.correct==ci?'rgba(0,200,80,.1)':'var(--c2)'};border:${q.correct==ci?'1px solid rgba(0,200,80,.3)':'none'};color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
         </div>`).join('')}`;
@@ -4177,6 +4202,9 @@ function showMsg(id,type,text){const el=document.getElementById(id);el.className
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // Fonctions globales pour oninput - garanties accessibles
+function setBadQ(i,f,v){if(!badmintonQuestions[i])return;badmintonQuestions[i][f]=f==='correct'?parseInt(v):v;checkReady();}
+function setBadQCorrect(i,v){if(!badmintonQuestions[i])return;badmintonQuestions[i].correct=parseInt(v);checkReady();}
+
 function setTrivTheme(i,f,v){
   if(!trivThemes[i])return;
   trivThemes[i][f]=f==='tol'?parseInt(v)||0:v;
