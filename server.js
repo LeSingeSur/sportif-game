@@ -307,7 +307,8 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1,
+      bonusQ:q.bonusQ||'', bonusA:q.bonusA||''
     }));
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
@@ -729,7 +730,8 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1,
+      bonusQ:q.bonusQ||'', bonusA:q.bonusA||''
     }));
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
