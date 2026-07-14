@@ -1844,6 +1844,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
       <button id="apol-keep-btn" onclick="apolKeep()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-open-btn" onclick="apolTriggerRandom()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button>
+      <button id="apol-continue-btn" onclick="" style="display:none;width:100%!important;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-family:var(--fh);font-size:13px;cursor:pointer;letter-spacing:1px">⏭ PROCHAINE QUESTION</button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute)">
         Les 5 effets sont toujours présents :<br>
@@ -11352,10 +11354,10 @@ function trivSubmit(){
       setTimeout(()=>{
         document.getElementById('triv-question-wrap').style.display='none';
         if(fb)fb.textContent='';
+        if(trivCheckAllCollected()){trivFinish('complete');return;}
         TRIV.phase='move';
         trivShowMoveButtons();
         trivDraw();
-        if(trivCheckAllCollected())trivFinish('complete');
       },1200);
     } else {
       // Case-question passée
@@ -11406,7 +11408,9 @@ function trivFinish(reason){
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Trivial Pursuit';
   const vSub=document.getElementById('v-sub');
-  if(vSub)vSub.textContent=collected+'/6 thèmes collectés · '+score+' pts'+(reason==='encircled'?' · Cerné !':'');
+  if(vSub)vSub.textContent=
+    reason==='complete'&&collected===6?'🏆 Tous les camemberts collectés ! '+score+' pts':
+    collected+'/6 thèmes collectés · '+score+' pts'+(reason==='encircled'?' · Cerné !':reason==='trapped'?' · Plus de mouvements utiles.':'');
   setVictoryIcon('trivpursuit'); submitScore(score);
   setTimeout(()=>show('sv'),800);
 }
@@ -11614,37 +11618,34 @@ function apolSubmit(){
 function apolShowMidDilemme(){
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
   APOL._isFinal=false;
-
-  const grid=document.getElementById('apol-boxes-grid');
-  if(grid){grid.innerHTML='';grid.style.display='none';}
-
-  const kb=document.getElementById('apol-keep-btn'); if(kb) kb.style.display='none';
-
-  const cb=document.getElementById('apol-continue-btn');
-  if(cb){
-    cb.style.display='block';
-    cb.textContent='⏭ PROCHAINE QUESTION';
-    cb.onclick=()=>apolResolveAnswer(null);
-  }
-
-  const t=document.getElementById('apol-dilemme-title');
-  if(t) t.textContent='OUVRIR UNE BOÎTE OU PASSER ?';
-
-  const res=document.getElementById('apol-box-result');
-  if(res){
-    res.innerHTML='<button onclick="apolTriggerRandom()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button>'+
-      '<div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:5px">⚡ 🙈 🎰 ⚖️ 🔮 — effet aléatoire</div>';
-  }
-
   const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  const grid=document.getElementById('apol-boxes-grid'); if(grid){grid.innerHTML='';grid.style.display='none';}
+
+  document.getElementById('apol-dilemme-title').textContent='OUVRIR UNE BOÎTE OU PASSER ?';
+  // Bouton GARDER caché (milieu de partie)
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  // Bouton OUVRIR visible
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='block';
+  // Bouton PASSER visible avec action
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){cb.style.display='block';cb.textContent='⏭ PROCHAINE QUESTION';cb.onclick=()=>apolResolveAnswer(null);}
+
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
-// Joueur clique "Ouvrir une boîte" — cacher les 2 boutons PUIS lancer la roue
+// Joueur clique "Ouvrir une boîte"
 function apolTriggerRandom(){
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
   const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
   apolOpenRandom();
+}
+
+// Lance la roue puis révèle l'effet
+function apolOpenRandom(){
+  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  apolSpinWheel(item,()=>apolRevealEffect(item,null));
 }
 
 // Dilemme final (après Q5) : GARDER ou OUVRIR UNE BOÎTE
@@ -11652,19 +11653,22 @@ function apolShowFinalDilemme(){
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
   APOL._isFinal=true; APOL._pendingAnswer=null;
-  const grid=document.getElementById('apol-boxes-grid');
-  if(grid){grid.innerHTML='';grid.style.display='none';}
-  const kb=document.getElementById('apol-keep-btn');
-  if(kb){kb.style.display='block';kb.onclick=apolKeep;}
-  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
-  const t=document.getElementById('apol-dilemme-title');
-  if(t) t.textContent='LE GRAND DILEMME FINAL';
-  const res=document.getElementById('apol-box-result');
-  if(res) res.innerHTML='<button onclick="apolOpenRandomFinal()" style="width:100%!important;padding:16px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button><div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:6px">Effet aléatoire sur le score final</div>';
   const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  const grid=document.getElementById('apol-boxes-grid'); if(grid){grid.innerHTML='';grid.style.display='none';}
+  document.getElementById('apol-dilemme-title').textContent='LE GRAND DILEMME FINAL';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='block';
+  const ob=document.getElementById('apol-open-btn');
+  if(ob){ob.style.display='block';ob.onclick=apolTriggerRandomFinal;}
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
+function apolTriggerRandomFinal(){
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
+  apolOpenRandomFinal();
+}
 function apolOpenRandomFinal(){
   const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
   const res=document.getElementById('apol-box-result');
