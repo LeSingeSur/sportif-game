@@ -11075,15 +11075,37 @@ function trivDraw(){
       ctx.lineWidth=2;ctx.stroke();
     }
 
-    // Adjacents highlight en phase move
+    // Adjacents highlight + flèche directionnelle en phase move
     if(TRIV.phase==='move'&&TRIV.playerPos>=0&&!isPlayer&&!isCollapsed){
-      const left=(TRIV.playerPos-1+12)%12,right=(TRIV.playerPos+1)%12;
-      if(i===left||i===right){
+      const leftPos=(TRIV.playerPos-1+12)%12,rightPos=(TRIV.playerPos+1)%12;
+      const isLeft=i===leftPos, isRight=i===rightPos;
+      if(isLeft||isRight){
         const midR=isCam?R*0.62:(R*0.84+R*0.44)/2;
         const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+        // Petit cercle indicateur
         ctx.beginPath();ctx.arc(px,py,R*0.075,0,Math.PI*2);
-        ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill();
         ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
+        // Flèche : tangente au cercle dans la direction de déplacement
+        // Si isLeft : mouvement antihoraire (←) ; si isRight : mouvement horaire (→)
+        const arrowLen=R*0.055;
+        // Direction tangente au cercle au point midA
+        // Antihoraire = midA - PI/2 ; horaire = midA + PI/2
+        const arrowDir=isLeft?(midA-Math.PI/2):(midA+Math.PI/2);
+        const ax1=px-Math.cos(arrowDir)*arrowLen;
+        const ay1=py-Math.sin(arrowDir)*arrowLen;
+        const ax2=px+Math.cos(arrowDir)*arrowLen;
+        const ay2=py+Math.sin(arrowDir)*arrowLen;
+        ctx.beginPath();ctx.moveTo(ax1,ay1);ctx.lineTo(ax2,ay2);
+        ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+        // Tête de flèche
+        const headAngle=isLeft?(arrowDir+Math.PI):(arrowDir);
+        ctx.beginPath();
+        ctx.moveTo(ax2,ay2);
+        ctx.lineTo(ax2-Math.cos(headAngle-0.4)*R*0.04,ay2-Math.sin(headAngle-0.4)*R*0.04);
+        ctx.moveTo(ax2,ay2);
+        ctx.lineTo(ax2-Math.cos(headAngle+0.4)*R*0.04,ay2-Math.sin(headAngle+0.4)*R*0.04);
+        ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
       }
     }
 
@@ -11234,22 +11256,41 @@ function trivShowMoveButtons(){
 }
 
 function trivUpdateMoveButtons(){
+  if(TRIV.done)return;
   const left=(TRIV.playerPos-1+12)%12;
   const right=(TRIV.playerPos+1)%12;
   const lc=TRIV.cases[left], rc=TRIV.cases[right];
   const lBtn=document.getElementById('triv-left-btn');
   const rBtn=document.getElementById('triv-right-btn');
   const hint=document.getElementById('triv-move-hint');
-  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
-  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
-  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
-  // Check encircled
-  if(lc.state==='collapsed'&&rc.state==='collapsed'){
-    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
-    setTimeout(()=>trivFinish('encircled'),1000);
-  } else {
-    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
+  const name=c=>c.type==='cam'?(c.state==='collected'?'✅ '+c.name:c.state==='collapsed'?'💀 '+c.name:'🟣 '+c.name):(c.state==='passed'?'✅ ':c.state==='collapsed'?'💀 ':'❓ ')+'Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.25':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.25':'1';}
+
+  // BFS : toutes les cases accessibles depuis la position courante
+  const visited=new Set([TRIV.playerPos]);
+  const queue=[TRIV.playerPos];
+  while(queue.length){
+    const pos=queue.shift();
+    for(const next of [(pos-1+12)%12,(pos+1)%12]){
+      if(!visited.has(next)&&TRIV.cases[next].state!=='collapsed'){
+        visited.add(next);queue.push(next);
+      }
+    }
   }
+  // Y a-t-il encore un camembert non-collecté OU une case-question non-validée accessible ?
+  const hasUseful=[...visited].some(p=>{
+    const c=TRIV.cases[p];
+    return (c.type==='cam'&&c.state==='normal')||(c.type==='q'&&c.state==='normal');
+  });
+
+  if(!hasUseful){
+    const msg=lc.state==='collapsed'&&rc.state==='collapsed'?'💀 Cerné — fin !':'🏁 Plus de cases utiles accessibles — fin !';
+    if(hint)hint.textContent=msg;
+    setTimeout(()=>trivFinish('trapped'),1000);
+    return;
+  }
+  if(hint)hint.textContent='◀ Gauche ou Droite ▶ — clique ou touche le plateau';
 }
 
 function trivMove(dir){
