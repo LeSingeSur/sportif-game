@@ -11039,27 +11039,12 @@ function trivDraw(){
 
     if(!isCollapsed){
       if(isCam){
+        // Juste la lettre initiale sur le camembert (sobre)
         const px=cx+Math.cos(midA)*R*0.62,py=cy+Math.sin(midA)*R*0.62;
-        ctx.save();
-        ctx.translate(px,py);
-        ctx.rotate(midA+Math.PI/2);
-        const name=c.name||'?';
-        const words=name.split(' ');
-        const fs2=Math.max(8,Math.round(R*0.082));
-        ctx.font='bold '+fs2+'px sans-serif';
+        ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.6)';
+        ctx.font='bold '+Math.round(R*0.13)+'px sans-serif';
         ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.9)';
-        if(name.length<=7||words.length===1){
-          ctx.fillText(name,0,0);
-        } else {
-          const half=Math.ceil(words.length/2);
-          const l1=words.slice(0,half).join(' ');
-          const l2=words.slice(half).join(' ');
-          ctx.fillText(l1.length>9?l1.slice(0,8)+'…':l1,0,-fs2*0.6);
-          ctx.fillText(l2.length>9?l2.slice(0,8)+'…':l2,0,fs2*0.6);
-        }
-        if(isCollected){ctx.font='bold '+Math.round(R*0.09)+'px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText('✓',0,fs2*1.4);}
-        ctx.restore();
+        ctx.fillText(isCollected?'✓':(c.name||'?')[0].toUpperCase(),px,py);
       } else {
         const midRq=(R*0.84+R*0.44)/2;
         const pxq=cx+Math.cos(midA)*midRq,pyq=cy+Math.sin(midA)*midRq;
@@ -11624,37 +11609,44 @@ function apolSubmit(){
   apolShowMidDilemme();
 }
 
-// Dilemme intermédiaire : OUVRIR UNE BOÎTE ou PASSER (valider directement)
+// Dilemme intermédiaire : PROCHAINE QUESTION ou OUVRIR UNE BOÎTE (aléatoire)
 function apolShowMidDilemme(){
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
   APOL._isFinal=false;
-  // Boîtes mélangées
-  const boxes=[...APOL.boxItems].sort(()=>Math.random()-.5);
+
+  // Vider grille et cacher
   const grid=document.getElementById('apol-boxes-grid');
-  if(grid){
-    grid.style.display='grid'; grid.innerHTML='';
-    boxes.forEach((item,i)=>{
-      const btn=document.createElement('button');
-      btn.id='apol-box-'+i;
-      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;border-radius:12px;border:2px solid '+item.color+';background:'+item.color+'18;color:'+item.color+';cursor:pointer;font-size:22px;min-height:76px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
-      btn.style.animationDelay=(i*0.35)+'s';
-      btn.innerHTML=item.emoji+'<span style="font-size:9px;font-family:var(--fh);opacity:.6">'+(i+1)+'</span><span style="font-size:8px;opacity:.7;text-align:center;line-height:1.2">'+item.label+'</span>';
-      btn.onclick=()=>apolOpenBox(i,btn,item,boxes);
-      grid.appendChild(btn);
-    });
-  }
+  if(grid){grid.innerHTML='';grid.style.display='none';}
+
   const kb=document.getElementById('apol-keep-btn'); if(kb) kb.style.display='none';
   const cb=document.getElementById('apol-continue-btn');
   if(cb){
     cb.style.display='block';
-    cb.textContent='⏭ PASSER — voir la réponse directement';
+    cb.textContent='⏭ PROCHAINE QUESTION';
     cb.onclick=()=>apolResolveAnswer(null);
   }
+
   const t=document.getElementById('apol-dilemme-title');
-  if(t) t.textContent='OUVRIR UNE BOÎTE AVANT DE VOIR LA RÉPONSE ?';
-  document.getElementById('apol-box-result').textContent='';
+  if(t) t.textContent='OUVRIR UNE BOÎTE OU PASSER ?';
+
+  // Bouton ouvrir boîte
+  const res=document.getElementById('apol-box-result');
+  if(res){
+    res.innerHTML='<button onclick="apolOpenRandom()" style="width:100%!important;padding:16px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button>'+
+      '<div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:6px">⚡ 🙈 🎰 ⚖️ 🔮 — effet aléatoire</div>';
+  }
+
   const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
   document.getElementById('apol-dilemme').style.display='flex';
+}
+
+// Ouvre une boîte aléatoire en mid-game
+function apolOpenRandom(){
+  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML='';
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
+  apolSpinWheel(item, ()=>apolRevealEffect(item,null));
 }
 
 // Dilemme final (après Q5) : GARDER ou OUVRIR UNE BOÎTE
@@ -11662,40 +11654,114 @@ function apolShowFinalDilemme(){
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
   APOL._isFinal=true; APOL._pendingAnswer=null;
-  const boxes=[...APOL.boxItems].sort(()=>Math.random()-.5);
   const grid=document.getElementById('apol-boxes-grid');
-  if(grid){
-    grid.style.display='grid'; grid.innerHTML='';
-    boxes.forEach((item,i)=>{
-      const btn=document.createElement('button');
-      btn.id='apol-box-'+i;
-      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;border-radius:12px;border:2px solid '+item.color+';background:'+item.color+'18;color:'+item.color+';cursor:pointer;font-size:22px;min-height:76px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
-      btn.style.animationDelay=(i*0.35)+'s';
-      btn.innerHTML=item.emoji+'<span style="font-size:9px;font-family:var(--fh);opacity:.6">'+(i+1)+'</span><span style="font-size:8px;opacity:.7;text-align:center;line-height:1.2">'+item.label+'</span>';
-      btn.onclick=()=>apolOpenBoxFinal(i,btn,item,boxes);
-      grid.appendChild(btn);
-    });
-  }
+  if(grid){grid.innerHTML='';grid.style.display='none';}
   const kb=document.getElementById('apol-keep-btn');
   if(kb){kb.style.display='block';kb.onclick=apolKeep;}
-  const cb=document.getElementById('apol-continue-btn'); if(cb) cb.style.display='none';
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   const t=document.getElementById('apol-dilemme-title');
   if(t) t.textContent='LE GRAND DILEMME FINAL';
-  document.getElementById('apol-box-result').textContent='';
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML='<button onclick="apolOpenRandomFinal()" style="width:100%!important;padding:16px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button><div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:6px">Effet aléatoire sur le score final</div>';
   const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
   document.getElementById('apol-dilemme').style.display='flex';
+}
+
+function apolOpenRandomFinal(){
+  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML='';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const scoreBefore=APOL.score;
+  // Calcul du nouvel score selon effet final
+  let newScore=scoreBefore, label='';
+  if(item.id==='double'){newScore=Math.min(200,scoreBefore+40);label='+40 pts bonus';}
+  else if(item.id==='pari'){newScore=Math.min(200,scoreBefore+10);label='+10 pts bonus';}
+  else if(item.id==='voilee'){newScore=Math.min(200,scoreBefore+30);label='+30 pts bonus';}
+  else if(item.id==='jackpot'){newScore=Math.min(200,scoreBefore+40);label='+40 pts jackpot';}
+  else if(item.id==='prophetie'){newScore=Math.min(200,scoreBefore+20);label='+20 pts bonus';}
+  apolSpinWheel(item, ()=>apolSpinAndFinish(item,scoreBefore,newScore,label));
 }
 
 // Ouvrir une boîte en mid-game (avant que la réponse soit révélée)
 function apolOpenBox(boxIdx,btn,item,boxes){
   if(APOL.done||btn.disabled)return;
-  boxes.forEach((_,i)=>{
+  if(boxes.forEach) boxes.forEach((_,i)=>{
     const b=document.getElementById('apol-box-'+i);
     if(b){b.disabled=true;b.style.opacity=i===boxIdx?'1':'0.2';b.style.cursor='default';b.style.animation='none';}
   });
   const grid=document.getElementById('apol-boxes-grid'); if(grid)grid.style.display='none';
   const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   const res=document.getElementById('apol-box-result');
+
+  // Roue qui tourne avant de révéler l'effet
+  apolSpinWheel(item, ()=>apolRevealEffect(item,res));
+}
+
+function apolSpinWheel(item, onDone){
+  const res=document.getElementById('apol-box-result');
+  const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
+  const wrap=document.createElement('div');
+  wrap.id='apol-wheel-wrap';
+  wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px';
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font-size:11px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)';
+  lbl.textContent='LA BOÎTE TOURNE…';
+  const cvs=document.createElement('canvas');
+  cvs.width=220;cvs.height=220;cvs.style.cssText='width:220px;height:220px;border-radius:50%';
+  wrap.appendChild(lbl);wrap.appendChild(cvs);
+  if(res) res.parentNode.insertBefore(wrap,res);
+
+  const wheelItems=APOL.boxItems;
+  const N=wheelItems.length;
+  const ctx=cvs.getContext('2d');
+  const cx=110,cy=110,R=100;
+  const sliceAngle=Math.PI*2/N;
+  const itemIdx=wheelItems.findIndex(w=>w.id===item.id);
+  const targetAngle=Math.PI*2*6+(itemIdx*sliceAngle+sliceAngle/2);
+
+  function drawWheel(rot){
+    ctx.clearRect(0,0,220,220);
+    wheelItems.forEach((w,i)=>{
+      const a0=-Math.PI/2+rot+i*sliceAngle, a1=a0+sliceAngle;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);ctx.closePath();
+      ctx.fillStyle=(w.color||'#888')+'cc';ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;ctx.stroke();
+      const midA=a0+sliceAngle/2;
+      ctx.save();ctx.translate(cx+Math.cos(midA)*R*0.62,cy+Math.sin(midA)*R*0.62);
+      ctx.rotate(midA+Math.PI/2);
+      ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(w.emoji||'',0,-7);
+      ctx.font='bold 8px sans-serif';ctx.fillText(w.label,0,8);
+      ctx.restore();
+    });
+    ctx.beginPath();ctx.arc(cx,cy,20,0,Math.PI*2);
+    ctx.fillStyle='#111';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R-4);
+    ctx.lineTo(cx-8,cy-R+12);ctx.lineTo(cx+8,cy-R+12);ctx.closePath();
+    ctx.fillStyle='#fff';ctx.fill();
+  }
+
+  const start=Date.now(), dur=3000;
+  function animate(){
+    const t=Math.min((Date.now()-start)/dur,1);
+    const ease=1-Math.pow(1-t,4);
+    drawWheel(ease*targetAngle);
+    if(t<1){requestAnimationFrame(animate);}
+    else{
+      lbl.textContent='LA BOÎTE CONTIENT…';
+      lbl.style.color=item.color||'#ffb400';
+      if(navigator.vibrate)navigator.vibrate([100,50,200]);
+      setTimeout(()=>{wrap.remove();onDone();},600);
+    }
+  }
+  animate();
+}
+
+function apolRevealEffect(item,resEl){
+  const res=resEl||document.getElementById('apol-box-result');
 
   if(item.id==='double'){
     // Question bonus AVANT de révéler la réponse
@@ -11723,17 +11789,31 @@ function apolOpenBox(boxIdx,btn,item,boxes){
       '<button id="apol-pari-non" onclick="apolPariChoix(\'non\')" style="flex:1;padding:12px;border-radius:8px;border:2px solid #e74c3c;background:rgba(231,76,60,.1);color:#e74c3c;font-family:var(--fh);font-size:15px;cursor:pointer">❌ NON</button>'+
       '</div>';
   } else if(item.id==='voilee'){
-    APOL.voileeActive=true;
-    if(res) res.innerHTML='<div style="font-size:24px">🙈</div><div style="font-family:var(--fh);color:#8e44ad;font-size:14px;margin:6px 0">Question Voilée activée</div><div style="font-size:12px;color:var(--mute)">Prochaine question : 1 mot sur 2 masqué · +30 pts si juste</div>';
-    const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer('voilee');}
+    const qs=APOL.data.apolQuestions||[];
+    const isLast=(APOL.qIdx>=qs.length-1);
+    if(isLast){
+      if(res) res.innerHTML='<div style="font-size:24px">🙈</div><div style="font-family:var(--fh);color:rgba(255,255,255,.4);font-size:13px;margin:6px 0">Question Voilée</div><div style="font-size:12px;color:var(--red)">Aucun effet — c\'est la dernière question</div>';
+      const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer(null);}
+    } else {
+      APOL.voileeActive=true;
+      if(res) res.innerHTML='<div style="font-size:24px">🙈</div><div style="font-family:var(--fh);color:#8e44ad;font-size:14px;margin:6px 0">Question Voilée activée</div><div style="font-size:12px;color:var(--mute)">Prochaine question : 1 mot sur 2 masqué · +30 pts si juste</div>';
+      const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer('voilee');}
+    }
   } else if(item.id==='jackpot'){
-    APOL.effect='jackpot'; APOL.jackpotStreak=0;
-    if(res) res.innerHTML='<div style="font-size:24px">🎰</div><div style="font-family:var(--fh);color:#27ae60;font-size:14px;margin:6px 0">Jackpot Progressif activé</div><div style="font-size:12px;color:var(--mute)">+10, +20, +30… par bonne réponse consécutive · Erreur = −10 et annulé</div>';
-    const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer('jackpot');}
+    const qs=APOL.data.apolQuestions||[];
+    const isLast=(APOL.qIdx>=qs.length-1);
+    if(isLast){
+      if(res) res.innerHTML='<div style="font-size:24px">🎰</div><div style="font-family:var(--fh);color:rgba(255,255,255,.4);font-size:13px;margin:6px 0">Jackpot Progressif</div><div style="font-size:12px;color:var(--red)">Aucun effet — c\'est la dernière question</div>';
+      const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer(null);}
+    } else {
+      APOL.effect='jackpot'; APOL.jackpotStreak=0;
+      if(res) res.innerHTML='<div style="font-size:24px">🎰</div><div style="font-family:var(--fh);color:#27ae60;font-size:14px;margin:6px 0">Jackpot Progressif activé</div><div style="font-size:12px;color:var(--mute)">+10, +20, +30… par bonne réponse consécutive · Erreur = −10 et annulé</div>';
+      const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer('jackpot');}
+    }
   } else if(item.id==='prophetie'){
     const remaining=Math.min(3,(APOL.data.apolQuestions||[]).length-APOL.qIdx-1);
     if(!remaining){
-      if(res) res.innerHTML='<div style="color:var(--red);font-size:12px">🔮 Plus assez de questions restantes.</div>';
+      if(res) res.innerHTML='<div style="font-size:24px">🔮</div><div style="font-family:var(--fh);color:rgba(255,255,255,.4);font-size:13px;margin:6px 0">La Prophétie</div><div style="font-size:12px;color:var(--red)">Aucun effet — plus de questions suivantes</div>';
       const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ VOIR LA RÉPONSE';c.onclick=()=>apolResolveAnswer(null);}
       return;
     }
