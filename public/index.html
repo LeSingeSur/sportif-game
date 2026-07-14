@@ -1769,7 +1769,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
     </div>
     <!-- Légende couleurs/thèmes -->
-    <div id="triv-legend" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px"></div> style="display:none;flex-direction:column;gap:8px">
+    <div id="triv-legend" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px"></div>
+    <div id="triv-question-wrap" style="display:none;flex-direction:column;gap:8px">
       <div style="font-size:10px;letter-spacing:2px;font-family:var(--fh);text-align:center;padding:4px 0" id="triv-q-theme"></div>
       <div id="triv-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.1)"></div>
       <div style="display:flex;gap:8px">
@@ -11614,11 +11615,11 @@ function apolShowMidDilemme(){
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
   APOL._isFinal=false;
 
-  // Vider grille et cacher
   const grid=document.getElementById('apol-boxes-grid');
   if(grid){grid.innerHTML='';grid.style.display='none';}
 
   const kb=document.getElementById('apol-keep-btn'); if(kb) kb.style.display='none';
+
   const cb=document.getElementById('apol-continue-btn');
   if(cb){
     cb.style.display='block';
@@ -11629,24 +11630,21 @@ function apolShowMidDilemme(){
   const t=document.getElementById('apol-dilemme-title');
   if(t) t.textContent='OUVRIR UNE BOÎTE OU PASSER ?';
 
-  // Bouton ouvrir boîte
   const res=document.getElementById('apol-box-result');
   if(res){
-    res.innerHTML='<button onclick="apolOpenRandom()" style="width:100%!important;padding:16px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button>'+
-      '<div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:6px">⚡ 🙈 🎰 ⚖️ 🔮 — effet aléatoire</div>';
+    res.innerHTML='<button onclick="apolTriggerRandom()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px;animation:boxGlow 2s ease-in-out infinite">📦 OUVRIR UNE BOÎTE</button>'+
+      '<div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:5px">⚡ 🙈 🎰 ⚖️ 🔮 — effet aléatoire</div>';
   }
 
   const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
-// Ouvre une boîte aléatoire en mid-game
-function apolOpenRandom(){
-  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
-  const res=document.getElementById('apol-box-result');
-  if(res) res.innerHTML='';
+// Joueur clique "Ouvrir une boîte" — cacher les 2 boutons PUIS lancer la roue
+function apolTriggerRandom(){
   const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
-  apolSpinWheel(item, ()=>apolRevealEffect(item,null));
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  apolOpenRandom();
 }
 
 // Dilemme final (après Q5) : GARDER ou OUVRIR UNE BOÎTE
