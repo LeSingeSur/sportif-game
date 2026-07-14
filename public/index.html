@@ -1880,6 +1880,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
       <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-continue-btn" onclick="apolContinue()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(100,180,255,.4);background:rgba(100,180,255,.08);color:#64b4ff;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px"></button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
         Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
@@ -11291,11 +11292,27 @@ function trivUpdateMoveButtons(){
     setTimeout(()=>trivFinish('complete'),1200);
     return;
   }
-  // Fin si plus aucun mouvement utile (toutes cases non-effondrées déjà validées)
-  const allDone=TRIV.cases.every(c=>c.state==='collapsed'||c.state==='collected'||c.state==='passed');
-  if(allDone){
-    if(hint)hint.textContent='🏆 Toutes les cases validées — fin !';
-    setTimeout(()=>trivFinish('complete'),1200);
+  // BFS : trouver toutes les cases ACCESSIBLES depuis la position courante
+  function getReachable(){
+    const visited=new Set([TRIV.playerPos]);
+    const queue=[TRIV.playerPos];
+    while(queue.length){
+      const pos=queue.shift();
+      for(const next of [(pos-1+12)%12,(pos+1)%12]){
+        if(!visited.has(next)&&TRIV.cases[next].state!=='collapsed'){visited.add(next);queue.push(next);}
+      }
+    }
+    return visited;
+  }
+  const reachable=getReachable();
+  // Fin si aucune case accessible n'est un camembert non-collecté OU une case-question non-validée
+  const hasUsefulMove=[...reachable].some(p=>{
+    const c=TRIV.cases[p];
+    return (c.type==='cam'&&c.state==='normal')||(c.type==='q'&&c.state==='normal');
+  });
+  if(!hasUsefulMove){
+    if(hint)hint.textContent='🏆 Plus aucun mouvement utile accessible — fin !';
+    setTimeout(()=>trivFinish('trapped'),1200);
     return;
   }
   if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
@@ -11648,10 +11665,8 @@ function apolSubmit(){
     if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
   }
   APOL.qIdx++;
-  setTimeout(()=>{
-    if(APOL.qIdx>=qs.length) apolShowDilemme();
-    else apolShowQuestion();
-  },1400);
+  const remaining=qs.length-APOL.qIdx;
+  setTimeout(()=>apolShowDilemme(remaining),1400);
 }
 
 function apolContinue(){
@@ -11659,7 +11674,8 @@ function apolContinue(){
   apolShowQuestion();
 }
 
-function apolShowDilemme(){
+function apolShowDilemme(remaining){
+  remaining=remaining||0;
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
 
@@ -11682,9 +11698,16 @@ function apolShowDilemme(){
     });
   }
 
-  // Masquer bouton continuer (fin des questions)
+  // Bouton continuer si des questions restent
   const continueBtn=document.getElementById('apol-continue-btn');
-  if(continueBtn)continueBtn.style.display='none';
+  if(continueBtn){
+    if(remaining>0){
+      continueBtn.style.display='block';
+      continueBtn.textContent='➡️ CONTINUER · encore '+remaining+' question'+(remaining>1?'s':'');
+    } else {
+      continueBtn.style.display='none';
+    }
+  }
 
   document.getElementById('apol-box-result').textContent='';
   document.getElementById('apol-dilemme').style.display='flex';
