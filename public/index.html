@@ -1712,33 +1712,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden">
       <div id="meli-timer-bar" style="height:100%;background:linear-gradient(90deg,#c060ff,#8030cc);width:100%;transition:width .5s linear"></div>
     </div>
-    <div id="meli-rules" style="background:rgba(160,80,255,.08);border:1px solid rgba(160,80,255,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
-      <div style="font-family:var(--fh);font-size:15px;color:#c060ff;margin-bottom:10px;letter-spacing:2px;text-align:center">🔀 MÉLI-MÉLO</div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🔤</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Les lettres d'un nom de sportif ont été <strong style="color:#c060ff">mélangées</strong> — retrouve le nom original</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">💡</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Un <strong style="color:rgba(255,200,50,.9)">indice</strong> peut apparaître pour t'aider</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">✅</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Bonne réponse = <strong style="color:#c060ff">+20 pts</strong></span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">❌</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Mauvaise réponse = <strong style="color:var(--red)">−10 pts</strong> · 2 erreurs = passage auto (0 pt sur ce mot)</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">⏭</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">"Passer" révèle la réponse — 0 pt sur ce mot</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">⏱</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">60 secondes</strong> pour les 5 mots · Max <strong style="color:#c060ff">100 pts</strong></span>
-      </div>
-      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(160,80,255,.3)">🔀 C'EST PARTI !</button>
+    <div id="meli-rules" style="background:rgba(160,80,255,.07);border:1px solid rgba(160,80,255,.2);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#c060ff;margin-bottom:8px;letter-spacing:2px">🔀 MÉLI-MÉLO</div>
+      5 noms de sportifs mélangés à remettre dans l'ordre<br>
+      ✅ Chaque bonne réponse = <strong style="color:#c060ff">20 pts</strong><br>
+      ⏱ 60 secondes pour les 5 mots
+      <button onclick="meliStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🔀 DÉMÊLER !</button>
     </div>
     <div id="meli-game" style="display:none;flex-direction:column;gap:10px">
       <div id="meli-indice" style="display:none;text-align:center;background:rgba(255,200,50,.06);border:1px solid rgba(255,200,50,.2);border-radius:10px;padding:8px 14px">
@@ -1774,29 +1753,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:10px;color:rgba(180,140,255,.5);letter-spacing:2px;font-family:var(--fh)" id="triv-pos-label">POSITION</div>
       <div style="font-size:16px;font-weight:800;color:#b48fff;margin-top:2px" id="triv-pos-name"></div>
     </div>
-    <div id="triv-rules" style="background:rgba(180,140,255,.08);border:1px solid rgba(180,140,255,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
-      <div style="font-family:var(--fh);font-size:15px;color:#b48fff;margin-bottom:10px;letter-spacing:2px;text-align:center">🎯 TRIVIAL PURSUIT</div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🗺️</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Plateau circulaire de <strong style="color:#b48fff">12 cases</strong> : 6 camemberts thématiques alternant avec 6 cases-questions</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🟣</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Atterrir sur un <strong style="color:var(--txt)">camembert</strong> → réponds à sa question · Juste = <strong style="color:#b48fff">+50 pts</strong> collecté · Faux = effondré 💀</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">❓</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Traverser une <strong style="color:var(--txt)">case-question</strong> → réponds · Juste = tu passes · Faux = effondrée 💀 · Tu recules</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">✅</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Cases-questions déjà validées = passage libre sans question</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">💀</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Cerné des 2 côtés OU plus de cases utiles → fin · Score conservé · Max <strong style="color:#b48fff">300 pts</strong></span>
-      </div>
-      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(180,140,255,.3)">🎯 CHOISIR MA CASE</button>
+    <div id="triv-rules" style="background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#b48fff;margin-bottom:8px;letter-spacing:2px">🎯 TRIVIAL PURSUIT</div>
+      6 camemberts alternent avec 6 cases-questions<br>
+      🟣 <strong style="color:var(--txt)">Camembert</strong> — réponds pour collecter +50 pts · Faux → effondré<br>
+      ❓ <strong style="color:var(--txt)">Case-question</strong> — réponds pour traverser · Faux → effondrée<br>
+      💀 Cerné des 2 côtés → fin · Score conservé
+      <button onclick="trivStartChoose()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#4020aa,#9040ff);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🎯 CHOISIR SA CASE</button>
     </div>
     <div id="triv-board-wrap" style="display:none;position:relative">
       <canvas id="triv-canvas" style="width:100%;display:block;cursor:pointer"></canvas>
@@ -1840,31 +1803,26 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
     <div id="apol-rules" style="background:rgba(255,180,0,.07);border:1px solid rgba(255,180,0,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
       <div style="font-family:var(--fh);font-size:15px;color:#ffb400;margin-bottom:10px;letter-spacing:2px;text-align:center">📦 À PRENDRE OU À LAISSER</div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">❓</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">5 questions</strong> à réponse libre · Bonne réponse = <strong style="color:#ffb400">+20 pts</strong></span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">📦</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">À la fin : <strong style="color:#00dc78">garder</strong> ton score OU <strong style="color:#ffb400">ouvrir une boîte</strong></span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🎰</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">5 boîtes affichées · chacune cache un bonus ou malus · l'une des 6 possibilités est absente</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">⚡</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Possibilités : +10, −10, +20, −20, ×2, ÷2 — la roue tourne et s'arrête sur ton sort !</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">💰</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Max <strong style="color:#ffb400">200 pts</strong> avant la boîte · Le ×2 peut tout changer</span>
-      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">❓</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">5 questions</strong> · Bonne réponse = +20 pts</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">📦</span><span style="font-size:12px;color:var(--mute);line-height:1.5">Après chaque question : <strong style="color:#ffb400">ouvre une boîte</strong> ou passe à la suivante</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">⚡</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#f39c12">Double ou Rien</strong> — question bonus : +40 ou −20</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">🙈</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#8e44ad">Question Voilée</strong> — 1 mot sur 2 caché · +30 pts si juste</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">🎰</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#27ae60">Jackpot Progressif</strong> — +10, +20, +30… · erreur = −10 et annulé</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">⚖️</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#2980b9">Pari d'Après-Coup</strong> — parie sur ta réponse avant validation · ±10 pts</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:18px;flex-shrink:0">🔮</span><span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#e74c3c">La Prophétie</strong> — prédit X/3 prochaines · exact +10/Q · faux −5/Q</span></div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0"><span style="font-size:18px;flex-shrink:0">🎯</span><span style="font-size:12px;color:var(--mute);line-height:1.5">Grand dilemme final : <strong style="color:#00dc78">GARDER</strong> ou <strong style="color:#ffb400">ouvrir une dernière boîte</strong></span></div>
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL !</button>
     </div>
     <!-- Questions -->
     <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div id="apol-effect-badge" style="display:none;text-align:center;font-size:12px;padding:6px 10px;border-radius:8px;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.25);color:#ffb400;font-weight:700"></div>
       <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,180,0,.15)"></div>
+      <!-- Pari d'Après-Coup -->
+      <div id="apol-pari-wrap" style="display:none;gap:8px;align-items:center;background:rgba(41,128,185,.1);border:1px solid rgba(41,128,185,.3);border-radius:8px;padding:8px 10px">
+        <span style="font-size:12px;color:#2980b9;flex-shrink:0">⚖️ Paries-tu que tu as juste ?</span>
+        <button id="apol-pari-yes" onclick="apolPari('oui')" style="flex:1;padding:6px;border-radius:6px;border:1px solid #2980b9;background:rgba(41,128,185,.15);color:#2980b9;cursor:pointer;font-family:var(--fh);font-size:12px">✅ OUI</button>
+        <button id="apol-pari-non" onclick="apolPari('non')" style="flex:1;padding:6px;border-radius:6px;border:1px solid #e74c3c;background:rgba(231,76,60,.1);color:#e74c3c;cursor:pointer;font-family:var(--fh);font-size:12px">❌ NON</button>
+      </div>
       <div style="display:flex;gap:8px">
         <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
           style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(255,180,0,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
@@ -1879,16 +1837,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Dilemme final -->
     <div id="apol-dilemme" style="display:none;flex-direction:column;gap:14px">
       <div style="text-align:center">
-        <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)" id="apol-dilemme-title">LE GRAND DILEMME</div>
+        <div id="apol-dilemme-title" style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
-      <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
-      <button id="apol-continue-btn" onclick="apolContinue()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(100,180,255,.4);background:rgba(100,180,255,.08);color:#64b4ff;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px"></button>
+      <button id="apol-keep-btn" onclick="apolKeep()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
-      <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
-        Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
-        <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
+      <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute)">
+        Les 5 effets sont toujours présents :<br>
+        <span style="color:#f39c12">⚡ Double ou Rien</span> · <span style="color:#8e44ad">🙈 Question Voilée</span> · <span style="color:#27ae60">🎰 Jackpot</span> · <span style="color:#2980b9">⚖️ Pari</span> · <span style="color:#e74c3c">🔮 Prophétie</span>
       </div>
       <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
@@ -1922,29 +1879,12 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="bad-timer-bar" style="height:100%;background:linear-gradient(90deg,#00dc78,#00ff99);width:100%;transition:width .5s linear"></div></div>
     <div style="display:none"><span id="bad-timer">180</span></div>
-    <div id="bad-rules" style="background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:0">
-      <div style="font-family:var(--fh);font-size:15px;color:#00dc78;margin-bottom:10px;letter-spacing:2px;text-align:center">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🎯</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5">Avant chaque question, choisis ta <strong style="color:var(--txt)">tactique</strong> selon le thème affiché</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🏸</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#ffd700">SMASH</strong> — chrono 2× plus vite · <strong style="color:#ffd700">+30 pts</strong> si juste · <strong style="color:var(--red)">−10 pts</strong> si faux</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">🦅</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé pendant la question · <strong style="color:#88aaff">+10 pts</strong> si juste · 0 si faux</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">➡️</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:#00dc78">DRIVE</strong> — chrono normal · <strong style="color:#00dc78">+20 pts</strong> si juste · 0 si faux</span>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="font-size:18px;flex-shrink:0">⏱</span>
-        <span style="font-size:12px;color:var(--mute);line-height:1.5"><strong style="color:var(--txt)">180 secondes</strong> pour les 10 questions · Cap à <strong style="color:#00dc78">300 pts</strong></span>
-      </div>
-      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(0,220,120,.3)">🏸 ENGAGER !</button>
+    <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
+      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
+      🏸 <strong style="color:#ffd700">SMASH</strong> — 2× chrono · <strong style="color:#ffd700">+30 pts</strong> · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
+      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
+      ➡️ <strong style="color:#00dc78">DRIVE</strong> — normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux · Cap <strong style="color:var(--txt)">300 pts</strong>
+      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
     </div>
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
       <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px">
@@ -11015,7 +10955,7 @@ function trivBuildCases(data){
 }
 
 function setupTrivPursuit(data){
-  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start'; TRIV._prevPos=null;
+  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start';
   TRIV.cases=trivBuildCases(data);
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='🎯 Trivial Pursuit';badge.className='type-badge';}
@@ -11219,7 +11159,6 @@ function trivHandleClick(mx,my){
 function trivPlacePlayer(pos){
   const c=TRIV.cases[pos];
   TRIV.playerPos=pos;
-  TRIV._prevPos=null; // Pas de position précédente au départ
   trivDraw();
   trivUpdateCenterInfo();
   // Si case-question au départ → répondre avant de pouvoir se déplacer
@@ -11280,46 +11219,16 @@ function trivUpdateMoveButtons(){
   const lBtn=document.getElementById('triv-left-btn');
   const rBtn=document.getElementById('triv-right-btn');
   const hint=document.getElementById('triv-move-hint');
-  const name=c=>c.type==='cam'?(c.state==='collected'?'✅ '+c.name:c.state==='collapsed'?'💀 '+c.name:'🟣 '+c.name):'❓ Question';
-  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.25':'1';}
-  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.25':'1';}
-  // Fin si cerné
+  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
+  // Check encircled
   if(lc.state==='collapsed'&&rc.state==='collapsed'){
-    if(hint)hint.textContent='💀 Cerné des deux côtés — fin !';
-    setTimeout(()=>trivFinish('encircled'),1200);
-    return;
+    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
+    setTimeout(()=>trivFinish('encircled'),1000);
+  } else {
+    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
   }
-  // Fin si plus aucun camembert accessible (tous collectés ou effondrés)
-  const remaining=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='normal').length;
-  if(remaining===0){
-    if(hint)hint.textContent='🎯 Plus de camembert disponible — fin !';
-    setTimeout(()=>trivFinish('complete'),1200);
-    return;
-  }
-  // BFS : trouver toutes les cases ACCESSIBLES depuis la position courante
-  function getReachable(){
-    const visited=new Set([TRIV.playerPos]);
-    const queue=[TRIV.playerPos];
-    while(queue.length){
-      const pos=queue.shift();
-      for(const next of [(pos-1+12)%12,(pos+1)%12]){
-        if(!visited.has(next)&&TRIV.cases[next].state!=='collapsed'){visited.add(next);queue.push(next);}
-      }
-    }
-    return visited;
-  }
-  const reachable=getReachable();
-  // Fin si aucune case accessible n'est un camembert non-collecté OU une case-question non-validée
-  const hasUsefulMove=[...reachable].some(p=>{
-    const c=TRIV.cases[p];
-    return (c.type==='cam'&&c.state==='normal')||(c.type==='q'&&c.state==='normal');
-  });
-  if(!hasUsefulMove){
-    if(hint)hint.textContent='🏆 Plus aucun mouvement utile accessible — fin !';
-    setTimeout(()=>trivFinish('trapped'),1200);
-    return;
-  }
-  if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
 }
 
 function trivMove(dir){
@@ -11485,10 +11394,10 @@ function trivFinish(reason){
 
 // MÉLI-MÉLO
 // --------------------------------------------------------------------------
-const MELI={data:null,qIdx:0,score:0,done:false,timerLeft:60,timerInt:null,errors:0};
+const MELI={data:null,qIdx:0,score:0,done:false,timerLeft:60,timerInt:null};
 
 function setupMeliMelo(data){
-  MELI.data=data; MELI.qIdx=0; MELI.score=0; MELI.done=false; MELI.timerLeft=data.meliTimer||60; MELI.errors=0;
+  MELI.data=data; MELI.qIdx=0; MELI.score=0; MELI.done=false; MELI.timerLeft=data.meliTimer||60;
   if(MELI.timerInt){clearInterval(MELI.timerInt);MELI.timerInt=null;}
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='🔀 Méli-Mélo';badge.className='type-badge';}
@@ -11529,7 +11438,6 @@ function meliShowWord(){
   const words=MELI.data.meliWords||[];
   if(MELI.qIdx>=words.length){meliFinish();return;}
   const w=words[MELI.qIdx];
-  MELI.errors=0; // reset erreurs pour ce mot
   document.getElementById('meli-scrambled').textContent=w.scrambled||'?';
   document.getElementById('meli-qnum').textContent=(MELI.qIdx+1)+'/'+words.length;
   document.getElementById('meli-in').value='';
@@ -11561,21 +11469,14 @@ function meliSubmit(){
     GAME.score=MELI.score; setScore(MELI.score,false);
     if(fb){fb.textContent='✅ +20 pts !';fb.style.color='var(--neon)';}
     MELI.qIdx++;
-    setTimeout(()=>{if(MELI.done)return;if(MELI.qIdx>=(MELI.data.meliWords||[]).length)meliFinish();else meliShowWord();},900);
+    setTimeout(()=>{
+      if(MELI.done)return;
+      if(MELI.qIdx>=(MELI.data.meliWords||[]).length)meliFinish();
+      else meliShowWord();
+    },900);
   } else {
-    MELI.errors++;
-    MELI.score=Math.max(0,MELI.score-10);
-    document.getElementById('meli-score').textContent=MELI.score;
-    GAME.score=MELI.score; setScore(MELI.score,false);
-    if(MELI.errors>=2){
-      // 2 erreurs → passage auto, 0 pt pour ce mot
-      if(fb){fb.textContent='❌ 2 erreurs — réponse : '+w.answer+' · passage auto';fb.style.color='var(--red)';}
-      MELI.qIdx++;
-      setTimeout(()=>{if(MELI.done)return;if(MELI.qIdx>=(MELI.data.meliWords||[]).length)meliFinish();else meliShowWord();},1500);
-    } else {
-      if(fb){fb.textContent='❌ Faux ! −10 pts · Encore '+(2-MELI.errors)+' essai';fb.style.color='var(--red)';}
-      inp.value='';inp.focus();
-    }
+    if(fb){fb.textContent='❌ Essaie encore !';fb.style.color='var(--red)';}
+    inp.value='';inp.focus();
   }
 }
 
@@ -11610,80 +11511,132 @@ function meliFinish(){
 // À PRENDRE OU À LAISSER
 // --------------------------------------------------------------------------
 const APOL={
-  data:null, qIdx:0, score:0, done:false, activeBoxes:[],
+  data:null, qIdx:0, score:0, done:false, activeBoxes:[], _isFinal:false,
+  effect:null, jackpotStreak:0, prophecy:null, parisActive:false, voileeActive:false, _pendingPari:null, _bonusA:null,
   boxItems:[
-    {label:'+10 pts',value:10,type:'add',prob:25,emoji:'💚'},
-    {label:'−10 pts',value:-10,type:'add',prob:25,emoji:'🔴'},
-    {label:'+20 pts',value:20,type:'add',prob:15,emoji:'💛'},
-    {label:'−20 pts',value:-20,type:'add',prob:15,emoji:'🟠'},
-    {label:'× 2',value:2,type:'mult',prob:10,emoji:'⚡'},
-    {label:'÷ 2',value:0.5,type:'mult',prob:10,emoji:'💀'}
+    {id:'double',   label:'Double ou Rien', emoji:'⚡', color:'#f39c12'},
+    {id:'voilee',   label:'Question Voilée',emoji:'🙈', color:'#8e44ad'},
+    {id:'jackpot',  label:'Jackpot',        emoji:'🎰', color:'#27ae60'},
+    {id:'pari',     label:'Pari d\'Après-Coup',emoji:'⚖️',color:'#2980b9'},
+    {id:'prophetie',label:'La Prophétie',   emoji:'🔮', color:'#e74c3c'}
   ]
 };
 
 function setupApol(data){
-  APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false; APOL.activeBoxes=[]; APOL._isFinal=false;
+  APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false;
+  APOL.activeBoxes=[]; APOL._isFinal=false; APOL.effect=null;
+  APOL.jackpotStreak=0; APOL.prophecy=null; APOL.parisActive=false; APOL.voileeActive=false;
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='📦 À prendre ou à laisser';badge.className='type-badge';}
-  document.getElementById('game-tip').innerHTML='5 questions · Puis le grand dilemme !';
+  document.getElementById('game-tip').innerHTML='5 questions · Effets spéciaux · Puis le grand dilemme !';
   hideAllZones();
   document.getElementById('apol-zone').style.display='flex';
-  const apolQs=data.apolQuestions||[];
   document.getElementById('apol-rules').style.display='block';
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme').style.display='none';
   document.getElementById('apol-score').textContent='0';
-  document.getElementById('apol-qnum').textContent='1/'+(apolQs.length||5);
-  // Warn if no questions configured
-  const apolWarn=document.getElementById('apol-no-q-warn');
-  if(apolWarn) apolWarn.style.display=apolQs.length===0?'block':'none';
+  document.getElementById('apol-qnum').textContent='1/5';
   GAME.score=0; setScore(0,false);
 }
 
-function apolStart(){
-  document.getElementById('apol-rules').style.display='none';
-  apolShowQuestion();
-}
+function apolStart(){ document.getElementById('apol-rules').style.display='none'; apolShowQuestion(); }
 
 function apolShowQuestion(){
   const qs=APOL.data.apolQuestions||[];
-  if(!qs.length){apolShowDilemme();return;}
-  if(APOL.qIdx>=qs.length){apolShowDilemme();return;}
+  if(!qs.length||APOL.qIdx>=qs.length){apolShowDilemme(true);return;}
   const q=qs[APOL.qIdx];
-  document.getElementById('apol-q-text').textContent=q.question||'?';
-  document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+qs.length;
+  let qText=q.question||'?';
+  const eb=document.getElementById('apol-effect-badge');
+  if(eb) eb.style.display='none';
+  if(APOL.voileeActive){
+    const words=qText.split(' ');
+    qText=words.map((w,i)=>i%2===0?w:'___').join(' ');
+    APOL.voileeActive=false; APOL._wasVoilee=true;
+    if(eb){eb.textContent='🙈 Question voilée — +30 pts si juste !';eb.style.display='block';}
+  } else { APOL._wasVoilee=false; }
+  if(APOL.effect==='jackpot'){
+    const nb=(APOL.jackpotStreak+1)*10;
+    if(eb){eb.textContent='🎰 Jackpot actif — prochain bonus: +'+nb+' pts';eb.style.display='block';}
+  }
+  if(APOL.prophecy){
+    const p=APOL.prophecy;
+    if(eb){eb.textContent='🔮 Prophétie: encore '+p.remaining+' Q ('+p.correct+'/'+p.prediction+')';eb.style.display='block';}
+  }
+  document.getElementById('apol-q-text').textContent=qText;
+  document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+(qs.length);
   document.getElementById('apol-in').value='';
   document.getElementById('apol-fb').textContent='';
+  const pw=document.getElementById('apol-pari-wrap');
+  if(pw) pw.style.display=APOL.parisActive?'flex':'none';
+  APOL._pendingPari=null;
   document.getElementById('apol-question-wrap').style.display='flex';
   setTimeout(()=>document.getElementById('apol-in')?.focus(),100);
 }
 
+function apolPari(bet){
+  APOL._pendingPari=bet;
+  const y=document.getElementById('apol-pari-yes');
+  const n=document.getElementById('apol-pari-non');
+  if(y) y.style.opacity=bet==='oui'?'1':'0.4';
+  if(n) n.style.opacity=bet==='non'?'1':'0.4';
+}
+
 function apolSubmit(){
   if(APOL.done)return;
+  if(APOL.parisActive&&APOL._pendingPari===null){
+    const fb=document.getElementById('apol-fb');
+    if(fb){fb.textContent='⚖️ Fais ton pari avant de valider !';fb.style.color='#ffb400';}
+    return;
+  }
   const inp=document.getElementById('apol-in');
-  const val=(inp?.value||'').trim();
-  if(!val)return;
+  const val=(inp?.value||'').trim(); if(!val)return;
   const qs=APOL.data.apolQuestions||[];
   const q=qs[APOL.qIdx];
   const tol=q.tol!=null?parseInt(q.tol):1;
   const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
-  const fb=document.getElementById('apol-fb');
-  if(correct){
-    APOL.score+=20;
-    document.getElementById('apol-score').textContent=APOL.score;
-    GAME.score=APOL.score; setScore(APOL.score,false);
-    if(fb){fb.textContent='✅ +20 pts !';fb.style.color='#00dc78';}
-  } else {
-    if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
+  const pts=APOL._wasVoilee?30:20;
+  let delta=correct?pts:0;
+  let bonusMsg='';
+  if(APOL.effect==='jackpot'){
+    if(correct){
+      APOL.jackpotStreak++;
+      const jb=APOL.jackpotStreak*10;
+      delta+=jb; bonusMsg=' (+'+jb+' 🎰)';
+    } else {
+      delta-=10; bonusMsg=' (jackpot annulé −10 💥)';
+      APOL.effect=null; APOL.jackpotStreak=0;
+    }
   }
+  if(APOL.prophecy){
+    const p=APOL.prophecy;
+    if(correct) p.correct++;
+    p.remaining--;
+    if(p.remaining<=0){
+      if(p.correct===p.prediction){const b=p.prediction*10;delta+=b;bonusMsg+=' (prophétie réalisée +'+b+' 🔮)';}
+      else{const m=15;delta-=m;bonusMsg+=' (prophétie échouée −'+m+' 🔮)';}
+      APOL.prophecy=null; APOL.effect=null;
+    }
+  }
+  if(APOL.parisActive&&APOL._pendingPari!==null){
+    const bc=(APOL._pendingPari==='oui')===correct;
+    if(bc){delta+=10;bonusMsg+=' (+10 ⚖️)';}else{delta-=10;bonusMsg+=' (−10 ⚖️)';}
+    APOL.parisActive=false; APOL._pendingPari=null;
+  }
+  APOL.score=Math.max(0,APOL.score+delta);
+  document.getElementById('apol-score').textContent=APOL.score;
+  GAME.score=APOL.score; setScore(APOL.score,false);
+  const fb=document.getElementById('apol-fb');
+  if(correct){if(fb){fb.textContent='✅ +'+pts+' pts'+bonusMsg;fb.style.color='#00dc78';}}
+  else{if(fb){fb.innerHTML='❌ C\'était <strong>'+q.answer+'</strong>'+bonusMsg;fb.style.color='var(--red)';}}
   APOL.qIdx++;
-  const isFinal=(APOL.qIdx>=qs.length);
-  setTimeout(()=>apolShowDilemme(isFinal),1400);
+  const isFinal=(APOL.qIdx>=(qs.length));
+  setTimeout(()=>apolShowDilemme(isFinal),1500);
 }
 
 function apolContinue(){
-  // Passer sans boîte → question suivante
   document.getElementById('apol-dilemme').style.display='none';
+  const c=document.getElementById('apol-continue-btn');
+  if(c) c.onclick=apolContinue;
   apolShowQuestion();
 }
 
@@ -11691,179 +11644,130 @@ function apolShowDilemme(isFinal){
   isFinal=isFinal||false;
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
-
-  // Nouvelles boîtes à chaque dilemme
-  const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
-  APOL.activeBoxes=allItems.slice(0,5);
   APOL._isFinal=isFinal;
-
-  // Générer les 5 boîtes
+  const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
+  APOL.activeBoxes=[...APOL.boxItems].sort(()=>Math.random()-.5); // 5 effets toujours présents
   const grid=document.getElementById('apol-boxes-grid');
   if(grid){
-    grid.innerHTML='';
+    grid.style.display='grid'; grid.innerHTML='';
     APOL.activeBoxes.forEach((item,i)=>{
       const btn=document.createElement('button');
       btn.id='apol-box-'+i;
-      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;cursor:pointer;font-size:28px;min-height:80px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
-      btn.style.animationDelay=(i*0.3)+'s';
-      btn.innerHTML='📦<span style="font-size:9px;font-family:var(--fh);letter-spacing:1px;color:rgba(255,180,0,.5)">'+(i+1)+'</span>';
+      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;border-radius:12px;border:2px solid '+(item.color)+';background:'+(item.color)+'18;color:'+(item.color)+';cursor:pointer;font-size:22px;min-height:76px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
+      btn.style.animationDelay=(i*0.35)+'s';
+      btn.innerHTML=item.emoji+'<span style="font-size:9px;font-family:var(--fh);opacity:.6">'+(i+1)+'</span><span style="font-size:8px;opacity:.7;text-align:center">'+item.label+'</span>';
       btn.onclick=()=>apolOpenBox(i,btn);
       grid.appendChild(btn);
     });
   }
-
-  // Bouton GARDER : seulement en final
-  const keepBtn=document.querySelector('#apol-dilemme button[onclick="apolKeep()"]');
-  if(keepBtn) keepBtn.style.display=isFinal?'block':'none';
-
-  // Bouton CONTINUER : seulement si pas final
-  const continueBtn=document.getElementById('apol-continue-btn');
-  if(continueBtn){
-    continueBtn.style.display=isFinal?'none':'block';
-    const remaining=(APOL.data.apolQuestions||[]).length-APOL.qIdx;
-    continueBtn.textContent='⏭ PASSER · encore '+remaining+' question'+(remaining>1?'s':'');
+  const kb=document.getElementById('apol-keep-btn'); if(kb) kb.style.display=isFinal?'block':'none';
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){
+    cb.style.display=isFinal?'none':'block';
+    const rem=(APOL.data.apolQuestions||[]).length-APOL.qIdx;
+    cb.textContent='⏭ PASSER — encore '+rem+' question'+(rem>1?'s':'');
+    cb.onclick=apolContinue;
   }
-
-  // Titre selon contexte
-  const dilemmeTitle=document.getElementById('apol-dilemme-title');
-  if(dilemmeTitle) dilemmeTitle.textContent=isFinal?'LE GRAND DILEMME FINAL':'OUVRE UNE BOÎTE OU PASSE';
-
+  const t=document.getElementById('apol-dilemme-title');
+  if(t) t.textContent=isFinal?'LE GRAND DILEMME FINAL':'OUVRE UNE BOÎTE OU PASSE';
   document.getElementById('apol-box-result').textContent='';
-  // Remove any previous wheel
-  const prev=document.getElementById('apol-wheel-wrap');
-  if(prev)prev.remove();
-  // Show grid again if hidden
-  if(grid)grid.style.display='grid';
+  const p=document.getElementById('apol-wheel-wrap'); if(p)p.remove();
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
-function apolKeep(){
-  apolFinish(APOL.score,'✅ Score conservé !');
+function apolKeep(){ apolFinish(APOL.score,'✅ Score conservé !'); }
+
+function apolRevealEffect(item,msg){
+  const grid=document.getElementById('apol-boxes-grid'); if(grid)grid.style.display='none';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){cb.style.display='block';cb.textContent=APOL._isFinal?'✅ TERMINER':'▶ QUESTION SUIVANTE';cb.onclick=APOL._isFinal?()=>apolFinish(APOL.score,'✅ Score final'):apolContinue;}
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML='<div style="font-size:28px">'+item.emoji+'</div><div style="font-family:var(--fh);font-size:14px;color:'+item.color+'">'+item.label+'</div><div style="font-size:12px;color:var(--mute);margin-top:4px">'+msg+'</div>';
 }
 
 function apolOpenBox(boxIdx,btn){
   if(APOL.done||btn.disabled)return;
-
-  // Désactiver toutes les boîtes
-  (APOL.activeBoxes||[]).forEach((_,i)=>{
+  APOL.activeBoxes.forEach((_,i)=>{
     const b=document.getElementById('apol-box-'+i);
     if(b){b.disabled=true;b.style.opacity=i===boxIdx?'1':'0.2';b.style.cursor='default';b.style.animation='none';}
   });
-
   const item=APOL.activeBoxes[boxIdx];
-  const scoreBefore=APOL.score;
-  let newScore;
-  if(item.type==='add') newScore=Math.max(0,scoreBefore+item.value);
-  else newScore=Math.round(scoreBefore*item.value);
-  const revColor=(item.value>0&&item.type==='add')||(item.value>1&&item.type==='mult')?'#00dc78':'#ff4444';
+  if(item.id==='double') apolEffectDouble(item);
+  else if(item.id==='voilee'){APOL.voileeActive=true;apolRevealEffect(item,'Prochaine question : 1 mot sur 2 masqué ! (+30 pts si juste)');}
+  else if(item.id==='jackpot'){APOL.effect='jackpot';APOL.jackpotStreak=0;apolRevealEffect(item,'Jackpot actif ! +10, +20, +30… par réponse consécutive. Erreur = −10 et annulation.');}
+  else if(item.id==='pari'){APOL.parisActive=true;apolRevealEffect(item,'Pari actif ! Sur la prochaine question, parie avant de valider. Bon pari = +10, mauvais = −10.');}
+  else if(item.id==='prophetie') apolEffectProphetie(item);
+}
 
-  // Cacher grille
-  const grid=document.getElementById('apol-boxes-grid');
-  if(grid)grid.style.display='none';
-  const keepBtn=document.querySelector('#apol-dilemme button[onclick="apolKeep()"]');
-  if(keepBtn)keepBtn.style.display='none';
-  const contBtn=document.getElementById('apol-continue-btn');
-  if(contBtn)contBtn.style.display='none';
-
-  // Créer canvas roue
-  const wrap=document.createElement('div');
-  wrap.id='apol-wheel-wrap';
-  wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:10px';
-  const label=document.createElement('div');
-  label.style.cssText='font-size:11px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)';
-  label.textContent='LA BOÎTE TOURNE…';
-  const cvs=document.createElement('canvas');
-  cvs.width=220;cvs.height=220;
-  cvs.style.cssText='width:220px;height:220px;border-radius:50%';
-  wrap.appendChild(label);wrap.appendChild(cvs);
+function apolEffectDouble(item){
+  const qs=APOL.data.apolQuestions||[];
+  const lastQ=qs[APOL.qIdx-1]||{};
+  const bonusQ=lastQ.bonusQ; const bonusA=lastQ.bonusA;
+  const grid=document.getElementById('apol-boxes-grid'); if(grid)grid.style.display='none';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   const res=document.getElementById('apol-box-result');
-  const dilemme=document.getElementById('apol-dilemme');
-  if(dilemme&&res)dilemme.insertBefore(wrap,res);
-
-  // Roue
-  const wheelItems=APOL.boxItems;
-  const N=wheelItems.length;
-  const ctx=cvs.getContext('2d');
-  const cx=110,cy=110,R=100;
-  const sliceAngle=Math.PI*2/N;
-  const itemIdx=wheelItems.findIndex(w=>w.label===item.label);
-  const targetAngle=Math.PI*2*6+(itemIdx*sliceAngle+sliceAngle/2);
-
-  function drawWheel(rot){
-    ctx.clearRect(0,0,220,220);
-    wheelItems.forEach((w,i)=>{
-      const a0=-Math.PI/2+rot+i*sliceAngle;
-      const a1=a0+sliceAngle;
-      const c=w.type==='add'&&w.value>0?'#27ae60':w.type==='add'&&w.value<0?'#e74c3c':w.value>1?'#2980b9':'#8e44ad';
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);ctx.closePath();
-      ctx.fillStyle=c+'cc';ctx.fill();
-      ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;ctx.stroke();
-      const midA=a0+sliceAngle/2;
-      ctx.save();ctx.translate(cx+Math.cos(midA)*R*0.65,cy+Math.sin(midA)*R*0.65);
-      ctx.rotate(midA+Math.PI/2);
-      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(w.label,0,0);ctx.restore();
-    });
-    ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);
-    ctx.fillStyle='#111';ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.stroke();
-    ctx.beginPath();ctx.moveTo(cx,cy-R-4);
-    ctx.lineTo(cx-8,cy-R+12);ctx.lineTo(cx+8,cy-R+12);ctx.closePath();
-    ctx.fillStyle='#fff';ctx.fill();
+  if(!bonusQ){
+    if(res) res.innerHTML='<div style="color:var(--red)">⚡ Aucune question bonus configurée.</div>';
+    if(cb){cb.style.display='block';cb.textContent='▶ SUITE';cb.onclick=APOL._isFinal?()=>apolFinish(APOL.score,'Score final'):apolContinue;}
+    return;
   }
+  APOL._bonusA=bonusA||'';
+  if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#f39c12;margin-bottom:8px">⚡ DOUBLE OU RIEN — Bonne réponse: +40 · Mauvaise: −20</div>'+
+    '<div style="font-size:15px;font-weight:800;color:var(--txt);background:rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px">'+bonusQ+'</div>'+
+    '<div style="display:flex;gap:8px"><input type="text" id="apol-bonus-in" placeholder="Ta réponse…" autocomplete="off" style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(243,156,18,.4);color:var(--txt);font-size:15px;border-radius:8px;padding:10px;outline:none" onkeydown="if(event.key===\'Enter\')apolSubmitDouble()">'+
+    '<button onclick="apolSubmitDouble()" style="width:46px;height:46px;flex-shrink:0;background:#f39c12;color:#fff;border:none;border-radius:8px;font-size:20px;cursor:pointer">✓</button></div>'+
+    '<div id="apol-bonus-fb" style="text-align:center;font-size:13px;min-height:18px;margin-top:6px"></div>';
+  setTimeout(()=>document.getElementById('apol-bonus-in')?.focus(),100);
+}
 
-  const startTime=Date.now();
-  const duration=3200;
-  function animate(){
-    const elapsed=Date.now()-startTime;
-    const t=Math.min(elapsed/duration,1);
-    const ease=1-Math.pow(1-t,4);
-    drawWheel(ease*targetAngle);
-    if(t<1){requestAnimationFrame(animate);}
-    else{
-      label.textContent='LA BOÎTE CONTIENT…';
-      label.style.color=revColor;
-      if(navigator.vibrate)navigator.vibrate([100,50,200]);
-      const fl=document.createElement('div');
-      fl.style.cssText=`font-family:var(--fh);font-size:32px;color:${revColor};text-align:center`;
-      fl.textContent=item.label;
-      wrap.appendChild(fl);
-      const sl=document.createElement('div');
-      sl.style.cssText='font-size:13px;color:var(--mute);text-align:center';
-      sl.innerHTML=`${scoreBefore} pts → <strong style="color:${revColor}">${newScore} pts</strong>`;
-      wrap.appendChild(sl);
+function apolSubmitDouble(){
+  const inp=document.getElementById('apol-bonus-in'); const val=(inp?.value||'').trim(); if(!val)return;
+  const correct=levenshtein(normStr(val),normStr(APOL._bonusA))<=1;
+  const fb=document.getElementById('apol-bonus-fb');
+  if(correct){APOL.score=Math.min(200,APOL.score+40);if(fb){fb.textContent='✅ Juste ! +40 pts';fb.style.color='#00dc78';}}
+  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+APOL._bonusA+'</strong> · −20 pts';fb.style.color='var(--red)';}}
+  document.getElementById('apol-score').textContent=APOL.score;
+  GAME.score=APOL.score; setScore(APOL.score,false);
+  if(inp) inp.disabled=true;
+  setTimeout(()=>{if(APOL._isFinal)apolFinish(APOL.score,'⚡ Double ou Rien · '+APOL.score+' pts');else apolContinue();},1500);
+}
 
-      // Appliquer l'effet au score
-      APOL.score=newScore;
-      document.getElementById('apol-score').textContent=APOL.score;
-      GAME.score=APOL.score; setScore(APOL.score,false);
-
-      setTimeout(()=>{
-        if(APOL._isFinal){
-          // C'était la boîte finale → fin du jeu
-          apolFinish(APOL.score,'📦 '+item.label+' · '+scoreBefore+' → '+newScore+' pts');
-        } else {
-          // Boîte intermédiaire → question suivante
-          wrap.remove();
-          document.getElementById('apol-dilemme').style.display='none';
-          apolShowQuestion();
-        }
-      },2000);
-    }
+function apolEffectProphetie(item){
+  const remaining=Math.min(3,(APOL.data.apolQuestions||[]).length-APOL.qIdx);
+  const grid=document.getElementById('apol-boxes-grid'); if(grid)grid.style.display='none';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
+  const res=document.getElementById('apol-box-result');
+  if(!remaining){if(res)res.innerHTML='<div style="color:var(--red)">🔮 Plus assez de questions.</div>';
+    const c=document.getElementById('apol-continue-btn');if(c){c.style.display='block';c.textContent='▶ SUITE';c.onclick=APOL._isFinal?()=>apolFinish(APOL.score,''):apolContinue;}return;}
+  let opts='';
+  for(let n=1;n<=remaining;n++){
+    opts+='<button onclick="apolSetProphetie('+n+','+remaining+')" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e74c3c44;background:#e74c3c18;color:#e74c3c;font-family:var(--fh);font-size:14px;cursor:pointer">'+n+'/'+remaining+'</button>';
   }
-  animate();
+  if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#e74c3c;margin-bottom:8px">🔮 PROPHÉTIE — Prédit ta réussite sur les '+remaining+' prochaines questions</div>'+
+    '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Exact → +10 pts/question · Faux → −5 pts/question</div>'+
+    '<div style="display:flex;gap:8px">'+opts+'</div>';
+}
+
+function apolSetProphetie(prediction,remaining){
+  APOL.prophecy={prediction,correct:0,remaining}; APOL.effect='prophecy';
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML+='<div style="margin-top:10px;color:#e74c3c;font-family:var(--fh);font-size:13px">Prophétie : '+prediction+'/'+remaining+' — c\'est parti !</div>';
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){cb.style.display='block';cb.textContent='▶ QUESTION SUIVANTE';cb.onclick=apolContinue;}
 }
 
 function apolFinish(finalScore,msg){
-  APOL.done=true;
-  GAME.score=finalScore; setScore(finalScore,true);
+  APOL.done=true; GAME.score=finalScore; setScore(finalScore,true);
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='À prendre ou à laisser';
-  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=msg;
-  setVictoryIcon('apol'); submitScore(finalScore);
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=msg||('Score: '+finalScore+' pts');
+  setVictoryIcon('apol');submitScore(finalScore);
   setTimeout(()=>show('sv'),800);
 }
+
 
 // NAGE SYNCHRONISÉE
 // --------------------------------------------------------------------------
