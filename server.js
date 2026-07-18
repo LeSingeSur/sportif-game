@@ -180,6 +180,8 @@ app.get('/api/preview', (req, res) => {
   if (athlete.type === 'image') {
     base.imageUrl = athlete.imageBase64 ? athlete.imageBase64 : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize = gridSize; base.maxScore = gridSize * gridSize;
+    base.imageQuestion = athlete.imageQuestion||'';
+    base.imageAnswer = athlete.imageAnswer||'';
   } else if (athlete.type === 'buzz') {
     base.clues = athlete.clues; base.maxScore = 100;
     base.buzzDecrement = athlete.buzzDecrement || 2;
@@ -307,9 +309,10 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1,
-      bonusQ:q.bonusQ||'', bonusA:q.bonusA||''
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
     }));
+    base.bonusQ = athlete.bonusQ||'';
+    base.bonusA = athlete.bonusA||'';
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
       {label:'−10 pts',value:-10,type:'add',prob:25},
@@ -730,9 +733,10 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1,
-      bonusQ:q.bonusQ||'', bonusA:q.bonusA||''
+      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
     }));
+    base.bonusQ = athlete.bonusQ||'';
+    base.bonusA = athlete.bonusA||'';
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
       {label:'−10 pts',value:-10,type:'add',prob:25},
@@ -1057,6 +1061,8 @@ app.post('/api/admin/athlete', (req, res) => {
     buzzFreezeDuration: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(req.body.buzzFreezeDuration) || 3)) : undefined,
     imageUrl:    type === 'image' ? (req.body.imageBase64 ? '' : imageUrl.trim()) : '',
     imageBase64: type === 'image' ? (req.body.imageBase64 || '') : '',
+    imageQuestion: type === 'image' ? (req.body.imageQuestion||'') : '',
+    imageAnswer:   type === 'image' ? (req.body.imageAnswer||'') : '',
     gridSize: type === 'image' ? gs : undefined,
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
