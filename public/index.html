@@ -1875,12 +1875,25 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <div style="height:3px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden"><div id="bad-timer-bar" style="height:100%;background:linear-gradient(90deg,#00dc78,#00ff99);width:100%;transition:width .5s linear"></div></div>
     <div style="display:none"><span id="bad-timer">180</span></div>
-    <div id="bad-rules" style="background:rgba(0,220,120,.06);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      <div style="font-family:var(--fh);font-size:14px;color:#00dc78;margin-bottom:8px;letter-spacing:2px">🏸 BADMINTON QUIZ · 10 QUESTIONS</div>
-      🏸 <strong style="color:#ffd700">SMASH</strong> — 2× chrono · <strong style="color:#ffd700">+30 pts</strong> · <strong style="color:var(--red)">−10 pts</strong> si faux<br>
-      🦅 <strong style="color:#88aaff">DÉGAGÉ</strong> — chrono gelé · <strong style="color:#88aaff">+10 pts</strong> · 0 si faux<br>
-      ➡️ <strong style="color:#00dc78">DRIVE</strong> — normal · <strong style="color:#00dc78">+20 pts</strong> · 0 si faux · Cap <strong style="color:var(--txt)">300 pts</strong>
-      <button onclick="badStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px">🏸 ENGAGER !</button>
+    <div id="bad-rules" style="background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.25);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-family:var(--fh);font-size:15px;color:#00dc78;text-align:center;letter-spacing:2px;margin-bottom:4px">🏸 BADMINTON QUIZ</div>
+      <div style="font-size:13px;color:var(--txt);text-align:center;margin-bottom:6px">10 questions · Avant chaque question, choisis ton coup 👇</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,200,0,.08);border-radius:10px;padding:10px">
+          <span style="font-size:24px;flex-shrink:0">⚔️</span>
+          <div><div style="font-weight:800;color:#ffd700;font-size:13px">ATTAQUE</div><div style="font-size:11px;color:var(--mute)">Moins de temps, mais <strong style="color:#ffd700">+30 pts</strong> si tu trouves. Si tu rates : <strong style="color:var(--red)">−10 pts</strong>. Pour les sûrs !</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(100,150,255,.08);border-radius:10px;padding:10px">
+          <span style="font-size:24px;flex-shrink:0">🛡️</span>
+          <div><div style="font-weight:800;color:#88aaff;font-size:13px">DÉFENSE</div><div style="font-size:11px;color:var(--mute)">Plus de temps + une mauvaise réponse en moins à l'écran. <strong style="color:#88aaff">+20 pts</strong> si tu trouves. Si tu rates : 0 pt.</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(0,220,120,.06);border-radius:10px;padding:10px">
+          <span style="font-size:24px;flex-shrink:0">➡️</span>
+          <div><div style="font-weight:800;color:#00dc78;font-size:13px">NEUTRE</div><div style="font-size:11px;color:var(--mute)">Temps normal, <strong style="color:#00dc78">+20 pts</strong> si tu trouves. Si tu rates : 0 pt. Le choix tranquille.</div></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:2px">⚠️ À chaque erreur, le temps restant diminue pour les questions suivantes</div>
+      <button onclick="badStart()" style="margin-top:6px;width:100%!important;background:linear-gradient(135deg,#005c2a,#00a850);color:#fff;border:none;border-radius:8px;padding:13px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(0,220,120,.3)">🏸 C'EST PARTI !</button>
     </div>
     <div id="bad-tactic" style="display:none;flex-direction:column;gap:8px">
       <div id="bad-theme-display" style="display:none;text-align:center;background:rgba(0,220,120,.07);border:1px solid rgba(0,220,120,.2);border-radius:10px;padding:8px 14px">
@@ -1889,9 +1902,9 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
-        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🏸<br>SMASH<br><span style="font-size:9px;opacity:.7">×2 chrono · +30 ou −10</span></button>
-        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🦅<br>DÉGAGÉ<br><span style="font-size:9px;opacity:.7">×1.5 chrono · +20 · −1 réponse</span></button>
-        <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>DRIVE<br><span style="font-size:9px;opacity:.7">Normal · +20 · 0 si faux</span></button>
+        <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">⚔️<br>ATTAQUE<br><span style="font-size:9px;opacity:.7">×2 chrono · +30 ou −10</span></button>
+        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🛡️<br>DÉFENSE<br><span style="font-size:9px;opacity:.7">×1.5 chrono · +20 · −1 réponse</span></button>
+        <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>NEUTRE<br><span style="font-size:9px;opacity:.7">Normal · +20 · 0 si faux</span></button>
       </div>
     </div>
     <div id="bad-question-wrap" style="display:none;flex-direction:column;gap:8px">
@@ -10836,9 +10849,9 @@ function badShowQuestion(seconds){
   const badge=document.getElementById('bad-tactic-badge');
   if(badge){
     const map={
-      smash:'🏸 SMASH · +30 pts si juste · −10 si faux',
-      degage:'🦅 DÉGAGÉ · +20 pts · 1 réponse éliminée',
-      drive:'➡️ DRIVE · +20 pts · 0 si faux'
+      smash:'⚔️ ATTAQUE · +30 pts si juste · −10 si faux',
+      degage:'🛡️ DÉFENSE · +20 pts · 1 réponse éliminée',
+      drive:'➡️ NEUTRE · +20 pts · 0 si faux'
     };
     badge.textContent=map[BAD.tactic]||'';
     badge.style.color=BAD.tactic==='smash'?'#ffd700':BAD.tactic==='degage'?'#88aaff':'#00dc78';
