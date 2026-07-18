@@ -1145,6 +1145,8 @@ app.post('/api/admin/athlete', (req, res) => {
     meliWords:          type === 'melimelo' ? (req.body.meliWords||[]) : undefined,
     meliTimer:          type === 'melimelo' ? (parseInt(req.body.meliTimer)||60) : undefined,
     apolQuestions:      type === 'apol' ? (req.body.apolQuestions||[]) : undefined,
+    bonusQ:             type === 'apol' ? (req.body.bonusQ||'') : undefined,
+    bonusA:             type === 'apol' ? (req.body.bonusA||'') : undefined,
     trivThemes:         type === 'trivpursuit' ? (req.body.trivThemes||[]).map(t=>({...t,question:t.question||'',answer:t.answer||'',tol:parseInt(t.tol)||1})) : undefined,
     trivQuestions:      type === 'trivpursuit' ? (req.body.trivQuestions||[]) : undefined,
     rouletteSeed:       type === 'roulette' ? (parseInt(req.body.rouletteSeed)||Date.now()) : undefined,
