@@ -996,7 +996,12 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/athletes', (req, res) => {
   const { password } = req.query;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  res.json(athletes.map(a => ({ ...a, playerCount: (scores[a.id] || []).length, topScore: (scores[a.id] || [])[0]?.score ?? null })));
+  try {
+    res.json(athletes.map(a => ({ ...a, playerCount: (scores[a.id] || []).length, topScore: (scores[a.id] || [])[0]?.score ?? null })));
+  } catch(e) {
+    console.error('/api/admin/athletes erreur:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Admin: get full scores for a specific athlete
