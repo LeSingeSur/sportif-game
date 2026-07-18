@@ -988,6 +988,16 @@ app.post('/api/prix-check', (req, res) => {
   res.json({ exact, precision, displayPrecision: diff, seuils, direction, target: exact ? target : null, fullAnswer: athlete.answer });
 });
 
+// Diagnostic connexion
+app.get('/api/status', (req, res) => {
+  res.json({
+    mongodb: db ? 'connecté' : 'non connecté',
+    mongoUri: MONGO_URI ? 'définie (' + MONGO_URI.slice(0,20) + '...)' : 'ABSENTE',
+    athletes: athletes.length,
+    uptime: Math.round(process.uptime()) + 's'
+  });
+});
+
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   res.json(password === ADMIN_PASSWORD ? { success: true } : { success: false, message: 'Mot de passe incorrect' });
