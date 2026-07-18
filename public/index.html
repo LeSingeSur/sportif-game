@@ -693,6 +693,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <img id="game-img" src="" alt="Réponse mystère">
       <div class="grid-overlay" id="grid-overlay"></div>
     </div>
+    <!-- Question optionnelle sous l'image -->
+    <div id="img-question-box" style="display:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--txt);line-height:1.4;margin:8px 0"></div>
     <div class="img-counter" id="img-counter"></div>
     <div class="reveal-btns">
       <button class="reveal-btn" onclick="revealN(1)">👁 ×1<span>−1 pt</span></button>
@@ -1808,7 +1810,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Questions -->
     <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div id="apol-effect-badge" style="display:none;text-align:center;font-size:12px;padding:6px;border-radius:8px;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.25);color:#ffb400;font-weight:700"></div>
       <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,180,0,.15)"></div>
+      <div id="apol-pari-wrap" style="display:none;gap:8px;align-items:center;background:rgba(41,128,185,.1);border:1px solid rgba(41,128,185,.3);border-radius:8px;padding:8px">
+        <span style="font-size:12px;color:#2980b9;flex-shrink:0">⚖️ Paries-tu que tu as juste ?</span>
+        <button id="apol-pari-yes" onclick="apolPari('oui')" style="flex:1;padding:6px;border-radius:6px;border:1px solid #2980b9;background:rgba(41,128,185,.15);color:#2980b9;cursor:pointer;font-family:var(--fh);font-size:12px">✅ OUI</button>
+        <button id="apol-pari-non" onclick="apolPari('non')" style="flex:1;padding:6px;border-radius:6px;border:1px solid #e74c3c;background:rgba(231,76,60,.1);color:#e74c3c;cursor:pointer;font-family:var(--fh);font-size:12px">❌ NON</button>
+      </div>
       <div style="display:flex;gap:8px">
         <input type="text" id="apol-in" placeholder="Ta réponse…" autocomplete="off"
           style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(255,180,0,.4);color:var(--txt);font-size:16px;border-radius:var(--r);padding:12px 14px;outline:none"
@@ -1827,13 +1835,15 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
-      <button onclick="apolKeep()" style="width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-keep-btn" onclick="apolKeep()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-open-btn" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px">📦 OUVRIR UNE BOÎTE</button>
+      <button id="apol-continue-btn" onclick="apolContinuePasser()" style="display:none;width:100%!important;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-family:var(--fh);font-size:13px;cursor:pointer;letter-spacing:1px">⏭ PROCHAINE QUESTION</button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
         Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
         <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
       </div>
-      <div id="apol-boxes-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+      
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
     </div></div>
 
@@ -2789,6 +2799,18 @@ function setupImageMode(data){
   }
   document.querySelectorAll('.reveal-btn').forEach(b=>b.disabled=false);
   updateImgCounter();
+  // Question optionnelle
+  const qBox=document.getElementById('img-question-box');
+  if(qBox){
+    if(data.imageQuestion&&data.imageQuestion.trim()){
+      qBox.textContent=data.imageQuestion;
+      qBox.style.display='block';
+    } else {
+      qBox.style.display='none';
+    }
+  }
+  // Stocker la réponse pour validation
+  if(data.imageAnswer) GAME.athleteName=data.imageAnswer;
 }
 
 function revealN(n){
@@ -11034,33 +11056,34 @@ function meliFinish(){
 // À PRENDRE OU À LAISSER
 // --------------------------------------------------------------------------
 const APOL={
-  data:null, qIdx:0, score:0, done:false, activeBoxes:[],
+  data:null, qIdx:0, score:0, done:false, _isFinal:false,
+  effect:null, jackpotStreak:0, prophecy:null,
+  voileeActive:false, parisActive:false,
+  _pendingAnswer:null, _pendingPari:null, _bonusA:null, _wasVoilee:false,
   boxItems:[
-    {label:'+10 pts',value:10,type:'add',prob:25,emoji:'💚'},
-    {label:'−10 pts',value:-10,type:'add',prob:25,emoji:'🔴'},
-    {label:'+20 pts',value:20,type:'add',prob:15,emoji:'💛'},
-    {label:'−20 pts',value:-20,type:'add',prob:15,emoji:'🟠'},
-    {label:'× 2',value:2,type:'mult',prob:10,emoji:'⚡'},
-    {label:'÷ 2',value:0.5,type:'mult',prob:10,emoji:'💀'}
+    {id:'double',    label:'Double ou Rien',    emoji:'⚡', color:'#f39c12'},
+    {id:'voilee',    label:'Question Voilée',   emoji:'🙈', color:'#8e44ad'},
+    {id:'jackpot',   label:'Jackpot Progressif',emoji:'🎰', color:'#27ae60'},
+    {id:'pari',      label:"Pari d'Après-Coup", emoji:'⚖️', color:'#2980b9'},
+    {id:'prophetie', label:'La Prophétie',      emoji:'🔮', color:'#e74c3c'}
   ]
 };
 
 function setupApol(data){
-  APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false; APOL.activeBoxes=[];
+  APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false;
+  APOL._isFinal=false; APOL.effect=null; APOL.jackpotStreak=0;
+  APOL.prophecy=null; APOL.voileeActive=false; APOL.parisActive=false;
+  APOL._pendingAnswer=null; APOL._wasVoilee=false;
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='📦 À prendre ou à laisser';badge.className='type-badge';}
-  document.getElementById('game-tip').innerHTML='5 questions · Puis le grand dilemme !';
+  document.getElementById('game-tip').innerHTML='5 questions · Effets spéciaux';
   hideAllZones();
   document.getElementById('apol-zone').style.display='flex';
-  const apolQs=data.apolQuestions||[];
   document.getElementById('apol-rules').style.display='block';
   document.getElementById('apol-question-wrap').style.display='none';
   document.getElementById('apol-dilemme').style.display='none';
   document.getElementById('apol-score').textContent='0';
-  document.getElementById('apol-qnum').textContent='1/'+(apolQs.length||5);
-  // Warn if no questions configured
-  const apolWarn=document.getElementById('apol-no-q-warn');
-  if(apolWarn) apolWarn.style.display=apolQs.length===0?'block':'none';
+  document.getElementById('apol-qnum').textContent='1/5';
   GAME.score=0; setScore(0,false);
 }
 
@@ -11071,203 +11094,330 @@ function apolStart(){
 
 function apolShowQuestion(){
   const qs=APOL.data.apolQuestions||[];
-  if(!qs.length){
-    // Pas de questions configurées - aller direct au dilemme avec score 0
-    apolShowDilemme();return;
-  }
-  if(APOL.qIdx>=qs.length){apolShowDilemme();return;}
+  if(!qs.length||APOL.qIdx>=qs.length){apolShowFinalDilemme();return;}
   const q=qs[APOL.qIdx];
-  document.getElementById('apol-q-text').textContent=q.question||'?';
-  document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+qs.length;
+  let qText=q.question||'?';
+  const eb=document.getElementById('apol-effect-badge');
+  if(eb) eb.style.display='none';
+  APOL._wasVoilee=false;
+  if(APOL.voileeActive){
+    const words=qText.split(' ');
+    qText=words.map((w,i)=>i%2===0?w:'___').join(' ');
+    APOL.voileeActive=false; APOL._wasVoilee=true;
+    if(eb){eb.textContent='🙈 Question voilée — +30 pts si juste !';eb.style.display='block';}
+  }
+  if(APOL.effect==='jackpot'&&eb&&eb.style.display==='none'){
+    eb.textContent='🎰 Jackpot actif — prochain bonus: +'+((APOL.jackpotStreak+1)*10)+' pts';
+    eb.style.display='block';
+  }
+  if(APOL.prophecy&&eb&&eb.style.display==='none'){
+    const p=APOL.prophecy;
+    eb.textContent='🔮 Prophétie: encore '+p.remaining+' Q ('+p.correct+'/'+p.prediction+')';
+    eb.style.display='block';
+  }
+  document.getElementById('apol-q-text').textContent=qText;
+  document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+(qs.length);
   document.getElementById('apol-in').value='';
   document.getElementById('apol-fb').textContent='';
-  // Thème
-  if(q.theme&&q.theme.trim()){
-    if(themeEl)themeEl.style.display='block';
-    if(themeText)themeText.textContent=q.theme;
-  } else {
-    if(themeEl)themeEl.style.display='none';
-  }
+  APOL._pendingPari=null;
+  const pw=document.getElementById('apol-pari-wrap');
+  if(pw) pw.style.display=APOL.parisActive?'flex':'none';
   document.getElementById('apol-question-wrap').style.display='flex';
   setTimeout(()=>document.getElementById('apol-in')?.focus(),100);
 }
 
+function apolPari(bet){
+  APOL._pendingPari=bet;
+  const y=document.getElementById('apol-pari-yes'),n=document.getElementById('apol-pari-non');
+  if(y)y.style.opacity=bet==='oui'?'1':'0.4';
+  if(n)n.style.opacity=bet==='non'?'1':'0.4';
+}
+
 function apolSubmit(){
   if(APOL.done)return;
+  if(APOL.parisActive&&APOL._pendingPari===null){
+    const fb=document.getElementById('apol-fb');
+    if(fb){fb.textContent='⚖️ Fais ton pari avant de valider !';fb.style.color='#ffb400';}
+    return;
+  }
   const inp=document.getElementById('apol-in');
-  const val=(inp?.value||'').trim();
-  if(!val)return;
-  const qs=APOL.data.apolQuestions||[];
-  const q=qs[APOL.qIdx];
-  const tol=q.tol!=null?parseInt(q.tol):1;
-  const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
-  const fb=document.getElementById('apol-fb');
-  if(correct){
-    APOL.score+=20;
-    document.getElementById('apol-score').textContent=APOL.score;
-    GAME.score=APOL.score; setScore(APOL.score,false);
-    if(fb){fb.textContent='✅ +20 pts !';fb.style.color='#00dc78';}
-  } else {
-    if(fb){fb.innerHTML=`❌ Raté ! C'était <strong>${q.answer}</strong>`;fb.style.color='var(--red)';}
-  }
-  APOL.qIdx++;
-  setTimeout(()=>{
-    if(APOL.qIdx>=qs.length) apolShowDilemme();
-    else apolShowQuestion();
-  },1400);
-}
-
-function apolContinue(){
-  document.getElementById('apol-dilemme').style.display='none';
-  apolShowQuestion();
-}
-
-function apolShowDilemme(){
+  const val=(inp?.value||'').trim(); if(!val)return;
+  APOL._pendingAnswer=val;
   document.getElementById('apol-question-wrap').style.display='none';
+  apolShowMidDilemme();
+}
+
+function apolShowMidDilemme(){
   document.getElementById('apol-dilemme-score').textContent=APOL.score;
-
-  // Mélanger les 6 items, 5 dans les boîtes, 1 absent
-  const allItems=[...APOL.boxItems].sort(()=>Math.random()-.5);
-  APOL.activeBoxes=allItems.slice(0,5);
-
-  // Générer les 5 boîtes
-  const grid=document.getElementById('apol-boxes-grid');
-  if(grid){
-    grid.innerHTML='';
-    APOL.activeBoxes.forEach((item,i)=>{
-      const btn=document.createElement('button');
-      btn.id='apol-box-'+i;
-      btn.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 4px;border-radius:12px;border:2px solid rgba(255,180,0,.4);background:rgba(255,180,0,.08);color:#ffb400;cursor:pointer;font-size:28px;min-height:80px;transition:all .2s;animation:boxGlow 2s ease-in-out infinite';
-      btn.style.animationDelay=(i*0.3)+'s';
-      btn.innerHTML='📦<span style="font-size:9px;font-family:var(--fh);letter-spacing:1px;color:rgba(255,180,0,.5)">'+(i+1)+'</span>';
-      btn.onclick=()=>apolOpenBox(i,btn);
-      grid.appendChild(btn);
-    });
-  }
-
-  // Masquer bouton continuer (fin des questions)
-  const continueBtn=document.getElementById('apol-continue-btn');
-  if(continueBtn)continueBtn.style.display='none';
-
-  document.getElementById('apol-box-result').textContent='';
+  APOL._isFinal=false;
+  const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  const t=document.getElementById('apol-dilemme-title');
+  if(t) t.textContent='OUVRIR UNE BOÎTE OU PASSER ?';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const ob=document.getElementById('apol-open-btn'); if(ob){ob.style.display='block';ob.onclick=apolTriggerRandom;}
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){cb.style.display='block';cb.textContent='⏭ PROCHAINE QUESTION';cb.onclick=apolContinuePasser;}
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
-function apolKeep(){
-  apolFinish(APOL.score,'✅ Score conservé !');
+function apolContinuePasser(){ apolResolveAnswer(null); }
+
+function apolTriggerRandom(){
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  apolSpinWheel(item,()=>apolRevealEffect(item));
 }
 
-function apolOpenBox(boxIdx,btn){
-  if(APOL.done||btn.disabled)return;
+function apolShowFinalDilemme(){
+  document.getElementById('apol-question-wrap').style.display='none';
+  document.getElementById('apol-dilemme-score').textContent=APOL.score;
+  APOL._isFinal=true; APOL._pendingAnswer=null;
+  const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
+  const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
+  const t=document.getElementById('apol-dilemme-title');
+  if(t) t.textContent='LE GRAND DILEMME FINAL';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='block';
+  const ob=document.getElementById('apol-open-btn');
+  if(ob){ob.style.display='block';ob.onclick=apolTriggerRandomFinal;}
+  const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
+  document.getElementById('apol-dilemme').style.display='flex';
+}
 
-  // Désactiver toutes les boîtes
-  (APOL.activeBoxes||[]).forEach((_,i)=>{
-    const b=document.getElementById('apol-box-'+i);
-    if(b){b.disabled=true;b.style.opacity=i===boxIdx?'1':'0.2';b.style.cursor='default';b.style.animation='none';}
-  });
+function apolTriggerRandomFinal(){
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
+  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  apolSpinWheel(item,()=>apolFinalBoxEffect(item));
+}
 
-  const item=APOL.activeBoxes[boxIdx];
-  let finalScore;
-  if(item.type==='add') finalScore=Math.max(0,APOL.score+item.value);
-  else finalScore=Math.round(APOL.score*item.value);
-  const revColor=(item.value>0&&item.type==='add')||(item.value>1&&item.type==='mult')?'#00dc78':'#ff4444';
-
-  // Cacher grille, montrer roue
-  const grid=document.getElementById('apol-boxes-grid');
+function apolFinalBoxEffect(item){
+  const scoreBefore=APOL.score;
+  let newScore=scoreBefore, label='';
+  if(item.id==='double'){newScore=Math.min(200,scoreBefore+40);label='+40 pts';}
+  else if(item.id==='voilee'){newScore=Math.min(200,scoreBefore+30);label='+30 pts';}
+  else if(item.id==='jackpot'){newScore=Math.min(200,scoreBefore+40);label='+40 pts jackpot';}
+  else if(item.id==='pari'){newScore=Math.min(200,scoreBefore+10);label='+10 pts';}
+  else if(item.id==='prophetie'){newScore=Math.min(200,scoreBefore+20);label='+20 pts';}
+  const col=newScore>=scoreBefore?'#00dc78':'#ff4444';
   const res=document.getElementById('apol-box-result');
-  if(grid)grid.style.display='none';
+  if(res) res.innerHTML='<div style="font-size:26px">'+item.emoji+'</div>'+
+    '<div style="font-family:var(--fh);color:'+item.color+';font-size:14px;margin:4px 0">'+item.label+'</div>'+
+    '<div style="font-size:13px">'+scoreBefore+' → <strong style="color:'+col+'">'+newScore+' pts</strong> ('+label+')</div>';
+  APOL.score=newScore; document.getElementById('apol-score').textContent=APOL.score;
+  GAME.score=newScore; setScore(newScore,false);
+  setTimeout(()=>apolFinish(newScore,'📦 '+item.label+' — '+newScore+' pts'),2000);
+}
 
-  // Créer canvas roue
+function apolSpinWheel(item,onDone){
+  const res=document.getElementById('apol-box-result');
+  const prev=document.getElementById('apol-wheel-wrap'); if(prev)prev.remove();
   const wrap=document.createElement('div');
-  wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:10px';
-  const label=document.createElement('div');
-  label.style.cssText='font-size:11px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)';
-  label.textContent='LA BOÎTE TOURNE…';
+  wrap.id='apol-wheel-wrap';
+  wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px';
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font-size:11px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh)';
+  lbl.textContent='LA BOÎTE TOURNE…';
   const cvs=document.createElement('canvas');
-  cvs.width=220;cvs.height=220;
-  cvs.style.cssText='width:220px;height:220px;border-radius:50%;';
-  wrap.appendChild(label);wrap.appendChild(cvs);
-  const dilemme=document.getElementById('apol-dilemme');
-  if(dilemme)dilemme.insertBefore(wrap,res);
-
-  // Les items de la roue = les 6 possibilités
-  const wheelItems=APOL.boxItems;
-  const N=wheelItems.length;
-  const ctx=cvs.getContext('2d');
-  const cx=110,cy=110,R=100;
-  let angle=0;
-  // Calculer l'angle cible pour s'arrêter sur item
-  const itemIdx=wheelItems.findIndex(w=>w.label===item.label);
-  const sliceAngle=Math.PI*2/N;
-  // Tours : 5 + atterrir au milieu de la bonne slice
-  const targetAngle=Math.PI*2*6+(itemIdx*sliceAngle+sliceAngle/2);
-
-  function drawWheel(rot){
+  cvs.width=220;cvs.height=220;cvs.style.cssText='width:220px;height:220px;border-radius:50%';
+  wrap.appendChild(lbl);wrap.appendChild(cvs);
+  if(res&&res.parentNode) res.parentNode.insertBefore(wrap,res);
+  const items=APOL.boxItems, N=items.length;
+  const ctx=cvs.getContext('2d'), cx=110, cy=110, R=100;
+  const slice=Math.PI*2/N;
+  const idx=items.findIndex(w=>w.id===item.id);
+  const target=Math.PI*2*6+(idx*slice+slice/2);
+  function draw(rot){
     ctx.clearRect(0,0,220,220);
-    wheelItems.forEach((w,i)=>{
-      const a0=-Math.PI/2+rot+i*sliceAngle;
-      const a1=a0+sliceAngle;
-      const c=w.type==='add'&&w.value>0?'#27ae60':w.type==='add'&&w.value<0?'#e74c3c':w.value>1?'#2980b9':'#8e44ad';
+    items.forEach((w,i)=>{
+      const a0=-Math.PI/2+rot+i*slice, a1=a0+slice;
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);ctx.closePath();
-      ctx.fillStyle=c+'cc';ctx.fill();
+      ctx.fillStyle=(w.color||'#888')+'cc';ctx.fill();
       ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;ctx.stroke();
-      // Label
-      const midA=a0+sliceAngle/2;
-      ctx.save();ctx.translate(cx+Math.cos(midA)*R*0.65,cy+Math.sin(midA)*R*0.65);
-      ctx.rotate(midA+Math.PI/2);
-      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';
+      const m=a0+slice/2;
+      ctx.save();ctx.translate(cx+Math.cos(m)*R*0.62,cy+Math.sin(m)*R*0.62);
+      ctx.rotate(m+Math.PI/2);
+      ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(w.label,0,0);ctx.restore();
+      ctx.fillText(w.emoji,0,-7);
+      ctx.font='bold 8px sans-serif';ctx.fillText(w.label,0,8);
+      ctx.restore();
     });
-    // Centre
-    ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(cx,cy,20,0,Math.PI*2);
     ctx.fillStyle='#111';ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=2;ctx.stroke();
-    // Aiguille (flèche en haut)
     ctx.beginPath();ctx.moveTo(cx,cy-R-4);
     ctx.lineTo(cx-8,cy-R+12);ctx.lineTo(cx+8,cy-R+12);ctx.closePath();
     ctx.fillStyle='#fff';ctx.fill();
   }
-
-  // Animation : éasing exponentielle qui ralentit
-  const startTime=Date.now();
-  const duration=3500;
-  function animate(){
-    const elapsed=Date.now()-startTime;
-    const t=Math.min(elapsed/duration,1);
-    const ease=1-Math.pow(1-t,4); // ease-out quart
-    angle=ease*targetAngle;
-    drawWheel(angle);
-    if(t<1){
-      requestAnimationFrame(animate);
-    } else {
-      // Arrêt — afficher résultat
-      label.textContent='LA BOÎTE CONTIENT…';
-      label.style.color=revColor;
+  const t0=Date.now(), dur=3000;
+  function anim(){
+    const t=Math.min((Date.now()-t0)/dur,1);
+    draw((1-Math.pow(1-t,4))*target);
+    if(t<1){requestAnimationFrame(anim);}
+    else{
+      lbl.textContent='LA BOÎTE CONTIENT…';lbl.style.color=item.color;
       if(navigator.vibrate)navigator.vibrate([100,50,200]);
-      const finalLabel=document.createElement('div');
-      finalLabel.style.cssText=`font-family:var(--fh);font-size:32px;color:${revColor};text-align:center;text-shadow:0 0 20px ${revColor}88`;
-      finalLabel.textContent=item.label;
-      wrap.appendChild(finalLabel);
-      const scoreLabel=document.createElement('div');
-      scoreLabel.style.cssText='font-size:13px;color:var(--mute);text-align:center';
-      scoreLabel.innerHTML=`${APOL.score} pts → <strong style="color:${revColor}">${finalScore} pts</strong>`;
-      wrap.appendChild(scoreLabel);
-      setTimeout(()=>apolFinish(finalScore,'📦 '+item.label+' · '+APOL.score+' → '+finalScore+' pts'),1800);
+      setTimeout(()=>{wrap.remove();onDone();},500);
     }
   }
-  animate();
+  anim();
 }
 
+function apolRevealEffect(item){
+  const res=document.getElementById('apol-box-result');
+  const qs=APOL.data.apolQuestions||[];
+  const isLastQ=(APOL.qIdx>=qs.length-1);
+  const noEffect=(msg)=>{
+    if(res) res.innerHTML='<div style="font-size:24px">'+item.emoji+'</div>'+
+      '<div style="font-family:var(--fh);color:rgba(255,255,255,.4);font-size:13px;margin:4px 0">'+item.label+'</div>'+
+      '<div style="font-size:12px;color:var(--red)">Aucun effet — '+msg+'</div>';
+    const cb=document.getElementById('apol-continue-btn');
+    if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=apolContinuePasser;}
+  };
+  const showReveal=(msg,then)=>{
+    if(res) res.innerHTML='<div style="font-size:24px">'+item.emoji+'</div>'+
+      '<div style="font-family:var(--fh);color:'+item.color+';font-size:14px;margin:4px 0">'+item.label+'</div>'+
+      '<div style="font-size:12px;color:var(--mute)">'+msg+'</div>';
+    const cb=document.getElementById('apol-continue-btn');
+    if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=then||apolContinuePasser;}
+  };
+
+  if(item.id==='double'){
+    const bonusQ=APOL.data.bonusQ, bonusA=APOL.data.bonusA;
+    if(!bonusQ){noEffect('pas de question bonus configurée');return;}
+    APOL._bonusA=bonusA||'';
+    if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#f39c12;margin-bottom:8px">⚡ DOUBLE OU RIEN — +40 ou −20</div>'+
+      '<div style="font-size:15px;font-weight:800;color:var(--txt);background:rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px">'+bonusQ+'</div>'+
+      '<div style="display:flex;gap:8px"><input type="text" id="apol-bonus-in" placeholder="Ta réponse…" autocomplete="off" style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(243,156,18,.4);color:var(--txt);font-size:15px;border-radius:8px;padding:10px;outline:none" onkeydown="if(event.key===\'Enter\')apolSubmitDouble()">'+
+      '<button onclick="apolSubmitDouble()" style="width:46px;height:46px;flex-shrink:0;background:#f39c12;color:#fff;border:none;border-radius:8px;font-size:20px;cursor:pointer">✓</button></div>'+
+      '<div id="apol-bonus-fb" style="text-align:center;font-size:13px;min-height:18px;margin-top:6px"></div>';
+    setTimeout(()=>document.getElementById('apol-bonus-in')?.focus(),100);
+
+  } else if(item.id==='voilee'){
+    if(isLastQ){noEffect("c'est la dernière question");return;}
+    APOL.voileeActive=true;
+    showReveal('Prochaine question : 1 mot sur 2 masqué · +30 pts si juste');
+
+  } else if(item.id==='jackpot'){
+    if(isLastQ){noEffect("c'est la dernière question");return;}
+    APOL.effect='jackpot'; APOL.jackpotStreak=0;
+    showReveal('Jackpot actif ! +10, +20, +30… par bonne réponse consécutive · Erreur = −10 et annulé');
+
+  } else if(item.id==='pari'){
+    if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:13px;color:#2980b9;margin-bottom:10px">⚖️ PARI — Tu penses avoir la bonne réponse ?</div>'+
+      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Bon pari = +10 · Mauvais = −10</div>'+
+      '<div style="display:flex;gap:10px">'+
+      '<button id="apol-pari-yes" onclick="apolPari(\'oui\')" style="flex:1;padding:12px;border-radius:8px;border:2px solid #2980b9;background:rgba(41,128,185,.15);color:#2980b9;font-family:var(--fh);font-size:15px;cursor:pointer">✅ OUI</button>'+
+      '<button id="apol-pari-non" onclick="apolPari(\'non\')" style="flex:1;padding:12px;border-radius:8px;border:2px solid #e74c3c;background:rgba(231,76,60,.1);color:#e74c3c;font-family:var(--fh);font-size:15px;cursor:pointer">❌ NON</button>'+
+      '</div><div id="apol-pari-confirm"></div>';
+    APOL.parisActive=true;
+
+  } else if(item.id==='prophetie'){
+    const remaining=Math.min(3,qs.length-APOL.qIdx-1);
+    if(!remaining){noEffect('plus de questions suivantes');return;}
+    APOL.effect='prophecy';
+    let opts='';
+    for(let n=1;n<=remaining;n++)
+      opts+='<button onclick="apolSetProphetie('+n+','+remaining+')" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e74c3c44;background:#e74c3c18;color:#e74c3c;font-family:var(--fh);font-size:14px;cursor:pointer">'+n+'/'+remaining+'</button>';
+    if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#e74c3c;margin-bottom:8px">🔮 PROPHÉTIE — Prédit ta réussite sur les '+remaining+' prochaines questions</div>'+
+      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Exact → +10 pts/Q · Faux → −5 pts/Q</div>'+
+      '<div style="display:flex;gap:8px">'+opts+'</div>';
+  }
+}
+
+function apolPariChoix(bet){
+  APOL._pendingPari=bet;
+  const y=document.getElementById('apol-pari-yes'),n=document.getElementById('apol-pari-non');
+  if(y)y.style.opacity=bet==='oui'?'1':'0.4';
+  if(n)n.style.opacity=bet==='non'?'1':'0.4';
+  const c=document.getElementById('apol-pari-confirm');
+  if(c&&!c.innerHTML) c.innerHTML='<button onclick="apolContinuePasser()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;background:#2980b9;color:#fff;border:none;font-family:var(--fh);font-size:13px;cursor:pointer">✓ VALIDER ET VOIR LA RÉPONSE</button>';
+}
+
+function apolSetProphetie(prediction,remaining){
+  APOL.prophecy={prediction,correct:0,remaining};
+  const res=document.getElementById('apol-box-result');
+  if(res) res.innerHTML+='<div style="margin-top:8px;color:#e74c3c;font-family:var(--fh);font-size:13px">Prophétie: '+prediction+'/'+remaining+'</div>';
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=apolContinuePasser;}
+}
+
+function apolSubmitDouble(){
+  const inp=document.getElementById('apol-bonus-in');
+  const val=(inp?.value||'').trim(); if(!val)return;
+  const correct=levenshtein(normStr(val),normStr(APOL._bonusA))<=1;
+  const fb=document.getElementById('apol-bonus-fb');
+  if(correct){APOL.score=Math.min(200,APOL.score+40);if(fb){fb.textContent='✅ +40 pts';fb.style.color='#00dc78';}}
+  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+APOL._bonusA+'</strong> · −20 pts';fb.style.color='var(--red)';}}
+  document.getElementById('apol-score').textContent=APOL.score;
+  GAME.score=APOL.score; setScore(APOL.score,false);
+  if(inp)inp.disabled=true;
+  setTimeout(apolContinuePasser,1500);
+}
+
+function apolResolveAnswer(effectApplied){
+  const qs=APOL.data.apolQuestions||[];
+  const q=qs[APOL.qIdx];
+  const val=APOL._pendingAnswer||'';
+  const tol=q.tol!=null?parseInt(q.tol):1;
+  const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
+  const pts=APOL._wasVoilee?30:20;
+  let delta=correct?pts:0, bonusMsg='';
+
+  if(APOL.effect==='jackpot'){
+    if(correct){APOL.jackpotStreak++;const jb=APOL.jackpotStreak*10;delta+=jb;bonusMsg=' (+'+jb+' 🎰)';}
+    else{delta-=10;bonusMsg=' (jackpot annulé −10)';APOL.effect=null;APOL.jackpotStreak=0;}
+  }
+  if(APOL.prophecy){
+    const p=APOL.prophecy;
+    if(correct)p.correct++;
+    p.remaining--;
+    if(p.remaining<=0){
+      if(p.correct===p.prediction){const b=p.prediction*10;delta+=b;bonusMsg+=' (prophétie +'+b+' 🔮)';}
+      else{delta-=15;bonusMsg+=' (prophétie échouée −15 🔮)';}
+      APOL.prophecy=null;APOL.effect=null;
+    }
+  }
+  if(APOL.parisActive&&APOL._pendingPari!==null){
+    const bc=(APOL._pendingPari==='oui')===correct;
+    if(bc){delta+=10;bonusMsg+=' (+10 ⚖️)';}else{delta-=10;bonusMsg+=' (−10 ⚖️)';}
+    APOL.parisActive=false;APOL._pendingPari=null;
+  }
+
+  APOL.score=Math.max(0,APOL.score+delta);
+  document.getElementById('apol-score').textContent=APOL.score;
+  GAME.score=APOL.score; setScore(APOL.score,false);
+
+  const res=document.getElementById('apol-box-result');
+  const col=correct?'#00dc78':'var(--red)';
+  if(res) res.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.05)">'+(correct?'✅ Bonne réponse !':'❌ Faux ! C\'était <strong>'+q.answer+'</strong>')+' <span style="color:'+col+'">'+(correct?'+'+pts+' pts':'')+bonusMsg+'</span></div>';
+
+  APOL.qIdx++;
+  const isFinal=(APOL.qIdx>=qs.length);
+  const cb=document.getElementById('apol-continue-btn');
+  if(cb){
+    cb.style.display='block';
+    cb.textContent=isFinal?'🎯 GRAND DILEMME FINAL ▶':'▶ QUESTION SUIVANTE';
+    cb.onclick=isFinal?apolShowFinalDilemme:()=>{document.getElementById('apol-dilemme').style.display='none';apolShowQuestion();};
+  }
+  const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
+  const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
+}
+
+function apolKeep(){ apolFinish(APOL.score,'✅ Score conservé — '+APOL.score+' pts'); }
+
 function apolFinish(finalScore,msg){
-  APOL.done=true;
-  GAME.score=finalScore; setScore(finalScore,true);
+  APOL.done=true; GAME.score=finalScore; setScore(finalScore,true);
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='À prendre ou à laisser';
-  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=msg;
-  setVictoryIcon('apol'); submitScore(finalScore);
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=msg||finalScore+' pts';
+  setVictoryIcon('apol');submitScore(finalScore);
   setTimeout(()=>show('sv'),800);
 }
+
 
 // NAGE SYNCHRONISÉE
 // --------------------------------------------------------------------------

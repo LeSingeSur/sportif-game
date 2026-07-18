@@ -501,7 +501,16 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
         <!-- 12 questions grouped by section -->
-        <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
+        
+      <!-- Question bonus unique pour Double ou Rien -->
+      <div style="background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:11px;color:#f39c12;margin-bottom:6px">⚡ Question bonus "Double ou Rien" (unique pour tout le jeu)</div>
+        <input id="apol-bonus-q" placeholder="Question bonus…" oninput="apolBonusQ=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:#f39c12;font-size:12px;border-radius:6px;padding:6px 8px;outline:none;margin-bottom:5px">
+        <input id="apol-bonus-a" placeholder="Réponse…" oninput="apolBonusA=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:rgba(243,156,18,.7);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+      </div>
+      <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
         <div id="triv-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
@@ -821,6 +830,14 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
             <img id="grid-prev-img" src="" alt="">
             <div class="grid-prev-overlay" id="grid-prev-overlay"></div>
           </div>
+        </div>
+        <!-- Question optionnelle -->
+        <div class="field" style="margin-top:10px">
+          <label>❓ Question (optionnelle — affichée sous l'image)</label>
+          <input type="text" id="img-question-in" placeholder="Ex: Dans quel club joue ce joueur ?" oninput="imageQuestion=this.value" style="margin-bottom:6px">
+          <label style="font-size:11px;color:var(--mute)">Réponse attendue (si différente du nom)</label>
+          <input type="text" id="img-answer-in" placeholder="Ex: Paris Saint-Germain" oninput="imageAnswer=this.value">
+          <span class="hint">💡 Si renseignée, la question s'affiche pendant le jeu. Si la réponse est vide, le nom du sportif sert de réponse.</span>
         </div>
       </div>
 
@@ -1600,6 +1617,10 @@ async function startEdit(id){
   }
   if(a.type==='apol'){
     apolQuestions=[...(a.apolQuestions||[])];
+    apolBonusQ=a.bonusQ||'';
+    apolBonusA=a.bonusA||'';
+    const bq=document.getElementById('apol-bonus-q');if(bq)bq.value=apolBonusQ;
+    const ba=document.getElementById('apol-bonus-a');if(ba)ba.value=apolBonusA;
     window.apolQuestions=apolQuestions;
     setTimeout(()=>apolAdminRender(),50);
   }
@@ -1732,6 +1753,9 @@ async function startEdit(id){
       imgSrc='url'; imgBase64='';
       selectImgSrc('url');
       document.getElementById('img-url-in').value=a.imageUrl||'';
+    imageQuestion=a.imageQuestion||'';imageAnswer=a.imageAnswer||'';
+    const iqEl=document.getElementById('img-question-in');if(iqEl)iqEl.value=imageQuestion;
+    const iaEl=document.getElementById('img-answer-in');if(iaEl)iaEl.value=imageAnswer;
       previewImage(a.imageUrl||'');
     }
   } else if(a.type==='buzz'){
@@ -2136,6 +2160,8 @@ function equiAdminRender(){
 let bowlingQuestions=[];
 let badmintonQuestions=[];window.badmintonQuestions=badmintonQuestions;
 let meliWords=[];
+let apolBonusQ='',apolBonusA='';
+let imageQuestion='',imageAnswer='';
 let apolQuestions=[];
 const TRIV_COLORS=['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085'];
 let trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i],question:'',answer:'',tol:1}));
@@ -2332,651 +2358,7 @@ function apolAdminRender(){
       <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="setApolQ(${i},'theme',this.value)"
         style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
       <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setApolQ(${i},'question',this.value)"
-        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
-      <div style="background:rgba(243,156,18,.06);border-left:2px solid rgba(243,156,18,.3);padding:6px 8px;border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:4px">
-        <div style="font-size:10px;color:rgba(243,156,18,.6)">⚡ Question bonus "Double ou Rien" (optionnel)</div>
-        <input value="${(q.bonusQ||'').replace(/"/g,'&quot;')}" placeholder="Question bonus…" oninput="setApolQ(${i},'bonusQ',this.value)"
-          style="width:100%;background:var(--c2);border:none;color:#f39c12;font-size:12px;border-radius:6px;padding:5px 8px;outline:none">
-        <input value="${(q.bonusA||'').replace(/"/g,'&quot;')}" placeholder="Réponse bonus…" oninput="setApolQ(${i},'bonusA',this.value)"
-          style="width:100%;background:var(--c2);border:none;color:rgba(243,156,18,.7);font-size:12px;border-radius:6px;padding:5px 8px;outline:none">
-      </div>
-        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="setApolQ(${i},'answer',this.value)"
-          style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
-        <label style="font-size:11px;color:var(--mute);white-space:nowrap">Tol.</label>
-        <input type="number" value="${q.tol||1}" min="0" max="3" oninput="setApolQ(${i},'tol',this.value)"
-          style="width:50px;background:var(--c2);border:none;color:var(--mute);font-size:13px;border-radius:6px;padding:6px;outline:none;text-align:center">
-      </div>`;
-    list.appendChild(d);
-  });
-}
-function apolAdminAddQ(){
-  if(apolQuestions.length>=5){alert('5 questions maximum');return;}
-  apolQuestions.push({question:'',theme:'',answer:'',tol:1});window.apolQuestions=apolQuestions;
-  apolAdminRender();checkReady();
-}
-
-function badAdminRender(){
-  const list=document.getElementById('bad-q-list');
-  if(!list)return;
-  list.innerHTML='';
-  if(!badmintonQuestions.length){
-    list.innerHTML='<div style="font-size:11px;color:var(--mute);text-align:center;padding:10px">Aucune question. Cliquez ➕ pour en ajouter.</div>';
-    return;
-  }
-  badmintonQuestions.forEach((q,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='background:var(--c1);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
-    d.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;color:var(--neon);font-family:var(--fh)">Q${i+1}</span>
-        <button onclick="badmintonQuestions.splice(${i},1);window.badmintonQuestions=badmintonQuestions;badAdminRender();checkReady();" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
-      </div>
-      <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Carrière, Records…)" oninput="setBadQ(${i},'theme',this.value)"
-        style="width:100%;background:rgba(0,180,100,.06);border:1px solid rgba(0,180,100,.2);color:#00c870;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
-      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setBadQ(${i},'question',this.value)"
-        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
-      ${['a','b','c'].map((ch,ci)=>`
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="radio" name="bad-correct-${i}" value="${ci}" ${q.correct==ci?'checked':''} onchange="setBadQCorrect(${i},${ci})" style="accent-color:var(--neon);width:14px;height:14px;flex-shrink:0" title="Bonne réponse">
-          <input value="${(q[ch]||'').replace(/"/g,'&quot;')}" placeholder="Choix ${ch.toUpperCase()}…" oninput="badmintonQuestions[${i}]['${ch}']=this.value;checkReady();"
-            style="flex:1;background:${q.correct==ci?'rgba(0,200,80,.1)':'var(--c2)'};border:${q.correct==ci?'1px solid rgba(0,200,80,.3)':'none'};color:var(--txt);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
-        </div>`).join('')}`;
-    list.appendChild(d);
-  });
-  const status=document.getElementById('bad-admin-status');
-  if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées';
-}
-
-function badAdminAddQ(){
-  if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
-  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',correct:0});window.badmintonQuestions=badmintonQuestions;
-  badAdminRender();checkReady();
-}
-  equiObstacles=[{type:'fleche',question:'',answer:'',question2:'',answer2:'',question3:'',answer3:'',question4:'',answer4:''},{type:'riviere',question:'',answer:'',multiplier:0},{type:'vf',question:'',answer:'vrai',question2:'',answer2:'vrai',question3:'',answer3:'vrai'},{type:'mots',question:'',answer:'',gridSize:0}];
-function bowlingAdminRender(){
-  const list=document.getElementById('bowling-q-list');
-  if(!list)return;
-  list.innerHTML='';
-  bowlingQuestions.forEach((q,i)=>{
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;gap:6px;align-items:center;background:var(--c1);border-radius:6px;padding:6px 8px';
-    row.innerHTML=`<span style="font-family:var(--fh);font-size:11px;color:var(--mute);min-width:24px">${i+1}</span>
-      <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question numérique…" oninput="bowlingQuestions[${i}].question=this.value;checkReady();"
-        style="flex:3;background:var(--c2);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none">
-      <input value="${q.answer||''}" placeholder="Réponse" type="number" oninput="bowlingQuestions[${i}].answer=parseFloat(this.value)||0;bowlingAdminRender();checkReady();"
-        style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none;text-align:center">
-      <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-        <div style="font-size:9px;color:#ffc800;text-align:center">mult ×</div>
-        <input value="${q.multiplier||Math.max(1,Math.ceil(Math.abs(q.answer||1)*0.05))}" 
-          title="Auto = réponse × 0.05. Modifie pour override (ex: 5 pour années, 10000 pour prix)"
-          oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
-          style="width:100%;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
-      </div>
-      <button onclick="bowlingQuestions.splice(${i},1);bowlingAdminRender();checkReady();" style="padding:4px 8px;border-radius:4px;border:none;background:rgba(255,60,60,.2);color:var(--red);cursor:pointer;font-size:12px">✕</button>`;
-    list.appendChild(row);
-  });
-  const st=document.getElementById('bowling-admin-status');
-  if(st){const n=bowlingQuestions.length;st.textContent=n+'/12 questions'+(n>=12?' ✅ Prêt !':' — encore '+(12-n)+' à ajouter');st.style.color=n>=12?'var(--neon)':n>=8?'#ffaa00':'var(--mute)';}
-}
-function bowlingAdminAddQ(){bowlingQuestions.push({question:'',answer:0});bowlingAdminRender();checkReady();}
-
-function roulettePreview(){
-  const txt=(document.getElementById('roulette-text')?.value||'').trim();
-  const pct=parseInt(document.getElementById('roulette-pct')?.value||40);
-  const preview=document.getElementById('roulette-preview');
-  const stats=document.getElementById('roulette-preview-stats');
-  if(!preview||!txt){if(preview)preview.innerHTML='<span style="color:var(--mute)">Colle un texte pour voir l\'aperçu…</span>';return;}
-  const words=txt.split(/(\s+)/);
-  const realWords=words.filter(w=>w.trim().length>0);
-  const total=realWords.length;
-  const visibleCount=Math.round(total*pct/100);
-  // Random shuffle (seeded) — pick which words to HIDE
-  const rng=rouletteRng(rouletteSeed);
-  const indices=realWords.map((_,i)=>i);
-  // Fisher-Yates shuffle
-  for(let i=indices.length-1;i>0;i--){
-    const j=Math.floor(rng()*(i+1));
-    [indices[i],indices[j]]=[indices[j],indices[i]];
-  }
-  const toShow=new Set(indices.slice(0,visibleCount));
-  let wordIdx=0;
-  const html=words.map(w=>{
-    if(!w.trim())return w;
-    const show=toShow.has(wordIdx);
-    wordIdx++;
-    if(show)return`<span style="color:var(--txt)">${w}</span>`;
-    return`<span style="background:rgba(255,50,50,.15);color:transparent;border-radius:2px;user-select:none">${'█'.repeat(Math.min(w.length,8))}</span>`;
-  }).join('');
-  preview.innerHTML=html;
-  if(stats)stats.textContent=visibleCount+'/'+total+' mots visibles ('+pct+'%) · seed '+rouletteSeed;
-  checkReady();
-}
-
-// ── ESCALADE IA — génération questions difficiles ─────────────────────────
-function escaladeAutoInverse(qFacile, aFacile){
-  const a=aFacile.trim();
-  const q=qFacile.trim().replace(/\?\s*$/,'').trim();
-
-  // Remove common French question starters
-  const body=q
-    .replace(/^(quel(le)?s?\s+(est|sont|a|ont|fut|furent|sera|seront)\s+(le|la|les|l')?\s*)/i,'')
-    .replace(/^(quel(le)?s?\s+)/i,'')
-    .replace(/^(qui\s+(est|a|fut|sont|était)\s*)/i,'')
-    .replace(/^(dans quel(le)?\s+)/i,'')
-    .replace(/^(en quelle\s+\w+\s+)/i,'')
-    .replace(/^(combien\s+de\s+)/i,'')
-    .replace(/^(combien\s+)/i,'')
-    .replace(/^(lequel|laquelle)\s+/i,'')
-    .trim();
-  const B=body.charAt(0).toUpperCase()+body.slice(1);
-
-  // Answer is a year
-  if(/^\d{4}$/.test(a)&&+a>=1900&&+a<=2030)
-    return {qDifficile:`${B} — en quelle année ?`,aDifficile:a};
-
-  // Answer is a number
-  if(/^\d+(\s*(fois|points?|buts?|médailles?|km|m|s|min))?$/i.test(a))
-    return {qDifficile:`Quel est le chiffre associé à : ${B} ?`,aDifficile:a};
-
-  // Question contains a year → invert to ask for it
-  const yearMatch=q.match(/\b(19|20)\d{2}\b/);
-  if(yearMatch)
-    return {qDifficile:`${a} — ${B.replace(yearMatch[0],'____')} ?`,aDifficile:yearMatch[0]};
-
-  // Default: answer as subject, body as context, ask for precision
-  return {qDifficile:`${a} — ${B} ?`,aDifficile:a};
-}
-
-function escaladeGenerateDifficile(){
-  const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile);
-  if(filled.length===0){alert('Remplis d\'abord les questions faciles.');return;}
-  const status=document.getElementById('escalade-ai-status');
-  escaladeQuestions.forEach(q=>{
-    if(!q.qFacile||!q.aFacile)return;
-    const inv=escaladeAutoInverse(q.qFacile,q.aFacile);
-    q.qDifficile=inv.qDifficile;
-    q.aDifficile=inv.aDifficile;
-  });
-  renderEscaladeQuestions();
-  if(status){status.textContent='✅ '+filled.length+' questions inversées générées — vérifie et ajuste !';status.style.color='var(--neon)';}
-}
-
-// ── ESCALADE ADMIN ────────────────────────────────────────────────────────
-let escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',asDifficileList:'',nbRequired:1}));
-
-function renderEscaladeQuestions(){
-  const list=document.getElementById('escalade-q-list');
-  if(!list)return;
-  list.innerHTML='';
-  escaladeQuestions.forEach((q,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
-    const hdr=document.createElement('div');
-    hdr.style.cssText='font-family:var(--fh);font-size:11px;color:var(--neon)';
-    hdr.textContent='QUESTION '+(i+1)+'/8';
-    // Facile
-    const fLbl=document.createElement('div');fLbl.style.cssText='font-size:10px;color:#64c8ff';fLbl.textContent='🟢 Voie FACILE (15 pts)';
-    const fqIn=document.createElement('input');fqIn.type='text';fqIn.value=q.qFacile||'';fqIn.placeholder='Question version facile…';
-    fqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    fqIn.oninput=e=>{escaladeQuestions[i].qFacile=e.target.value;checkReady();};
-    const faIn=document.createElement('input');faIn.type='text';faIn.value=q.aFacile||'';faIn.placeholder='✅ Réponse facile';
-    faIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    faIn.oninput=e=>{escaladeQuestions[i].aFacile=e.target.value;checkReady();};
-    // Difficile (optionnel)
-    const dLbl=document.createElement('div');dLbl.style.cssText='font-size:10px;color:#ff6633';dLbl.textContent='🔴 Voie DIFFICILE (25 pts) — optionnel, si vide = même question';
-    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=q.qDifficile||'';dqIn.placeholder='Question version difficile (inversée/enrichie)…';
-    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    dqIn.oninput=e=>{escaladeQuestions[i].qDifficile=e.target.value;};
-    const daIn=document.createElement('input');daIn.type='text';daIn.value=q.aDifficile||'';daIn.placeholder='✅ Réponse(s) difficile — séparer par ";" si plusieurs';
-    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,100,50,.2);color:#ff9966;font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    daIn.oninput=e=>{escaladeQuestions[i].aDifficile=e.target.value;};
-    // Nb required if multiple answers
-    const nbRow=document.createElement('div');nbRow.style.cssText='display:flex;gap:8px;align-items:center';
-    const nbLbl=document.createElement('span');nbLbl.style.cssText='font-size:10px;color:var(--mute)';nbLbl.textContent='Réponses requises (si plusieurs):';
-    const nbIn=document.createElement('input');nbIn.type='number';nbIn.min=1;nbIn.max=10;nbIn.value=q.nbRequired||1;
-    nbIn.style.cssText='width:50px;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:4px 6px;outline:none;text-align:center';
-    nbIn.oninput=e=>{escaladeQuestions[i].nbRequired=parseInt(e.target.value)||1;};
-    nbRow.append(nbLbl,nbIn);
-    d.append(hdr,fLbl,fqIn,faIn,dLbl,dqIn,daIn,nbRow);
-    list.appendChild(d);
-  });
-  const btn=document.getElementById('btn-add-escalade-q');
-  if(btn)btn.style.display='none'; // always 8 questions
-  checkReady();
-}
-// Auto-render
-setTimeout(()=>renderEscaladeQuestions(),150);
-document.getElementById('escalade-theme').addEventListener('input',checkReady);
-
-// ── PLONGÉE ADMIN ─────────────────────────────────────────────────────────
-const PLONGEE_TRESOR=[10,20,35,55,80];
-let plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
-
-function renderPlongeePaliers(){
-  const list=document.getElementById('plongee-paliers-list');
-  if(!list)return;
-  list.innerHTML='';
-  const depths=['20m','40m','60m','80m','100m'];
-  plongeePaliers.forEach((p,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px';
-    const hdr=document.createElement('div');
-    hdr.style.cssText='display:flex;justify-content:space-between;align-items:center';
-    hdr.innerHTML=`<span style="font-family:var(--fh);font-size:12px;color:var(--neon)">PALIER ${i+1} — ${depths[i]}</span><span style="font-size:11px;color:#ffc800">💰 ${p.tresor} pts</span>`;
-    // Down question
-    const dqLbl=document.createElement('div');dqLbl.style.cssText='font-size:10px;color:#64c8ff';dqLbl.textContent='⬇️ Question descente';
-    const dqIn=document.createElement('input');dqIn.type='text';dqIn.value=p.qDown||'';dqIn.placeholder='Question pour descendre à ce palier…';
-    dqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(100,200,255,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    dqIn.oninput=e=>{plongeePaliers[i].qDown=e.target.value;checkReady();};
-    const daIn=document.createElement('input');daIn.type='text';daIn.value=p.aDown||'';daIn.placeholder='✅ Réponse…';
-    daIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    daIn.oninput=e=>{plongeePaliers[i].aDown=e.target.value;checkReady();};
-    // Up question
-    const uqLbl=document.createElement('div');uqLbl.style.cssText='font-size:10px;color:#ff9966';uqLbl.textContent='⬆️ Question remontée';
-    const uqIn=document.createElement('input');uqIn.type='text';uqIn.value=p.qUp||'';uqIn.placeholder='Question pour remonter depuis ce palier…';
-    uqIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,150,100,.2);color:var(--txt);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    uqIn.oninput=e=>{plongeePaliers[i].qUp=e.target.value;checkReady();};
-    const uaIn=document.createElement('input');uaIn.type='text';uaIn.value=p.aUp||'';uaIn.placeholder='✅ Réponse…';
-    uaIn.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.2);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    uaIn.oninput=e=>{plongeePaliers[i].aUp=e.target.value;checkReady();};
-    d.append(hdr,dqLbl,dqIn,daIn,uqLbl,uqIn,uaIn);
-    list.appendChild(d);
-  });
-  checkReady();
-}
-// Auto-render on load
-setTimeout(()=>renderPlongeePaliers(),100);
-
-// ── RVLF ADMIN ──────────────────────────────────────────────────────────
-let rvlfQuestions=[];
-function renderRvlfQuestions(){
-  const list=document.getElementById('rvlf-q-list');
-  if(!list)return;
-  list.innerHTML='';
-  rvlfQuestions.forEach((q,i)=>{
-    const d=document.createElement('div');
-    d.style.cssText='background:var(--c2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px';
-    const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:10px;color:var(--neon);font-family:var(--fh)';
-    lbl.textContent='CARTE '+(i+1)+'/10';
-    const inQ=document.createElement('input');
-    inQ.type='text';inQ.value=q.q||'';inQ.placeholder='Question…';
-    inQ.style.cssText='width:100%;background:var(--c1);border:none;color:var(--txt);font-size:12px;border-radius:4px;padding:6px 8px;outline:none';
-    inQ.oninput=e=>{rvlfQuestions[i].q=e.target.value;checkReady();};
-    const inA=document.createElement('input');
-    inA.type='text';inA.value=q.a||'';inA.placeholder='✅ Bonne réponse';
-    inA.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(212,255,0,.3);color:var(--neon);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    inA.oninput=e=>{rvlfQuestions[i].a=e.target.value;checkReady();};
-    const inW=document.createElement('input');
-    inW.type='text';inW.value=q.w||'';inW.placeholder='❌ Mauvaise réponse (leurre plausible)';
-    inW.style.cssText='width:100%;background:var(--c1);border:1px solid rgba(255,60,60,.2);color:var(--red);font-size:12px;border-radius:4px;padding:5px 8px;outline:none';
-    inW.oninput=e=>{rvlfQuestions[i].w=e.target.value;checkReady();};
-    const del=document.createElement('button');
-    del.textContent='🗑';del.style.cssText='background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;align-self:flex-start';
-    del.onclick=()=>{rvlfQuestions.splice(i,1);renderRvlfQuestions();};
-    d.append(lbl,inQ,inA,inW,del);
-    list.appendChild(d);
-  });
-  const btn=document.getElementById('btn-add-rvlf-q');
-  if(btn)btn.style.display=rvlfQuestions.length>=10?'none':'block';
-  checkReady();
-}
-document.getElementById('btn-add-rvlf-q').onclick=()=>{
-  if(rvlfQuestions.length>=10)return;
-  rvlfQuestions.push({q:'',a:'',w:''});renderRvlfQuestions();
-};
-
-function cancelEdit(){
-  editId=null; buzzClues=[];
-  document.getElementById('coeff-in').value = 1;
-  document.getElementById('coeff-preview').textContent = 'Score de 80 pts → 80 pts au classement';
-  document.getElementById('edit-banner').classList.remove('on');
-  document.getElementById('form-title').textContent='➕ Ajouter un défi';
-  document.getElementById('btn-save').textContent='🚀 Publier ce défi';
-  document.getElementById('answer-in').value='';
-  document.getElementById('clue-in').value='';
-  document.getElementById('bj-theme-in').value='';
-  document.getElementById('bj-target-in').value='';
-  document.getElementById('bj-answers-in').value='';
-  document.getElementById('bj-answers-count').textContent='0 entrée(s)';
-  document.getElementById('grimpe-theme-in').value='';grimpeItems=[];if(typeof renderGrimpeItems==='function')renderGrimpeItems();
-  if(document.getElementById('biat-theme-in'))document.getElementById('biat-theme-in').value='';
-  mfQuestions=[];renderMFQuestions();
-  assautQuestions=[];arcCibles=[];nsCouloirs=[];nsSportifs=[];
-  haQuestions=[];hejQuestions=[];
-  if(document.getElementById('ha-s1'))document.getElementById('ha-s1').value='';
-  if(document.getElementById('ha-s2'))document.getElementById('ha-s2').value='';
-  if(document.getElementById('hej-theme'))document.getElementById('hej-theme').value='';
-  if(document.getElementById('biat-order-question-in'))document.getElementById('biat-order-question-in').value='';
-  biatSprintItems=[];biatQCMItems=[];biatOrderItems=[];
-  renderBiatSprint();renderBiatQCM();renderBiatOrder();
-  
-  document.getElementById('grimpe-count').textContent='0 réponse(s)';
-  document.getElementById('img-url-in').value='';
-  imgSrc='url'; imgBase64='';
-  selectImgSrc('url');
-  document.getElementById('sportus-hint0-in').value='';
-  document.getElementById('sportus-hint1-in').value='';
-  document.getElementById('sportus-hint2-in').value='';
-  
-  document.getElementById('sportus-revealed-in').value='';
-  document.getElementById('sportus-revealed-preview').innerHTML='';
-  document.getElementById('prix-question-in').value='';
-  document.getElementById('prix-target-in').value='';
-  document.getElementById('prix-unit-in').value='';
-  document.getElementById('prix-tolerance-in').value='0';
-  document.getElementById('var-text-in').value='';
-  document.getElementById('var-wrong-in').value='';
-  document.getElementById('var-correct-in').value='';
-  rvlfQuestions=[];renderRvlfQuestions();
-  const rvlfCb=document.getElementById('rvlf-notimer');if(rvlfCb)rvlfCb.checked=false;
-  plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
-  renderPlongeePaliers();
-  escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',nbRequired:1}));
-  bowlingQuestions=[];
-  renderEscaladeQuestions();
-  const et=document.getElementById('escalade-theme');if(et)et.value='';
-  const etol2=document.getElementById('escalade-tol');if(etol2)etol2.value=1;
-  const ptol2=document.getElementById('plongee-tol');if(ptol2)ptol2.value=1;
-  if(currentType==='prix') selectPrixSensib([0,10,40,70,90]);
-  document.getElementById('trappe-q-in').value='';
-  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
-  selectTrappeCorrect(0);
-  selectTrappeTimer(30);
-  trappeQuestions=[];
-  renderTrappeQuestions();
-  demItems=[];
-  renderDemItems();
-  selectDemTimer(60);
-  document.getElementById('dem-question-in').value='';
-  document.getElementById('chase-theme-in').value='';
-  document.getElementById('chase-answers-in').value='';
-  document.getElementById('chase-answers-count').textContent='0 réponse(s)';
-  [0,1,2,3].forEach(i=>{document.getElementById('scout-'+i+'-in').value='';});
-  const defaultLabels=['Identité','Carrière','Palmarès','Indice Mystère'];
-  [0,1,2,3].forEach(i=>{const l=document.getElementById('scout-label-'+i);if(l)l.value=defaultLabels[i];});
-  ['rq-citation-in','rq-amorce-in','rq-answer-in','rq-choices-in','rq-author-in','rq-author-choices-in'].forEach(id=>{document.getElementById(id).value='';});
-  selectRqTolerance(1);
-  selectRqTime(60);
-  document.getElementById('aliases-in').value='';
-  document.getElementById('img-preview').style.display='none';
-  document.getElementById('grid-prev').style.display='none';
-  document.getElementById('aliases-box').style.display='none';
-  document.getElementById('preview-box-text').style.display='none';
-  renderBuzzClues();
-  selectBuzzSpeed(2);
-  selectBuzzFreeze(3);
-  selectType('text');updateWC();checkReady();
-}
-document.getElementById('btn-cancel-edit').onclick=cancelEdit;
-
-// Delete / Reset
-async function togglePublish(id, publish){
-  const res=await fetch('/api/admin/publish/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,published:publish})});
-  const data=await res.json();
-  if(data.success) loadAthletes();
-}
-
-function previewAthlete(id){
-  const url=`/?preview=1&previewId=${id}&previewPw=${encodeURIComponent(adminPw)}`;
-  window.open(url,'_blank');
-}
-
-async function deleteAthlete(id){
-  const btn=document.querySelector(`.btn-del[onclick="deleteAthlete(${id})"]`);
-  const name=btn?btn.dataset.name:'ce défi';
-  if(!confirm('Supprimer "'+name+'" ?'))return;
-  await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
-  loadAthletes();
-}
-async function resetAthlete(id){
-  if(!confirm('Remettre à zéro le classement de ce défi ?'))return;
-  const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
-  if((await res.json()).success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
-}
-document.getElementById('btn-reset-global').onclick=async()=>{
-  if(!confirm('Remettre à zéro le classement global ?'))return;
-  const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
-  if((await res.json()).success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
-};
-
-// Word count
-document.getElementById('clue-in').addEventListener('input',updateWC);
-document.getElementById('answer-in').addEventListener('input',updateAliases);
-document.getElementById('aliases-in').addEventListener('input',updateAliases);
-
-function updateWC(){
-  const words=document.getElementById('clue-in').value.trim().split(/\s+/).filter(Boolean).length;
-  document.getElementById('word-count').textContent=words+' mot'+(words!==1?'s':'');
-  document.getElementById('wc-fill').style.width=Math.min(100,(words/100)*100)+'%';
-  document.getElementById('diff-label').textContent=words<20?'🔴 Très difficile':words<40?'🟠 Difficile':words<70?'🟡 Moyen':words<100?'🟢 Facile':'🟢 Parfait';
-  checkReady();
-}
-function updateAliases(){
-  const answer=document.getElementById('answer-in').value.trim();
-  if(!answer){document.getElementById('aliases-box').style.display='none';checkReady();return}
-  const parts=answer.split(/\s+/);
-  const auto=[answer.toLowerCase()];
-  if(parts.length>1) auto.push(parts[parts.length-1].toLowerCase());
-  const manual=document.getElementById('aliases-in').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-  const all=[...new Set([...auto,...manual])];
-  document.getElementById('aliases-box').style.display='block';
-  document.getElementById('aliases-preview').innerHTML=all.map(a=>'<span class="alias-tag">'+a+'</span>').join('');
-  checkReady();
-}
-function checkReady(){
-  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton'||currentType==='melimelo'||currentType==='apol'||currentType==='trivpursuit') ? true : !!document.getElementById('answer-in').value.trim();
-  let hasContent=false;
-  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
-  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
-  else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
-  else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
-  else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
-  else if(currentType==='nagesync') hasContent=true;
-  else if(currentType==='escalade'){
-    const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile).length;
-    hasContent=filled===8;
-    // Show counter
-    const list=document.getElementById('escalade-q-list');
-    if(list){
-      const existing=list.querySelector('.esc-counter');
-      if(existing)existing.remove();
-      if(filled<8){
-        const ctr=document.createElement('div');
-        ctr.className='esc-counter';
-        ctr.style.cssText='font-size:11px;color:var(--mute);text-align:center;padding:4px';
-        ctr.textContent=filled+'/8 questions complètes';
-        list.appendChild(ctr);
-      }
-    }
-  }
-  else if(currentType==='plongee'){
-    hasContent=plongeePaliers.length===5&&plongeePaliers.every(p=>p.qDown&&p.aDown&&p.qUp&&p.aUp);
-  }
-  else if(currentType==='rvlf'){
-    hasContent=rvlfQuestions.length===10&&rvlfQuestions.every(q=>q.q&&q.a&&q.w);
-    const btn=document.getElementById('btn-add-rvlf-q');
-    const remaining=10-rvlfQuestions.length;
-    if(btn&&remaining>0)btn.textContent='➕ Question ('+rvlfQuestions.length+'/10 — encore '+remaining+')';
-    else if(btn)btn.textContent='✅ 10 questions saisies';
-  }
-  else if(currentType==='equitation'){
-    hasContent=equiObstacles.length===4&&equiObstacles.every(o=>{
-      const baseOk=o.question&&(o.answer||o.answer==='0');
-      if(o.type==='vf') return baseOk&&o.question2&&o.answer2&&o.question3&&o.answer3;
-      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3&&!!o.question4&&!!o.answer4;
-      if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
-      return baseOk;
-    });
-  }
-  else if(currentType==='bowling'){
-    hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
-  }
-  else if(currentType==='badminton'){
-    hasContent=badmintonQuestions.length>=1&&badmintonQuestions.every(q=>q.question&&q.a&&q.b&&q.correct!==undefined);
-    const status=document.getElementById('bad-admin-status');
-    if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées'+(badmintonQuestions.length<10?' (minimum 1)':'');
-  }
-  else if(currentType==='melimelo'){
-    hasContent=meliWords.length>=1&&meliWords.every(w=>w.scrambled&&w.answer);
-  }
-  else if(currentType==='apol'){
-    hasContent=apolQuestions.length>=1&&apolQuestions.every(q=>q.question&&q.answer);
-  }
-  else if(currentType==='trivpursuit'){
-    hasContent=trivThemes.length===6&&trivThemes.every(t=>t.name&&t.question&&t.answer)&&
-      trivQuestions.length===6&&trivQuestions.every(q=>q.question&&q.answer);
-  }
-  else if(currentType==='roulette'){
-    const txt=(document.getElementById('roulette-text')?.value||'').trim();
-    const ans=(document.getElementById('roulette-answer')?.value||'').trim();
-    const chambers=parseInt(document.getElementById('roulette-chambers')?.value||6);
-    const bullet=parseInt(document.getElementById('roulette-bullet')?.value||4);
-    const wordCount=txt.split(/\s+/).filter(Boolean).length;
-    hasContent=wordCount>=5&&ans.length>0&&bullet<=chambers;
-    // Show hint
-    const stats=document.getElementById('roulette-preview-stats');
-    if(stats){
-      if(ans.length===0) stats.textContent='⚠️ Sportif manquant';
-      else if(wordCount<5) stats.textContent='⚠️ Texte trop court ('+wordCount+' mots)';
-      else if(bullet>chambers) stats.textContent='⚠️ Position balle ('+bullet+') > taille chargeur ('+chambers+')';
-      else stats.textContent=wordCount+' mots · seed '+rouletteSeed;
-    }
-  }
-  else if(currentType==='var'){
-    const txt=(document.getElementById('var-text-in')?.value||'').trim();
-    const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
-    const correct=(document.getElementById('var-correct-in')?.value||'').trim();
-    // Normalize whitespace for the includes check
-    const txtNorm=txt.replace(/\s+/g,' ');
-    const wrongNorm=wrong.replace(/\s+/g,' ');
-    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txtNorm.includes(wrongNorm);
-  }
-  else if(currentType==='haltero'){
-    const s1=document.getElementById('ha-s1');
-    hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
-  }
-  else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
-  else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
-  else if(currentType==='buzz') hasContent=buzzClues.length>0;
-  else if(currentType==='sportus') hasContent=true;
-  else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
-  else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
-  else if(currentType==='demineur') hasContent=demItems.length>=3&&demItems.filter(i=>i.isMine).length===2&&demItems.every(i=>i.text.trim());
-  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()).length>=2;
-  else if(currentType==='scout') hasContent=!![0,1,2,3].some(i=>document.getElementById('scout-'+i+'-in').value.trim());
-  else if(currentType==='replique') hasContent=!!document.getElementById('rq-citation-in').value.trim()&&!!document.getElementById('rq-author-in').value.trim();
-  else hasContent=!!document.getElementById('clue-in').value.trim();
-  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
-}
-
-// Image preview
-document.getElementById('img-url-in').addEventListener('input',e=>previewImage(e.target.value.trim()));
-document.getElementById('img-url-in').addEventListener('input',checkReady);
-
-let imgSrc='url', imgBase64='';
-
-function selectImgSrc(src){
-  imgSrc=src; imgBase64='';
-  document.getElementById('img-src-url').style.background=src==='url'?'rgba(212,255,0,.06)':'var(--c2)';
-  document.getElementById('img-src-url').style.borderColor=src==='url'?'var(--neon)':'rgba(255,255,255,.07)';
-  document.getElementById('img-src-file').style.background=src==='file'?'rgba(212,255,0,.06)':'var(--c2)';
-  document.getElementById('img-src-file').style.borderColor=src==='file'?'var(--neon)':'rgba(255,255,255,.07)';
-  document.getElementById('img-url-zone').style.display=src==='url'?'block':'none';
-  document.getElementById('img-file-zone').style.display=src==='file'?'block':'none';
-  document.getElementById('img-preview').style.display='none';
-  document.getElementById('grid-prev').style.display='none';
-  checkReady();
-}
-
-document.getElementById('img-file-in').addEventListener('change', e=>{
-  const file=e.target.files[0]; if(!file)return;
-  if(file.size>5*1024*1024){alert('Image trop lourde (max 5MB)');e.target.value='';return;}
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    imgBase64=ev.target.result;
-    previewImageSrc(imgBase64);
-    checkReady();
-  };
-  reader.readAsDataURL(file);
-});
-// TRAPPE — multi-questions
-let trappeCorrect = 0;
-let trappeTimer   = 30;
-let trappeQuestions = []; // [{question, answers:[a,b,c,d], correct:0}]
-const TRAPPE_TIMERS = [{val:20,label:'20s'},{val:30,label:'30s'},{val:45,label:'45s'},{val:60,label:'60s'}];
-
-(function buildTrappeGrids(){
-  const cg = document.getElementById('trappe-correct-grid');
-  ['A','B','C'].forEach((l,i)=>{
-    const btn=document.createElement('button');
-    btn.type='button'; btn.id='tcorrect-'+i;
-    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:var(--fh);font-size:16px;transition:border-color .15s';
-    btn.textContent=l;
-    btn.onclick=()=>selectTrappeCorrect(i);
-    cg.appendChild(btn);
-  });
-  const tg = document.getElementById('trappe-timer-grid');
-  TRAPPE_TIMERS.forEach(s=>{
-    const btn=document.createElement('button');
-    btn.type='button'; btn.id='ttimer-'+s.val;
-    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
-    btn.textContent=s.label;
-    btn.onclick=()=>selectTrappeTimer(s.val);
-    tg.appendChild(btn);
-  });
-  selectTrappeCorrect(0);
-  selectTrappeTimer(30);
-})();
-
-function selectTrappeCorrect(idx){
-  trappeCorrect=idx;
-  ['A','B','C'].forEach((_,i)=>{
-    const btn=document.getElementById('tcorrect-'+i);
-    if(!btn)return;
-    btn.style.borderColor=i===idx?'var(--neon)':'rgba(255,255,255,.07)';
-    btn.style.background=i===idx?'rgba(212,255,0,.06)':'var(--c2)';
-    btn.style.color=i===idx?'var(--neon)':'var(--txt)';
-  });
-}
-
-function selectTrappeTimer(val){
-  trappeTimer=val;
-  TRAPPE_TIMERS.forEach(s=>{
-    const btn=document.getElementById('ttimer-'+s.val);
-    if(!btn)return;
-    btn.style.borderColor=s.val===val?'var(--neon)':'rgba(255,255,255,.07)';
-    btn.style.background=s.val===val?'rgba(212,255,0,.06)':'var(--c2)';
-  });
-}
-
-document.getElementById('btn-add-trappe-q').onclick=()=>{
-  const q=document.getElementById('trappe-q-in').value.trim();
-  const answers=['trappe-a0','trappe-a1','trappe-a2'].map(id=>document.getElementById(id).value.trim());
-  if(!q || answers.some(a=>!a)){
-    alert('Remplis la question et les 4 réponses !');return;
-  }
-  trappeQuestions.push({question:q, answers, correct:trappeCorrect});
-  // Clear inputs
-  document.getElementById('trappe-q-in').value='';
-  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
-  selectTrappeCorrect(0);
-  renderTrappeQuestions();
-  checkReady();
-};
-
-function renderTrappeQuestions(){
-  const list=document.getElementById('trappe-q-list');
-  list.innerHTML='';
-  trappeQuestions.forEach((q,i)=>{
-    const item=document.createElement('div');
-    item.style.cssText='background:var(--c2);border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px';
-    const correct=['A','B','C'][q.correct];
-    item.innerHTML=`
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px">${i+1}. ${q.question}</div>
-        <div style="font-size:11px;color:var(--mute)">${q.answers.map((a,j)=>`<span style="color:${j===q.correct?'var(--neon)':'inherit'}">${['A','B','C'][j]}:${a}</span>`).join(' · ')}</div>
-      </div>
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none"></div>
       <button onclick="removeTrappeQ(${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
     `;
     list.appendChild(item);
@@ -3943,6 +3325,8 @@ document.getElementById('btn-save').onclick=async()=>{
   const sportusHint1=currentType==='sportus'?document.getElementById('sportus-hint1-in').value.trim():'';
   const sportusHint2=currentType==='sportus'?document.getElementById('sportus-hint2-in').value.trim():'';
   const imageUrl=currentType==='image'&&imgSrc==='url'?document.getElementById('img-url-in').value.trim():'';
+  const imageQuestionVal=currentType==='image'?imageQuestion:'';
+  const imageAnswerVal=currentType==='image'?imageAnswer:'';
   const imageBase64=currentType==='image'&&imgSrc==='file'?imgBase64:'';
   const gridSize=10;
   const question=currentType==='prix'?document.getElementById('prix-question-in').value.trim():'';
@@ -4063,7 +3447,7 @@ document.getElementById('btn-save').onclick=async()=>{
     const pat = document.getElementById('sportus-revealed-in').value.toUpperCase();
     pat.split('').forEach((ch,i)=>{ if(ch!=='_'&&ch>='A'&&ch<='Z') revealedLetters.push({index:i,letter:ch}); });
   }
-  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined,
+  const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,imageQuestion:imageQuestionVal,imageAnswer:imageAnswerVal,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined,
   plongeePaliers:currentType==='plongee'?plongeePaliers:undefined,
   plongeeO2Base:currentType==='plongee'?parseInt(document.getElementById('plongee-o2base')?.value||8):undefined,
   plongeeO2Treasure:currentType==='plongee'?parseInt(document.getElementById('plongee-o2treasure')?.value||1):undefined,
@@ -4087,6 +3471,8 @@ document.getElementById('btn-save').onclick=async()=>{
   meliWords:currentType==='melimelo'?meliWords:undefined,
   meliTimer:currentType==='melimelo'?parseInt(document.getElementById('meli-timer-admin')?.value||60):undefined,
   apolQuestions:currentType==='apol'?apolQuestions:undefined,
+  bonusQ:currentType==='apol'?apolBonusQ:undefined,
+  bonusA:currentType==='apol'?apolBonusA:undefined,
   trivThemes:currentType==='trivpursuit'?trivThemes:undefined,
   trivQuestions:currentType==='trivpursuit'?trivQuestions:undefined,
   equiObstacles:currentType==='equitation'?equiObstacles:undefined,
