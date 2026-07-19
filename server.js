@@ -180,6 +180,7 @@ app.get('/api/preview', (req, res) => {
   if (athlete.type === 'image') {
     base.imageUrl = athlete.imageBase64 ? athlete.imageBase64 : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize = gridSize; base.maxScore = gridSize * gridSize;
+    base.imageIndication = athlete.imageIndication||'';
   } else if (athlete.type === 'buzz') {
     base.clues = athlete.clues; base.maxScore = 100;
     base.buzzDecrement = athlete.buzzDecrement || 2;
@@ -1102,6 +1103,7 @@ app.post('/api/admin/athlete', (req, res) => {
     buzzFreezeDuration: type === 'buzz' ? Math.min(10, Math.max(1, parseInt(req.body.buzzFreezeDuration) || 3)) : undefined,
     imageUrl:    type === 'image' ? (req.body.imageBase64 ? '' : imageUrl.trim()) : '',
     imageBase64: type === 'image' ? (req.body.imageBase64 || '') : '',
+    imageIndication: type === 'image' ? (req.body.imageIndication||'') : '',
     gridSize: type === 'image' ? gs : undefined,
     question: type === 'prix' ? (question||'').trim() : undefined,
     unit:     type === 'prix' ? (unit||'').trim() : undefined,
