@@ -3499,8 +3499,8 @@ document.getElementById('btn-save').onclick=async()=>{
   equiTimeLimit:currentType==='equitation'?parseInt(document.getElementById('equi-time-limit')?.value||60):undefined};
   if(editId)body.editId=editId;
   if(currentType==='biathlon')console.log('[BIAT SAVE] sprint:',biatSprintItems.length,'qcm:',biatQCMItems.length,'order:',biatOrderItems.length);
+  if(currentType==='image') console.log('[IMAGE SAVE] imgSrc:', imgSrc, 'imgBase64 length:', imgBase64?.length||0, 'imageUrl:', imageUrl?.slice(0,30));
   try{
-    const res=await fetch('/api/admin/athlete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();
     if(data.success){
       showMsg('save-msg','ok',data.edited?'✅ "'+data.answer+'" modifié !':'✅ "'+data.answer+'" ajouté !');
