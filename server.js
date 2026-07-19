@@ -1079,6 +1079,12 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
   if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
+  // Vérification taille image base64
+  const b64 = req.body.imageBase64 || '';
+  if (b64 && b64.length > 8 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Image trop lourde — max 6MB' });
+  }
+
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
   const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
@@ -1216,9 +1222,19 @@ app.post('/api/admin/athlete', (req, res) => {
   const newId = Date.now();
   athletes.push({ id: newId, ...athleteData, createdAt: new Date().toISOString() });
   scores[newId] = [];
-  saveData();
-  console.log(`✅ Ajouté (${athleteData.type}): ${safeAnswer}`);
-  res.json({ success: true, edited: false, id: newId, answer: safeAnswer, total: athletes.length });
+  // Log image size for debugging
+  if (type === 'image' && b64) {
+    console.log(`[IMAGE] base64 size: ${Math.round(b64.length/1024)}KB`);
+  }
+
+  try {
+    saveData();
+    console.log(`✅ Ajouté (${athleteData.type}): ${safeAnswer}`);
+    res.json({ success: true, edited: false, id: newId, answer: safeAnswer, total: athletes.length });
+  } catch(e) {
+    console.error('Erreur saveData:', e.message);
+    res.status(500).json({ error: 'Erreur sauvegarde: '+e.message });
+  }
 });
 
 app.post('/api/admin/reorder', (req, res) => {
