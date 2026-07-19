@@ -998,6 +998,34 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Admin: liste des comptes joueurs
+app.get('/api/admin/accounts', (req, res) => {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  try {
+    const list = Object.values(accounts).map(a => ({
+      pseudo: a.pseudo,
+      teamId: a.teamId || null,
+      createdAt: a.createdAt || null,
+      ip: a.ip || null
+    }));
+    res.json({ accounts: list });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: supprimer un compte
+app.delete('/api/account/:pseudo', async (req, res) => {
+  const { password } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const pseudo = req.params.pseudo.toLowerCase();
+  delete accounts[pseudo];
+  if (db) {
+    try { await db.collection('accounts').deleteOne({ pseudo: new RegExp('^'+pseudo+'$','i') }); } catch(e) {}
+  }
+  saveData();
+  res.json({ ok: true });
+});
+
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   res.json(password === ADMIN_PASSWORD ? { success: true } : { success: false, message: 'Mot de passe incorrect' });
@@ -1568,25 +1596,10 @@ app.post('/api/account/login', async (req, res) => {
 });
 
 // Liste tous les comptes (admin)
-app.get('/api/admin/accounts', (req, res) => {
-  const {password}=req.query;
-  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
-  const list=Object.values(accounts)
-    .filter(a=>a.pseudo&&a.pseudo.trim())
-    .map(a=>({pseudo:a.pseudo, createdAt:a.createdAt, teamId:a.teamId||null, ip:a.ip||null}));
-  list.sort((a,b)=>(a.pseudo||'').localeCompare(b.pseudo||''));
-  res.json({accounts:list});
-});
+
 
 // Reset compte (admin)
-app.delete('/api/account/:pseudo', async (req, res) => {
-  const {password}=req.body;
-  if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
-  const key=req.params.pseudo.toLowerCase();
-  delete accounts[key];
-  if(db) await db.collection('accounts').deleteOne({pseudo:{$regex:new RegExp('^'+key+'$','i')}});
-  res.json({ok:true});
-});
+
 
 const PORT = process.env.PORT || 3000;
 connectMongo().then(() => {
