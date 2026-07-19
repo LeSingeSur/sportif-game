@@ -1886,7 +1886,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         </div>
         <div style="display:flex;align-items:center;gap:10px;background:rgba(100,150,255,.08);border-radius:10px;padding:10px">
           <span style="font-size:24px;flex-shrink:0">🛡️</span>
-          <div><div style="font-weight:800;color:#88aaff;font-size:13px">DÉFENSE</div><div style="font-size:11px;color:var(--mute)">Plus de temps + une mauvaise réponse en moins à l'écran. <strong style="color:#88aaff">+20 pts</strong> si tu trouves. Si tu rates : 0 pt.</div></div>
+          <div><div style="font-weight:800;color:#88aaff;font-size:13px">DÉFENSE</div><div style="font-size:11px;color:var(--mute)">Plus de temps + une mauvaise réponse en moins à l'écran. <strong style="color:#88aaff">+15 pts</strong> si tu trouves. Si tu rates : 0 pt.</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;background:rgba(0,220,120,.06);border-radius:10px;padding:10px">
           <span style="font-size:24px;flex-shrink:0">➡️</span>
@@ -1904,7 +1904,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="font-size:10px;color:rgba(0,220,120,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">CHOISIS TA TACTIQUE</div>
       <div style="display:flex;gap:8px">
         <button onclick="badChoixTactic('smash')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(255,200,0,.35);background:rgba(255,200,0,.07);color:#ffd700;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">⚔️<br>ATTAQUE<br><span style="font-size:9px;opacity:.7">×2 chrono · +30 ou −10</span></button>
-        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🛡️<br>DÉFENSE<br><span style="font-size:9px;opacity:.7">×1.5 chrono · +20 · −1 réponse</span></button>
+        <button onclick="badChoixTactic('degage')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(100,150,255,.35);background:rgba(100,150,255,.07);color:#88aaff;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">🛡️<br>DÉFENSE<br><span style="font-size:9px;opacity:.7">×1.5 chrono · +15 · −1 réponse</span></button>
         <button onclick="badChoixTactic('drive')" style="flex:1;padding:12px 4px;border-radius:12px;border:1px solid rgba(0,220,120,.35);background:rgba(0,220,120,.07);color:#00dc78;font-family:var(--fh);font-size:13px;cursor:pointer;line-height:1.6">➡️<br>NEUTRE<br><span style="font-size:9px;opacity:.7">Normal · +20 · 0 si faux</span></button>
       </div>
     </div>
@@ -10861,7 +10861,7 @@ function badShowQuestion(seconds){
   if(badge){
     const map={
       smash:'⚔️ ATTAQUE · +30 pts si juste · −10 si faux',
-      degage:'🛡️ DÉFENSE · +20 pts · 1 réponse éliminée',
+      degage:'🛡️ DÉFENSE · +15 pts · 1 réponse éliminée',
       drive:'➡️ NEUTRE · +20 pts · 0 si faux'
     };
     badge.textContent=map[BAD.tactic]||'';
@@ -10906,7 +10906,7 @@ function badAnswer(choiceIdx,choices,timeout,hiddenIdx){
   const fb=document.getElementById('bad-fb');
 
   // Scoring
-  const gainMap={smash:30,degage:20,drive:20};
+  const gainMap={smash:30,degage:15,drive:20};
   let delta=0;
   if(isCorrect){
     delta=gainMap[BAD.tactic]||20;
@@ -11762,7 +11762,7 @@ function trivStartChoose(){
 }
 
 function trivMove(dir){
-  if(TRIV.done)return;
+  if(TRIV.done||TRIV.phase==='anim'||TRIV.phase==='question')return;
   const prev=TRIV.playerPos;
   const target=dir==='left'?(TRIV.playerPos-1+12)%12:(TRIV.playerPos+1)%12;
   const c=TRIV.cases[target];
@@ -11779,6 +11779,7 @@ function trivMove(dir){
       // Camembert déjà collecté → traversée libre
       const fb=document.getElementById('triv-fb');
       if(fb){fb.textContent='🟣 '+c.name+' déjà collecté !';fb.style.color=c.color;}
+      TRIV.phase='anim';
       setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},1000);
     } else {
       TRIV.phase='question';
@@ -11790,6 +11791,7 @@ function trivMove(dir){
       // Déjà répondue → traversée libre, pas de question
       const fb=document.getElementById('triv-fb');
       if(fb){fb.textContent='✅ Déjà validée — passage libre';fb.style.color='var(--neon)';}
+      TRIV.phase='anim';
       setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},800);
     } else {
       // Case-question : pion affiché sur la cible, on pose la question
@@ -11846,7 +11848,8 @@ function trivSubmit(){
     // Faux → effondré
     c.state='collapsed';
     // Pour une case-question : pion revient à la position précédente
-    if(!isCam&&TRIV._prevPos!=null) TRIV.playerPos=TRIV._prevPos;
+    if(!isCam&&TRIV._prevPos!=null&&TRIV.cases[TRIV._prevPos]&&TRIV.cases[TRIV._prevPos].state!=='collapsed') TRIV.playerPos=TRIV._prevPos;
+    TRIV._prevPos=null;
     if(fb){
       const label=isCam?'camembert effondré !':'case effondrée — tu recules !';
       fb.innerHTML=`❌ Raté ! C'était <strong>${correctAnswer}</strong> — ${label}`;
@@ -12145,22 +12148,39 @@ function trivShowMoveButtons(){
 }
 
 function trivUpdateMoveButtons(){
+  if(TRIV.done)return;
   const left=(TRIV.playerPos-1+12)%12;
   const right=(TRIV.playerPos+1)%12;
   const lc=TRIV.cases[left], rc=TRIV.cases[right];
   const lBtn=document.getElementById('triv-left-btn');
   const rBtn=document.getElementById('triv-right-btn');
   const hint=document.getElementById('triv-move-hint');
-  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
-  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
-  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
-  // Check encircled
-  if(lc.state==='collapsed'&&rc.state==='collapsed'){
-    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
-    setTimeout(()=>trivFinish('encircled'),1000);
-  } else {
-    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
+  const name=c=>c.type==='cam'?(c.state==='collected'?'✅ ':'🟣 ')+c.name:(c.state==='passed'?'✅ ':'❓ ')+'Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.25':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.25':'1';}
+
+  // BFS: cases accessibles depuis la position courante (sans traverser les effondrées)
+  const visited=new Set([TRIV.playerPos]);
+  const queue=[TRIV.playerPos];
+  while(queue.length){
+    const pos=queue.shift();
+    for(const next of [(pos-1+12)%12,(pos+1)%12]){
+      if(!visited.has(next)&&TRIV.cases[next].state!=='collapsed'){visited.add(next);queue.push(next);}
+    }
   }
+  const hasUseful=[...visited].some(p=>{
+    const c=TRIV.cases[p];
+    return (c.type==='cam'&&c.state==='normal')||(c.type==='q'&&c.state==='normal');
+  });
+
+  if(!hasUseful){
+    const msg=(lc.state==='collapsed'&&rc.state==='collapsed')?'💀 Cerné — fin !':'🏁 Plus de cases utiles accessibles — fin !';
+    if(hint)hint.textContent=msg;
+    if(lBtn)lBtn.disabled=true; if(rBtn)rBtn.disabled=true;
+    setTimeout(()=>trivFinish('trapped'),1200);
+    return;
+  }
+  if(hint)hint.textContent='◀ Gauche ou Droite ▶ — clique ou touche le plateau';
 }
 
 function trivShowQuestion(targetPos){
