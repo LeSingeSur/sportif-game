@@ -694,6 +694,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="grid-overlay" id="grid-overlay"></div>
     </div>
     <!-- Question optionnelle sous l'image -->
+    <div id="img-indication-box" style="display:none;background:rgba(255,180,0,.08);border:1px solid rgba(255,180,0,.2);border-radius:8px;padding:8px 12px;font-size:13px;color:#ffb400;margin:4px 0"></div>
     <div id="img-question-box" style="display:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--txt);line-height:1.4;margin:8px 0"></div>
     <div class="img-counter" id="img-counter"></div>
     <div class="reveal-btns">
@@ -2812,6 +2813,16 @@ function setupImageMode(data){
   }
   document.querySelectorAll('.reveal-btn').forEach(b=>b.disabled=false);
   updateImgCounter();
+  // Indication optionnelle
+  const indBox=document.getElementById('img-indication-box');
+  if(indBox){
+    if(data.imageIndication&&data.imageIndication.trim()){
+      indBox.textContent='💡 '+data.imageIndication;
+      indBox.style.display='block';
+    } else {
+      indBox.style.display='none';
+    }
+  }
   // Question optionnelle
   const qBox=document.getElementById('img-question-box');
   if(qBox){
