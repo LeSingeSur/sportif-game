@@ -11737,6 +11737,480 @@ function closeWelcomePopup(){
   document.getElementById('welcome-popup').style.display='none';
 }
 loadWelcomePopup();
+
+// Fonctions trivial pursuit
+
+function trivStartChoose(){
+  document.getElementById('triv-rules').style.display='none';
+  document.getElementById('triv-board-wrap').style.display='block';
+  TRIV.phase='choose';
+  trivInitCanvas();
+  trivDraw();
+  document.getElementById('triv-center-type').textContent='DÉPART';
+  document.getElementById('triv-center-name').textContent='Clique une case ❓';
+}
+
+function trivMove(dir){
+  if(TRIV.done)return;
+  const prev=TRIV.playerPos;
+  const target=dir==='left'?(TRIV.playerPos-1+12)%12:(TRIV.playerPos+1)%12;
+  const c=TRIV.cases[target];
+  if(c.state==='collapsed')return;
+  document.getElementById('triv-move-btns').style.display='none';
+
+  // Déplacer le pion immédiatement (visuel)
+  TRIV.playerPos=target;
+  trivDraw();
+  trivUpdateCenterInfo();
+
+  if(c.type==='cam'){
+    if(c.state==='collected'){
+      // Camembert déjà collecté → traversée libre
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='🟣 '+c.name+' déjà collecté !';fb.style.color=c.color;}
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},1000);
+    } else {
+      TRIV.phase='question';
+      trivShowQuestion(target);
+    }
+  } else {
+    // Case-question
+    if(c.state==='passed'){
+      // Déjà répondue → traversée libre, pas de question
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='✅ Déjà validée — passage libre';fb.style.color='var(--neon)';}
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();},800);
+    } else {
+      // Case-question : pion affiché sur la cible, on pose la question
+      TRIV._prevPos=prev;
+      TRIV.phase='question';
+      trivShowQuestion(target);
+    }
+  }
+}
+
+function trivSubmit(){
+  if(TRIV.done)return;
+  const inp=document.getElementById('triv-in');
+  const val=(inp?.value||'').trim();if(!val)return;
+  const targetPos=TRIV._pendingTarget;
+  const c=TRIV.cases[targetPos];
+  const isCam=c.type==='cam';
+  const tol=TRIV._pendingTol!=null?TRIV._pendingTol:1;
+  const correctAnswer=TRIV._pendingAnswer||'';
+  const correct=levenshtein(normStr(val),normStr(correctAnswer))<=tol;
+  const fb=document.getElementById('triv-fb');
+  const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
+
+  if(correct){
+    if(isCam){
+      // Camembert collecté !
+      c.state='collected';
+      TRIV.score+=50;
+      trivUpdateScore();
+      if(fb){fb.textContent='🟣 '+c.name+' collecté ! +50 pts';fb.style.color=color;}
+      trivDraw();trivUpdateCenterInfo();
+      setTimeout(()=>{
+        document.getElementById('triv-question-wrap').style.display='none';
+        if(fb)fb.textContent='';
+        TRIV.phase='move';
+        trivShowMoveButtons();
+        trivDraw();
+        if(trivCheckAllCollected())trivFinish('complete');
+      },1200);
+    } else {
+      // Case-question passée
+      c.state='passed';
+      if(fb){fb.textContent='✅ Bonne réponse !';fb.style.color='var(--neon)';}
+      trivDraw();trivUpdateCenterInfo();
+      setTimeout(()=>{
+        document.getElementById('triv-question-wrap').style.display='none';
+        if(fb)fb.textContent='';
+        TRIV.phase='move';
+        trivShowMoveButtons();
+        trivDraw();
+      },1000);
+    }
+  } else {
+    // Faux → effondré
+    c.state='collapsed';
+    // Pour une case-question : pion revient à la position précédente
+    if(!isCam&&TRIV._prevPos!=null) TRIV.playerPos=TRIV._prevPos;
+    if(fb){
+      const label=isCam?'camembert effondré !':'case effondrée — tu recules !';
+      fb.innerHTML=`❌ Raté ! C'était <strong>${correctAnswer}</strong> — ${label}`;
+      fb.style.color='var(--red)';
+    }
+    trivDraw();
+    setTimeout(()=>{
+      document.getElementById('triv-question-wrap').style.display='none';
+      if(fb)fb.textContent='';
+      TRIV.phase='move';
+      trivShowMoveButtons();
+      trivDraw();
+    },2000);
+  }
+}
+
+
+// --- TRIVIAL PURSUIT (réinjecté) ---
+const TRIV={
+  data:null, cases:[], playerPos:-1, score:0, done:false,
+  phase:'start', // start|choose|move|question|end
+  pendingDir:null, canvas:null, ctx:null,
+  COLORS:['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#16a085']
+};
+
+function trivBuildCases(data){
+  const themes=data.trivThemes||[];
+  const qs=data.trivQuestions||[];
+  const cases=[];
+  for(let i=0;i<12;i++){
+    if(i%2===0){
+      const themeIdx=i/2;
+      const t=themes[themeIdx]||{};
+      cases.push({
+        type:'cam', themeIdx,
+        name:t.name||'Thème '+(themeIdx+1),
+        color:t.color||TRIV.COLORS[themeIdx%6],
+        question:t.question||'', answer:t.answer||'', tol:t.tol!=null?parseInt(t.tol):1,
+        state:'normal', idx:i
+      });
+    } else {
+      const qIdx=Math.floor(i/2);
+      const q=qs[qIdx]||{question:'?',answer:'',tol:1};
+      cases.push({type:'q',q,sectionIdx:qIdx,themeIdx:qIdx,state:'normal',idx:i});
+    }
+  }
+  return cases;
+}
+
+function setupTrivPursuit(data){
+  TRIV.data=data; TRIV.score=0; TRIV.done=false; TRIV.playerPos=-1; TRIV.phase='start';
+  TRIV.cases=trivBuildCases(data);
+  const badge=document.getElementById('type-badge');
+  if(badge){badge.textContent='🎯 Trivial Pursuit';badge.className='type-badge';}
+  document.getElementById('game-tip').textContent='6 thèmes · 12 questions · Max 300 pts';
+  hideAllZones();
+  document.getElementById('trivpursuit-zone').style.display='flex';
+  document.getElementById('triv-rules').style.display='block';
+  document.getElementById('triv-board-wrap').style.display='none';
+  document.getElementById('triv-question-wrap').style.display='none';
+  document.getElementById('triv-move-btns').style.display='none';
+  document.getElementById('triv-score').textContent='0';
+  document.getElementById('triv-parts').textContent='0/6';
+  GAME.score=0;setScore(0,false);
+}
+
+function trivInitCanvas(){
+  const canvas=document.getElementById('triv-canvas');
+  if(!canvas)return;
+  const size=Math.min(window.innerWidth-60,360);
+  canvas.width=size; canvas.height=size;
+  TRIV.canvas=canvas; TRIV.ctx=canvas.getContext('2d');
+  canvas.onclick=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+    const cx=(e.clientX-rect.left)*scaleX, cy=(e.clientY-rect.top)*scaleY;
+    trivHandleClick(cx,cy);
+  };
+}
+
+function trivDraw(){
+  const canvas=TRIV.canvas; if(!canvas)return;
+  const ctx=TRIV.ctx;
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-8,rInner=R*0.32;
+  ctx.clearRect(0,0,W,H);
+
+  // Fond sombre
+  ctx.beginPath();ctx.arc(cx,cy,R+4,0,Math.PI*2);
+  ctx.fillStyle='#06060f';ctx.fill();
+
+  const N=12,startAngle=-Math.PI/2;
+
+  TRIV.cases.forEach((c,i)=>{
+    const a0=startAngle+(i/N)*Math.PI*2;
+    const a1=startAngle+((i+1)/N)*Math.PI*2;
+    const midA=(a0+a1)/2;
+    const isCam=c.type==='cam';
+    const isPlayer=TRIV.playerPos===i;
+    const isCollapsed=c.state==='collapsed';
+    const isCollected=c.state==='collected';
+    const isPassed=c.state==='passed';
+    const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#888');
+
+    // Draw segment
+    ctx.beginPath();
+    if(isCam){ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);}
+    else{ctx.arc(cx,cy,R*0.84,a0,a1);ctx.arc(cx,cy,R*0.44,a1,a0,true);}
+    ctx.closePath();
+
+    if(isCollapsed){
+      // Noir total
+      ctx.fillStyle='#000';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;ctx.stroke();
+    } else if(isCam&&isCollected){
+      // Camembert collecté : couleur pleine
+      ctx.fillStyle=color;ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=isPlayer?3:1.5;ctx.stroke();
+    } else if(isCam){
+      // Camembert non collecté : couleur foncée
+      ctx.fillStyle=color+'33';ctx.fill();
+      ctx.strokeStyle=color+'66';ctx.lineWidth=isPlayer?3:1.5;ctx.stroke();
+    } else if(isPassed){
+      // Case-question passée
+      ctx.fillStyle=color+'22';ctx.fill();
+      ctx.strokeStyle=color+'44';ctx.lineWidth=1;ctx.stroke();
+    } else {
+      // Case-question normale
+      ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.stroke();
+    }
+
+    if(!isCollapsed){
+      // Texte
+      if(isCam){
+        const px=cx+Math.cos(midA)*R*0.62,py=cy+Math.sin(midA)*R*0.62;
+        ctx.fillStyle=isCollected?'#fff':'rgba(255,255,255,.6)';
+        ctx.font='bold '+Math.round(R*0.11)+'px sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText((c.name||'?')[0].toUpperCase(),px,py);
+      } else {
+        const midR=(R*0.84+R*0.44)/2;
+        const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+        ctx.fillStyle=isPassed?color+'cc':'rgba(255,255,255,.4)';
+        ctx.font='bold '+Math.round(R*0.1)+'px sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(isPassed?'✓':'?',px,py);
+      }
+    }
+
+    // Pion : TRÈS visible - grand cercle blanc pulsant
+    if(isPlayer){
+      const midR=isCam?R*0.62:(R*0.84+R*0.44)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      // Halo
+      ctx.beginPath();ctx.arc(px,py,R*0.145,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill();
+      // Cercle
+      ctx.beginPath();ctx.arc(px,py,R*0.1,0,Math.PI*2);
+      ctx.fillStyle='#fff';
+      ctx.shadowColor='#fff';ctx.shadowBlur=18;
+      ctx.fill();ctx.shadowBlur=0;
+      // Bordure colorée
+      ctx.strokeStyle=isCam?color:'#b48fff';
+      ctx.lineWidth=2;ctx.stroke();
+    }
+
+    // Adjacents highlight en phase move
+    if(TRIV.phase==='move'&&TRIV.playerPos>=0&&!isPlayer&&!isCollapsed){
+      const left=(TRIV.playerPos-1+12)%12,right=(TRIV.playerPos+1)%12;
+      if(i===left||i===right){
+        const midR=isCam?R*0.62:(R*0.84+R*0.44)/2;
+        const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+        ctx.beginPath();ctx.arc(px,py,R*0.075,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
+      }
+    }
+
+    // Cases dispo en phase choose
+    if(TRIV.phase==='choose'&&!isCam&&!isCollapsed){
+      const midR=(R*0.84+R*0.44)/2;
+      const px=cx+Math.cos(midA)*midR,py=cy+Math.sin(midA)*midR;
+      ctx.beginPath();ctx.arc(px,py,R*0.085,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.15)';
+      ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;
+      ctx.fill();ctx.stroke();
+    }
+  });
+
+  // Centre
+  ctx.beginPath();ctx.arc(cx,cy,rInner,0,Math.PI*2);
+  ctx.fillStyle='#06060f';ctx.fill();
+  ctx.strokeStyle='rgba(180,140,255,.4)';ctx.lineWidth=2;ctx.stroke();
+
+  // Mise à jour compteur camemberts
+  trivUpdateCamDots();
+}
+
+function trivUpdateCamDots(){
+  const el=document.getElementById('triv-cam-dots');
+  if(!el)return;
+  el.innerHTML='';
+  TRIV.cases.filter(c=>c.type==='cam').forEach(c=>{
+    const dot=document.createElement('div');
+    const isCollected=c.state==='collected';
+    const isCollapsed=c.state==='collapsed';
+    dot.style.cssText=`width:18px;height:18px;border-radius:50%;transition:all .3s;
+      background:${isCollapsed?'#111':isCollected?c.color:c.color+'33'};
+      border:2px solid ${isCollapsed?'rgba(255,255,255,.05)':c.color};
+      box-shadow:${isCollected?'0 0 8px '+c.color:''};`;
+    el.appendChild(dot);
+  });
+}
+
+function trivHandleClick(mx,my){
+  const canvas=TRIV.canvas; if(!canvas)return;
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const dx=mx-cx, dy=my-cy;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const R=canvas.width/2-6;
+  if(dist<R*0.28||dist>R)return;
+  let angle=Math.atan2(dy,dx)+Math.PI/2;
+  if(angle<0)angle+=Math.PI*2;
+  const segIdx=Math.floor(angle/(Math.PI*2/12))%12;
+  const c=TRIV.cases[segIdx];
+  if(TRIV.phase==='choose'){
+    if(!c||c.type==='cam'){
+      const nameEl=document.getElementById('triv-center-name');
+      if(nameEl){nameEl.textContent='⛔ Choisis une case ❓';nameEl.style.color='var(--red)';}
+      setTimeout(()=>{if(nameEl){nameEl.textContent='Clique une case ❓';nameEl.style.color='rgba(255,255,255,.8)';}},1000);
+      return;
+    }
+    trivPlacePlayer(segIdx);
+  } else if(TRIV.phase==='move'){
+    const left=(TRIV.playerPos-1+12)%12;
+    const right=(TRIV.playerPos+1)%12;
+    if(segIdx===left)trivMove('left');
+    else if(segIdx===right)trivMove('right');
+  }
+}
+
+function trivPlacePlayer(pos){
+  const c=TRIV.cases[pos];
+  TRIV.playerPos=pos;
+  trivDraw();
+  trivUpdateCenterInfo();
+  // Si case-question au départ → répondre avant de pouvoir se déplacer
+  if(c.type==='q'){
+    TRIV.phase='question';
+    trivShowQuestion(pos);
+  } else {
+    // Camembert au départ → impossible (restreint dans trivHandleClick), mais sécurité
+    TRIV.phase='move';
+    trivShowMoveButtons();
+  }
+}
+
+function trivUpdateScore(){
+  const collected=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='collected').length;
+  document.getElementById('triv-score').textContent=TRIV.score;
+  document.getElementById('triv-parts').textContent=collected+'/6';
+  GAME.score=TRIV.score; setScore(TRIV.score,false);
+}
+
+function trivUpdateCenterInfo(){
+  const c=TRIV.cases[TRIV.playerPos];
+  if(!c)return;
+  // Centre du canvas
+  const typeEl=document.getElementById('triv-center-type');
+  const nameEl=document.getElementById('triv-center-name');
+  // Info block au-dessus
+  const posLabel=document.getElementById('triv-pos-label');
+  const posName=document.getElementById('triv-pos-name');
+  const currentInfo=document.getElementById('triv-current-info');
+  if(c.type==='cam'){
+    const label=c.state==='collected'?'✅ COLLECTÉ':'🟣 CAMEMBERT';
+    if(typeEl){typeEl.textContent=label;typeEl.style.color=c.color;}
+    if(nameEl){nameEl.textContent=c.name;nameEl.style.color=c.color;}
+    if(posLabel)posLabel.textContent=c.state==='collected'?'✅ COLLECTÉ':'🟣 SUR CAMEMBERT';
+    if(posName){posName.textContent=c.name;posName.style.color=c.color;}
+  } else {
+    const camName=TRIV.cases[c.themeIdx*2]?.name||'?';
+    const camColor=TRIV.cases[c.themeIdx*2]?.color||'#b48fff';
+    if(typeEl){typeEl.textContent='❓ CASE-QUESTION';typeEl.style.color='rgba(255,255,255,.4)';}
+    if(nameEl){nameEl.textContent=camName;nameEl.style.color=camColor;}
+    if(posLabel)posLabel.textContent='❓ SUR CASE-QUESTION';
+    if(posName){posName.textContent='Thème : '+camName;posName.style.color=camColor;}
+  }
+  if(currentInfo)currentInfo.style.display='block';
+}
+
+function trivShowMoveButtons(){
+  const btns=document.getElementById('triv-move-btns');
+  if(btns)btns.style.display='flex';
+  trivUpdateMoveButtons();
+}
+
+function trivUpdateMoveButtons(){
+  const left=(TRIV.playerPos-1+12)%12;
+  const right=(TRIV.playerPos+1)%12;
+  const lc=TRIV.cases[left], rc=TRIV.cases[right];
+  const lBtn=document.getElementById('triv-left-btn');
+  const rBtn=document.getElementById('triv-right-btn');
+  const hint=document.getElementById('triv-move-hint');
+  const name=c=>c.type==='cam'?'🟣 '+c.name:'❓ Question';
+  if(lBtn){lBtn.textContent='◀ '+name(lc);lBtn.disabled=lc.state==='collapsed';lBtn.style.opacity=lc.state==='collapsed'?'0.3':'1';}
+  if(rBtn){rBtn.textContent=name(rc)+' ▶';rBtn.disabled=rc.state==='collapsed';rBtn.style.opacity=rc.state==='collapsed'?'0.3':'1';}
+  // Check encircled
+  if(lc.state==='collapsed'&&rc.state==='collapsed'){
+    if(hint)hint.textContent='💀 Cerné ! Fin du jeu.';
+    setTimeout(()=>trivFinish('encircled'),1000);
+  } else {
+    if(hint)hint.textContent='Clique les boutons ou directement sur le plateau';
+  }
+}
+
+function trivShowQuestion(targetPos){
+  const c=TRIV.cases[targetPos];
+  const isCam=c.type==='cam';
+  const themeColor=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
+  const themeName=isCam?c.name:(TRIV.cases[c.themeIdx*2]?.name||'Question');
+
+  // Toujours lire depuis TRIV.data pour les camemberts (données fraîches)
+  let qText,qAnswer,qTol;
+  if(isCam){
+    const td=TRIV.data?.trivThemes?.[c.themeIdx]||{};
+    qText=td.question||c.question||'';
+    qAnswer=td.answer||c.answer||'';
+    qTol=td.tol!=null?parseInt(td.tol):(c.tol!=null?parseInt(c.tol):1);
+    if(!qText){
+      // Pas de question configurée
+      const fb=document.getElementById('triv-fb');
+      if(fb){fb.textContent='⚠️ Question non configurée — camembert accordé !';fb.style.color='#ffb400';}
+      c.state='collected'; TRIV.score+=50; trivUpdateScore(); trivDraw();
+      setTimeout(()=>{if(fb)fb.textContent='';TRIV.phase='move';trivShowMoveButtons();trivDraw();},1500);
+      return;
+    }
+  } else {
+    qText=c.q?.question||'';
+    qAnswer=c.q?.answer||'';
+    qTol=c.q?.tol!=null?parseInt(c.q.tol):1;
+  }
+
+  const themeEl=document.getElementById('triv-q-theme');
+  if(themeEl){themeEl.textContent=(isCam?'🟣 ':'❓ ')+themeName;themeEl.style.color=themeColor;}
+  document.getElementById('triv-q-text').textContent=qText||'?';
+  document.getElementById('triv-in').value='';
+  document.getElementById('triv-fb').textContent='';
+  TRIV._pendingTarget=targetPos;
+  TRIV._pendingAnswer=qAnswer;
+  TRIV._pendingTol=qTol;
+  document.getElementById('triv-question-wrap').style.display='flex';
+  setTimeout(()=>document.getElementById('triv-in')?.focus(),100);
+}
+
+function trivCheckAllCollected(){
+  return TRIV.cases.filter(c=>c.type==='cam').every(c=>c.state==='collected');
+}
+
+function trivFinish(reason){
+  if(TRIV.done)return;
+  TRIV.done=true;
+  document.getElementById('triv-move-btns').style.display='none';
+  document.getElementById('triv-question-wrap').style.display='none';
+  const collected=TRIV.cases.filter(c=>c.type==='cam'&&c.state==='collected').length;
+  const score=TRIV.score;
+  GAME.score=score; setScore(score,true);
+  const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
+  const vName=document.getElementById('v-name');if(vName)vName.textContent='Trivial Pursuit';
+  const vSub=document.getElementById('v-sub');
+  if(vSub)vSub.textContent=collected+'/6 thèmes collectés · '+score+' pts'+(reason==='encircled'?' · Cerné !':'');
+  setVictoryIcon('trivpursuit'); submitScore(score);
+  setTimeout(()=>show('sv'),800);
+}
+
 </script>
 <!-- POPUP BIENVENUE -->
 <div id="welcome-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px">

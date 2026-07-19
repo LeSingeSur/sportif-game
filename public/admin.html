@@ -1474,8 +1474,11 @@ async function login(){
 
 // Load list
 async function loadAthletes(){
+  try{
   const res=await fetch('/api/admin/athletes?password='+encodeURIComponent(adminPw));
+  if(!res.ok){throw new Error('HTTP '+res.status);}
   const athletes=await res.json();
+  if(!Array.isArray(athletes)){throw new Error('Réponse invalide');}
   const list=document.getElementById('ath-list');
   if(!athletes.length){list.innerHTML='<div style="color:var(--mute);font-size:13px;text-align:center;padding:16px">Aucun défi pour l\'instant.</div>';return}
   list.innerHTML='';
@@ -1485,7 +1488,7 @@ async function loadAthletes(){
     let meta='';
     if(a.type==='image') meta='10×10 · 100 cases';
     else if(a.type==='buzz') meta=(a.clues?.length||0)+' indice(s)';
-    else if(a.type==='sportus'){ const ln=a.answer.trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
+    else if(a.type==='sportus'){ const ln=(a.answer||'').trim().split(/\s+/).pop(); meta=ln.length+' lettres'; }
     else if(a.type==='prix') meta=(a.unit?a.unit+' · ':'')+`cible: ${a.targetValue}`+(a.prixTolerance?` ±${a.prixTolerance}`:'');
     else if(a.type==='trappe') meta=a.trappeQuestion?a.trappeQuestion.substring(0,40)+'…':'3 trappes';
     else if(a.type==='demineur') meta=`${(a.demineurItems||[]).length} cases · ${(a.demineurItems||[]).filter(i=>i.isMine).length} mine(s) · ${a.demineurTimer||60}s`;
@@ -1522,6 +1525,11 @@ async function loadAthletes(){
     list.appendChild(d);
   });
   initDragDrop(list);
+  }catch(e){
+    const list=document.getElementById('ath-list');
+    if(list) list.innerHTML='<div style="color:var(--red);font-size:13px;text-align:center;padding:16px">❌ Erreur chargement: '+e.message+'</div>';
+    console.error('loadAthletes error:',e);
+  }
 }
 
 function initDragDrop(list){
@@ -3606,6 +3614,226 @@ function setTrivTheme(i,f,v){
 function setTrivQ(i,f,v){if(!trivQuestions[i])return;trivQuestions[i][f]=f==='tol'?parseInt(v)||0:v;checkReady();}
 function setApolQ(i,f,v){if(!apolQuestions[i])return;apolQuestions[i][f]=f==='tol'?parseInt(v)||0:v;checkReady();}
 function setMeliW(i,f,v){if(!meliWords[i])return;meliWords[i][f]=f==='scrambled'||f==='answer'?v.toUpperCase():v;checkReady();}
+
+// Fonctions liste défis
+
+async function togglePublish(id, publish){
+  const res=await fetch('/api/admin/publish/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,published:publish})});
+  const data=await res.json();
+  if(data.success) loadAthletes();
+}
+
+function previewAthlete(id){
+  const url=`/?preview=1&previewId=${id}&previewPw=${encodeURIComponent(adminPw)}`;
+  window.open(url,'_blank');
+}
+
+async function deleteAthlete(id){
+  const btn=document.querySelector(`.btn-del[onclick="deleteAthlete(${id})"]`);
+  const name=btn?btn.dataset.name:'ce défi';
+  if(!confirm('Supprimer "'+name+'" ?'))return;
+  await fetch('/api/admin/athlete/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  loadAthletes();
+}
+
+async function resetAthlete(id){
+  if(!confirm('Remettre à zéro le classement de ce défi ?'))return;
+  const res=await fetch('/api/admin/reset-athlete/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success){showMsg('save-msg','ok','✅ Classement remis à zéro');loadAthletes()}
+}
+
+function selectImgSrc(src){
+  imgSrc=src; imgBase64='';
+  document.getElementById('img-src-url').style.background=src==='url'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-url').style.borderColor=src==='url'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-src-file').style.background=src==='file'?'rgba(212,255,0,.06)':'var(--c2)';
+  document.getElementById('img-src-file').style.borderColor=src==='file'?'var(--neon)':'rgba(255,255,255,.07)';
+  document.getElementById('img-url-zone').style.display=src==='url'?'block':'none';
+  document.getElementById('img-file-zone').style.display=src==='file'?'block':'none';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('grid-prev').style.display='none';
+  checkReady();
+}
+
+
+// Variables récupérées
+let escaladeQuestions=Array.from({length:8},()=>({qFacile:'',aFacile:'',qDifficile:'',aDifficile:'',asDifficileList:'',nbRequired:1}));
+let plongeePaliers=Array.from({length:5},(_,i)=>({qDown:'',aDown:'',qUp:'',aUp:'',tresor:PLONGEE_TRESOR[i]}));
+let rvlfQuestions=[];
+let imgSrc='url', imgBase64='';
+let trappeCorrect = 0;
+let trappeTimer   = 30;
+let trappeQuestions = []; // [{question, answers:[a,b,c,d], correct:0}]
+
+
+// Fonctions récupérées
+
+function escaladeGenerateDifficile(){
+  const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile);
+  if(filled.length===0){alert('Remplis d\'abord les questions faciles.');return;}
+  const status=document.getElementById('escalade-ai-status');
+  escaladeQuestions.forEach(q=>{
+    if(!q.qFacile||!q.aFacile)return;
+    const inv=escaladeAutoInverse(q.qFacile,q.aFacile);
+    q.qDifficile=inv.qDifficile;
+    q.aDifficile=inv.aDifficile;
+  });
+  renderEscaladeQuestions();
+  if(status){status.textContent='✅ '+filled.length+' questions inversées générées — vérifie et ajuste !';status.style.color='var(--neon)';}
+}
+
+function bowlingAdminAddQ(){bowlingQuestions.push({question:'',answer:0});bowlingAdminRender();checkReady();}
+
+function checkReady(){
+  const hasAnswer = (currentType==='prix'||currentType==='trappe'||currentType==='demineur'||currentType==='chase'||currentType==='replique'||currentType==='blackjack'||currentType==='grimpe'||currentType==='biathlon'||currentType==='maillonfaible'||currentType==='haltero'||currentType==='tirarlarc'||currentType==='nagesync'||currentType==='assaut'||currentType==='var'||currentType==='rvlf'||currentType==='plongee'||currentType==='escalade'||currentType==='roulette'||currentType==='bowling'||currentType==='equitation'||currentType==='badminton'||currentType==='melimelo'||currentType==='apol'||currentType==='trivpursuit') ? true : !!document.getElementById('answer-in').value.trim();
+  let hasContent=false;
+  if(currentType==='grimpe') hasContent=!!document.getElementById('grimpe-theme-in').value.trim()&&grimpeItems.filter(x=>x.trim()).length>=1;
+  else if(currentType==='biathlon') hasContent=!!document.getElementById('biat-theme-in')?.value.trim()&&biatSprintItems.filter(x=>x.trim()).length>=1;
+  else if(currentType==='maillonfaible') hasContent=mfQuestions.filter(q=>q.question&&q.answer).length>=1;
+  else if(currentType==='assaut') hasContent=assautP1.length>=1&&assautP1.length<=6&&assautP1.every(q=>q.q&&q.a&&q.w&&q.p);
+  else if(currentType==='tirarlarc') hasContent=arcCibles.filter(c=>c.stat&&c.value).length>=1;
+  else if(currentType==='nagesync') hasContent=true;
+  else if(currentType==='escalade'){
+    const filled=escaladeQuestions.filter(q=>q.qFacile&&q.aFacile).length;
+    hasContent=filled===8;
+    // Show counter
+    const list=document.getElementById('escalade-q-list');
+    if(list){
+      const existing=list.querySelector('.esc-counter');
+      if(existing)existing.remove();
+      if(filled<8){
+        const ctr=document.createElement('div');
+        ctr.className='esc-counter';
+        ctr.style.cssText='font-size:11px;color:var(--mute);text-align:center;padding:4px';
+        ctr.textContent=filled+'/8 questions complètes';
+        list.appendChild(ctr);
+      }
+    }
+  }
+  else if(currentType==='plongee'){
+    hasContent=plongeePaliers.length===5&&plongeePaliers.every(p=>p.qDown&&p.aDown&&p.qUp&&p.aUp);
+  }
+  else if(currentType==='rvlf'){
+    hasContent=rvlfQuestions.length===10&&rvlfQuestions.every(q=>q.q&&q.a&&q.w);
+    const btn=document.getElementById('btn-add-rvlf-q');
+    const remaining=10-rvlfQuestions.length;
+    if(btn&&remaining>0)btn.textContent='➕ Question ('+rvlfQuestions.length+'/10 — encore '+remaining+')';
+    else if(btn)btn.textContent='✅ 10 questions saisies';
+  }
+  else if(currentType==='equitation'){
+    hasContent=equiObstacles.length===4&&equiObstacles.every(o=>{
+      const baseOk=o.question&&(o.answer||o.answer==='0');
+      if(o.type==='vf') return baseOk&&o.question2&&o.answer2&&o.question3&&o.answer3;
+      if(o.type==='fleche') return !!o.question&&!!o.answer&&!!o.question2&&!!o.answer2&&!!o.question3&&!!o.answer3&&!!o.question4&&!!o.answer4;
+      if(o.type==='mots') return !!o.answer&&o.answer.replace(/[^a-zA-Z]/g,'').length>=3;
+      return baseOk;
+    });
+  }
+  else if(currentType==='bowling'){
+    hasContent=bowlingQuestions.length>=12&&bowlingQuestions.every(q=>q.question&&q.answer!==undefined);
+  }
+  else if(currentType==='badminton'){
+    hasContent=badmintonQuestions.length>=1&&badmintonQuestions.every(q=>q.question&&q.a&&q.b&&q.correct!==undefined);
+    const status=document.getElementById('bad-admin-status');
+    if(status) status.textContent=badmintonQuestions.length+'/10 questions configurées'+(badmintonQuestions.length<10?' (minimum 1)':'');
+  }
+  else if(currentType==='melimelo'){
+    hasContent=meliWords.length>=1&&meliWords.every(w=>w.scrambled&&w.answer);
+  }
+  else if(currentType==='apol'){
+    hasContent=apolQuestions.length>=1&&apolQuestions.every(q=>q.question&&q.answer);
+  }
+  else if(currentType==='trivpursuit'){
+    hasContent=trivThemes.length===6&&trivThemes.every(t=>t.name&&t.question&&t.answer)&&
+      trivQuestions.length===6&&trivQuestions.every(q=>q.question&&q.answer);
+  }
+  else if(currentType==='roulette'){
+    const txt=(document.getElementById('roulette-text')?.value||'').trim();
+    const ans=(document.getElementById('roulette-answer')?.value||'').trim();
+    const chambers=parseInt(document.getElementById('roulette-chambers')?.value||6);
+    const bullet=parseInt(document.getElementById('roulette-bullet')?.value||4);
+    const wordCount=txt.split(/\s+/).filter(Boolean).length;
+    hasContent=wordCount>=5&&ans.length>0&&bullet<=chambers;
+    // Show hint
+    const stats=document.getElementById('roulette-preview-stats');
+    if(stats){
+      if(ans.length===0) stats.textContent='⚠️ Sportif manquant';
+      else if(wordCount<5) stats.textContent='⚠️ Texte trop court ('+wordCount+' mots)';
+      else if(bullet>chambers) stats.textContent='⚠️ Position balle ('+bullet+') > taille chargeur ('+chambers+')';
+      else stats.textContent=wordCount+' mots · seed '+rouletteSeed;
+    }
+  }
+  else if(currentType==='var'){
+    const txt=(document.getElementById('var-text-in')?.value||'').trim();
+    const wrong=(document.getElementById('var-wrong-in')?.value||'').trim();
+    const correct=(document.getElementById('var-correct-in')?.value||'').trim();
+    // Normalize whitespace for the includes check
+    const txtNorm=txt.replace(/\s+/g,' ');
+    const wrongNorm=wrong.replace(/\s+/g,' ');
+    hasContent=txt.length>20&&wrong.length>0&&correct.length>0&&txtNorm.includes(wrongNorm);
+  }
+  else if(currentType==='haltero'){
+    const s1=document.getElementById('ha-s1');
+    hasContent=haQuestions.length>=1&&s1&&s1.value.trim().length>0;
+  }
+  else if(currentType==='blackjack') hasContent=!!document.getElementById('bj-theme-in').value.trim()&&!!document.getElementById('bj-target-in').value.trim()&&parseBJAnswers().count>=1;
+  else if(currentType==='image') hasContent=imgSrc==='file'?!!imgBase64:!!document.getElementById('img-url-in').value.trim();
+  else if(currentType==='buzz') hasContent=buzzClues.length>0;
+  else if(currentType==='sportus') hasContent=true;
+  else if(currentType==='prix') hasContent=!!document.getElementById('prix-question-in').value.trim()&&!!document.getElementById('prix-target-in').value.trim();
+  else if(currentType==='trappe') hasContent=trappeQuestions.length>0;
+  else if(currentType==='demineur') hasContent=demItems.length>=3&&demItems.filter(i=>i.isMine).length===2&&demItems.every(i=>i.text.trim());
+  else if(currentType==='chase') hasContent=!!document.getElementById('chase-theme-in').value.trim()&&document.getElementById('chase-answers-in').value.replace(/;/g,'\n').split('\n').filter(l=>l.trim()).length>=2;
+  else if(currentType==='scout') hasContent=!![0,1,2,3].some(i=>document.getElementById('scout-'+i+'-in').value.trim());
+  else if(currentType==='replique') hasContent=!!document.getElementById('rq-citation-in').value.trim()&&!!document.getElementById('rq-author-in').value.trim();
+  else hasContent=!!document.getElementById('clue-in').value.trim();
+  document.getElementById('btn-save').disabled=!(hasAnswer&&hasContent);
+}
+
+function badAdminAddQ(){
+  if(badmintonQuestions.length>=10){alert('Maximum 10 questions');return;}
+  badmintonQuestions.push({question:'',theme:'',a:'',b:'',c:'',correct:0});window.badmintonQuestions=badmintonQuestions;
+  badAdminRender();checkReady();
+}
+
+function apolAdminAddQ(){
+  if(apolQuestions.length>=5){alert('5 questions maximum');return;}
+  apolQuestions.push({question:'',theme:'',answer:'',tol:1});window.apolQuestions=apolQuestions;
+  apolAdminRender();checkReady();
+}
+
+function roulettePreview(){
+  const txt=(document.getElementById('roulette-text')?.value||'').trim();
+  const pct=parseInt(document.getElementById('roulette-pct')?.value||40);
+  const preview=document.getElementById('roulette-preview');
+  const stats=document.getElementById('roulette-preview-stats');
+  if(!preview||!txt){if(preview)preview.innerHTML='<span style="color:var(--mute)">Colle un texte pour voir l\'aperçu…</span>';return;}
+  const words=txt.split(/(\s+)/);
+  const realWords=words.filter(w=>w.trim().length>0);
+  const total=realWords.length;
+  const visibleCount=Math.round(total*pct/100);
+  // Random shuffle (seeded) — pick which words to HIDE
+  const rng=rouletteRng(rouletteSeed);
+  const indices=realWords.map((_,i)=>i);
+  // Fisher-Yates shuffle
+  for(let i=indices.length-1;i>0;i--){
+    const j=Math.floor(rng()*(i+1));
+    [indices[i],indices[j]]=[indices[j],indices[i]];
+  }
+  const toShow=new Set(indices.slice(0,visibleCount));
+  let wordIdx=0;
+  const html=words.map(w=>{
+    if(!w.trim())return w;
+    const show=toShow.has(wordIdx);
+    wordIdx++;
+    if(show)return`<span style="color:var(--txt)">${w}</span>`;
+    return`<span style="background:rgba(255,50,50,.15);color:transparent;border-radius:2px;user-select:none">${'█'.repeat(Math.min(w.length,8))}</span>`;
+  }).join('');
+  preview.innerHTML=html;
+  if(stats)stats.textContent=visibleCount+'/'+total+' mots visibles ('+pct+'%) · seed '+rouletteSeed;
+  checkReady();
+}
+
 </script>
 </body>
 </html>
