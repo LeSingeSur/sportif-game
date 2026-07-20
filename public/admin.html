@@ -4219,6 +4219,46 @@ function selectTrappeCorrect(idx){
   });
 }
 
+
+// --- Câblage trappe restauré ---
+(function buildTrappeGrids(){
+  const cg = document.getElementById('trappe-correct-grid');
+  ['A','B','C'].forEach((l,i)=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='tcorrect-'+i;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:8px;padding:10px 14px;cursor:pointer;font-family:var(--fh);font-size:16px;transition:border-color .15s';
+    btn.textContent=l;
+    btn.onclick=()=>selectTrappeCorrect(i);
+    cg.appendChild(btn);
+  });
+  const tg = document.getElementById('trappe-timer-grid');
+  TRAPPE_TIMERS.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.id='ttimer-'+s.val;
+    btn.style.cssText='background:var(--c2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 4px;cursor:pointer;font-family:var(--ff);font-size:14px;font-weight:800;transition:border-color .15s';
+    btn.textContent=s.label;
+    btn.onclick=()=>selectTrappeTimer(s.val);
+    tg.appendChild(btn);
+  });
+  selectTrappeCorrect(0);
+  selectTrappeTimer(30);
+})();
+
+document.getElementById('btn-add-trappe-q').onclick=()=>{
+  const q=document.getElementById('trappe-q-in').value.trim();
+  const answers=['trappe-a0','trappe-a1','trappe-a2'].map(id=>document.getElementById(id).value.trim());
+  if(!q || answers.some(a=>!a)){
+    alert('Remplis la question et les 4 réponses !');return;
+  }
+  trappeQuestions.push({question:q, answers, correct:trappeCorrect});
+  // Clear inputs
+  document.getElementById('trappe-q-in').value='';
+  ['trappe-a0','trappe-a1','trappe-a2'].forEach(id=>document.getElementById(id).value='');
+  selectTrappeCorrect(0);
+  renderTrappeQuestions();
+  checkReady();
+};
+
 </script>
 </body>
 </html>
