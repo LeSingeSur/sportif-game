@@ -213,8 +213,8 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
       <div id="circuit-picker-admin"></div>
       <div class="row">
         <button class="btn" id="btn-new-circuit">➕ Nouveau</button>
-        <button class="btn" id="btn-generate">🎲 Aléatoire</button>
-        <button class="btn" id="btn-import-img">🖼️ Importer Image</button>
+        <button class="btn" id="btn-generate"> Générer</button>
+        <button class="btn" id="btn-import-img">️ Importer Image</button>
       </div>
       <input type="file" id="img-import" accept="image/*" style="display:none">
       <button class="btn primary" id="btn-test-mode" style="background:var(--ok);color:#14161a">🏎️ Tester ce circuit</button>
@@ -223,7 +223,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
     <div id="editor-toolbar">
       <div class="tool sel" data-tool="piste">🛣️<span class="tname">Piste</span></div>
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
-      <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
+      <div class="tool" data-tool="finish"><span class="tname">Arrivée</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
     </div>
@@ -237,7 +237,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
       </div>
       <div id="car-rotate">
         <button id="rotL">↺</button>
-        <button id="rotR">↻</button>
+        <button id="rotR"></button>
       </div>
     </div>
 
@@ -247,9 +247,13 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
         <div class="field"><label>Tours à faire</label><input type="number" id="c-laps" min="1" max="20" value="1"></div>
         <div class="field"><label>Essais par joueur</label><input type="number" id="c-attempts" min="1" max="50" value="3"></div>
       </div>
+      <div class="row">
+        <div class="field"><label>Largeur piste</label><input type="number" id="c-width" min="2" max="8" value="3"></div>
+        <div class="field"><label>Nombre de virages</label><input type="number" id="c-turns" min="2" max="12" value="6"></div>
+      </div>
       <div class="row" style="margin-top:2px">
-        <button class="btn" id="btn-save-draft">💾 Brouillon</button>
-        <button class="btn primary" id="btn-publish">🚀 Publier</button>
+        <button class="btn" id="btn-save-draft"> Brouillon</button>
+        <button class="btn primary" id="btn-publish"> Publier</button>
       </div>
       <button class="btn danger" id="btn-delete" style="display:none">🗑️ Supprimer</button>
     </div>
@@ -386,14 +390,21 @@ function startRace(circuit, pseudo, attemptsLeft){
   setTimeout(() => centerOnCar(), 100);
 }
 
-document.getElementById('center-btn').onclick = () => centerOnCar();
+document.getElementById('center-btn').onclick = () => {
+  R.panOffsetX = 0;
+  R.panOffsetY = 0;
+  R.zoomLevel = 1;
+  R.autoCenter = true;
+  drawRace();
+  toast('🎯 Vue centrée sur la voiture');
+};
 
 function centerOnCar(){
   R.autoCenter = true;
-  R.panOffsetX = 0; R.panOffsetY = 0;
+  R.panOffsetX = 0; 
+  R.panOffsetY = 0;
   R.zoomLevel = 1;
   drawRace();
-  toast('🎯 Vue centrée sur la voiture');
 }
 
 function setupRacePan(){
@@ -429,7 +440,6 @@ function setupRacePan(){
     R.panStart = null;
   });
   
-  // PINCH-TO-ZOOM pour mobile
   cv.addEventListener('touchstart', e => {
     if(e.touches.length === 2){
       e.preventDefault();
@@ -632,7 +642,7 @@ document.getElementById('roll').onclick = rollDiceAnim;
 document.getElementById('reroll').onclick = () => {
   if(R.phase !== 'pick' || R.rerolled) return;
   R.rerolled = true;
-  say('🎲 Relance du dé en cours...');
+  say(' Relance du dé en cours...');
   const overlay = document.getElementById('dice-anim-overlay');
   overlay.classList.add('on');
   setTimeout(() => {
@@ -646,7 +656,19 @@ function applyResult(r){
   R.trail = r.path.map(p => ({q: p.q, r: p.r}));
   if(r.path.length){
     const last = r.path[r.path.length - 1]; 
-    R.q = last.q; R.r = last.r; R.dir = last.dir;
+    R.q = last.q; R.r = last.r; 
+    // Mettre à jour la direction de la voiture selon le dernier mouvement
+    if(r.path.length > 0){
+      const prev = r.path[r.path.length - 2] || {q: R.q, r: R.r};
+      const dq = last.q - prev.q;
+      const dr = last.r - prev.r;
+      for(let d = 0; d < 6; d++){
+        if(HEX_DIRS[d].q === dq && HEX_DIRS[d].r === dr){
+          R.dir = d;
+          break;
+        }
+      }
+    }
   }
   R.lapCount += r.lapsGained || 0;
   
@@ -658,7 +680,7 @@ function applyResult(r){
     setTimeout(() => {
       R.attemptsLeft--;
       if(R.attemptsLeft <= 0){
-        toast('🚫 Plus d\'essais disponibles sur ce circuit');
+        toast(' Plus d\'essais disponibles sur ce circuit');
         setTimeout(() => backToMenu(), 1500);
       } else {
         toast(`🔄 Essai abandonné. Il vous reste ${R.attemptsLeft} essai(s)`);
@@ -762,11 +784,9 @@ function drawRace(){
   const hexSize = (size / vp.span) * R.zoomLevel;
   const centerOffset = axialToPixel(vp.q, vp.r, hexSize);
 
-  // Fond herbe
   cctx.fillStyle = '#2d5016';
   cctx.fillRect(0, 0, cv.width, cv.height);
   
-  // Texture herbe subtile
   cctx.fillStyle = 'rgba(45, 80, 22, 0.3)';
   for(let i = 0; i < 50; i++){
     const x = (i * 37) % cv.width;
@@ -778,14 +798,12 @@ function drawRace(){
   cctx.translate(R.panOffsetX + cv.width/2, R.panOffsetY + cv.height/2);
   cctx.translate(-centerOffset.x, -centerOffset.y);
 
-  // Dessiner les cases de piste avec texture asphalte
   for(let r = 0; r < R.H; r++){
     for(let q = 0; q < R.W; q++){
       const t = R.grid[r] ? R.grid[r][q] : '#';
       if(t === '#') continue;
       const pt = axialToPixel(q, r, hexSize);
       
-      // Texture asphalte avec variation
       const baseColor = t === 'F' ? '#2a2d33' : '#3a3f47';
       const variation = ((q * 7 + r * 13) % 20) - 10;
       const r1 = parseInt(baseColor.slice(1,3), 16) + variation;
@@ -795,7 +813,6 @@ function drawRace(){
       
       drawHex(cctx, pt.x, pt.y, hexSize * 0.92, asphaltColor, '#22262e');
       
-      // Ligne d'arrivée damier
       if(t === 'F'){
         const squareSize = hexSize * 0.15;
         for(let i = 0; i < 3; i++){
@@ -808,12 +825,10 @@ function drawRace(){
         }
       }
       
-      // Barrières (kerbs) autour de la piste
       for(let dir = 0; dir < 6; dir++){
         const nq = q + HEX_DIRS[dir].q;
         const nr = r + HEX_DIRS[dir].r;
         if(nq < 0 || nq >= R.W || nr < 0 || nr >= R.H || R.grid[nr][nq] === '#'){
-          // Dessiner une barrière rouge/blanche
           const angle = (Math.PI / 3) * dir - Math.PI / 6;
           const bx = pt.x + hexSize * 0.85 * Math.cos(angle);
           const by = pt.y + hexSize * 0.85 * Math.sin(angle);
@@ -822,7 +837,6 @@ function drawRace(){
           cctx.translate(bx, by);
           cctx.rotate(angle);
           
-          // Alternance rouge/blanc
           const kerbWidth = hexSize * 0.15;
           const kerbHeight = hexSize * 0.4;
           for(let k = 0; k < 3; k++){
@@ -852,7 +866,6 @@ function drawRace(){
     }
   }
 
-  // VOITURE DE COURSE RÉALISTE
   const carPt = axialToPixel(R.q, R.r, hexSize);
   cctx.save(); 
   cctx.translate(carPt.x, carPt.y);
@@ -861,13 +874,11 @@ function drawRace(){
   const carScale = hexSize * 0.015;
   cctx.scale(carScale, carScale);
   
-  // Ombre
   cctx.fillStyle = 'rgba(0,0,0,0.4)';
   cctx.beginPath();
   cctx.ellipse(2, 2, 25, 12, 0, 0, Math.PI * 2);
   cctx.fill();
   
-  // Corps principal (monocoque)
   cctx.fillStyle = '#f7c948';
   cctx.beginPath();
   cctx.moveTo(30, 0);
@@ -883,30 +894,25 @@ function drawRace(){
   cctx.lineWidth = 2;
   cctx.stroke();
   
-  // Aileron avant
   cctx.fillStyle = '#e8e4da';
   cctx.fillRect(20, -12, 8, 24);
   cctx.strokeRect(20, -12, 8, 24);
   
-  // Aileron arrière
   cctx.fillStyle = '#e8e4da';
   cctx.fillRect(-28, -10, 6, 20);
   cctx.strokeRect(-28, -10, 6, 20);
   
-  // Roues
   cctx.fillStyle = '#14161a';
   cctx.fillRect(12, -14, 6, 4);
   cctx.fillRect(12, 10, 6, 4);
   cctx.fillRect(-18, -14, 6, 4);
   cctx.fillRect(-18, 10, 6, 4);
   
-  // Cockpit
   cctx.fillStyle = '#14161a';
   cctx.beginPath();
   cctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2);
   cctx.fill();
   
-  // Numéro
   cctx.fillStyle = '#14161a';
   cctx.font = 'bold 10px sans-serif';
   cctx.textAlign = 'center';
@@ -986,6 +992,8 @@ function newCircuitDraft(){
   document.getElementById('c-name').value = '';
   document.getElementById('c-laps').value = 1;
   document.getElementById('c-attempts').value = 3;
+  document.getElementById('c-width').value = 3;
+  document.getElementById('c-turns').value = 6;
   document.getElementById('btn-delete').style.display = 'none';
   resetView(); drawEditor();
 }
@@ -1023,28 +1031,85 @@ async function loadCircuitForEdit(id){
 
 document.getElementById('btn-new-circuit').onclick = newCircuitDraft;
 
+// GÉNÉRATION DE CIRCUIT AVANCÉE AVEC VIRAGES
 document.getElementById('btn-generate').onclick = () => {
   const grid = emptyGridHex();
-  const cx = Math.floor(EW / 2), cy = Math.floor(EH / 2);
-  const rx = Math.floor(EW / 4), ry = Math.floor(EH / 4);
+  const trackWidth = parseInt(document.getElementById('c-width').value) || 3;
+  const numTurns = parseInt(document.getElementById('c-turns').value) || 6;
   
-  for(let r = 0; r < EH; r++){
-    for(let q = 0; q < EW; q++){
-      const dist = Math.hypot((q - cx) / rx, (r - cy) / ry);
-      if(dist >= 0.6 && dist <= 1.15) grid[r][q] = '.';
+  const cx = Math.floor(EW / 2);
+  const cy = Math.floor(EH / 2);
+  const radius = Math.min(EW, EH) / 3;
+  
+  // Générer un circuit avec des virages
+  const points = [];
+  const angleStep = (Math.PI * 2) / numTurns;
+  
+  for(let i = 0; i < numTurns; i++){
+    const angle = i * angleStep + (Math.random() - 0.5) * 0.5;
+    const r = radius * (0.7 + Math.random() * 0.6);
+    const x = cx + Math.round(r * Math.cos(angle));
+    const y = cy + Math.round(r * Math.sin(angle));
+    points.push({q: x, r: y});
+  }
+  
+  // Créer la piste entre les points
+  for(let i = 0; i < points.length; i++){
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+    
+    // Interpolation linéaire entre les points
+    const steps = Math.max(Math.abs(p2.q - p1.q), Math.abs(p2.r - p1.r));
+    for(let s = 0; s <= steps; s++){
+      const t = s / steps;
+      const q = Math.round(p1.q + (p2.q - p1.q) * t);
+      const r = Math.round(p1.r + (p2.r - p1.r) * t);
+      
+      // Créer la largeur de piste
+      for(let w = -Math.floor(trackWidth/2); w <= Math.floor(trackWidth/2); w++){
+        for(let h = -Math.floor(trackWidth/2); h <= Math.floor(trackWidth/2); h++){
+          const nq = q + w;
+          const nr = r + h;
+          if(rValid(nq, nr, EW, EH)){
+            grid[nr][nq] = '.';
+          }
+        }
+      }
     }
   }
   
   // Ligne d'arrivée sur toute la largeur
-  const fq = cx + Math.round(rx * 0.9);
-  for(let fr = cy - 3; fr <= cy + 3; fr++){
-    if(rValid(fq, fr, EW, EH) && grid[fr][fq] === '.') grid[fr][fq] = 'F';
+  const startP = points[0];
+  const nextP = points[1];
+  const dirQ = nextP.q - startP.q;
+  const dirR = nextP.r - startP.r;
+  
+  // Perpendiculaire à la direction
+  const perpQ = -dirR;
+  const perpR = dirQ;
+  const len = Math.sqrt(perpQ * perpQ + perpR * perpR);
+  const normPerpQ = perpQ / len;
+  const normPerpR = perpR / len;
+  
+  for(let w = -Math.floor(trackWidth * 1.5); w <= Math.floor(trackWidth * 1.5); w++){
+    const fq = startP.q + Math.round(normPerpQ * w);
+    const fr = startP.r + Math.round(normPerpR * w);
+    if(rValid(fq, fr, EW, EH) && grid[fr][fq] === '.'){
+      grid[fr][fq] = 'F';
+    }
   }
   
-  E.grid = grid; E.carPos = {q: fq - 4, r: cy}; E.carDir = 0;
+  E.grid = grid;
+  E.carPos = {q: startP.q, r: startP.r};
+  // Direction initiale vers le prochain point
+  if(dirQ > 0) E.carDir = 1;
+  else if(dirQ < 0) E.carDir = 4;
+  else if(dirR > 0) E.carDir = 2;
+  else E.carDir = 5;
+  
   document.getElementById('car-rotate').classList.add('on');
   resetView(); drawEditor();
-  toast('Circuit ovale généré !');
+  toast(`Circuit généré ! ${trackWidth} voies, ${numTurns} virages`);
 };
 
 let importImg = null;
@@ -1226,7 +1291,6 @@ function resetView(){
 function drawEditor(){
   fitEcv();
   
-  // Fond herbe
   ectx.fillStyle = '#2d5016';
   ectx.fillRect(0, 0, ecv.width, ecv.height);
   
@@ -1251,7 +1315,6 @@ function drawEditor(){
       if(t === '#') continue;
       const pt = axialToPixel(q, r, hexSize);
       
-      // Texture asphalte
       const baseColor = t === 'F' ? '#2a2d33' : '#3a3f47';
       const variation = ((q * 7 + r * 13) % 20) - 10;
       const r1 = parseInt(baseColor.slice(1,3), 16) + variation;
@@ -1273,7 +1336,6 @@ function drawEditor(){
         }
       }
       
-      // Barrières
       for(let dir = 0; dir < 6; dir++){
         const nq = q + HEX_DIRS[dir].q;
         const nr = r + HEX_DIRS[dir].r;
