@@ -35,7 +35,6 @@ button{font-family:inherit}
 .row{display:flex;gap:8px}
 .row>*{flex:1}
 
-/* ===== MENU ===== */
 header.top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
 .circuit-card{background:var(--panel);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px;
   cursor:pointer;border:1px solid transparent;transition:border-color .12s}
@@ -48,7 +47,6 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 .empty-state{text-align:center;padding:30px 14px;color:var(--mute);font-size:13px}
 #editor-entry{text-align:center;font-size:11px;color:var(--mute);margin-top:4px}
 
-/* ===== RACE ===== */
 #trackwrap{width:100%;background:repeating-linear-gradient(45deg,var(--kerb-r) 0 12px,var(--kerb-w) 12px 24px);
   padding:6px;border-radius:var(--r);touch-action:none;position:relative}
 #cv{display:block;width:100%;aspect-ratio:1;background:var(--asphalt);border-radius:8px}
@@ -62,7 +60,6 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 #g-dice .val{color:var(--line)}
 #g-lap .val{color:var(--ok)}
 
-/* ===== BOITE DE VITESSE SEQUENTIELLE ===== */
 #gearbox{width:100%;background:var(--panel);border-radius:var(--r);padding:12px 14px;border:1px solid #2c3038}
 #gearbox .lbl{font-size:10px;letter-spacing:2px;color:var(--mute);margin-bottom:10px;text-align:center}
 #hgrid{display:flex;justify-content:center;align-items:center;gap:6px;padding:4px 0}
@@ -82,7 +79,12 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 #msg.go{color:var(--ok);font-weight:700}
 #back-menu{align-self:flex-start;background:none;border:none;color:var(--mute);font-size:12px;cursor:pointer;padding:4px 0}
 
-/* ===== ANIMATION DÉ (JUICE) ===== */
+#center-btn{position:absolute;left:12px;bottom:12px;width:44px;height:44px;border-radius:50%;
+  background:rgba(26,29,35,.95);border:2px solid var(--line);color:var(--line);font-size:20px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.4);
+  z-index:5;transition:all .15s}
+#center-btn:active{transform:scale(.95);background:var(--line);color:#14161a}
+
 #dice-anim-overlay{position:fixed;inset:0;background:rgba(8,9,11,.9);display:none;align-items:center;justify-content:center;z-index:30;flex-direction:column;gap:15px;backdrop-filter:blur(4px)}
 #dice-anim-overlay.on{display:flex}
 .dice-cube{width:90px;height:90px;background:var(--panel);border:3px solid var(--line);border-radius:16px;
@@ -90,7 +92,6 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
   box-shadow:0 0 30px rgba(247,201,72,.4);animation:diceShake .1s infinite alternate}
 @keyframes diceShake{0%{transform:translate(-2px,-2px) rotate(-3deg)} 100%{transform:translate(2px,2px) rotate(3deg)}}
 
-/* ===== FINISH OVERLAY ===== */
 #finish{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(8,9,11,.95);z-index:20;flex-direction:column;gap:12px;text-align:center;padding:20px;backdrop-filter:blur(6px)}
 #finish.on{display:flex}
@@ -104,7 +105,6 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 #finish .lb .row2.me{color:var(--line);font-weight:700}
 #finish .btnrow{display:flex;gap:10px;margin-top:6px}
 
-/* ===== EDITOR ===== */
 #editor-gate{max-width:340px;margin:auto;text-align:center;gap:14px}
 #editor-toolbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 #editor-toolbar::-webkit-scrollbar{display:none}
@@ -131,6 +131,20 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 .admin-circuit-row .pub{font-size:9px;padding:2px 7px;border-radius:99px}
 .admin-circuit-row .pub.yes{background:rgba(57,217,138,.15);color:var(--ok)}
 .admin-circuit-row .pub.no{background:rgba(255,255,255,.08);color:var(--mute)}
+
+#import-modal{position:fixed;inset:0;background:rgba(8,9,11,.95);z-index:50;display:none;
+  flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px;backdrop-filter:blur(8px)}
+#import-modal.on{display:flex}
+#import-canvas-wrap{position:relative;border:2px solid var(--line);border-radius:var(--r);
+  overflow:hidden;max-width:100%;max-height:60vh;background:#000}
+#import-canvas{display:block;max-width:100%;max-height:60vh}
+#import-controls{width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px}
+#import-controls .field{display:flex;flex-direction:column;gap:6px}
+#import-controls label{font-size:11px;color:var(--mute);letter-spacing:1px;text-transform:uppercase}
+#import-controls input[type=range]{width:100%;accent-color:var(--line)}
+#import-controls .checkbox-field{display:flex;align-items:center;gap:8px}
+#import-controls input[type=checkbox]{width:20px;height:20px;accent-color:var(--line)}
+#import-actions{display:flex;gap:10px;width:100%;max-width:400px}
 .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--panel);
   border:1px solid var(--line);color:var(--txt);padding:10px 18px;border-radius:99px;font-size:12.5px;
   z-index:40;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
@@ -140,7 +154,6 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 </head>
 <body>
 
-<!-- ============ MENU ============ -->
 <section class="scr on" id="scr-menu">
   <header class="top"><h1>FORMULA<em>·HEX</em></h1><span class="eyebrow">Contre-la-montre</span></header>
   <div class="card field">
@@ -152,10 +165,13 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
   <div id="editor-entry"><a class="link" href="?edit=1">🛠️ Éditeur de circuit (admin)</a></div>
 </section>
 
-<!-- ============ RACE ============ -->
 <section class="scr" id="scr-race">
   <button id="back-menu">← Circuits</button>
-  <div id="trackwrap"><canvas id="cv"></canvas><div id="minimap-wrap"><canvas id="minimap"></canvas></div></div>
+  <div id="trackwrap">
+    <canvas id="cv"></canvas>
+    <button id="center-btn" title="Centrer sur la voiture">🎯</button>
+    <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
+  </div>
   <div id="dash">
     <div class="gauge" id="g-lap"><div class="lbl">TOUR</div><div class="val" id="v-lap">1/1</div></div>
     <div class="gauge"><div class="lbl">VITESSE</div><div class="val" id="v-gear">0</div></div>
@@ -171,13 +187,11 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
 </section>
 
-<!-- ============ ANIMATION DÉ (JUICE) ============ -->
 <div id="dice-anim-overlay">
   <div class="eyebrow" style="color:var(--line);letter-spacing:4px">LANCER DU DÉ EN COURS...</div>
   <div class="dice-cube" id="dice-box-val">?</div>
 </div>
 
-<!-- ============ EDITEUR ============ -->
 <section class="scr" id="scr-editor">
   <div id="editor-gate" class="card">
     <div class="eyebrow">Accès réservé</div>
@@ -196,7 +210,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
       <div class="row">
         <button class="btn" id="btn-new-circuit">➕ Nouveau</button>
         <button class="btn" id="btn-generate">🎲 Aléatoire</button>
-        <button class="btn" id="btn-import-img">🖼️ Image</button>
+        <button class="btn" id="btn-import-img">🖼️ Importer Image</button>
       </div>
       <input type="file" id="img-import" accept="image/*" style="display:none">
       <button class="btn primary" id="btn-test-mode" style="background:var(--ok);color:#14161a">🏎️ Tester ce circuit</button>
@@ -238,6 +252,33 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
   </div>
 </section>
 
+<div id="import-modal">
+  <div class="eyebrow" style="color:var(--line)">Importation de circuit</div>
+  <h2 style="font-size:18px">Ajustez les paramètres de conversion</h2>
+  <div id="import-canvas-wrap">
+    <canvas id="import-canvas"></canvas>
+  </div>
+  <div id="import-controls">
+    <div class="field">
+      <label>Seuil de luminosité (pixels sombres = piste)</label>
+      <input type="range" id="threshold-slider" min="0" max="255" value="128">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute)">
+        <span>Noir pur (0)</span>
+        <span id="threshold-val">128</span>
+        <span>Blanc pur (255)</span>
+      </div>
+    </div>
+    <div class="checkbox-field">
+      <input type="checkbox" id="invert-colors">
+      <label for="invert-colors" style="font-size:12px;color:var(--txt);cursor:pointer">Inverser les couleurs (piste claire sur fond sombre)</label>
+    </div>
+  </div>
+  <div id="import-actions">
+    <button class="btn" id="btn-import-cancel">Annuler</button>
+    <button class="btn primary" id="btn-import-confirm">✅ Convertir en circuit</button>
+  </div>
+</div>
+
 <div id="finish"><div id="flag"></div><h2 id="fh2">ARRIVÉE !</h2>
   <div class="stats" id="fstats"></div><p id="fsub"></p>
   <div class="lb" id="flb"></div>
@@ -251,18 +292,17 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 
 <script>
 'use strict';
-/* ================== CONSTANTES & GÉOMÉTRIE HEXAGONALE ================== */
 const HEX_DIRS = [
   {q: 1, r: -1}, {q: 1, r: 0}, {q: 0, r: 1}, {q: -1, r: 1}, {q: -1, r: 0}, {q: 0, r: -1}
 ];
 const rotHex = (d, k) => (d + k + 6) % 6;
+const SQRT3 = 1.73205; // CONSTANT GLOBALE
 
 const DICE = [
   [0, 0], [1, 2], [2, 4], [4, 8], [7, 12], [11, 20], [21, 30]
 ];
 const COOLDOWN = [0, 0, 0, 1, 2, 4, 6];
 
-/* ================== API ================== */
 async function api(path, opts){
   const res = await fetch(path, opts);
   let data = null; try{ data = await res.json(); }catch(e){}
@@ -274,11 +314,9 @@ function toast(t){
   clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), 2200);
 }
 
-/* ================== NAVIGATION ================== */
 function show(id){ document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id)); }
 function backToMenu(){ document.getElementById('finish').classList.remove('on'); show('scr-menu'); loadCircuitList(); }
 
-/* ================== MENU / LISTE CIRCUITS ================== */
 const pseudoIn = document.getElementById('pseudo-in');
 pseudoIn.value = localStorage.getItem('fg_pseudo') || '';
 pseudoIn.addEventListener('input', () => localStorage.setItem('fg_pseudo', pseudoIn.value));
@@ -319,7 +357,6 @@ async function openCircuit(id){
   }catch(e){ toast('Erreur : ' + e.message); }
 }
 
-/* ================== COURSE ================== */
 const R = {}; 
 document.getElementById('back-menu').onclick = backToMenu;
 
@@ -332,10 +369,21 @@ function startRace(circuit, pseudo, attemptsLeft){
   R.gear = 0; R.pendingGear = 1; R.turn = 0; R.lapCount = 0; R.targetLaps = circuit.laps;
   R.rolled = null; R.budget = null; R.results = null; R.ends = null; R.phase = 'gear'; R.trail = [];
   R.rerolled = false; R.stressed = false;
+  R.autoCenter = true;
   
   document.getElementById('finish').classList.remove('on');
   say('Départ arrêté : Sélectionne la vitesse 1 pour t\'élancer !');
-  renderGears(); syncDash(); show('scr-race'); requestAnimationFrame(drawRace);
+  renderGears(); syncDash(); show('scr-race'); 
+  requestAnimationFrame(drawRace);
+  setTimeout(() => centerOnCar(), 100);
+}
+
+document.getElementById('center-btn').onclick = () => centerOnCar();
+
+function centerOnCar(){
+  R.autoCenter = true;
+  drawRace();
+  toast('🎯 Vue centrée sur la voiture');
 }
 
 function onTrackR(q, r){
@@ -397,7 +445,6 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps){
   return results;
 }
 
-/* ===== RENDU BOITE DE VITESSE SÉQUENTIELLE ===== */
 function renderGears(){
   const hg = document.getElementById('hgrid'); hg.innerHTML = '';
   const order = [0, 1, 2, 3, 4, 5, 6];
@@ -443,7 +490,6 @@ function syncDash(){
   if(rb) rb.style.display = (R.phase === 'pick' && !R.rerolled) ? 'block' : 'none';
 }
 
-/* ================== TIRAGE DE DÉ & JUICE VISUEL ================== */
 let rng = Math.random;
 
 function executeDiceRoll(gear){
@@ -583,12 +629,11 @@ function renderLeaderboard(res){
   document.getElementById('flb').innerHTML = html;
 }
 
-/* ================== RENDU CANVAS HEXAGONAL ================== */
 const cv = document.getElementById('cv'); const cctx = cv.getContext('2d');
 const mm = document.getElementById('minimap'); const mctx = mm.getContext('2d');
 
 function axialToPixel(q, r, hexSize){
-  const x = hexSize * Math.sqrt(3) * (q + r / 2);
+  const x = hexSize * SQRT3 * (q + r / 2);
   const y = hexSize * (3 / 2) * r;
   return {x, y};
 }
@@ -720,8 +765,6 @@ cv.addEventListener('pointerdown', e => {
 
 window.addEventListener('resize', () => { if(document.getElementById('scr-race').classList.contains('on')) drawRace(); });
 
-/* ================== ÉDITEUR & MODE TEST ================== */
-// GRILLE AGRANDIE À 100x100 POUR DES CIRCUITS LONGS ET TECHNIQUES
 const EW = 100, EH = 100;
 const E = { grid: null, tool: 'piste', scale: 16, offX: 0, offY: 0, carPos: null, carDir: 0, editingId: null, adminPw: '', published: false };
 
@@ -787,7 +830,6 @@ document.getElementById('btn-new-circuit').onclick = newCircuitDraft;
 
 document.getElementById('btn-generate').onclick = () => {
   const grid = emptyGridHex();
-  // Génération adaptée à la grille 100x100
   const cx = Math.floor(EW / 2), cy = Math.floor(EH / 2);
   const rx = Math.floor(EW / 4), ry = Math.floor(EH / 4);
   
@@ -805,31 +847,149 @@ document.getElementById('btn-generate').onclick = () => {
   toast('Circuit ovale généré !');
 };
 
-/* ===== IMPORT D'IMAGE POUR GÉNÉRATION ===== */
+let importImg = null;
+let importThreshold = 128;
+let importInvert = false;
+
 document.getElementById('btn-import-img').onclick = () => document.getElementById('img-import').click();
+
 document.getElementById('img-import').onchange = (e) => {
   const file = e.target.files[0];
   if(!file) return;
-  const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = EW; canvas.height = EH;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, EW, EH);
-    const data = ctx.getImageData(0, 0, EW, EH).data;
-    for(let r = 0; r < EH; r++){
-      for(let q = 0; q < EW; q++){
-        const idx = (r * EW + q) * 4;
-        const brightness = (data[idx] + data[idx+1] + data[idx+2]) / 3;
-        E.grid[r][q] = brightness < 128 ? '.' : '#';
+  
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    importImg = new Image();
+    importImg.onload = () => {
+      showImportModal();
+    };
+    importImg.onerror = () => {
+      toast('❌ Erreur de chargement de l\'image');
+    };
+    importImg.src = evt.target.result;
+  };
+  reader.onerror = () => {
+    toast('❌ Erreur de lecture du fichier');
+  };
+  reader.readAsDataURL(file);
+};
+
+function showImportModal(){
+  if(!importImg) return;
+  const modal = document.getElementById('import-modal');
+  const canvas = document.getElementById('import-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const maxSize = 500;
+  let w = importImg.width;
+  let h = importImg.height;
+  
+  if(w > h){
+    if(w > maxSize){ h = h * maxSize / w; w = maxSize; }
+  } else {
+    if(h > maxSize){ w = w * maxSize / h; h = maxSize; }
+  }
+  
+  canvas.width = w;
+  canvas.height = h;
+  
+  updateImportPreview();
+  modal.classList.add('on');
+}
+
+function updateImportPreview(){
+  if(!importImg) return;
+  const canvas = document.getElementById('import-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  ctx.drawImage(importImg, 0, 0, canvas.width, canvas.height);
+  
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  
+  for(let i = 0; i < data.length; i += 4){
+    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+    let val;
+    if(importInvert){
+      val = brightness > importThreshold ? 0 : 255;
+    } else {
+      val = brightness < importThreshold ? 0 : 255;
+    }
+    data[i] = data[i+1] = data[i+2] = val;
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+}
+
+document.getElementById('threshold-slider').oninput = (e) => {
+  importThreshold = parseInt(e.target.value);
+  document.getElementById('threshold-val').textContent = importThreshold;
+  updateImportPreview();
+};
+
+document.getElementById('invert-colors').onchange = (e) => {
+  importInvert = e.target.checked;
+  updateImportPreview();
+};
+
+document.getElementById('btn-import-cancel').onclick = () => {
+  document.getElementById('import-modal').classList.remove('on');
+  importImg = null;
+};
+
+document.getElementById('btn-import-confirm').onclick = () => {
+  if(!importImg) return;
+  
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = EW;
+  tempCanvas.height = EH;
+  const tctx = tempCanvas.getContext('2d');
+  
+  // Calculer les dimensions pour préserver les proportions
+  const imgRatio = importImg.width / importImg.height;
+  const gridRatio = EW / EH;
+  
+  let drawW, drawH, offsetX = 0, offsetY = 0;
+  
+  if(imgRatio > gridRatio){
+    drawW = EW;
+    drawH = EW / imgRatio;
+    offsetY = (EH - drawH) / 2;
+  } else {
+    drawH = EH;
+    drawW = EH * imgRatio;
+    offsetX = (EW - drawW) / 2;
+  }
+  
+  tctx.fillStyle = '#fff';
+  tctx.fillRect(0, 0, EW, EH);
+  tctx.drawImage(importImg, offsetX, offsetY, drawW, drawH);
+  
+  const imageData = tctx.getImageData(0, 0, EW, EH).data;
+  
+  for(let r = 0; r < EH; r++){
+    for(let q = 0; q < EW; q++){
+      const idx = (r * EW + q) * 4;
+      const brightness = (imageData[idx] + imageData[idx+1] + imageData[idx+2]) / 3;
+      
+      if(importInvert){
+        E.grid[r][q] = brightness > importThreshold ? '.' : '#';
+      } else {
+        E.grid[r][q] = brightness < importThreshold ? '.' : '#';
       }
     }
-    E.carPos = null; E.carDir = 0;
-    document.getElementById('car-rotate').classList.remove('on');
-    resetView(); drawEditor();
-    toast('Circuit généré ! (Noir = piste, Blanc = mur)');
-  };
-  img.src = URL.createObjectURL(file);
+  }
+  
+  E.carPos = null;
+  E.carDir = 0;
+  document.getElementById('car-rotate').classList.remove('on');
+  
+  document.getElementById('import-modal').classList.remove('on');
+  importImg = null;
+  
+  resetView();
+  drawEditor();
+  toast(`✅ Circuit importé ! Place la voiture 🏎️ et l'arrivée 🏁`);
 };
 
 function rValid(q, r, w, h){ return r >= 0 && r < h && q >= 0 && q < w; }
@@ -864,22 +1024,18 @@ function resetView(){
   E.offX = (ecv.width - E.scale * EW) / 2; E.offY = (ecv.height - E.scale * EH) / 2;
 }
 
-// RENDU OPTIMISÉ AVEC CULLING (ne dessine que ce qui est visible à l'écran)
 function drawEditor(){
   fitEcv();
   ectx.fillStyle = '#101216'; ectx.fillRect(0, 0, ecv.width, ecv.height);
   ectx.save(); ectx.translate(E.offX, E.offY);
   
   const hexSize = E.scale;
-  const SQRT3 = 1.73205;
   
-  // Bornes visibles en coordonnées écran
   const viewLeft = -E.offX;
   const viewRight = ecv.width - E.offX;
   const viewTop = -E.offY;
   const viewBottom = ecv.height - E.offY;
   
-  // Conversion en bornes axiales (avec marge de sécurité de 3 cases)
   const minR = Math.max(0, Math.floor(viewTop / (hexSize * 1.5)) - 3);
   const maxR = Math.min(EH, Math.ceil(viewBottom / (hexSize * 1.5)) + 3);
   
@@ -923,7 +1079,6 @@ function cellFromEventHex(e){
   const size = E.scale;
   
   let closestQ = 0, closestR = 0, minDist = Infinity;
-  // Recherche optimisée autour de la position approximative
   const approxR = Math.round(py / (size * 1.5));
   const approxQ = Math.round(px / (size * SQRT3) - approxR/2);
   
@@ -954,7 +1109,6 @@ function paintAtHex(q, r){
 document.getElementById('rotL').onclick = () => { E.carDir = rotHex(E.carDir, -1); drawEditor(); };
 document.getElementById('rotR').onclick = () => { E.carDir = rotHex(E.carDir, 1); drawEditor(); };
 
-/* ===== GESTION FLUIDE DU PAN & ZOOM (MOBILE & PC) ===== */
 let isPanning = false;
 let panStart = null;
 
@@ -986,7 +1140,6 @@ ecv.addEventListener('pointerup', e => {
   ecv.releasePointerCapture(e.pointerId);
 });
 
-// Zoom centré sur la souris (PC) ou geste tactile
 ecv.addEventListener('wheel', e => {
   e.preventDefault();
   const zoomIntensity = 0.1;
@@ -1047,7 +1200,6 @@ document.getElementById('btn-delete').onclick = async () => {
   } catch(e){ toast('Erreur : ' + e.message); }
 };
 
-/* ================== INITIALISATION ================== */
 if(params.get('edit') !== '1') loadCircuitList();
 </script>
 </body>
