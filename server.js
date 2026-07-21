@@ -116,6 +116,72 @@ function saveToFile() {
 }
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+// ── FORMULA·GRID — stockage isolé (ne touche jamais athletes/scores) ───────
+let colCircuits, colCircuitRuns;
+let circuits    = [];   // [{id,name,w,h,rows:[string],start:{x,y,dir},laps,attempts,published,createdAt}]
+let circuitRuns = {};   // { [circuitId]: [{pseudo,moves,left,laps,date}] }
+const FORMULA_FILE = path.join(__dirname, 'formula.json');
+
+async function connectFormula() {
+  if (db) {
+    try {
+      colCircuits    = db.collection('fg_circuits');
+      colCircuitRuns = db.collection('fg_runs');
+      circuits = await colCircuits.find({}).toArray();
+      const runsArr = await colCircuitRuns.find({}).toArray();
+      circuitRuns = {};
+      runsArr.forEach(r => { circuitRuns[r.circuitId] = r.runs || []; });
+      console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis MongoDB`);
+      return;
+    } catch(e) { console.error('Formula·Grid Mongo erreur:', e.message); }
+  }
+  loadFormulaFromFile();
+}
+function loadFormulaFromFile() {
+  try {
+    if (fs.existsSync(FORMULA_FILE)) {
+      const d = JSON.parse(fs.readFileSync(FORMULA_FILE, 'utf8'));
+      circuits    = d.circuits    || [];
+      circuitRuns = d.circuitRuns || {};
+      console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis fichier`);
+    }
+  } catch(e) { console.error('Erreur lecture formula.json:', e.message); }
+}
+function saveFormulaToFile() {
+  try { fs.writeFileSync(FORMULA_FILE, JSON.stringify({ circuits, circuitRuns }, null, 2)); }
+  catch(e) { console.error('Erreur écriture formula.json:', e.message); }
+}
+async function saveCircuits() {
+  if (!db || !colCircuits) { saveFormulaToFile(); return; }
+  try {
+    const ids = circuits.map(c => c.id);
+    for (const c of circuits) await colCircuits.updateOne({ id: c.id }, { $set: c }, { upsert: true });
+    await colCircuits.deleteMany({ id: { $nin: ids } });
+  } catch(e) { console.error('Erreur saveCircuits:', e.message); }
+}
+async function saveCircuitRuns(circuitId) {
+  if (!db || !colCircuitRuns) { saveFormulaToFile(); return; }
+  try {
+    await colCircuitRuns.updateOne(
+      { circuitId },
+      { $set: { circuitId, runs: circuitRuns[circuitId] || [] } },
+      { upsert: true }
+    );
+  } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
+}
+function circuitPublicMeta(c) {
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts };
+}
+function bestRun(runs) {
+  if (!runs || !runs.length) return null;
+  return runs.reduce((best, r) => {
+    if (!best) return r;
+    if (r.moves < best.moves) return r;
+    if (r.moves === best.moves && r.left > best.left) return r;
+    return best;
+  }, null);
+}
+
 // Levenshtein global
 function lev(a,b){
   const m=a.length,n=b.length;
@@ -989,6 +1055,94 @@ app.post('/api/prix-check', (req, res) => {
   res.json({ exact, precision, displayPrecision: diff, seuils, direction, target: exact ? target : null, fullAnswer: athlete.answer });
 });
 
+// ── FORMULA·GRID — routes ───────────────────────────────────────────────
+app.get('/api/formula/circuits', (req, res) => {
+  try { res.json(circuits.filter(c => c.published).map(circuitPublicMeta)); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/formula/admin/circuits', (req, res) => {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  try { res.json(circuits.map(c => ({ ...circuitPublicMeta(c), published: !!c.published }))); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/formula/circuit/:id', (req, res) => {
+  const c = circuits.find(x => x.id === req.params.id);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  res.json(c);
+});
+
+app.post('/api/formula/circuit', async (req, res) => {
+  const { password, id, name, w, h, rows, start, laps, attempts, published } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Nom du circuit obligatoire' });
+  if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'Circuit vide' });
+  if (!start || typeof start.x !== 'number' || typeof start.y !== 'number') return res.status(400).json({ error: 'Position de départ manquante' });
+  if (!rows.some(r => r.includes('F'))) return res.status(400).json({ error: 'Ligne d\'arrivée manquante' });
+
+  const circuitId = id || 'fg_' + Date.now();
+  const existingIdx = circuits.findIndex(c => c.id === circuitId);
+  const data = {
+    id: circuitId, name: name.trim().slice(0,60), w, h, rows,
+    start: { x: start.x, y: start.y, dir: start.dir||0 },
+    laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
+    attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
+    published: !!published,
+    createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
+  };
+  if (existingIdx >= 0) circuits[existingIdx] = data; else circuits.push(data);
+  try { await saveCircuits(); res.json({ success: true, id: circuitId }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/formula/circuit/:id', async (req, res) => {
+  const { password } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  circuits = circuits.filter(c => c.id !== req.params.id);
+  delete circuitRuns[req.params.id];
+  try { await saveCircuits(); res.json({ success: true }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/formula/leaderboard/:id', (req, res) => {
+  const c = circuits.find(x => x.id === req.params.id);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  const runs = circuitRuns[req.params.id] || [];
+  const pseudo = (req.query.pseudo || '').trim();
+  const mine = pseudo ? runs.filter(r => norm(r.pseudo) === norm(pseudo)) : [];
+  const top = [...runs].sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
+    .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
+  res.json({
+    top,
+    attemptsUsed: mine.length,
+    attemptsLeft: Math.max(0, c.attempts - mine.length),
+    best: bestRun(mine)
+  });
+});
+
+app.post('/api/formula/run', async (req, res) => {
+  const { circuitId, pseudo, moves, left, laps } = req.body;
+  const c = circuits.find(x => x.id === circuitId);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  const cleanPseudo = (pseudo||'').trim().slice(0,24);
+  if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
+  if (!Number.isFinite(moves) || moves < 1) return res.status(400).json({ error: 'Résultat invalide' });
+
+  circuitRuns[circuitId] = circuitRuns[circuitId] || [];
+  const already = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
+  if (already.length >= c.attempts) return res.status(403).json({ error: 'Plus d\'essais disponibles', attemptsLeft: 0 });
+
+  const run = { pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps, date: new Date() };
+  circuitRuns[circuitId].push(run);
+  try {
+    await saveCircuitRuns(circuitId);
+    const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Diagnostic connexion
 app.get('/api/status', (req, res) => {
   res.json({
@@ -1621,5 +1775,6 @@ app.post('/api/account/login', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 connectMongo().then(() => {
+  connectFormula();
   app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html`));
 });
