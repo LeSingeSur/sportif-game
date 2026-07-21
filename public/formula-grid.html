@@ -51,8 +51,11 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 
 /* ===== RACE ===== */
 #trackwrap{width:100%;background:repeating-linear-gradient(45deg,var(--kerb-r) 0 12px,var(--kerb-w) 12px 24px);
-  padding:6px;border-radius:var(--r);touch-action:none}
-#cv{display:block;width:100%;background:var(--asphalt);border-radius:8px}
+  padding:6px;border-radius:var(--r);touch-action:none;position:relative}
+#cv{display:block;width:100%;aspect-ratio:1;background:var(--asphalt);border-radius:8px}
+#minimap-wrap{position:absolute;right:12px;bottom:12px;width:78px;height:78px;border-radius:8px;
+  overflow:hidden;border:2px solid rgba(232,228,218,.5);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+#minimap{display:block;width:100%;height:100%}
 #dash{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
 .gauge{background:var(--panel);border-radius:var(--r);padding:7px 4px;text-align:center}
 .gauge .lbl{font-size:9px;letter-spacing:1.5px;color:var(--mute)}
@@ -142,7 +145,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 <!-- ============ RACE ============ -->
 <section class="scr" id="scr-race">
   <button id="back-menu">← Circuits</button>
-  <div id="trackwrap"><canvas id="cv"></canvas></div>
+  <div id="trackwrap"><canvas id="cv"></canvas><div id="minimap-wrap"><canvas id="minimap"></canvas></div></div>
   <div id="dash">
     <div class="gauge" id="g-lap"><div class="lbl">TOUR</div><div class="val" id="v-lap">1/1</div></div>
     <div class="gauge"><div class="lbl">VITESSE</div><div class="val" id="v-gear">1</div></div>
@@ -150,10 +153,11 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
     <div class="gauge"><div class="lbl">COUPS</div><div class="val" id="v-turn">0</div></div>
   </div>
   <div id="gearbox">
-    <div class="lbl">BOÎTE DE VITESSES — monte, descends ou reste (±1)</div>
+    <div class="lbl">BOÎTE DE VITESSES — monte, descends ou reste (±1) · cases droites obligatoires entre 2 virages, selon la vitesse</div>
     <div id="hgrid"></div>
   </div>
   <button id="roll">🎲 LANCER LE DÉ</button>
+  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">🎲 Relancer (stresse la voiture — rapport bloqué au tour suivant)</button>
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
 </section>
 
@@ -235,6 +239,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 /* ================== CONSTANTES JEU ================== */
 const DICE=[[1,2],[2,4],[4,8],[7,12],[11,20],[21,30]];
 const STRAIGHT=10, DIAG=14;
+const COOLDOWN=[0,0,1,2,4,6]; // cases tout droit obligatoires entre 2 diagonales, par vitesse (1-6)
 const DIRS=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
 const rot=(d,k)=>(d+k+8)%8;
 
@@ -306,6 +311,7 @@ function startRace(circuit,pseudo,attemptsLeft){
   R.x=circuit.start.x; R.y=circuit.start.y; R.dir=circuit.start.dir||0;
   R.gear=1; R.pendingGear=1; R.turn=0; R.lapCount=0; R.targetLaps=circuit.laps;
   R.rolled=null; R.budget=null; R.results=null; R.ends=null; R.phase='gear'; R.trail=[];
+  R.rerolled=false; R.stressed=false;
   document.getElementById('finish').classList.remove('on');
   say('Choisis ta vitesse puis lance le dé.');
   renderGears(); syncDash(); show('scr-race'); requestAnimationFrame(drawRace);
@@ -313,14 +319,17 @@ function startRace(circuit,pseudo,attemptsLeft){
 
 function onTrackR(x,y){return y>=0&&y<R.H&&x>=0&&x<R.W&&R.grid[y][x]!=='#';}
 
-function getValidPaths(x0,y0,dir0,budget,lapCount,targetLaps){
+function getValidPaths(x0,y0,dir0,budget,gear,lapCount,targetLaps){
+  const N=COOLDOWN[gear-1];
   const results=[],memo=new Set();
-  (function dfs(x,y,dir,b,lock,crossed,path){
-    const key=x+','+y+','+dir+','+b+','+lock+','+crossed;
+  (function dfs(x,y,dir,b,side,cooldown,crossed,path){
+    const key=x+','+y+','+dir+','+b+','+side+','+cooldown+','+crossed;
     if(memo.has(key))return;memo.add(key);
-    const opts=[{d:dir,c:STRAIGHT,t:null}];
-    if(lock!=='R')opts.push({d:rot(dir,-1),c:DIAG,t:'L'});
-    if(lock!=='L')opts.push({d:rot(dir,1),c:DIAG,t:'R'});
+    const opts=[{d:dir,c:STRAIGHT,s:null,diag:false}];
+    if(cooldown===0){
+      if(side!=='R') opts.push({d:rot(dir,-1),c:DIAG,s:'L',diag:true});
+      if(side!=='L') opts.push({d:rot(dir,1),c:DIAG,s:'R',diag:true});
+    }
     const pay=opts.filter(o=>b>=o.c);
     if(!pay.length){results.push({path:path.slice(),x,y,dir,crash:false,finish:false,left:b,lapsGained:crossed?1:0});return;}
     let anyOpen=false;
@@ -329,19 +338,20 @@ function getValidPaths(x0,y0,dir0,budget,lapCount,targetLaps){
       if(!onTrackR(nx,ny))continue;
       anyOpen=true;
       path.push({x:nx,y:ny,dir:o.d});
+      const newSide=o.s?o.s:side, newCooldown=o.diag?N:Math.max(0,cooldown-1);
       const isF=R.grid[ny][nx]==='F';
       if(isF&&!crossed){
         const lapNum=lapCount+1;
         if(lapNum>=targetLaps){
           results.push({path:path.slice(),x:nx,y:ny,dir:o.d,crash:false,finish:true,left:b-o.c,lapsGained:1});
           path.pop();continue;
-        }else{ dfs(nx,ny,o.d,b-o.c,lock??o.t,true,path); path.pop(); continue; }
+        }else{ dfs(nx,ny,o.d,b-o.c,newSide,newCooldown,true,path); path.pop(); continue; }
       }
-      dfs(nx,ny,o.d,b-o.c,lock??o.t,crossed,path);
+      dfs(nx,ny,o.d,b-o.c,newSide,newCooldown,crossed,path);
       path.pop();
     }
     if(!anyOpen)results.push({path:path.slice(),x,y,dir,crash:true,finish:false,left:b,lapsGained:crossed?1:0});
-  })(x0,y0,dir0,budget,null,false,[]);
+  })(x0,y0,dir0,budget,null,0,false,[]);
   return results;
 }
 
@@ -350,13 +360,22 @@ function renderGears(){
   const order=[1,3,5,2,4,6];
   order.forEach((g,i)=>{
     const el=document.createElement('div');
-    const reach=Math.abs(g-R.gear)<=1;
+    // Stressé (relance utilisée au tour précédent) : impossible de monter le rapport
+    const reach=R.stressed ? (g<=R.gear && g>=R.gear-1) : (Math.abs(g-R.gear)<=1);
     el.className='gear'+(g===R.pendingGear?' sel':reach?' reach':' off');
     el.style.gridColumn=(i%3)+1; el.style.gridRow=i<3?1:3;
     el.innerHTML=`<b>${g}</b><span>${DICE[g-1][0]*10}–${DICE[g-1][1]*10}</span>`;
     if(reach&&R.phase==='gear') el.onclick=()=>{R.pendingGear=g;renderGears();};
     hg.appendChild(el);
   });
+  const gb=document.getElementById('gearbox');
+  let tag=document.getElementById('stress-tag');
+  if(R.stressed&&R.phase==='gear'){
+    if(!tag){tag=document.createElement('div');tag.id='stress-tag';
+      tag.style.cssText='margin-top:6px;font-size:11px;color:var(--crash);font-weight:700';
+      gb.appendChild(tag);}
+    tag.textContent='🔥 Sous tension après la relance — rapport bloqué à la baisse ce tour';
+  } else if(tag) tag.remove();
 }
 function say(t,cls){const m=document.getElementById('msg');m.textContent=t;m.className=cls||'';}
 function syncDash(){
@@ -365,16 +384,16 @@ function syncDash(){
   document.getElementById('v-roll').textContent=R.rolled??'—';
   document.getElementById('v-turn').textContent=R.turn;
   document.getElementById('roll').disabled=R.phase!=='gear';
+  const rb=document.getElementById('reroll');
+  if(rb) rb.style.display=(R.phase==='pick'&&!R.rerolled)?'block':'none';
 }
 
 let rng=Math.random;
-document.getElementById('roll').onclick=()=>{
-  if(R.phase!=='gear')return;
-  R.gear=R.pendingGear;
+function rollDice(){
   const[a,b]=DICE[R.gear-1];
   R.rolled=a+Math.floor(rng()*(b-a+1));
   R.budget=R.rolled*10;
-  R.results=getValidPaths(R.x,R.y,R.dir,R.budget,R.lapCount,R.targetLaps);
+  R.results=getValidPaths(R.x,R.y,R.dir,R.budget,R.gear,R.lapCount,R.targetLaps);
   R.ends=new Map();
   for(const r of R.results){
     const k=r.x+','+r.y; const prev=R.ends.get(k);
@@ -390,6 +409,17 @@ document.getElementById('roll').onclick=()=>{
     say('Touche une case verte ('+okCount+' issue'+(okCount>1?'s':'')+') — rouge = tête-à-queue','go');
   }
   syncDash(); drawRace();
+}
+document.getElementById('roll').onclick=()=>{
+  if(R.phase!=='gear')return;
+  R.gear=R.pendingGear;
+  rollDice();
+};
+document.getElementById('reroll').onclick=()=>{
+  if(R.phase!=='pick'||R.rerolled)return;
+  R.rerolled=true;
+  say('🎲 Relance…');
+  rollDice();
 };
 
 function applyResult(r){
@@ -398,9 +428,13 @@ function applyResult(r){
   if(r.path.length){const last=r.path[r.path.length-1]; R.x=last.x; R.y=last.y; R.dir=last.dir;}
   R.lapCount+=r.lapsGained||0;
   if(r.finish){ finishRace(r); return; }
-  if(r.crash){ R.gear=1; say('💥 Tête-à-queue ! Boîte remise en 1re.','crash'); }
-  else if(r.lapsGained){ say('🏁 Tour '+R.lapCount+' complété !','go'); }
-  else say('Tour joué. Ajuste ta vitesse.');
+  if(r.crash){ R.gear=1; R.stressed=false; say('💥 Tête-à-queue ! Boîte remise en 1re.','crash'); }
+  else {
+    R.stressed=R.rerolled; // la relance de ce tour bloque la montée de rapport au tour suivant
+    if(r.lapsGained) say('🏁 Tour '+R.lapCount+' complété !','go');
+    else say('Tour joué. Ajuste ta vitesse.');
+  }
+  R.rerolled=false;
   R.pendingGear=R.gear; R.rolled=null; R.budget=null; R.results=null; R.ends=null; R.phase='gear';
   renderGears(); syncDash(); drawRace();
 }
@@ -418,6 +452,7 @@ async function finishRace(r){
       body:JSON.stringify({circuitId:R.circuit.id,pseudo:R.pseudo,moves:R.turn,left:r.left,laps:R.targetLaps})});
     R.attemptsLeft=res.attemptsLeft;
     renderLeaderboard(res);
+    document.getElementById('fsub').textContent+=' · 🏆 '+res.points+' pts au classement général (rang '+res.rank+'/'+res.totalPlayers+' sur ce circuit)';
     const retryBtn=document.getElementById('btn-retry');
     retryBtn.disabled=res.attemptsLeft<=0;
     retryBtn.textContent=res.attemptsLeft>0?'Réessayer ('+res.attemptsLeft+' restant'+(res.attemptsLeft>1?'s':'')+')':'Plus d\'essais';
@@ -439,14 +474,41 @@ function renderLeaderboard(res){
   document.getElementById('flb').innerHTML=html;
 }
 
-/* rendu piste + voiture */
+/* rendu piste + voiture — caméra suit la voiture, zoom adapté aux issues affichées, mini-carte permanente */
 const cv=document.getElementById('cv'); const cctx=cv.getContext('2d');
+const mm=document.getElementById('minimap'); const mctx=mm.getContext('2d');
+
+function computeViewport(){
+  const MIN_SPAN=12; // fenêtre confortable par défaut autour de la voiture
+  if(R.phase==='pick'&&R.ends&&R.ends.size){
+    let minX=R.x,maxX=R.x,minY=R.y,maxY=R.y;
+    for(const r of R.ends.values()){ minX=Math.min(minX,r.x);maxX=Math.max(maxX,r.x);minY=Math.min(minY,r.y);maxY=Math.max(maxY,r.y); }
+    const pad=3;
+    return clampViewport(minX-pad,minY-pad,(maxX-minX)+pad*2,(maxY-minY)+pad*2);
+  }
+  const half=MIN_SPAN/2;
+  return clampViewport(R.x-half,R.y-half,MIN_SPAN,MIN_SPAN);
+}
+function clampViewport(vx,vy,vw,vh){
+  vw=Math.max(vw,10); vh=Math.max(vh,10);
+  const span=Math.max(vw,vh); vw=span; vh=span; // fenêtre carrée pour un rendu stable
+  vx=Math.max(0,Math.min(vx,R.W-vw));
+  vy=Math.max(0,Math.min(vy,R.H-vh));
+  return {vx,vy,vw:Math.min(vw,R.W),vh:Math.min(vh,R.H)};
+}
+
 function drawRace(){
   const wrap=document.getElementById('trackwrap');
-  const cell=Math.floor((wrap.clientWidth-12)/R.W);
-  cv.width=cell*R.W; cv.height=cell*R.H;
+  const size=wrap.clientWidth-12;
+  cv.width=size; cv.height=size;
+  const vp=computeViewport();
+  const cell=size/vp.vw;
+
   cctx.fillStyle='#101216'; cctx.fillRect(0,0,cv.width,cv.height);
-  for(let y=0;y<R.H;y++)for(let x=0;x<R.W;x++){
+  cctx.save(); cctx.translate(-vp.vx*cell,-vp.vy*cell);
+  const x0=Math.max(0,Math.floor(vp.vx)), x1=Math.min(R.W-1,Math.ceil(vp.vx+vp.vw));
+  const y0=Math.max(0,Math.floor(vp.vy)), y1=Math.min(R.H-1,Math.ceil(vp.vy+vp.vh));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     const t=R.grid[y][x]; if(t==='#')continue;
     cctx.fillStyle=t==='F'?'#23262c':'#3a3f47';
     cctx.fillRect(x*cell+1,y*cell+1,cell-2,cell-2);
@@ -469,12 +531,32 @@ function drawRace(){
   cctx.beginPath(); cctx.moveTo(cell*.42,0); cctx.lineTo(-cell*.3,cell*.28); cctx.lineTo(-cell*.3,-cell*.28);
   cctx.closePath(); cctx.fillStyle='#f7c948'; cctx.fill();
   cctx.restore();
+  cctx.restore();
+
+  drawMinimap(vp);
+}
+function drawMinimap(vp){
+  const size=mm.clientWidth||78; mm.width=size; mm.height=size;
+  const cell=size/Math.max(R.W,R.H);
+  const offX=(size-R.W*cell)/2, offY=(size-R.H*cell)/2;
+  mctx.fillStyle='#0a0b0d'; mctx.fillRect(0,0,size,size);
+  for(let y=0;y<R.H;y++)for(let x=0;x<R.W;x++){
+    if(R.grid[y][x]==='#')continue;
+    mctx.fillStyle=R.grid[y][x]==='F'?'#e8e4da':'#4a505a';
+    mctx.fillRect(offX+x*cell,offY+y*cell,Math.max(1,cell),Math.max(1,cell));
+  }
+  mctx.strokeStyle='rgba(247,201,72,.9)'; mctx.lineWidth=1;
+  mctx.strokeRect(offX+vp.vx*cell,offY+vp.vy*cell,vp.vw*cell,vp.vh*cell);
+  mctx.fillStyle='#f7c948';
+  mctx.beginPath(); mctx.arc(offX+R.x*cell,offY+R.y*cell,Math.max(1.5,cell*.6),0,7); mctx.fill();
 }
 cv.addEventListener('pointerdown',e=>{
   if(R.phase!=='pick')return;
   const rect=cv.getBoundingClientRect();
-  const x=Math.floor((e.clientX-rect.left)/rect.width*R.W);
-  const y=Math.floor((e.clientY-rect.top)/rect.height*R.H);
+  const vp=computeViewport();
+  const cell=rect.width/vp.vw;
+  const x=Math.floor(vp.vx+(e.clientX-rect.left)/cell);
+  const y=Math.floor(vp.vy+(e.clientY-rect.top)/cell);
   const r=R.ends.get(x+','+y);
   if(!r){say('Touche une pastille verte (ou rouge pour assumer le tête-à-queue).');return;}
   applyResult(r);

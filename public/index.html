@@ -593,7 +593,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Trivial Pursuit</div></div>
       <div class="gt-item"><div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div></div>
     </div>
-    <a href="formula-grid.html" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px">
+    <a href="formula-grid.html" id="fg-banner" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px">
       🏁 FORMULA·GRID — Contre-la-montre
     </a>
     <div class="welcome-divider"></div>
@@ -7681,6 +7681,12 @@ async function loadLB(){
     const resA=await fetch('/api/athletes/list?pseudo='+encodeURIComponent(GAME.pseudo||''));
     lbAthletes=await resA.json();
     tabs.appendChild(makeTab('🌍 Global','global'));
+    // Onglet dédié Formula·Grid, seulement si au moins un circuit existe
+    try{
+      const fgRes=await fetch('/api/formula/circuits');
+      const fgList=await fgRes.json();
+      if(fgList.length>0) tabs.appendChild(makeTab('🏁 Formula·Grid','formula-grid'));
+    }catch(e){}
     // Charger les équipes fraîches depuis le serveur
     try{
       const tRes=await fetch('/api/teams');
@@ -7774,6 +7780,12 @@ window.addEventListener('load',()=>{
   } else {
     setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
   }
+  fetch('/api/formula/circuits').then(r=>r.json()).then(list=>{
+    if(list&&list.length>0){
+      const banner=document.getElementById('fg-banner');
+      if(banner) banner.style.display='flex';
+    }
+  }).catch(()=>{});
 });
 
 // --------------------------------------------------------------------------
