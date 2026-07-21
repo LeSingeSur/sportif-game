@@ -178,6 +178,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <button class="nav-tab" onclick="showAdminTab('comptes')">Comptes</button>
     <button class="nav-tab" onclick="showAdminTab('equipes')">Équipes</button>
     <button class="nav-tab" onclick="showAdminTab('idees')">💡 Idées</button>
+    <a class="nav-tab" href="formula-grid.html?edit=1" style="text-decoration:none;display:inline-block">🏁 Formula·Grid</a>
   </div>
 
   <!-- TAB: DÉFIS -->
@@ -4259,6 +4260,18 @@ document.getElementById('btn-add-trappe-q').onclick=()=>{
   checkReady();
 };
 
+
+// --- Câblages restaurés (rvlf, cancel, reset) ---
+document.getElementById('btn-add-rvlf-q').onclick=()=>{
+  if(rvlfQuestions.length>=10)return;
+  rvlfQuestions.push({q:'',a:'',w:''});renderRvlfQuestions();
+};
+document.getElementById('btn-cancel-edit').onclick=cancelEdit;
+document.getElementById('btn-reset-global').onclick=async()=>{
+  if(!confirm('Remettre à zéro le classement global ?'))return;
+  const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+  if((await res.json()).success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
+};
 </script>
 </body>
 </html>

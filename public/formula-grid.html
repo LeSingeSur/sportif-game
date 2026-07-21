@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>FORMULA GRID</title>
+<style>
+:root{
+  --asphalt:#101216; --panel:#1a1d23; --panel2:#22262e; --track:#3a3f47; --line:#f7c948;
+  --kerb-r:#d63b2f; --kerb-w:#e8e4da; --ok:#39d98a; --crash:#ff5d5d;
+  --txt:#e8e4da; --mute:#868c97; --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%}
+body{background:
+    radial-gradient(ellipse at 50% -10%, #1c2028 0%, var(--asphalt) 55%);
+  color:var(--txt);font-family:system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:10px 10px 26px;overflow-x:hidden}
+.scr{display:none;width:100%;max-width:560px;flex-direction:column;gap:10px}
+.scr.on{display:flex}
+h1{font-size:19px;letter-spacing:3px;font-weight:900;font-style:italic}
+h1 em{color:var(--line);font-style:italic}
+.eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mute)}
+a.link,.link{color:var(--line);text-decoration:none;font-weight:700}
+button{font-family:inherit}
+.btn{padding:12px 16px;border:none;border-radius:var(--r);background:var(--panel2);color:var(--txt);
+  font-weight:700;font-size:13px;cursor:pointer;border:1px solid #2c3038}
+.btn.primary{background:var(--line);color:#14161a;font-weight:900;font-style:italic;letter-spacing:1px;border:none}
+.btn.danger{background:rgba(255,93,93,.12);color:var(--crash);border:1px solid rgba(255,93,93,.3)}
+.btn:disabled{opacity:.35;cursor:default}
+.card{background:var(--panel);border-radius:var(--r);padding:14px}
+.field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+.field input[type=text],.field input[type=number]{width:100%;background:var(--panel2);border:1px solid #2c3038;
+  color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+.field input:focus{border-color:var(--line)}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+
+/* ===== MENU ===== */
+header.top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.circuit-card{background:var(--panel);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px;
+  cursor:pointer;border:1px solid transparent;transition:border-color .12s}
+.circuit-card:active{border-color:var(--line)}
+.circuit-card .ico{font-size:26px;flex-shrink:0}
+.circuit-card .name{font-weight:800;font-size:15px}
+.circuit-card .meta{font-size:11px;color:var(--mute);font-family:ui-monospace,monospace;margin-top:2px}
+.circuit-card .arrow{margin-left:auto;color:var(--mute);font-size:18px}
+#circuit-list{display:flex;flex-direction:column;gap:8px}
+.empty-state{text-align:center;padding:30px 14px;color:var(--mute);font-size:13px}
+#editor-entry{text-align:center;font-size:11px;color:var(--mute);margin-top:4px}
+
+/* ===== RACE ===== */
+#trackwrap{width:100%;background:repeating-linear-gradient(45deg,var(--kerb-r) 0 12px,var(--kerb-w) 12px 24px);
+  padding:6px;border-radius:var(--r);touch-action:none}
+#cv{display:block;width:100%;background:var(--asphalt);border-radius:8px}
+#dash{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.gauge{background:var(--panel);border-radius:var(--r);padding:7px 4px;text-align:center}
+.gauge .lbl{font-size:9px;letter-spacing:1.5px;color:var(--mute)}
+.gauge .val{font-family:ui-monospace,monospace;font-size:19px;font-weight:800;line-height:1.25}
+#g-dice .val{color:var(--line)}
+#g-lap .val{color:var(--ok)}
+#gearbox{width:100%;background:var(--panel);border-radius:var(--r);padding:12px 14px}
+#gearbox .lbl{font-size:10px;letter-spacing:2px;color:var(--mute);margin-bottom:8px}
+#hgrid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto 12px auto;gap:0 16px}
+.gear{position:relative;background:var(--asphalt);border:2px solid #2b2f36;border-radius:10px;
+  padding:7px 0 5px;text-align:center;font-family:ui-monospace,monospace;color:var(--mute);
+  cursor:pointer;transition:border-color .12s,color .12s}
+.gear b{display:block;font-size:19px}
+.gear span{font-size:8.5px;letter-spacing:.5px}
+.gear.sel{border-color:var(--line);color:var(--line);box-shadow:0 0 14px rgba(247,201,72,.25)}
+.gear.reach:not(.sel){border-color:#454a53;color:var(--txt)}
+.gear.off{opacity:.28;cursor:default}
+#hgrid::before{content:'';grid-column:1/4;grid-row:2;height:4px;align-self:center;background:#2b2f36;border-radius:2px}
+#roll{width:100%;padding:15px;border:none;border-radius:var(--r);background:var(--line);color:#14161a;
+  font-size:16px;font-weight:900;letter-spacing:3px;cursor:pointer;font-style:italic}
+#roll:disabled{opacity:.35}
+#msg{width:100%;text-align:center;font-size:13px;color:var(--mute);min-height:18px}
+#msg.crash{color:var(--crash);font-weight:700}
+#msg.go{color:var(--ok);font-weight:700}
+#back-menu{align-self:flex-start;background:none;border:none;color:var(--mute);font-size:12px;cursor:pointer;padding:4px 0}
+
+/* ===== FINISH OVERLAY ===== */
+#finish{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(8,9,11,.92);z-index:20;flex-direction:column;gap:12px;text-align:center;padding:20px}
+#finish.on{display:flex}
+#flag{width:110px;height:74px;border-radius:6px;
+  background:repeating-conic-gradient(#e8e4da 0 25%,#14161a 0 50%) 0 0/26px 26px}
+#finish h2{font-size:24px;font-style:italic;letter-spacing:2px}
+#finish .stats{font-family:ui-monospace,monospace;font-size:16px;color:var(--line)}
+#finish p{font-size:12.5px;color:var(--mute);max-width:300px}
+#finish .lb{background:var(--panel);border-radius:var(--r);padding:10px 14px;width:100%;max-width:280px;font-family:ui-monospace,monospace;font-size:12px;text-align:left}
+#finish .lb .row2{display:flex;justify-content:space-between;padding:3px 0;color:var(--mute)}
+#finish .lb .row2.me{color:var(--line);font-weight:700}
+#finish .btnrow{display:flex;gap:10px;margin-top:6px}
+
+/* ===== EDITOR ===== */
+#editor-gate{max-width:340px;margin:auto;text-align:center;gap:14px}
+#editor-toolbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tool{flex-shrink:0;background:var(--panel);border:2px solid transparent;border-radius:10px;
+  padding:9px 12px;font-size:19px;cursor:pointer;position:relative}
+.tool.sel{border-color:var(--line);background:rgba(247,201,72,.08)}
+.tool .tname{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:8px;
+  color:var(--mute);white-space:nowrap;letter-spacing:.5px}
+#editor-canvas-wrap{width:100%;aspect-ratio:1.5;background:var(--asphalt);border-radius:var(--r);
+  overflow:hidden;position:relative;border:1px solid #2c3038;touch-action:none;margin-top:14px}
+#ecv{display:block;width:100%;height:100%}
+#zoom-ctl{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
+#zoom-ctl button{width:36px;height:36px;border-radius:9px;background:rgba(26,29,35,.9);border:1px solid #3a3f47;
+  color:var(--txt);font-size:17px;cursor:pointer}
+#car-rotate{position:absolute;left:8px;bottom:8px;display:none;gap:6px}
+#car-rotate.on{display:flex}
+#car-rotate button{width:36px;height:36px;border-radius:9px;background:rgba(26,29,35,.9);border:1px solid #3a3f47;
+  color:var(--line);font-size:16px;cursor:pointer}
+#editor-panel{display:flex;flex-direction:column;gap:10px}
+#circuit-picker-admin{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.admin-circuit-row{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:9px;padding:8px 10px;font-size:12px}
+.admin-circuit-row .n{flex:1;font-weight:700}
+.admin-circuit-row .pub{font-size:9px;padding:2px 7px;border-radius:99px}
+.admin-circuit-row .pub.yes{background:rgba(57,217,138,.15);color:var(--ok)}
+.admin-circuit-row .pub.no{background:rgba(255,255,255,.08);color:var(--mute)}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--panel);
+  border:1px solid var(--line);color:var(--txt);padding:10px 18px;border-radius:99px;font-size:12.5px;
+  z-index:40;opacity:0;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ MENU ============ -->
+<section class="scr on" id="scr-menu">
+  <header class="top"><h1>FORMULA<em>·GRID</em></h1><span class="eyebrow">Contre-la-montre</span></header>
+  <div class="card field">
+    <label>Ton pseudo</label>
+    <input type="text" id="pseudo-in" placeholder="Ex : Christophe" maxlength="24">
+  </div>
+  <div class="eyebrow" style="margin-top:4px">Circuits disponibles</div>
+  <div id="circuit-list"><div class="empty-state">Chargement…</div></div>
+  <div id="editor-entry"><a class="link" href="?edit=1">🛠️ Éditeur de circuit (admin)</a></div>
+</section>
+
+<!-- ============ RACE ============ -->
+<section class="scr" id="scr-race">
+  <button id="back-menu">← Circuits</button>
+  <div id="trackwrap"><canvas id="cv"></canvas></div>
+  <div id="dash">
+    <div class="gauge" id="g-lap"><div class="lbl">TOUR</div><div class="val" id="v-lap">1/1</div></div>
+    <div class="gauge"><div class="lbl">VITESSE</div><div class="val" id="v-gear">1</div></div>
+    <div class="gauge" id="g-dice"><div class="lbl">DÉ</div><div class="val" id="v-roll">—</div></div>
+    <div class="gauge"><div class="lbl">COUPS</div><div class="val" id="v-turn">0</div></div>
+  </div>
+  <div id="gearbox">
+    <div class="lbl">BOÎTE DE VITESSES — monte, descends ou reste (±1)</div>
+    <div id="hgrid"></div>
+  </div>
+  <button id="roll">🎲 LANCER LE DÉ</button>
+  <div id="msg">Choisis ta vitesse puis lance le dé.</div>
+</section>
+
+<!-- ============ EDITEUR ============ -->
+<section class="scr" id="scr-editor">
+  <div id="editor-gate" class="card">
+    <div class="eyebrow">Accès réservé</div>
+    <h1 style="font-size:16px">Mot de passe admin</h1>
+    <div class="field"><input type="text" id="gate-pw" placeholder="Mot de passe"></div>
+    <button class="btn primary" id="gate-btn" style="width:100%">Entrer</button>
+    <div id="gate-err" style="color:var(--crash);font-size:12px"></div>
+  </div>
+
+  <div id="editor-main" style="display:none;flex-direction:column;gap:10px">
+    <header class="top"><h1 style="font-size:16px">🛠️ Éditeur</h1><a class="link" href="./">Quitter</a></header>
+
+    <div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <div class="eyebrow">Tes circuits</div>
+      <div id="circuit-picker-admin"></div>
+      <div class="row">
+        <div class="row">
+        <button class="btn" id="btn-new-circuit">➕ Nouveau circuit</button>
+        <button class="btn" id="btn-generate">🎲 Générer une proposition</button>
+      </div>
+        <button class="btn" id="btn-random-circuit">🎲 Générer aléatoirement</button>
+      </div>
+    </div>
+
+    <div id="editor-toolbar">
+      <div class="tool sel" data-tool="piste">🛣️<span class="tname">Piste</span></div>
+      <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
+      <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
+      <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
+      <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
+      <div class="tool" id="tool-gen" style="border-color:rgba(247,201,72,.4)">🎲<span class="tname">Générer</span></div>
+    </div>
+
+    <div id="editor-canvas-wrap">
+      <canvas id="ecv"></canvas>
+      <div id="zoom-ctl">
+        <button id="zin">+</button>
+        <button id="zout">−</button>
+        <button id="zreset">⟲</button>
+      </div>
+      <div id="car-rotate">
+        <button id="rotL">↺</button>
+        <button id="rotR">↻</button>
+      </div>
+    </div>
+
+    <div class="card" id="editor-panel">
+      <div class="field"><label>Nom du circuit</label><input type="text" id="c-name" placeholder="Ex : Circuit de l'Épingle"></div>
+      <div class="row">
+        <div class="field"><label>Tours à faire</label><input type="number" id="c-laps" min="1" max="20" value="1"></div>
+        <div class="field"><label>Essais par joueur</label><input type="number" id="c-attempts" min="1" max="50" value="3"></div>
+      </div>
+      <div class="row" style="margin-top:2px">
+        <button class="btn" id="btn-save-draft">💾 Enregistrer (brouillon)</button>
+        <button class="btn primary" id="btn-publish">🚀 Publier</button>
+      </div>
+      <button class="btn danger" id="btn-delete" style="display:none">🗑️ Supprimer ce circuit</button>
+    </div>
+  </div>
+</section>
+
+<div id="finish"><div id="flag"></div><h2 id="fh2">ARRIVÉE !</h2>
+  <div class="stats" id="fstats"></div><p id="fsub"></p>
+  <div class="lb" id="flb"></div>
+  <div class="btnrow">
+    <button class="btn" onclick="backToMenu()">Circuits</button>
+    <button class="btn primary" id="btn-retry">Réessayer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ================== CONSTANTES JEU ================== */
+const DICE=[[1,2],[2,4],[4,8],[7,12],[11,20],[21,30]];
+const STRAIGHT=10, DIAG=14;
+const DIRS=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+const rot=(d,k)=>(d+k+8)%8;
+
+/* ================== API ================== */
+async function api(path,opts){
+  const res=await fetch(path,opts);
+  let data=null; try{data=await res.json();}catch(e){}
+  if(!res.ok) throw new Error((data&&data.error)||('HTTP '+res.status));
+  return data;
+}
+function toast(t){
+  const el=document.getElementById('toast'); el.textContent=t; el.classList.add('on');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('on'),2200);
+}
+
+/* ================== NAVIGATION ================== */
+function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id));}
+function backToMenu(){document.getElementById('finish').classList.remove('on');show('scr-menu');loadCircuitList();}
+
+/* ================== MENU / LISTE CIRCUITS ================== */
+const pseudoIn=document.getElementById('pseudo-in');
+pseudoIn.value=localStorage.getItem('fg_pseudo')||'';
+pseudoIn.addEventListener('input',()=>localStorage.setItem('fg_pseudo',pseudoIn.value));
+
+async function loadCircuitList(){
+  const list=document.getElementById('circuit-list');
+  list.innerHTML='<div class="empty-state">Chargement…</div>';
+  try{
+    const circuits=await api('/api/formula/circuits');
+    if(!circuits.length){list.innerHTML='<div class="empty-state">Aucun circuit publié pour l\'instant.</div>';return;}
+    list.innerHTML='';
+    circuits.forEach(c=>{
+      const el=document.createElement('div');
+      el.className='circuit-card';
+      el.innerHTML=`<div class="ico">🏁</div><div><div class="name">${esc(c.name)}</div>
+        <div class="meta">${c.laps} tour${c.laps>1?'s':''} · ${c.attempts} essai${c.attempts>1?'s':''}</div></div>
+        <div class="arrow">›</div>`;
+      el.onclick=()=>openCircuit(c.id);
+      list.appendChild(el);
+    });
+  }catch(e){ list.innerHTML='<div class="empty-state">Erreur de chargement.</div>'; }
+}
+function esc(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function openCircuit(id){
+  const pseudo=pseudoIn.value.trim();
+  if(!pseudo){toast('Entre ton pseudo d\'abord');return;}
+  try{
+    const [circuit,board]=await Promise.all([
+      api('/api/formula/circuit/'+id),
+      api('/api/formula/leaderboard/'+id+'?pseudo='+encodeURIComponent(pseudo))
+    ]);
+    if(board.attemptsLeft<=0){
+      toast('Plus d\'essais sur ce circuit ('+board.attemptsUsed+'/'+circuit.attempts+')');
+      return;
+    }
+    startRace(circuit,pseudo,board.attemptsLeft);
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+
+/* ================== COURSE ================== */
+const R={}; // état de course
+document.getElementById('back-menu').onclick=backToMenu;
+
+function startRace(circuit,pseudo,attemptsLeft){
+  R.circuit=circuit; R.pseudo=pseudo; R.attemptsLeft=attemptsLeft;
+  R.grid=circuit.rows.map(r=>r.split(''));
+  R.W=circuit.w; R.H=circuit.h;
+  R.x=circuit.start.x; R.y=circuit.start.y; R.dir=circuit.start.dir||0;
+  R.gear=1; R.pendingGear=1; R.turn=0; R.lapCount=0; R.targetLaps=circuit.laps;
+  R.rolled=null; R.budget=null; R.results=null; R.ends=null; R.phase='gear'; R.trail=[];
+  document.getElementById('finish').classList.remove('on');
+  say('Choisis ta vitesse puis lance le dé.');
+  renderGears(); syncDash(); show('scr-race'); requestAnimationFrame(drawRace);
+}
+
+function onTrackR(x,y){return y>=0&&y<R.H&&x>=0&&x<R.W&&R.grid[y][x]!=='#';}
+
+function getValidPaths(x0,y0,dir0,budget,lapCount,targetLaps){
+  const results=[],memo=new Set();
+  (function dfs(x,y,dir,b,lock,crossed,path){
+    const key=x+','+y+','+dir+','+b+','+lock+','+crossed;
+    if(memo.has(key))return;memo.add(key);
+    const opts=[{d:dir,c:STRAIGHT,t:null}];
+    if(lock!=='R')opts.push({d:rot(dir,-1),c:DIAG,t:'L'});
+    if(lock!=='L')opts.push({d:rot(dir,1),c:DIAG,t:'R'});
+    const pay=opts.filter(o=>b>=o.c);
+    if(!pay.length){results.push({path:path.slice(),x,y,dir,crash:false,finish:false,left:b,lapsGained:crossed?1:0});return;}
+    let anyOpen=false;
+    for(const o of pay){
+      const nx=x+DIRS[o.d][0],ny=y+DIRS[o.d][1];
+      if(!onTrackR(nx,ny))continue;
+      anyOpen=true;
+      path.push({x:nx,y:ny,dir:o.d});
+      const isF=R.grid[ny][nx]==='F';
+      if(isF&&!crossed){
+        const lapNum=lapCount+1;
+        if(lapNum>=targetLaps){
+          results.push({path:path.slice(),x:nx,y:ny,dir:o.d,crash:false,finish:true,left:b-o.c,lapsGained:1});
+          path.pop();continue;
+        }else{ dfs(nx,ny,o.d,b-o.c,lock??o.t,true,path); path.pop(); continue; }
+      }
+      dfs(nx,ny,o.d,b-o.c,lock??o.t,crossed,path);
+      path.pop();
+    }
+    if(!anyOpen)results.push({path:path.slice(),x,y,dir,crash:true,finish:false,left:b,lapsGained:crossed?1:0});
+  })(x0,y0,dir0,budget,null,false,[]);
+  return results;
+}
+
+function renderGears(){
+  const hg=document.getElementById('hgrid'); hg.innerHTML='';
+  const order=[1,3,5,2,4,6];
+  order.forEach((g,i)=>{
+    const el=document.createElement('div');
+    const reach=Math.abs(g-R.gear)<=1;
+    el.className='gear'+(g===R.pendingGear?' sel':reach?' reach':' off');
+    el.style.gridColumn=(i%3)+1; el.style.gridRow=i<3?1:3;
+    el.innerHTML=`<b>${g}</b><span>${DICE[g-1][0]*10}–${DICE[g-1][1]*10}</span>`;
+    if(reach&&R.phase==='gear') el.onclick=()=>{R.pendingGear=g;renderGears();};
+    hg.appendChild(el);
+  });
+}
+function say(t,cls){const m=document.getElementById('msg');m.textContent=t;m.className=cls||'';}
+function syncDash(){
+  document.getElementById('v-lap').textContent=Math.min(R.lapCount+1,R.targetLaps)+'/'+R.targetLaps;
+  document.getElementById('v-gear').textContent=R.pendingGear;
+  document.getElementById('v-roll').textContent=R.rolled??'—';
+  document.getElementById('v-turn').textContent=R.turn;
+  document.getElementById('roll').disabled=R.phase!=='gear';
+}
+
+let rng=Math.random;
+document.getElementById('roll').onclick=()=>{
+  if(R.phase!=='gear')return;
+  R.gear=R.pendingGear;
+  const[a,b]=DICE[R.gear-1];
+  R.rolled=a+Math.floor(rng()*(b-a+1));
+  R.budget=R.rolled*10;
+  R.results=getValidPaths(R.x,R.y,R.dir,R.budget,R.lapCount,R.targetLaps);
+  R.ends=new Map();
+  for(const r of R.results){
+    const k=r.x+','+r.y; const prev=R.ends.get(k);
+    if(!prev||(prev.crash&&!r.crash)||(r.finish&&!prev.finish)) R.ends.set(k,r);
+  }
+  R.phase='pick';
+  const okCount=[...R.ends.values()].filter(r=>!r.crash).length;
+  if(okCount===0){
+    const best=R.results.reduce((m,r)=>r.path.length>m.path.length?r:m,R.results[0]);
+    say('💥 Aucune issue ! Tête-à-queue…','crash');
+    setTimeout(()=>applyResult(best),600);
+  }else{
+    say('Touche une case verte ('+okCount+' issue'+(okCount>1?'s':'')+') — rouge = tête-à-queue','go');
+  }
+  syncDash(); drawRace();
+};
+
+function applyResult(r){
+  R.turn++;
+  R.trail=r.path.map(p=>({x:p.x,y:p.y}));
+  if(r.path.length){const last=r.path[r.path.length-1]; R.x=last.x; R.y=last.y; R.dir=last.dir;}
+  R.lapCount+=r.lapsGained||0;
+  if(r.finish){ finishRace(r); return; }
+  if(r.crash){ R.gear=1; say('💥 Tête-à-queue ! Boîte remise en 1re.','crash'); }
+  else if(r.lapsGained){ say('🏁 Tour '+R.lapCount+' complété !','go'); }
+  else say('Tour joué. Ajuste ta vitesse.');
+  R.pendingGear=R.gear; R.rolled=null; R.budget=null; R.results=null; R.ends=null; R.phase='gear';
+  renderGears(); syncDash(); drawRace();
+}
+
+async function finishRace(r){
+  R.phase='done'; drawRace();
+  document.getElementById('fh2').textContent='ARRIVÉE !';
+  document.getElementById('fstats').textContent=R.turn+' coup'+(R.turn>1?'s':'')+' · +'+r.left+' pts au-delà de la ligne';
+  document.getElementById('fsub').textContent='Score = nombre de coups. En cas d\u2019égalité, c\u2019est le surplus au-delà de la ligne qui départage.';
+  document.getElementById('flb').innerHTML='Envoi du résultat…';
+  document.getElementById('btn-retry').disabled=true;
+  document.getElementById('finish').classList.add('on');
+  try{
+    const res=await api('/api/formula/run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({circuitId:R.circuit.id,pseudo:R.pseudo,moves:R.turn,left:r.left,laps:R.targetLaps})});
+    R.attemptsLeft=res.attemptsLeft;
+    renderLeaderboard(res);
+    const retryBtn=document.getElementById('btn-retry');
+    retryBtn.disabled=res.attemptsLeft<=0;
+    retryBtn.textContent=res.attemptsLeft>0?'Réessayer ('+res.attemptsLeft+' restant'+(res.attemptsLeft>1?'s':'')+')':'Plus d\'essais';
+    retryBtn.onclick=res.attemptsLeft>0?(()=>startRace(R.circuit,R.pseudo,res.attemptsLeft)):null;
+  }catch(e){
+    document.getElementById('flb').innerHTML='<span style="color:var(--crash)">Résultat non enregistré : '+esc(e.message)+'</span>';
+    document.getElementById('btn-retry').disabled=false;
+    document.getElementById('btn-retry').textContent='Réessayer';
+    document.getElementById('btn-retry').onclick=()=>startRace(R.circuit,R.pseudo,R.attemptsLeft);
+  }
+}
+function renderLeaderboard(res){
+  let html='<div class="eyebrow" style="margin-bottom:6px">Meilleurs temps</div>';
+  if(!res.top||!res.top.length){html+='<div style="color:var(--mute)">Tu es le premier !</div>';}
+  else res.top.forEach((t,i)=>{
+    const mine=t.pseudo.toLowerCase()===R.pseudo.toLowerCase()&&t.moves===(res.best&&res.best.moves);
+    html+=`<div class="row2${mine?' me':''}"><span>${i+1}. ${esc(t.pseudo)}</span><span>${t.moves} coups</span></div>`;
+  });
+  document.getElementById('flb').innerHTML=html;
+}
+
+/* rendu piste + voiture */
+const cv=document.getElementById('cv'); const cctx=cv.getContext('2d');
+function drawRace(){
+  const wrap=document.getElementById('trackwrap');
+  const cell=Math.floor((wrap.clientWidth-12)/R.W);
+  cv.width=cell*R.W; cv.height=cell*R.H;
+  cctx.fillStyle='#101216'; cctx.fillRect(0,0,cv.width,cv.height);
+  for(let y=0;y<R.H;y++)for(let x=0;x<R.W;x++){
+    const t=R.grid[y][x]; if(t==='#')continue;
+    cctx.fillStyle=t==='F'?'#23262c':'#3a3f47';
+    cctx.fillRect(x*cell+1,y*cell+1,cell-2,cell-2);
+    if(t==='F'){cctx.fillStyle='#e8e4da';const h=(cell-2)/4;
+      for(let i=0;i<4;i++)for(let j=0;j<2;j++) if((i+j)%2===0)
+        cctx.fillRect(x*cell+1+j*(cell-2)/2,y*cell+1+i*h,(cell-2)/2,h);}
+  }
+  cctx.fillStyle='rgba(247,201,72,.25)';
+  for(const t of R.trail) cctx.fillRect(t.x*cell+cell*.3,t.y*cell+cell*.3,cell*.4,cell*.4);
+  if(R.phase==='pick'&&R.ends){
+    for(const r of R.ends.values()){
+      cctx.beginPath(); cctx.arc(r.x*cell+cell/2,r.y*cell+cell/2,cell*.3,0,7);
+      cctx.fillStyle=r.crash?'rgba(255,93,93,.85)':r.finish?'#f7c948':'rgba(57,217,138,.85)';
+      cctx.fill();
+    }
+  }
+  const cx=R.x*cell+cell/2, cy=R.y*cell+cell/2, [dx,dy]=DIRS[R.dir];
+  const ang=Math.atan2(dy,dx);
+  cctx.save(); cctx.translate(cx,cy); cctx.rotate(ang);
+  cctx.beginPath(); cctx.moveTo(cell*.42,0); cctx.lineTo(-cell*.3,cell*.28); cctx.lineTo(-cell*.3,-cell*.28);
+  cctx.closePath(); cctx.fillStyle='#f7c948'; cctx.fill();
+  cctx.restore();
+}
+cv.addEventListener('pointerdown',e=>{
+  if(R.phase!=='pick')return;
+  const rect=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-rect.left)/rect.width*R.W);
+  const y=Math.floor((e.clientY-rect.top)/rect.height*R.H);
+  const r=R.ends.get(x+','+y);
+  if(!r){say('Touche une pastille verte (ou rouge pour assumer le tête-à-queue).');return;}
+  applyResult(r);
+});
+window.addEventListener('resize',()=>{if(document.getElementById('scr-race').classList.contains('on'))drawRace();});
+
+/* ================== ÉDITEUR ================== */
+const EW=120, EH=120; // grille éditeur, généreuse pour circuits complexes
+const E={ grid:null, tool:'piste', scale:12, offX:0, offY:0, carPos:null, carDir:0,
+  editingId:null, adminPw:'', published:false };
+
+function emptyGrid(){ return Array.from({length:EH},()=>Array(EW).fill('#')); }
+
+const params=new URLSearchParams(location.search);
+if(params.get('edit')==='1') show('scr-editor');
+
+document.getElementById('gate-btn').onclick=async()=>{
+  const pw=document.getElementById('gate-pw').value;
+  try{
+    const r=await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    if(!r.success) throw new Error('Mot de passe incorrect');
+    E.adminPw=pw;
+    document.getElementById('editor-gate').style.display='none';
+    document.getElementById('editor-main').style.display='flex';
+    newCircuitDraft();
+    loadAdminCircuitList();
+  }catch(e){ document.getElementById('gate-err').textContent=e.message; }
+};
+
+function newCircuitDraft(){
+  E.grid=emptyGrid(); E.carPos=null; E.carDir=0; E.editingId=null; E.published=false;
+  document.getElementById('c-name').value='';
+  document.getElementById('c-laps').value=1;
+  document.getElementById('c-attempts').value=3;
+  document.getElementById('btn-delete').style.display='none';
+  resetView(); drawEditor();
+}
+
+async function loadAdminCircuitList(){
+  const el=document.getElementById('circuit-picker-admin');
+  el.innerHTML='Chargement…';
+  try{
+    const list=await api('/api/formula/admin/circuits?password='+encodeURIComponent(E.adminPw));
+    if(!list.length){el.innerHTML='<div style="color:var(--mute);font-size:12px">Aucun circuit encore créé.</div>';return;}
+    el.innerHTML='';
+    list.forEach(c=>{
+      const row=document.createElement('div'); row.className='admin-circuit-row';
+      row.innerHTML=`<span class="n">${esc(c.name)}</span><span class="pub ${c.published?'yes':'no'}">${c.published?'Publié':'Brouillon'}</span>`;
+      row.onclick=()=>loadCircuitForEdit(c.id);
+      el.appendChild(row);
+    });
+  }catch(e){ el.innerHTML='Erreur de chargement.'; }
+}
+
+async function loadCircuitForEdit(id){
+  try{
+    const c=await api('/api/formula/circuit/'+id);
+    E.grid=c.rows.map(r=>r.split(''));
+    E.carPos={x:c.start.x,y:c.start.y}; E.carDir=c.start.dir||0;
+    E.editingId=c.id; E.published=!!c.published;
+    document.getElementById('c-name').value=c.name;
+    document.getElementById('c-laps').value=c.laps;
+    document.getElementById('c-attempts').value=c.attempts;
+    document.getElementById('btn-delete').style.display='block';
+    resetView(); drawEditor();
+    toast('Circuit chargé');
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+
+document.getElementById('btn-new-circuit').onclick=newCircuitDraft;
+
+/* -- génération aléatoire de circuit -- */
+function genControlPoints(nPts,rx,ry,cx,cy){
+  const pts=[];
+  for(let i=0;i<nPts;i++){
+    const angle=(i/nPts)*Math.PI*2 + (Math.random()-0.5)*(Math.PI*2/nPts)*0.6;
+    const rad=0.55+Math.random()*0.45;
+    pts.push({x:cx+Math.cos(angle)*rx*rad, y:cy+Math.sin(angle)*ry*rad, a:angle});
+  }
+  pts.sort((a,b)=>a.a-b.a);
+  return pts;
+}
+function catmullRom(p0,p1,p2,p3,t){
+  const t2=t*t,t3=t2*t;
+  return {
+    x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+    y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+  };
+}
+function generateRawCircuit(W,H){
+  const cx=W/2, cy=H/2, rx=W/2-W*0.12, ry=H/2-H*0.12;
+  const nPts=9+Math.floor(Math.random()*6), trackW=3+Math.floor(Math.random()*3);
+  const pts=genControlPoints(nPts,rx,ry,cx,cy);
+  const N=pts.length, samplesPerSeg=18, curve=[];
+  for(let i=0;i<N;i++){
+    const p0=pts[(i-1+N)%N], p1=pts[i], p2=pts[(i+1)%N], p3=pts[(i+2)%N];
+    for(let s=0;s<samplesPerSeg;s++) curve.push(catmullRom(p0,p1,p2,p3,s/samplesPerSeg));
+  }
+  const grid=Array.from({length:H},()=>Array(W).fill('#'));
+  const r=trackW/2;
+  for(const c of curve){
+    const x0=Math.max(0,Math.floor(c.x-r)), x1=Math.min(W-1,Math.ceil(c.x+r));
+    const y0=Math.max(0,Math.floor(c.y-r)), y1=Math.min(H-1,Math.ceil(c.y+r));
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++) if((x-c.x)**2+(y-c.y)**2<=r*r) grid[y][x]='.';
+  }
+  const M=curve.length;
+  const tangent=i=>{const a=curve[(i-2+M)%M], b=curve[(i+2)%M]; return Math.atan2(b.y-a.y,b.x-a.x);};
+  const win=12; let bestIdx=0, bestVar=Infinity;
+  for(let i=0;i<M;i++){
+    let sum=0,prev=null;
+    for(let k=-win;k<=win;k++){
+      const ang=tangent((i+k+M)%M);
+      if(prev!=null){ let d=ang-prev; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI; sum+=Math.abs(d); }
+      prev=ang;
+    }
+    if(sum<bestVar){bestVar=sum;bestIdx=i;}
+  }
+  const straightPt=curve[bestIdx], ang=tangent(bestIdx), perp=ang+Math.PI/2, half=r+0.5;
+  for(let t=-half;t<=half;t+=0.4){
+    const fx=Math.round(straightPt.x+Math.cos(perp)*t), fy=Math.round(straightPt.y+Math.sin(perp)*t);
+    if(fx>=0&&fx<W&&fy>=0&&fy<H&&grid[fy][fx]!=='#') grid[fy][fx]='F';
+  }
+  const startIdx=(bestIdx-6+M)%M, sp=curve[startIdx];
+  const startX=Math.round(sp.x), startY=Math.round(sp.y), tAng=tangent(startIdx);
+  let bestDir=0,bestDot=-Infinity;
+  DIRS.forEach((d,i)=>{ const dot=Math.cos(tAng)*d[0]+Math.sin(tAng)*d[1]; if(dot>bestDot){bestDot=dot;bestDir=i;} });
+  return { grid, start:{x:startX,y:startY,dir:bestDir} };
+}
+function validateGenCircuit(grid,W,H,start){
+  function onTrack(x,y){return y>=0&&y<H&&x>=0&&x<W&&grid[y][x]!=='#';}
+  function reach(sx,sy,sdir){
+    const seen=new Set([sx+','+sy+','+sdir]); const q=[[sx,sy,sdir]]; let fStates=[];
+    while(q.length){
+      const [x,y,dir]=q.pop();
+      if(grid[y][x]==='F') fStates.push([x,y,dir]);
+      for(const d of [dir,rot(dir,-1),rot(dir,1)]){
+        const nx=x+DIRS[d][0], ny=y+DIRS[d][1];
+        if(!onTrack(nx,ny))continue;
+        const k=nx+','+ny+','+d;
+        if(!seen.has(k)){seen.add(k);q.push([nx,ny,d]);}
+      }
+    }
+    return fStates;
+  }
+  const p1=reach(start.x,start.y,start.dir);
+  if(!p1.length) return false;
+  const [fx,fy,fdir]=p1[0];
+  return reach(fx,fy,fdir).length>0;
+}
+function dilateGrid(grid,W,H){
+  const isTrack=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&grid[y][x]!=='#';
+  const out=grid.map(r=>r.slice());
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    if(grid[y][x]!=='#')continue;
+    let touch=false;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]])
+      if(isTrack(x+dx,y+dy)){touch=true;break;}
+    if(touch) out[y][x]='.';
+  }
+  return out;
+}
+function generateSafeCircuit(W,H){
+  for(let attempt=0;attempt<12;attempt++){
+    const c=generateRawCircuit(W,H);
+    if(validateGenCircuit(c.grid,W,H,c.start)) return c;
+    const g2=dilateGrid(c.grid,W,H);
+    if(validateGenCircuit(g2,W,H,c.start)) return {grid:g2,start:c.start};
+  }
+  // secours garanti : ovale
+  const cx=W/2, cy=H/2, rx=W*0.32, ry=H*0.32, w=5;
+  const grid=Array.from({length:H},()=>Array(W).fill('#'));
+  for(let a=0;a<360;a+=0.5){
+    const rad=a*Math.PI/180, px=cx+Math.cos(rad)*rx, py=cy+Math.sin(rad)*ry;
+    for(let dx=-w;dx<=w;dx++)for(let dy=-w;dy<=w;dy++)
+      if(dx*dx+dy*dy<=w*w){ const x=Math.round(px+dx),y=Math.round(py+dy);
+        if(x>=0&&y>=0&&x<W&&y<H) grid[y][x]='.'; }
+  }
+  const fx=Math.round(cx+rx), fy=Math.round(cy);
+  for(let t=-w;t<=w;t++){ const y=fy+t; if(y>=0&&y<H&&grid[y][fx]!=='#') grid[y][fx]='F'; }
+  return { grid, start:{x:fx-6,y:fy,dir:2} };
+}
+document.getElementById('btn-generate').onclick=()=>{
+  const c=generateSafeCircuit(EW,EH);
+  E.grid=c.grid; E.carPos={x:c.start.x,y:c.start.y}; E.carDir=c.start.dir;
+  document.getElementById('car-rotate').classList.add('on');
+  resetView(); drawEditor();
+  toast('🎲 Proposition générée — modifiable avec les outils');
+};
+document.getElementById('btn-random-circuit').onclick=()=>{
+  if(hasTrackContent(E.grid) && !confirm('Remplacer le circuit actuel par une proposition aléatoire ?')) return;
+  generateRandomCircuit();
+};
+function hasTrackContent(grid){ return grid.some(row=>row.some(c=>c!=='#')); }
+
+/* -- génération aléatoire de circuit (boucle simple garantie par échantillonnage polaire) -- */
+function generateRandomCircuit(){
+  const cx=EW/2, cy=EH/2;
+  const margin=10, baseR=Math.min(EW,EH)/2-margin;
+  const N=8+Math.floor(Math.random()*7); // 8..14 points de contrôle
+  const pts=[];
+  for(let i=0;i<N;i++){
+    const angle=(i/N)*Math.PI*2 + (Math.random()-0.5)*(Math.PI*2/N)*0.6;
+    const r=baseR*(0.5+Math.random()*0.5);
+    pts.push({x:cx+Math.cos(angle)*r, y:cy+Math.sin(angle)*r});
+  }
+  pts.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+
+  function catmullRom(p0,p1,p2,p3,t){
+    const t2=t*t,t3=t2*t;
+    return {
+      x:0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+      y:0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+    };
+  }
+  const samplesPerSeg=24;
+  const centerline=[];
+  for(let i=0;i<N;i++){
+    const p0=pts[(i-1+N)%N], p1=pts[i], p2=pts[(i+1)%N], p3=pts[(i+2)%N];
+    for(let s=0;s<samplesPerSeg;s++) centerline.push(catmullRom(p0,p1,p2,p3,s/samplesPerSeg));
+  }
+
+  const grid=emptyGrid();
+  const halfW2=9; // rayon² de la piste (~3 cases de large)
+  centerline.forEach(pt=>{
+    const cxr=Math.round(pt.x), cyr=Math.round(pt.y);
+    for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
+      const gx=cxr+dx, gy=cyr+dy;
+      if(gx<0||gy<0||gx>=EW||gy>=EH)continue;
+      if(dx*dx+dy*dy<=halfW2) grid[gy][gx]='.';
+    }
+  });
+
+  // ligne d'arrivée sur le tronçon le plus rectiligne
+  const K=18;
+  let bestIdx=0, bestScore=Infinity;
+  for(let i=0;i<centerline.length;i++){
+    let score=0;
+    for(let k=0;k<K;k++){
+      const a=centerline[(i+k)%centerline.length], b=centerline[(i+k+1)%centerline.length], c=centerline[(i+k+2)%centerline.length];
+      const v1={x:b.x-a.x,y:b.y-a.y}, v2={x:c.x-b.x,y:c.y-b.y};
+      let d=Math.abs(Math.atan2(v2.y,v2.x)-Math.atan2(v1.y,v1.x)); if(d>Math.PI)d=2*Math.PI-d;
+      score+=d;
+    }
+    if(score<bestScore){bestScore=score;bestIdx=i;}
+  }
+  const fIdx=(bestIdx+Math.floor(K/2))%centerline.length;
+  const fp=centerline[fIdx], fp2=centerline[(fIdx+1)%centerline.length];
+  const fdir={x:fp2.x-fp.x,y:fp2.y-fp.y}; const flen=Math.hypot(fdir.x,fdir.y)||1;
+  const perp={x:-fdir.y/flen,y:fdir.x/flen};
+  for(let t=-3;t<=3;t++){
+    const gx=Math.round(fp.x+perp.x*t), gy=Math.round(fp.y+perp.y*t);
+    if(gx>=0&&gy>=0&&gx<EW&&gy<EH&&grid[gy][gx]!=='#') grid[gy][gx]='F';
+  }
+
+  // départ juste APRÈS la ligne : le joueur doit faire tout le tour avant de la recroiser
+  const startIdx=(fIdx+14)%centerline.length;
+  const sp=centerline[startIdx], sp2=centerline[(startIdx+1)%centerline.length];
+  const ang=Math.atan2(sp2.y-sp.y,sp2.x-sp.x);
+  let bestD=0,bestDot=-Infinity;
+  DIRS.forEach((d,i)=>{
+    const a2=Math.atan2(d[1],d[0]);
+    let diff=Math.abs(a2-ang); if(diff>Math.PI)diff=2*Math.PI-diff;
+    const dot=Math.cos(diff);
+    if(dot>bestDot){bestDot=dot;bestD=i;}
+  });
+  const startX=Math.round(sp.x), startY=Math.round(sp.y);
+  if(grid[startY]&&grid[startY][startX]==='#') grid[startY][startX]='.';
+
+  E.grid=grid; E.carPos={x:startX,y:startY}; E.carDir=bestD; E.editingId=null; E.published=false;
+  document.getElementById('c-name').value='';
+  document.getElementById('btn-delete').style.display='none';
+  document.getElementById('car-rotate').classList.add('on');
+  resetView(); drawEditor();
+  toast('🎲 Proposition générée — ajuste-la si besoin, puis nomme-la');
+}
+
+document.querySelectorAll('.tool').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tool').forEach(x=>x.classList.remove('sel'));
+  t.classList.add('sel'); E.tool=t.dataset.tool;
+  document.getElementById('car-rotate').classList.toggle('on', E.tool==='car'&&!!E.carPos);
+});
+
+/* -- rendu + zoom/pan -- */
+const ecv=document.getElementById('ecv'); const ectx=ecv.getContext('2d');
+function fitEcv(){
+  const wrap=document.getElementById('editor-canvas-wrap');
+  ecv.width=wrap.clientWidth; ecv.height=wrap.clientHeight;
+}
+function resetView(){
+  fitEcv();
+  E.scale=Math.max(2,Math.floor(Math.min(ecv.width/EW, ecv.height/EH)));
+  E.offX=(ecv.width-E.scale*EW)/2; E.offY=(ecv.height-E.scale*EH)/2;
+}
+function drawEditor(){
+  fitEcv();
+  ectx.fillStyle='#101216'; ectx.fillRect(0,0,ecv.width,ecv.height);
+  ectx.save(); ectx.translate(E.offX,E.offY); ectx.scale(E.scale/12,E.scale/12);
+  const cell=12;
+  for(let y=0;y<EH;y++)for(let x=0;x<EW;x++){
+    const t=E.grid[y][x];
+    ectx.fillStyle= t==='#' ? '#1c1f25' : (t==='F'?'#3a3f47':'#454b55');
+    ectx.fillRect(x*cell+.5,y*cell+.5,cell-1,cell-1);
+    if(t==='F'){ectx.fillStyle='#e8e4da';ectx.fillRect(x*cell+2,y*cell+2,cell-4,cell-4);}
+  }
+  ectx.strokeStyle='rgba(255,255,255,.04)'; ectx.lineWidth=.5;
+  for(let x=0;x<=EW;x+=5){ectx.beginPath();ectx.moveTo(x*cell,0);ectx.lineTo(x*cell,EH*cell);ectx.stroke();}
+  for(let y=0;y<=EH;y+=5){ectx.beginPath();ectx.moveTo(0,y*cell);ectx.lineTo(EW*cell,y*cell);ectx.stroke();}
+  if(E.carPos){
+    const [dx,dy]=DIRS[E.carDir]; const ang=Math.atan2(dy,dx);
+    ectx.save(); ectx.translate(E.carPos.x*cell+cell/2,E.carPos.y*cell+cell/2); ectx.rotate(ang);
+    ectx.beginPath(); ectx.moveTo(cell*.5,0); ectx.lineTo(-cell*.35,cell*.32); ectx.lineTo(-cell*.35,-cell*.32);
+    ectx.closePath(); ectx.fillStyle='#f7c948'; ectx.fill();
+    ectx.restore();
+  }
+  ectx.restore();
+}
+function cellFromEvent(e){
+  const rect=ecv.getBoundingClientRect();
+  const px=(e.clientX-rect.left)-E.offX, py=(e.clientY-rect.top)-E.offY;
+  const cell=E.scale;
+  return {x:Math.floor(px/cell), y:Math.floor(py/cell)};
+}
+function paintAt(x,y){
+  if(x<0||y<0||x>=EW||y>=EH)return;
+  if(E.tool==='piste') E.grid[y][x]='.';
+  else if(E.tool==='mur'){ E.grid[y][x]='#'; if(E.carPos&&E.carPos.x===x&&E.carPos.y===y)E.carPos=null; }
+  else if(E.tool==='finish'){ E.grid[y][x]='F'; }
+  else if(E.tool==='car'){ if(E.grid[y][x]==='#')E.grid[y][x]='.'; E.carPos={x,y};
+    document.getElementById('car-rotate').classList.add('on'); }
+  drawEditor();
+}
+document.getElementById('rotL').onclick=()=>{E.carDir=rot(E.carDir,-1);drawEditor();};
+document.getElementById('rotR').onclick=()=>{E.carDir=rot(E.carDir,1);drawEditor();};
+
+/* -- génération aléatoire d'une proposition de circuit -- */
+function catmullRom(p0,p1,p2,p3,t){
+  const t2=t*t,t3=t2*t;
+  const f=(a,b,c,d)=>0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
+  return {x:f(p0.x,p1.x,p2.x,p3.x), y:f(p0.y,p1.y,p2.y,p3.y)};
+}
+function generateRandomCircuit(){
+  const W=EW,H=EH, halfWidth=3;
+  const cx=W/2, cy=H/2;
+  const maxR=Math.min(W,H)/2-(halfWidth+4);
+  const n=8+Math.floor(Math.random()*6);
+  const pts=[];
+  for(let i=0;i<n;i++){
+    const baseAngle=(i/n)*Math.PI*2;
+    const jitterAngle=(Math.random()-0.5)*(Math.PI*2/n)*0.6;
+    const angle=baseAngle+jitterAngle;
+    const r=maxR*(0.55+Math.random()*0.4);
+    pts.push({x:cx+Math.cos(angle)*r, y:cy+Math.sin(angle)*r});
+  }
+  const samplesPerSeg=14, samples=[];
+  for(let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+    for(let s=0;s<samplesPerSeg;s++) samples.push(catmullRom(p0,p1,p2,p3,s/samplesPerSeg));
+  }
+  const grid=Array.from({length:H},()=>Array(W).fill('#'));
+  function stamp(x,y){
+    const cx0=Math.round(x), cy0=Math.round(y);
+    for(let dy=-halfWidth;dy<=halfWidth;dy++)for(let dx=-halfWidth;dx<=halfWidth;dx++){
+      const gx=cx0+dx, gy=cy0+dy;
+      if(gx>=0&&gx<W&&gy>=0&&gy<H) grid[gy][gx]='.';
+    }
+  }
+  samples.forEach(s=>stamp(s.x,s.y));
+  const K=samples.length, step=4;
+  const dirs=samples.map((s,i)=>{
+    const nx=samples[(i+step)%K], px=samples[(i-step+K)%K];
+    const dx=nx.x-px.x, dy=nx.y-px.y; const len=Math.hypot(dx,dy)||1;
+    return {x:dx/len,y:dy/len};
+  });
+  const winLen=18; let bestI=0,bestScore=-2;
+  for(let i=0;i<K;i++){
+    let score=0;
+    for(let j=0;j<winLen;j++){ const a=dirs[i], b=dirs[(i+j)%K]; score+=a.x*b.x+a.y*b.y; }
+    if(score>bestScore){bestScore=score;bestI=i;}
+  }
+  const finishIdx=(bestI+Math.floor(winLen*0.65))%K;
+  const startIdx=(bestI+Math.floor(winLen*0.2))%K;
+  const fPt=samples[finishIdx], fDir=dirs[finishIdx];
+  const perp={x:-fDir.y,y:fDir.x};
+  for(let t=-halfWidth;t<=halfWidth;t++){
+    const gx=Math.round(fPt.x+perp.x*t), gy=Math.round(fPt.y+perp.y*t);
+    if(gx>=0&&gx<W&&gy>=0&&gy<H) grid[gy][gx]='F';
+  }
+  const sPt=samples[startIdx], sDir=dirs[startIdx];
+  let bestD=0,bestDot=-2;
+  DIRS.forEach((d,i)=>{ const len=Math.hypot(d[0],d[1]); const dot=(d[0]/len)*sDir.x+(d[1]/len)*sDir.y;
+    if(dot>bestDot){bestDot=dot;bestD=i;} });
+  const startX=Math.round(sPt.x), startY=Math.round(sPt.y);
+  if(grid[startY][startX]==='#') grid[startY][startX]='.';
+  return {grid, start:{x:startX,y:startY,dir:bestD}};
+}
+document.getElementById('tool-gen').onclick=()=>{
+  const {grid,start}=generateRandomCircuit();
+  E.grid=grid; E.carPos={x:start.x,y:start.y}; E.carDir=start.dir;
+  document.getElementById('car-rotate').classList.remove('on');
+  resetView(); drawEditor();
+  toast('🎲 Proposition générée — modifie-la ou régénère');
+};
+
+/* pointeurs : peinture / pan / pincement */
+const pointers=new Map();
+let pinchStart=null, panStart=null;
+ecv.addEventListener('pointerdown',e=>{
+  ecv.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+    if(E.tool==='pan'){ panStart={x:e.clientX,y:e.clientY,offX:E.offX,offY:E.offY}; }
+    else{ const c=cellFromEvent(e); paintAt(c.x,c.y); }
+  } else if(pointers.size===2){
+    const pts=[...pointers.values()];
+    pinchStart={ d:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y), scale:E.scale,
+      mid:{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}, offX:E.offX, offY:E.offY };
+  }
+});
+ecv.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+    if(E.tool==='pan'&&panStart){
+      E.offX=panStart.offX+(e.clientX-panStart.x); E.offY=panStart.offY+(e.clientY-panStart.y); drawEditor();
+    } else if(E.tool!=='pan'&&e.buttons===1){ const c=cellFromEvent(e); paintAt(c.x,c.y); }
+  } else if(pointers.size===2&&pinchStart){
+    const pts=[...pointers.values()];
+    const d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    const factor=d/Math.max(1,pinchStart.d);
+    E.scale=Math.max(2,Math.min(40,pinchStart.scale*factor));
+    drawEditor();
+  }
+});
+function endPtr(e){ pointers.delete(e.pointerId); if(pointers.size<2)pinchStart=null; if(pointers.size<1)panStart=null; }
+ecv.addEventListener('pointerup',endPtr); ecv.addEventListener('pointercancel',endPtr);
+ecv.addEventListener('wheel',e=>{ e.preventDefault(); E.scale=Math.max(2,Math.min(40,E.scale*(e.deltaY<0?1.1:.9))); drawEditor(); },{passive:false});
+document.getElementById('zin').onclick=()=>{E.scale=Math.min(40,E.scale*1.25);drawEditor();};
+document.getElementById('zout').onclick=()=>{E.scale=Math.max(2,E.scale*.8);drawEditor();};
+document.getElementById('zreset').onclick=()=>{resetView();drawEditor();};
+window.addEventListener('resize',()=>{ if(document.getElementById('editor-main').style.display==='flex') drawEditor(); });
+
+/* -- sauvegarde -- */
+function gridToRows(){ return E.grid.map(row=>row.join('')); }
+async function saveCircuit(publish){
+  const name=document.getElementById('c-name').value.trim();
+  if(!name){toast('Nom du circuit requis');return;}
+  if(!E.carPos){toast('Place la voiture 🏎️ sur la piste');return;}
+  const rows=gridToRows();
+  if(!rows.some(r=>r.includes('F'))){toast('Dessine une ligne d\'arrivée 🏁');return;}
+  const body={
+    password:E.adminPw, id:E.editingId, name, w:EW, h:EH, rows,
+    start:{x:E.carPos.x,y:E.carPos.y,dir:E.carDir},
+    laps:parseInt(document.getElementById('c-laps').value)||1,
+    attempts:parseInt(document.getElementById('c-attempts').value)||3,
+    published: publish!==undefined ? publish : E.published
+  };
+  try{
+    const res=await api('/api/formula/circuit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    E.editingId=res.id; E.published=body.published;
+    document.getElementById('btn-delete').style.display='block';
+    toast(publish?'✅ Circuit publié !':'💾 Brouillon enregistré');
+    loadAdminCircuitList();
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+document.getElementById('btn-save-draft').onclick=()=>saveCircuit(false);
+document.getElementById('btn-publish').onclick=()=>saveCircuit(true);
+document.getElementById('btn-delete').onclick=async()=>{
+  if(!E.editingId)return;
+  if(!confirm('Supprimer ce circuit définitivement ?'))return;
+  try{
+    await api('/api/formula/circuit/'+E.editingId,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:E.adminPw})});
+    toast('Circuit supprimé'); newCircuitDraft(); loadAdminCircuitList();
+  }catch(e){ toast('Erreur : '+e.message); }
+};
+
+/* ================== INIT ================== */
+if(params.get('edit')!=='1') loadCircuitList();
+</script>
+</body>
+</html>
