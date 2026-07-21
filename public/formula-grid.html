@@ -8,7 +8,7 @@
 :root{
   --asphalt:#101216; --panel:#1a1d23; --panel2:#22262e; --track:#3a3f47; --line:#f7c948;
   --kerb-r:#d63b2f; --kerb-w:#e8e4da; --ok:#39d98a; --crash:#ff5d5d;
-  --txt:#e8e4da; --mute:#868c97; --r:12px; --grass:#2d5016;
+  --txt:#e8e4da; --mute:#868c97; --r:12px; --grass:#2d5016; --grass2:#3a6b1e;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{height:100%}
@@ -47,7 +47,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 .empty-state{text-align:center;padding:30px 14px;color:var(--mute);font-size:13px}
 #editor-entry{text-align:center;font-size:11px;color:var(--mute);margin-top:4px}
 
-#trackwrap{width:100%;background:var(--grass);padding:6px;border-radius:var(--r);position:relative;touch-action:none}
+#trackwrap{width:100%;background:var(--grass);padding:6px;border-radius:var(--r);position:relative;touch-action:none;overflow:hidden}
 #cv{display:block;width:100%;aspect-ratio:1;background:var(--grass);border-radius:8px;touch-action:none}
 #minimap-wrap{position:absolute;right:12px;bottom:12px;width:78px;height:78px;border-radius:8px;
   overflow:hidden;border:2px solid rgba(232,228,218,.5);box-shadow:0 2px 8px rgba(0,0,0,.4)}
@@ -58,6 +58,16 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 .gauge .val{font-family:ui-monospace,monospace;font-size:19px;font-weight:800;line-height:1.25}
 #g-dice .val{color:var(--line)}
 #g-lap .val{color:var(--ok)}
+
+/* SPEEDOMETER */
+#speedometer{width:100%;background:var(--panel);border-radius:var(--r);padding:10px 14px;border:1px solid #2c3038;position:relative;overflow:hidden}
+#speed-bar-bg{width:100%;height:8px;background:#2b2f36;border-radius:4px;overflow:hidden;margin-top:6px}
+#speed-bar{height:100%;width:0%;border-radius:4px;transition:width .3s ease,background .3s ease}
+#speed-label{display:flex;justify-content:space-between;align-items:center}
+#speed-label .lbl{font-size:10px;letter-spacing:2px;color:var(--mute)}
+#speed-label .val{font-family:ui-monospace,monospace;font-size:16px;font-weight:900}
+#speed-warning{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,93,93,.1);
+  opacity:0;transition:opacity .2s;pointer-events:none;border-radius:var(--r)}
 
 #gearbox{width:100%;background:var(--panel);border-radius:var(--r);padding:12px 14px;border:1px solid #2c3038}
 #gearbox .lbl{font-size:10px;letter-spacing:2px;color:var(--mute);margin-bottom:10px;text-align:center}
@@ -76,6 +86,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 #msg{width:100%;text-align:center;font-size:13px;color:var(--mute);min-height:18px;margin-top:4px}
 #msg.crash{color:var(--crash);font-weight:700}
 #msg.go{color:var(--ok);font-weight:700}
+#msg.checkpoint{color:var(--line);font-weight:700}
 #back-menu{align-self:flex-start;background:none;border:none;color:var(--mute);font-size:12px;cursor:pointer;padding:4px 0}
 
 #center-btn{position:absolute;left:12px;bottom:12px;width:44px;height:44px;border-radius:50%;
@@ -87,6 +98,16 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 #pan-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);
   background:rgba(26,29,35,.9);padding:6px 12px;border-radius:20px;font-size:11px;color:var(--mute);
   pointer-events:none;z-index:5;white-space:nowrap}
+
+/* CHECKPOINT TOAST */
+#cp-toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(26,29,35,.95);border:2px solid var(--line);padding:12px 20px;border-radius:12px;
+  font-family:ui-monospace,monospace;font-size:14px;color:var(--line);font-weight:700;
+  pointer-events:none;z-index:10;opacity:0;transition:opacity .3s;text-align:center}
+#cp-toast.on{opacity:1}
+#cp-toast .cp-diff{font-size:11px;margin-top:4px}
+#cp-toast .cp-diff.better{color:var(--ok)}
+#cp-toast .cp-diff.worse{color:var(--crash)}
 
 #dice-anim-overlay{position:fixed;inset:0;background:rgba(8,9,11,.9);display:none;align-items:center;justify-content:center;z-index:30;flex-direction:column;gap:15px;backdrop-filter:blur(4px)}
 #dice-anim-overlay.on{display:flex}
@@ -173,6 +194,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
   <div id="trackwrap">
     <div id="pan-hint">🤚 Glisser pour déplacer · Pincer pour zoomer</div>
     <canvas id="cv"></canvas>
+    <div id="cp-toast"></div>
     <button id="center-btn" title="Centrer sur la voiture">🎯</button>
     <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
   </div>
@@ -182,12 +204,20 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
     <div class="gauge" id="g-dice"><div class="lbl">DÉ</div><div class="val" id="v-roll">—</div></div>
     <div class="gauge"><div class="lbl">COUPS</div><div class="val" id="v-turn">0</div></div>
   </div>
+  <div id="speedometer">
+    <div id="speed-warning"></div>
+    <div id="speed-label">
+      <span class="lbl">VITESSE</span>
+      <span class="val" id="speed-val">0 km/h</span>
+    </div>
+    <div id="speed-bar-bg"><div id="speed-bar"></div></div>
+  </div>
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
   </div>
   <button id="roll">🎲 LANCER LE DÉ</button>
-  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">🎲 Relancer (stresse la voiture — rapport bloqué au tour suivant)</button>
+  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">🎲 Relancer (stresse la voiture)</button>
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
 </section>
 
@@ -213,8 +243,8 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
       <div id="circuit-picker-admin"></div>
       <div class="row">
         <button class="btn" id="btn-new-circuit">➕ Nouveau</button>
-        <button class="btn" id="btn-generate"> Générer</button>
-        <button class="btn" id="btn-import-img">️ Importer Image</button>
+        <button class="btn" id="btn-generate">🏁 Générer</button>
+        <button class="btn" id="btn-import-img">🖼️ Importer</button>
       </div>
       <input type="file" id="img-import" accept="image/*" style="display:none">
       <button class="btn primary" id="btn-test-mode" style="background:var(--ok);color:#14161a">🏎️ Tester ce circuit</button>
@@ -223,7 +253,8 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
     <div id="editor-toolbar">
       <div class="tool sel" data-tool="piste">🛣️<span class="tname">Piste</span></div>
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
-      <div class="tool" data-tool="finish"><span class="tname">Arrivée</span></div>
+      <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
+      <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
     </div>
@@ -237,7 +268,7 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
       </div>
       <div id="car-rotate">
         <button id="rotL">↺</button>
-        <button id="rotR"></button>
+        <button id="rotR">↻</button>
       </div>
     </div>
 
@@ -248,12 +279,12 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
         <div class="field"><label>Essais par joueur</label><input type="number" id="c-attempts" min="1" max="50" value="3"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Largeur piste</label><input type="number" id="c-width" min="2" max="8" value="3"></div>
-        <div class="field"><label>Nombre de virages</label><input type="number" id="c-turns" min="2" max="12" value="6"></div>
+        <div class="field"><label>Largeur piste</label><input type="number" id="c-width" min="2" max="6" value="3"></div>
+        <div class="field"><label>Complexité</label><input type="number" id="c-complexity" min="3" max="12" value="6"></div>
       </div>
       <div class="row" style="margin-top:2px">
-        <button class="btn" id="btn-save-draft"> Brouillon</button>
-        <button class="btn primary" id="btn-publish"> Publier</button>
+        <button class="btn" id="btn-save-draft">💾 Brouillon</button>
+        <button class="btn primary" id="btn-publish">🚀 Publier</button>
       </div>
       <button class="btn danger" id="btn-delete" style="display:none">🗑️ Supprimer</button>
     </div>
@@ -263,27 +294,23 @@ header.top{width:100%;max-width:560px;display:flex;justify-content:space-between
 <div id="import-modal">
   <div class="eyebrow" style="color:var(--line)">Importation de circuit</div>
   <h2 style="font-size:18px">Ajustez les paramètres de conversion</h2>
-  <div id="import-canvas-wrap">
-    <canvas id="import-canvas"></canvas>
-  </div>
+  <div id="import-canvas-wrap"><canvas id="import-canvas"></canvas></div>
   <div id="import-controls">
     <div class="field">
       <label>Seuil de luminosité (pixels sombres = piste)</label>
       <input type="range" id="threshold-slider" min="0" max="255" value="128">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute)">
-        <span>Noir pur (0)</span>
-        <span id="threshold-val">128</span>
-        <span>Blanc pur (255)</span>
+        <span>Noir pur (0)</span><span id="threshold-val">128</span><span>Blanc pur (255)</span>
       </div>
     </div>
     <div class="checkbox-field">
       <input type="checkbox" id="invert-colors">
-      <label for="invert-colors" style="font-size:12px;color:var(--txt);cursor:pointer">Inverser les couleurs (piste claire sur fond sombre)</label>
+      <label for="invert-colors" style="font-size:12px;color:var(--txt);cursor:pointer">Inverser les couleurs</label>
     </div>
   </div>
   <div id="import-actions">
     <button class="btn" id="btn-import-cancel">Annuler</button>
-    <button class="btn primary" id="btn-import-confirm">✅ Convertir en circuit</button>
+    <button class="btn primary" id="btn-import-confirm">✅ Convertir</button>
   </div>
 </div>
 
@@ -306,10 +333,9 @@ const HEX_DIRS = [
 const rotHex = (d, k) => (d + k + 6) % 6;
 const SQRT3 = 1.73205;
 
-const DICE = [
-  [0, 0], [1, 2], [2, 4], [4, 8], [7, 12], [11, 20], [21, 30]
-];
-const COOLDOWN = [0, 0, 0, 1, 2, 4, 6];
+const DICE = [[0,0],[1,2],[2,4],[4,8],[7,12],[11,20],[21,30]];
+const COOLDOWN = [0,0,0,1,2,4,6];
+const GEAR_KMH = [0, 40, 80, 130, 190, 260, 340]; // Vitesse affichée par rapport
 
 async function api(path, opts){
   const res = await fetch(path, opts);
@@ -334,33 +360,30 @@ async function loadCircuitList(){
   list.innerHTML = '<div class="empty-state">Chargement…</div>';
   try{
     const circuits = await api('/api/formula/circuits');
-    if(!circuits.length){ list.innerHTML = '<div class="empty-state">Aucun circuit publié pour l\'instant.</div>'; return; }
+    if(!circuits.length){ list.innerHTML = '<div class="empty-state">Aucun circuit publié.</div>'; return; }
     list.innerHTML = '';
     circuits.forEach(c => {
       const el = document.createElement('div');
       el.className = 'circuit-card';
       el.innerHTML = `<div class="ico">🏁</div><div><div class="name">${esc(c.name)}</div>
-        <div class="meta">${c.laps} tour${c.laps > 1 ? 's' : ''} · ${c.attempts} essai${c.attempts > 1 ? 's' : ''}</div></div>
+        <div class="meta">${c.laps} tour${c.laps>1?'s':''} · ${c.attempts} essai${c.attempts>1?'s':''}</div></div>
         <div class="arrow">›</div>`;
       el.onclick = () => openCircuit(c.id);
       list.appendChild(el);
     });
-  }catch(e){ list.innerHTML = '<div class="empty-state">Mode hors-ligne ou erreur de chargement.</div>'; }
+  }catch(e){ list.innerHTML = '<div class="empty-state">Mode hors-ligne.</div>'; }
 }
-function esc(s){ return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 async function openCircuit(id){
   const pseudo = pseudoIn.value.trim();
-  if(!pseudo){ toast('Entre ton pseudo d\'abord'); return; }
+  if(!pseudo){ toast('Entre ton pseudo'); return; }
   try{
     const [circuit, board] = await Promise.all([
       api('/api/formula/circuit/' + id),
       api('/api/formula/leaderboard/' + id + '?pseudo=' + encodeURIComponent(pseudo))
     ]);
-    if(board.attemptsLeft <= 0){
-      toast('Plus d\'essais sur ce circuit (' + board.attemptsUsed + '/' + circuit.attempts + ')');
-      return;
-    }
+    if(board.attemptsLeft <= 0){ toast('Plus d\'essais'); return; }
     startRace(circuit, pseudo, board.attemptsLeft);
   }catch(e){ toast('Erreur : ' + e.message); }
 }
@@ -377,99 +400,71 @@ function startRace(circuit, pseudo, attemptsLeft){
   R.gear = 0; R.pendingGear = 1; R.turn = 0; R.lapCount = 0; R.targetLaps = circuit.laps;
   R.rolled = null; R.budget = null; R.results = null; R.ends = null; R.phase = 'gear'; R.trail = [];
   R.rerolled = false; R.stressed = false;
-  R.autoCenter = true;
   R.panOffsetX = 0; R.panOffsetY = 0; R.isPanning = false; R.panStart = null;
-  R.zoomLevel = 1;
-  R.touches = [];
+  R.zoomLevel = 1; R.touches = [];
+  R.checkpoints = []; R.cpTimes = []; R.bestCpTimes = JSON.parse(localStorage.getItem('fg_bestcp_'+circuit.id) || '[]');
+  R.speedLines = [];
+  R.shakeAmount = 0;
+  
+  // Identifier les checkpoints
+  for(let r = 0; r < R.H; r++){
+    for(let q = 0; q < R.W; q++){
+      if(R.grid[r][q] === 'C') R.checkpoints.push({q, r, index: R.checkpoints.length});
+    }
+  }
   
   document.getElementById('finish').classList.remove('on');
-  say('Départ arrêté : Sélectionne la vitesse 1 pour t\'élancer !');
-  renderGears(); syncDash(); show('scr-race'); 
+  say('Départ arrêté : Sélectionne la vitesse 1 !');
+  renderGears(); syncDash(); updateSpeedometer(); show('scr-race'); 
   setupRacePan();
   requestAnimationFrame(drawRace);
   setTimeout(() => centerOnCar(), 100);
 }
 
-document.getElementById('center-btn').onclick = () => {
-  R.panOffsetX = 0;
-  R.panOffsetY = 0;
-  R.zoomLevel = 1;
-  R.autoCenter = true;
-  drawRace();
-  toast('🎯 Vue centrée sur la voiture');
-};
+document.getElementById('center-btn').onclick = () => centerOnCar();
 
 function centerOnCar(){
-  R.autoCenter = true;
-  R.panOffsetX = 0; 
-  R.panOffsetY = 0;
-  R.zoomLevel = 1;
+  R.panOffsetX = 0; R.panOffsetY = 0; R.zoomLevel = 1;
   drawRace();
+  toast('🎯 Vue centrée');
 }
 
 function setupRacePan(){
   const cv = document.getElementById('cv');
-  
-  cv.addEventListener('pointerdown', e => {
+  cv.onpointerdown = e => {
     if(e.target !== cv) return;
     R.isPanning = true;
     R.panStart = { x: e.clientX, y: e.clientY, offX: R.panOffsetX, offY: R.panOffsetY };
     cv.setPointerCapture(e.pointerId);
-    R.autoCenter = false;
     document.getElementById('pan-hint').style.opacity = '0';
-  });
-  
-  cv.addEventListener('pointermove', e => {
+  };
+  cv.onpointermove = e => {
     if(R.isPanning && R.panStart){
-      const dx = e.clientX - R.panStart.x;
-      const dy = e.clientY - R.panStart.y;
-      R.panOffsetX = R.panStart.offX + dx;
-      R.panOffsetY = R.panStart.offY + dy;
+      R.panOffsetX = R.panStart.offX + (e.clientX - R.panStart.x);
+      R.panOffsetY = R.panStart.offY + (e.clientY - R.panStart.y);
       drawRace();
     }
-  });
+  };
+  cv.onpointerup = e => { R.isPanning = false; R.panStart = null; cv.releasePointerCapture(e.pointerId); };
+  cv.onpointercancel = () => { R.isPanning = false; R.panStart = null; };
   
-  cv.addEventListener('pointerup', e => {
-    R.isPanning = false;
-    R.panStart = null;
-    cv.releasePointerCapture(e.pointerId);
-  });
-  
-  cv.addEventListener('pointercancel', () => {
-    R.isPanning = false;
-    R.panStart = null;
-  });
-  
-  cv.addEventListener('touchstart', e => {
+  cv.ontouchstart = e => {
     if(e.touches.length === 2){
       e.preventDefault();
       R.touches = Array.from(e.touches);
-      R.initialPinchDist = Math.hypot(
-        R.touches[0].clientX - R.touches[1].clientX,
-        R.touches[0].clientY - R.touches[1].clientY
-      );
+      R.initialPinchDist = Math.hypot(R.touches[0].clientX - R.touches[1].clientX, R.touches[0].clientY - R.touches[1].clientY);
       R.initialZoom = R.zoomLevel;
     }
-  }, {passive: false});
-  
-  cv.addEventListener('touchmove', e => {
+  };
+  cv.ontouchmove = e => {
     if(e.touches.length === 2){
       e.preventDefault();
-      const currentDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const scale = currentDist / R.initialPinchDist;
-      R.zoomLevel = Math.max(0.5, Math.min(3, R.initialZoom * scale));
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      R.zoomLevel = Math.max(0.5, Math.min(3, R.initialZoom * (d / R.initialPinchDist)));
       drawRace();
     }
-  }, {passive: false});
-  
-  cv.addEventListener('touchend', e => {
-    if(e.touches.length < 2){
-      R.touches = [];
-    }
-  });
+  };
+  cv.ontouchend = e => { if(e.touches.length < 2) R.touches = []; };
 }
 
 function onTrackR(q, r){
@@ -479,89 +474,86 @@ function onTrackR(q, r){
 function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps){
   const N = COOLDOWN[gear];
   const results = [], memo = new Set();
-  
   (function dfs(q, r, dir, b, turnSide, cooldown, crossed, path){
-    const key = q + ',' + r + ',' + dir + ',' + b + ',' + turnSide + ',' + cooldown + ',' + crossed;
+    const key = q+','+r+','+dir+','+b+','+turnSide+','+cooldown+','+crossed;
     if(memo.has(key)) return; memo.add(key);
-    
     const opts = [{d: dir, type: 'straight'}];
     if(cooldown === 0){
       if(turnSide !== 'R') opts.push({d: rotHex(dir, -1), type: 'left'});
       if(turnSide !== 'L') opts.push({d: rotHex(dir, 1), type: 'right'});
     }
-    
     const pay = opts.filter(() => b >= 1);
     if(!pay.length || b === 0){
       results.push({path: path.slice(), q, r, dir, crash: false, finish: false, left: b, lapsGained: crossed ? 1 : 0});
       return;
     }
-    
     let anyOpen = false;
     for(const o of pay){
       const dr = HEX_DIRS[o.d];
       const nq = q + dr.q, nr = r + dr.r;
       if(!onTrackR(nq, nr)) continue;
       anyOpen = true;
-      
       path.push({q: nq, r: nr, dir: o.d});
       let newSide = turnSide, newCooldown = cooldown;
-      if(o.type === 'left'){ newSide = 'L'; newCooldown = N; } 
-      else if(o.type === 'right'){ newSide = 'R'; newCooldown = N; } 
+      if(o.type === 'left'){ newSide = 'L'; newCooldown = N; }
+      else if(o.type === 'right'){ newSide = 'R'; newCooldown = N; }
       else { newCooldown = Math.max(0, cooldown - 1); }
-      
-      const isF = (R.grid[nr] && R.grid[nr][nq] === 'F');
-      if(isF && !crossed){
+      const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
+      if(cell === 'F' && !crossed){
         const lapNum = lapCount + 1;
         if(lapNum >= targetLaps){
           results.push({path: path.slice(), q: nq, r: nr, dir: o.d, crash: false, finish: true, left: b - 1, lapsGained: 1});
           path.pop(); continue;
-        } else {
-          dfs(nq, nr, o.d, b - 1, newSide, newCooldown, true, path);
-          path.pop(); continue;
-        }
+        } else { dfs(nq, nr, o.d, b - 1, newSide, newCooldown, true, path); path.pop(); continue; }
       }
       dfs(nq, nr, o.d, b - 1, newSide, newCooldown, crossed, path);
       path.pop();
     }
-    if(!anyOpen){
-      results.push({path: path.slice(), q, r, dir, crash: true, finish: false, left: b, lapsGained: crossed ? 1 : 0});
-    }
+    if(!anyOpen) results.push({path: path.slice(), q, r, dir, crash: true, finish: false, left: b, lapsGained: crossed ? 1 : 0});
   })(q0, r0, dir0, budget, null, 0, false, []);
-  
   return results;
 }
 
 function renderGears(){
   const hg = document.getElementById('hgrid'); hg.innerHTML = '';
-  const order = [0, 1, 2, 3, 4, 5, 6];
-  
-  order.forEach((g) => {
+  [0,1,2,3,4,5,6].forEach(g => {
     const el = document.createElement('div');
     let reach = false;
-    if(R.gear === 0){ reach = (g === 1); } 
-    else if(R.stressed){ reach = (g <= R.gear && g >= R.gear - 1); } 
-    else { reach = (Math.abs(g - R.gear) <= 1); }
-    
+    if(R.gear === 0) reach = (g === 1);
+    else if(R.stressed) reach = (g <= R.gear && g >= R.gear - 1);
+    else reach = (Math.abs(g - R.gear) <= 1);
     el.className = 'gear' + (g === R.pendingGear ? ' sel' : reach ? ' reach' : ' off');
-    const rangeTxt = g === 0 ? 'STOP' : `${DICE[g][0]}-${DICE[g][1]}`;
-    el.innerHTML = `<b>${g}</b><span>${rangeTxt}</span>`;
-    
-    if(reach && R.phase === 'gear') {
-      el.onclick = () => { R.pendingGear = g; renderGears(); };
-    }
+    el.innerHTML = `<b>${g}</b><span>${g===0?'STOP':DICE[g][0]+'-'+DICE[g][1]}</span>`;
+    if(reach && R.phase === 'gear') el.onclick = () => { R.pendingGear = g; renderGears(); updateSpeedometer(); };
     hg.appendChild(el);
   });
-  
   const gb = document.getElementById('gearbox');
   let tag = document.getElementById('stress-tag');
   if(R.stressed && R.phase === 'gear'){
-    if(!tag){
-      tag = document.createElement('div'); tag.id = 'stress-tag';
-      tag.style.cssText = 'margin-top:8px;font-size:11px;color:var(--crash);font-weight:700;text-align:center';
-      gb.appendChild(tag);
-    }
-    tag.textContent = '⚠️ Boîte sous tension : montée de vitesse bloquée ce tour';
-  } else if(tag) { tag.remove(); }
+    if(!tag){ tag = document.createElement('div'); tag.id = 'stress-tag'; tag.style.cssText = 'margin-top:8px;font-size:11px;color:var(--crash);font-weight:700;text-align:center'; gb.appendChild(tag); }
+    tag.textContent = '⚠️ Boîte sous tension';
+  } else if(tag) tag.remove();
+}
+
+function updateSpeedometer(){
+  const kmh = GEAR_KMH[R.pendingGear] || 0;
+  const maxKmh = GEAR_KMH[6];
+  const pct = (kmh / maxKmh) * 100;
+  const bar = document.getElementById('speed-bar');
+  bar.style.width = pct + '%';
+  
+  let color;
+  if(pct < 30) color = '#39d98a';
+  else if(pct < 60) color = '#f7c948';
+  else if(pct < 85) color = '#ff9f43';
+  else color = '#ff5d5d';
+  bar.style.background = color;
+  
+  document.getElementById('speed-val').textContent = kmh + ' km/h';
+  document.getElementById('speed-val').style.color = color;
+  
+  const warning = document.getElementById('speed-warning');
+  warning.style.opacity = pct > 80 ? '1' : '0';
 }
 
 function say(t, cls){ const m = document.getElementById('msg'); m.textContent = t; m.className = cls || ''; }
@@ -577,25 +569,19 @@ function syncDash(){
 }
 
 let rng = Math.random;
-
 function executeDiceRoll(gear){
   if(gear === 0) return 0;
-  if(gear === 3){
-    const v3Array = [4, 5, 5, 6, 6, 7, 7, 8];
-    return v3Array[Math.floor(rng() * v3Array.length)];
-  }
-  const [a, b] = DICE[gear];
+  if(gear === 3){ const a = [4,5,5,6,6,7,7,8]; return a[Math.floor(rng()*a.length)]; }
+  const [a,b] = DICE[gear];
   return a + Math.floor(rng() * (b - a + 1));
 }
 
 function rollDiceAnim(){
   if(R.phase !== 'gear' || R.pendingGear === 0) return;
   R.gear = R.pendingGear;
-  
   const overlay = document.getElementById('dice-anim-overlay');
   const cubeVal = document.getElementById('dice-box-val');
   overlay.classList.add('on');
-  
   let counter = 0;
   const interval = setInterval(() => {
     const [minD, maxD] = DICE[R.gear];
@@ -605,10 +591,7 @@ function rollDiceAnim(){
       clearInterval(interval);
       const finalVal = executeDiceRoll(R.gear);
       cubeVal.textContent = finalVal;
-      setTimeout(() => {
-        overlay.classList.remove('on');
-        processRollResult(finalVal);
-      }, 400);
+      setTimeout(() => { overlay.classList.remove('on'); processRollResult(finalVal); }, 400);
     }
   }, 120);
 }
@@ -616,76 +599,85 @@ function rollDiceAnim(){
 function processRollResult(val){
   R.rolled = val; R.budget = R.rolled;
   R.results = getValidPaths(R.q, R.r, R.dir, R.budget, R.gear, R.lapCount, R.targetLaps);
-  
   R.ends = new Map();
   for(const r of R.results){
-    const k = r.q + ',' + r.r; 
+    const k = r.q + ',' + r.r;
     const prev = R.ends.get(k);
     if(!prev || (prev.crash && !r.crash) || (r.finish && !prev.finish)) R.ends.set(k, r);
   }
-  
   R.phase = 'pick';
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
-  
   if(okCount === 0){
     const best = R.results.reduce((m, r) => r.path.length > m.path.length ? r : m, R.results[0]);
-    say('💥 Tête-à-queue inévitable ! Mur touché…', 'crash');
+    say('💥 Tête-à-queue inévitable !', 'crash');
     setTimeout(() => applyResult(best), 800);
   } else {
-    say('Choisis une case d\'arrivée valide (' + okCount + ' options)', 'go');
+    say('Choisis une case d\'arrivée (' + okCount + ' options)', 'go');
   }
   syncDash(); drawRace();
 }
 
 document.getElementById('roll').onclick = rollDiceAnim;
-
 document.getElementById('reroll').onclick = () => {
   if(R.phase !== 'pick' || R.rerolled) return;
   R.rerolled = true;
-  say(' Relance du dé en cours...');
+  say('🎲 Relance...');
   const overlay = document.getElementById('dice-anim-overlay');
   overlay.classList.add('on');
-  setTimeout(() => {
-    overlay.classList.remove('on');
-    processRollResult(executeDiceRoll(R.gear));
-  }, 1000);
+  setTimeout(() => { overlay.classList.remove('on'); processRollResult(executeDiceRoll(R.gear)); }, 1000);
 };
 
 function applyResult(r){
   R.turn++;
   R.trail = r.path.map(p => ({q: p.q, r: p.r}));
+  
+  // Générer des lignes de vitesse
+  R.speedLines = [];
+  const speedFactor = R.gear / 6;
+  for(let i = 0; i < Math.floor(speedFactor * 12); i++){
+    R.speedLines.push({
+      x: Math.random() * 2 - 1,
+      y: Math.random() * 2 - 1,
+      len: 10 + Math.random() * 30 * speedFactor,
+      alpha: 0.3 + Math.random() * 0.5
+    });
+  }
+  
+  // Screen shake proportionnel à la vitesse
+  R.shakeAmount = speedFactor * 4;
+  
   if(r.path.length){
-    const last = r.path[r.path.length - 1]; 
-    R.q = last.q; R.r = last.r; 
-    // Mettre à jour la direction de la voiture selon le dernier mouvement
-    if(r.path.length > 0){
-      const prev = r.path[r.path.length - 2] || {q: R.q, r: R.r};
-      const dq = last.q - prev.q;
-      const dr = last.r - prev.r;
+    const last = r.path[r.path.length - 1];
+    R.q = last.q; R.r = last.r;
+    if(r.path.length > 1){
+      const prev = r.path[r.path.length - 2];
+      const dq = last.q - prev.q, dr = last.r - prev.r;
       for(let d = 0; d < 6; d++){
-        if(HEX_DIRS[d].q === dq && HEX_DIRS[d].r === dr){
-          R.dir = d;
-          break;
-        }
+        if(HEX_DIRS[d].q === dq && HEX_DIRS[d].r === dr){ R.dir = d; break; }
       }
     }
   }
   R.lapCount += r.lapsGained || 0;
   
+  // Vérifier les checkpoints
+  for(const cp of R.checkpoints){
+    if(r.path.some(p => p.q === cp.q && p.r === cp.r)){
+      const cpTime = R.turn;
+      R.cpTimes[cp.index] = cpTime;
+      showCheckpointToast(cp.index, cpTime);
+      break;
+    }
+  }
+  
   if(r.finish){ finishRace(r); return; }
   
-  if(r.crash){ 
-    R.gear = 1; R.stressed = false; 
+  if(r.crash){
+    R.gear = 1; R.stressed = false;
     say('💥 CRASH ! Tentative abandonnée.', 'crash');
     setTimeout(() => {
       R.attemptsLeft--;
-      if(R.attemptsLeft <= 0){
-        toast(' Plus d\'essais disponibles sur ce circuit');
-        setTimeout(() => backToMenu(), 1500);
-      } else {
-        toast(`🔄 Essai abandonné. Il vous reste ${R.attemptsLeft} essai(s)`);
-        setTimeout(() => backToMenu(), 1500);
-      }
+      if(R.attemptsLeft <= 0){ toast('🚫 Plus d\'essais'); setTimeout(backToMenu, 1500); }
+      else { toast(`🔄 Abandon. ${R.attemptsLeft} essai(s) restant(s)`); setTimeout(backToMenu, 1500); }
     }, 1000);
     return;
   }
@@ -696,32 +688,62 @@ function applyResult(r){
   
   R.rerolled = false;
   R.pendingGear = R.gear; R.rolled = null; R.budget = null; R.results = null; R.ends = null; R.phase = 'gear';
-  renderGears(); syncDash(); drawRace();
+  renderGears(); syncDash(); updateSpeedometer(); drawRace();
+}
+
+function showCheckpointToast(cpIndex, time){
+  const el = document.getElementById('cp-toast');
+  let html = `📍 CHECKPOINT ${cpIndex + 1}<br>${time} coups`;
+  
+  if(R.bestCpTimes[cpIndex] !== undefined){
+    const diff = time - R.bestCpTimes[cpIndex];
+    if(diff < 0) html += `<div class="cp-diff better">▲ ${Math.abs(diff)} coups de mieux !</div>`;
+    else if(diff > 0) html += `<div class="cp-diff worse">▼ ${diff} coups de plus</div>`;
+    else html += `<div class="cp-diff">= Même temps</div>`;
+  } else {
+    html += `<div class="cp-diff">Premier passage</div>`;
+  }
+  
+  el.innerHTML = html;
+  el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 2000);
+  say('📍 Checkpoint ' + (cpIndex + 1) + ' : ' + time + ' coups', 'checkpoint');
 }
 
 async function finishRace(r){
   R.phase = 'done'; drawRace();
+  
+  // Sauvegarder les meilleurs temps par checkpoint
+  for(let i = 0; i < R.cpTimes.length; i++){
+    if(R.cpTimes[i] !== undefined){
+      if(R.bestCpTimes[i] === undefined || R.cpTimes[i] < R.bestCpTimes[i]){
+        R.bestCpTimes[i] = R.cpTimes[i];
+      }
+    }
+  }
+  localStorage.setItem('fg_bestcp_' + R.circuit.id, JSON.stringify(R.bestCpTimes));
+  
   document.getElementById('fh2').textContent = 'ARRIVÉE !';
   document.getElementById('fstats').textContent = R.turn + ' coup(s) · +' + r.left + ' cases bonus';
-  document.getElementById('fsub').textContent = 'Score basé sur le nombre de coups. Le surplus de cases sert de départage.';
-  document.getElementById('flb').innerHTML = 'Enregistrement du chrono…';
+  document.getElementById('fsub').textContent = 'Score = nombre de coups. Surplus = départage.';
+  document.getElementById('flb').innerHTML = 'Enregistrement…';
   document.getElementById('btn-retry').disabled = true;
   document.getElementById('finish').classList.add('on');
   
   try{
     const res = await api('/api/formula/run', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({circuitId: R.circuit.id, pseudo: R.pseudo, moves: R.turn, left: r.left, laps: R.targetLaps})
+      body: JSON.stringify({circuitId: R.circuit.id, pseudo: R.pseudo, moves: R.turn, left: r.left, laps: R.targetLaps, cpTimes: R.cpTimes})
     });
     R.attemptsLeft = res.attemptsLeft;
     renderLeaderboard(res);
     document.getElementById('fsub').textContent += ' · 🏆 ' + res.points + ' pts (Rang ' + res.rank + ')';
     const retryBtn = document.getElementById('btn-retry');
     retryBtn.disabled = res.attemptsLeft <= 0;
-    retryBtn.textContent = res.attemptsLeft > 0 ? 'Réessayer (' + res.attemptsLeft + ' restants)' : 'Plus d\'essais';
+    retryBtn.textContent = res.attemptsLeft > 0 ? 'Réessayer (' + res.attemptsLeft + ')' : 'Plus d\'essais';
     retryBtn.onclick = res.attemptsLeft > 0 ? (() => startRace(R.circuit, R.pseudo, res.attemptsLeft)) : null;
   } catch(e){
-    document.getElementById('flb').innerHTML = '<span style="color:var(--crash)">Mode hors ligne : score non sauvegardé (' + esc(e.message) + ')</span>';
+    document.getElementById('flb').innerHTML = '<span style="color:var(--crash)">Hors ligne (' + esc(e.message) + ')</span>';
     document.getElementById('btn-retry').disabled = false;
     document.getElementById('btn-retry').textContent = 'Recommencer';
     document.getElementById('btn-retry').onclick = () => startRace(R.circuit, R.pseudo, R.attemptsLeft);
@@ -729,11 +751,11 @@ async function finishRace(r){
 }
 
 function renderLeaderboard(res){
-  let html = '<div class="eyebrow" style="margin-bottom:6px">Classement du circuit</div>';
-  if(!res.top || !res.top.length){ html += '<div style="color:var(--mute)">Soyez le premier à inscrire un temps !</div>'; }
+  let html = '<div class="eyebrow" style="margin-bottom:6px">Classement</div>';
+  if(!res.top || !res.top.length) html += '<div style="color:var(--mute)">Aucun temps.</div>';
   else res.top.forEach((t, i) => {
-    const mine = t.pseudo.toLowerCase() === R.pseudo.toLowerCase() && t.moves === (res.best && res.best.moves);
-    html += `<div class="row2${mine ? ' me' : ''}"><span>${i + 1}. ${esc(t.pseudo)}</span><span>${t.moves} coups</span></div>`;
+    const mine = t.pseudo.toLowerCase() === R.pseudo.toLowerCase();
+    html += `<div class="row2${mine ? ' me' : ''}"><span>${i+1}. ${esc(t.pseudo)}</span><span>${t.moves} coups</span></div>`;
   });
   document.getElementById('flb').innerHTML = html;
 }
@@ -742,17 +764,14 @@ const cv = document.getElementById('cv'); const cctx = cv.getContext('2d');
 const mm = document.getElementById('minimap'); const mctx = mm.getContext('2d');
 
 function axialToPixel(q, r, hexSize){
-  const x = hexSize * SQRT3 * (q + r / 2);
-  const y = hexSize * (3 / 2) * r;
-  return {x, y};
+  return { x: hexSize * SQRT3 * (q + r / 2), y: hexSize * (3 / 2) * r };
 }
 
 function drawHex(ctx, x, y, size, fillColor, strokeColor){
   ctx.beginPath();
   for(let i = 0; i < 6; i++){
     const angle = (Math.PI / 3) * i - Math.PI / 6;
-    const hx = x + size * Math.cos(angle);
-    const hy = y + size * Math.sin(angle);
+    const hx = x + size * Math.cos(angle), hy = y + size * Math.sin(angle);
     if(i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
   }
   ctx.closePath();
@@ -765,8 +784,7 @@ function computeViewportHex(){
   if(R.phase === 'pick' && R.ends && R.ends.size){
     let minQ = R.q, maxQ = R.q, minR = R.r, maxR = R.r;
     for(const k of R.ends.keys()){
-      const parts = k.split(',');
-      const q = parseInt(parts[0]), r = parseInt(parts[1]);
+      const [q, r] = k.split(',').map(Number);
       minQ = Math.min(minQ, q); maxQ = Math.max(maxQ, q);
       minR = Math.min(minR, r); maxR = Math.max(maxR, r);
     }
@@ -781,81 +799,119 @@ function drawRace(){
   cv.width = size; cv.height = size;
   
   const vp = computeViewportHex();
-  const hexSize = (size / vp.span) * R.zoomLevel;
+  // ZOOM DYNAMIQUE : dézoomer légèrement à haute vitesse
+  const speedZoom = 1 - (R.gear / 6) * 0.15;
+  const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
   const centerOffset = axialToPixel(vp.q, vp.r, hexSize);
 
+  // Screen shake
+  const shakeX = R.shakeAmount > 0 ? (Math.random() - 0.5) * R.shakeAmount : 0;
+  const shakeY = R.shakeAmount > 0 ? (Math.random() - 0.5) * R.shakeAmount : 0;
+  R.shakeAmount *= 0.9; // Décroissance
+
+  // Fond herbe avec texture
   cctx.fillStyle = '#2d5016';
   cctx.fillRect(0, 0, cv.width, cv.height);
-  
-  cctx.fillStyle = 'rgba(45, 80, 22, 0.3)';
-  for(let i = 0; i < 50; i++){
-    const x = (i * 37) % cv.width;
-    const y = (i * 53) % cv.height;
-    cctx.fillRect(x, y, 2, 2);
+  cctx.fillStyle = 'rgba(58, 107, 30, 0.4)';
+  for(let i = 0; i < 80; i++){
+    cctx.fillRect((i * 47) % cv.width, (i * 61) % cv.height, 3, 3);
   }
   
   cctx.save();
-  cctx.translate(R.panOffsetX + cv.width/2, R.panOffsetY + cv.height/2);
+  cctx.translate(R.panOffsetX + cv.width/2 + shakeX, R.panOffsetY + cv.height/2 + shakeY);
   cctx.translate(-centerOffset.x, -centerOffset.y);
 
+  // Dessiner la piste
   for(let r = 0; r < R.H; r++){
     for(let q = 0; q < R.W; q++){
       const t = R.grid[r] ? R.grid[r][q] : '#';
       if(t === '#') continue;
       const pt = axialToPixel(q, r, hexSize);
       
-      const baseColor = t === 'F' ? '#2a2d33' : '#3a3f47';
+      const baseColor = (t === 'F' || t === 'C') ? '#2a2d33' : '#3a3f47';
       const variation = ((q * 7 + r * 13) % 20) - 10;
       const r1 = parseInt(baseColor.slice(1,3), 16) + variation;
       const g1 = parseInt(baseColor.slice(3,5), 16) + variation;
       const b1 = parseInt(baseColor.slice(5,7), 16) + variation;
-      const asphaltColor = `rgb(${Math.max(0, Math.min(255, r1))}, ${Math.max(0, Math.min(255, g1))}, ${Math.max(0, Math.min(255, b1))})`;
+      const asphaltColor = `rgb(${Math.max(0,Math.min(255,r1))},${Math.max(0,Math.min(255,g1))},${Math.max(0,Math.min(255,b1))})`;
       
       drawHex(cctx, pt.x, pt.y, hexSize * 0.92, asphaltColor, '#22262e');
       
+      // Ligne d'arrivée damier
       if(t === 'F'){
-        const squareSize = hexSize * 0.15;
-        for(let i = 0; i < 3; i++){
-          for(let j = 0; j < 3; j++){
-            if((i + j) % 2 === 0){
-              cctx.fillStyle = '#e8e4da';
-              cctx.fillRect(pt.x - squareSize * 1.5 + i * squareSize, pt.y - squareSize * 1.5 + j * squareSize, squareSize, squareSize);
-            }
-          }
+        const sq = hexSize * 0.15;
+        for(let i = 0; i < 3; i++) for(let j = 0; j < 3; j++){
+          if((i+j) % 2 === 0){ cctx.fillStyle = '#e8e4da'; cctx.fillRect(pt.x - sq*1.5 + i*sq, pt.y - sq*1.5 + j*sq, sq, sq); }
         }
       }
       
+      // Checkpoint
+      if(t === 'C'){
+        cctx.strokeStyle = '#f7c948';
+        cctx.lineWidth = 2;
+        cctx.setLineDash([4, 4]);
+        cctx.beginPath();
+        cctx.arc(pt.x, pt.y, hexSize * 0.5, 0, Math.PI * 2);
+        cctx.stroke();
+        cctx.setLineDash([]);
+        cctx.fillStyle = '#f7c948';
+        cctx.font = `${Math.max(8, hexSize * 0.3)}px sans-serif`;
+        cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+        cctx.fillText('📍', pt.x, pt.y);
+      }
+      
+      // Kerbs (barrières rouge/blanc)
       for(let dir = 0; dir < 6; dir++){
-        const nq = q + HEX_DIRS[dir].q;
-        const nr = r + HEX_DIRS[dir].r;
+        const nq = q + HEX_DIRS[dir].q, nr = r + HEX_DIRS[dir].r;
         if(nq < 0 || nq >= R.W || nr < 0 || nr >= R.H || R.grid[nr][nq] === '#'){
           const angle = (Math.PI / 3) * dir - Math.PI / 6;
           const bx = pt.x + hexSize * 0.85 * Math.cos(angle);
           const by = pt.y + hexSize * 0.85 * Math.sin(angle);
-          
-          cctx.save();
-          cctx.translate(bx, by);
-          cctx.rotate(angle);
-          
-          const kerbWidth = hexSize * 0.15;
-          const kerbHeight = hexSize * 0.4;
+          cctx.save(); cctx.translate(bx, by); cctx.rotate(angle);
+          const kw = hexSize * 0.15, kh = hexSize * 0.4;
           for(let k = 0; k < 3; k++){
             cctx.fillStyle = k % 2 === 0 ? '#d63b2f' : '#e8e4da';
-            cctx.fillRect(-kerbWidth/2, -kerbHeight/2 + k * kerbHeight/3, kerbWidth, kerbHeight/3);
+            cctx.fillRect(-kw/2, -kh/2 + k * kh/3, kw, kh/3);
           }
-          
           cctx.restore();
         }
       }
     }
   }
 
-  cctx.fillStyle = 'rgba(247,201,72,.35)';
-  for(const t of R.trail){
-    const pt = axialToPixel(t.q, t.r, hexSize);
-    cctx.beginPath(); cctx.arc(pt.x, pt.y, hexSize * 0.3, 0, Math.PI * 2); cctx.fill();
+  // Traînée de la voiture (trail)
+  if(R.trail.length > 1){
+    cctx.strokeStyle = 'rgba(247,201,72,0.4)';
+    cctx.lineWidth = hexSize * 0.2;
+    cctx.lineCap = 'round';
+    cctx.lineJoin = 'round';
+    cctx.beginPath();
+    R.trail.forEach((t, i) => {
+      const pt = axialToPixel(t.q, t.r, hexSize);
+      if(i === 0) cctx.moveTo(pt.x, pt.y);
+      else cctx.lineTo(pt.x, pt.y);
+    });
+    cctx.stroke();
   }
 
+  // Lignes de vitesse (speed lines)
+  if(R.speedLines.length > 0 && R.phase !== 'gear'){
+    const carPt = axialToPixel(R.q, R.r, hexSize);
+    cctx.save();
+    cctx.translate(carPt.x, carPt.y);
+    cctx.rotate((Math.PI / 3) * R.dir + Math.PI); // Opposé à la direction
+    R.speedLines.forEach(sl => {
+      cctx.strokeStyle = `rgba(255,255,255,${sl.alpha * 0.5})`;
+      cctx.lineWidth = 1.5;
+      cctx.beginPath();
+      cctx.moveTo(sl.x * hexSize * 2, sl.y * hexSize * 2);
+      cctx.lineTo(sl.x * hexSize * 2 + sl.len, sl.y * hexSize * 2);
+      cctx.stroke();
+    });
+    cctx.restore();
+  }
+
+  // Destinations cliquables
   if(R.phase === 'pick' && R.ends){
     for(const res of R.ends.values()){
       const pt = axialToPixel(res.q, res.r, hexSize);
@@ -866,58 +922,40 @@ function drawRace(){
     }
   }
 
+  // VOITURE F1
   const carPt = axialToPixel(R.q, R.r, hexSize);
-  cctx.save(); 
+  cctx.save();
   cctx.translate(carPt.x, carPt.y);
   cctx.rotate((Math.PI / 3) * R.dir);
-  
-  const carScale = hexSize * 0.015;
+  const carScale = hexSize * 0.018;
   cctx.scale(carScale, carScale);
   
+  // Ombre
   cctx.fillStyle = 'rgba(0,0,0,0.4)';
-  cctx.beginPath();
-  cctx.ellipse(2, 2, 25, 12, 0, 0, Math.PI * 2);
-  cctx.fill();
+  cctx.beginPath(); cctx.ellipse(2, 2, 28, 14, 0, 0, Math.PI * 2); cctx.fill();
   
+  // Corps
   cctx.fillStyle = '#f7c948';
   cctx.beginPath();
-  cctx.moveTo(30, 0);
-  cctx.lineTo(15, -8);
-  cctx.lineTo(-20, -10);
-  cctx.lineTo(-25, -6);
-  cctx.lineTo(-25, 6);
-  cctx.lineTo(-20, 10);
-  cctx.lineTo(15, 8);
-  cctx.closePath();
-  cctx.fill();
-  cctx.strokeStyle = '#14161a';
-  cctx.lineWidth = 2;
-  cctx.stroke();
+  cctx.moveTo(32, 0); cctx.lineTo(18, -9); cctx.lineTo(-22, -11);
+  cctx.lineTo(-28, -7); cctx.lineTo(-28, 7); cctx.lineTo(-22, 11); cctx.lineTo(18, 9);
+  cctx.closePath(); cctx.fill();
+  cctx.strokeStyle = '#14161a'; cctx.lineWidth = 2; cctx.stroke();
   
-  cctx.fillStyle = '#e8e4da';
-  cctx.fillRect(20, -12, 8, 24);
-  cctx.strokeRect(20, -12, 8, 24);
-  
-  cctx.fillStyle = '#e8e4da';
-  cctx.fillRect(-28, -10, 6, 20);
-  cctx.strokeRect(-28, -10, 6, 20);
-  
+  // Aileron avant
+  cctx.fillStyle = '#e8e4da'; cctx.fillRect(22, -14, 9, 28); cctx.strokeRect(22, -14, 9, 28);
+  // Aileron arrière
+  cctx.fillStyle = '#e8e4da'; cctx.fillRect(-32, -12, 7, 24); cctx.strokeRect(-32, -12, 7, 24);
+  // Roues
   cctx.fillStyle = '#14161a';
-  cctx.fillRect(12, -14, 6, 4);
-  cctx.fillRect(12, 10, 6, 4);
-  cctx.fillRect(-18, -14, 6, 4);
-  cctx.fillRect(-18, 10, 6, 4);
-  
+  cctx.fillRect(14, -16, 7, 5); cctx.fillRect(14, 11, 7, 5);
+  cctx.fillRect(-20, -16, 7, 5); cctx.fillRect(-20, 11, 7, 5);
+  // Cockpit
   cctx.fillStyle = '#14161a';
-  cctx.beginPath();
-  cctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2);
-  cctx.fill();
-  
-  cctx.fillStyle = '#14161a';
-  cctx.font = 'bold 10px sans-serif';
-  cctx.textAlign = 'center';
-  cctx.textBaseline = 'middle';
-  cctx.fillText('1', 0, 0);
+  cctx.beginPath(); cctx.ellipse(0, 0, 9, 6, 0, 0, Math.PI * 2); cctx.fill();
+  // Numéro
+  cctx.fillStyle = '#fff'; cctx.font = 'bold 11px sans-serif';
+  cctx.textAlign = 'center'; cctx.textBaseline = 'middle'; cctx.fillText('1', 0, 0);
   
   cctx.restore();
   cctx.restore();
@@ -932,7 +970,7 @@ function drawMinimapHex(){
   for(let r = 0; r < R.H; r++){
     for(let q = 0; q < R.W; q++){
       if(!R.grid[r] || R.grid[r][q] === '#') continue;
-      mctx.fillStyle = R.grid[r][q] === 'F' ? '#e8e4da' : '#4a505a';
+      mctx.fillStyle = R.grid[r][q] === 'F' ? '#e8e4da' : R.grid[r][q] === 'C' ? '#f7c948' : '#4a505a';
       mctx.fillRect(q * cell, r * cell, Math.max(1, cell), Math.max(1, cell));
     }
   }
@@ -941,19 +979,16 @@ function drawMinimapHex(){
 }
 
 cv.addEventListener('pointerdown', e => {
-  if(R.phase !== 'pick') return;
-  if(R.isPanning) return;
-  
+  if(R.phase !== 'pick' || R.isPanning) return;
   const rect = cv.getBoundingClientRect();
   const wrap = document.getElementById('trackwrap');
   const size = wrap.clientWidth - 12;
   const vp = computeViewportHex();
-  const hexSize = (size / vp.span) * R.zoomLevel;
+  const speedZoom = 1 - (R.gear / 6) * 0.15;
+  const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
   const centerOffset = axialToPixel(vp.q, vp.r, hexSize);
-  
   const clickX = (e.clientX - rect.left) + centerOffset.x - R.panOffsetX - cv.width/2;
   const clickY = (e.clientY - rect.top) + centerOffset.y - R.panOffsetY - cv.height/2;
-  
   let closest = null, minDist = Infinity;
   for(const [k, res] of R.ends.entries()){
     const pt = axialToPixel(res.q, res.r, hexSize);
@@ -961,11 +996,11 @@ cv.addEventListener('pointerdown', e => {
     if(dist < hexSize * 0.8 && dist < minDist){ minDist = dist; closest = res; }
   }
   if(closest) applyResult(closest);
-  else if(!R.isPanning) toast('Clique sur un point de destination valide');
 });
 
 window.addEventListener('resize', () => { if(document.getElementById('scr-race').classList.contains('on')) drawRace(); });
 
+/* ================== ÉDITEUR ================== */
 const EW = 100, EH = 100;
 const E = { grid: null, tool: 'piste', scale: 16, offX: 0, offY: 0, carPos: null, carDir: 0, editingId: null, adminPw: '', published: false };
 
@@ -982,8 +1017,7 @@ document.getElementById('gate-btn').onclick = async () => {
     E.adminPw = pw;
     document.getElementById('editor-gate').style.display = 'none';
     document.getElementById('editor-main').style.display = 'flex';
-    newCircuitDraft();
-    loadAdminCircuitList();
+    newCircuitDraft(); loadAdminCircuitList();
   } catch(e){ document.getElementById('gate-err').textContent = e.message; }
 };
 
@@ -993,7 +1027,7 @@ function newCircuitDraft(){
   document.getElementById('c-laps').value = 1;
   document.getElementById('c-attempts').value = 3;
   document.getElementById('c-width').value = 3;
-  document.getElementById('c-turns').value = 6;
+  document.getElementById('c-complexity').value = 6;
   document.getElementById('btn-delete').style.display = 'none';
   resetView(); drawEditor();
 }
@@ -1003,7 +1037,7 @@ async function loadAdminCircuitList(){
   el.innerHTML = 'Chargement…';
   try{
     const list = await api('/api/formula/admin/circuits?password=' + encodeURIComponent(E.adminPw));
-    if(!list.length){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:8px">Aucun circuit créé.</div>'; return; }
+    if(!list.length){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:8px">Aucun circuit.</div>'; return; }
     el.innerHTML = '';
     list.forEach(c => {
       const row = document.createElement('div'); row.className = 'admin-circuit-row';
@@ -1011,7 +1045,7 @@ async function loadAdminCircuitList(){
       row.onclick = () => loadCircuitForEdit(c.id);
       el.appendChild(row);
     });
-  } catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:8px">Erreur de chargement.</div>'; }
+  } catch(e){ el.innerHTML = '<div style="color:var(--mute);font-size:12px;padding:8px">Erreur.</div>'; }
 }
 
 async function loadCircuitForEdit(id){
@@ -1024,165 +1058,164 @@ async function loadCircuitForEdit(id){
     document.getElementById('c-laps').value = c.laps;
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('btn-delete').style.display = 'block';
-    resetView(); drawEditor();
-    toast('Circuit chargé');
+    resetView(); drawEditor(); toast('Circuit chargé');
   } catch(e){ toast('Erreur : ' + e.message); }
 }
 
 document.getElementById('btn-new-circuit').onclick = newCircuitDraft;
 
-// GÉNÉRATION DE CIRCUIT AVANCÉE AVEC VIRAGES
+// ===== GÉNÉRATION RÉALISTE AVEC SPLINES CATMULL-ROM =====
 document.getElementById('btn-generate').onclick = () => {
   const grid = emptyGridHex();
   const trackWidth = parseInt(document.getElementById('c-width').value) || 3;
-  const numTurns = parseInt(document.getElementById('c-turns').value) || 6;
+  const complexity = parseInt(document.getElementById('c-complexity').value) || 6;
   
-  const cx = Math.floor(EW / 2);
-  const cy = Math.floor(EH / 2);
-  const radius = Math.min(EW, EH) / 3;
+  const cx = EW / 2, cy = EH / 2;
+  const baseRadius = Math.min(EW, EH) * 0.35;
   
-  // Générer un circuit avec des virages
-  const points = [];
-  const angleStep = (Math.PI * 2) / numTurns;
-  
-  for(let i = 0; i < numTurns; i++){
-    const angle = i * angleStep + (Math.random() - 0.5) * 0.5;
-    const r = radius * (0.7 + Math.random() * 0.6);
-    const x = cx + Math.round(r * Math.cos(angle));
-    const y = cy + Math.round(r * Math.sin(angle));
-    points.push({q: x, r: y});
+  // Générer des points de contrôle avec variation de rayon pour créer des lignes droites et virages
+  const controlPoints = [];
+  const numPoints = complexity;
+  for(let i = 0; i < numPoints; i++){
+    const angle = (i / numPoints) * Math.PI * 2;
+    // Variation de rayon : certains points proches (virages serrés), d'autres loin (lignes droites)
+    const radiusVar = baseRadius * (0.6 + Math.random() * 0.8);
+    controlPoints.push({
+      x: cx + radiusVar * Math.cos(angle),
+      y: cy + radiusVar * Math.sin(angle)
+    });
   }
   
-  // Créer la piste entre les points
-  for(let i = 0; i < points.length; i++){
-    const p1 = points[i];
-    const p2 = points[(i + 1) % points.length];
+  // Interpolation Catmull-Rom pour des courbes smooth
+  function catmullRom(p0, p1, p2, p3, t){
+    const t2 = t * t, t3 = t2 * t;
+    return {
+      x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2*p0.x - 5*p1.x + 4*p2.x - p3.x) * t2 + (-p0.x + 3*p1.x - 3*p2.x + p3.x) * t3),
+      y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2*p0.y - 5*p1.y + 4*p2.y - p3.y) * t2 + (-p0.y + 3*p1.y - 3*p2.y + p3.y) * t3)
+    };
+  }
+  
+  // Échantillonner la spline
+  const trackPoints = [];
+  const samplesPerSegment = 20;
+  for(let i = 0; i < numPoints; i++){
+    const p0 = controlPoints[(i - 1 + numPoints) % numPoints];
+    const p1 = controlPoints[i];
+    const p2 = controlPoints[(i + 1) % numPoints];
+    const p3 = controlPoints[(i + 2) % numPoints];
+    for(let s = 0; s < samplesPerSegment; s++){
+      trackPoints.push(catmullRom(p0, p1, p2, p3, s / samplesPerSegment));
+    }
+  }
+  
+  // Dessiner la piste avec largeur
+  const halfW = Math.floor(trackWidth / 2);
+  for(let i = 0; i < trackPoints.length; i++){
+    const p = trackPoints[i];
+    const q = Math.round(p.x), r = Math.round(p.y);
     
-    // Interpolation linéaire entre les points
-    const steps = Math.max(Math.abs(p2.q - p1.q), Math.abs(p2.r - p1.r));
-    for(let s = 0; s <= steps; s++){
-      const t = s / steps;
-      const q = Math.round(p1.q + (p2.q - p1.q) * t);
-      const r = Math.round(p1.r + (p2.r - p1.r) * t);
-      
-      // Créer la largeur de piste
-      for(let w = -Math.floor(trackWidth/2); w <= Math.floor(trackWidth/2); w++){
-        for(let h = -Math.floor(trackWidth/2); h <= Math.floor(trackWidth/2); h++){
-          const nq = q + w;
-          const nr = r + h;
-          if(rValid(nq, nr, EW, EH)){
-            grid[nr][nq] = '.';
-          }
-        }
-      }
+    // Calculer la normale pour la largeur
+    const next = trackPoints[(i + 1) % trackPoints.length];
+    const dx = next.x - p.x, dy = next.y - p.y;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    
+    for(let w = -halfW; w <= halfW; w++){
+      const wq = Math.round(q + nx * w);
+      const wr = Math.round(r + ny * w);
+      if(rValid(wq, wr, EW, EH)) grid[wr][wq] = '.';
     }
   }
   
-  // Ligne d'arrivée sur toute la largeur
-  const startP = points[0];
-  const nextP = points[1];
-  const dirQ = nextP.q - startP.q;
-  const dirR = nextP.r - startP.r;
+  // Ligne d'arrivée sur toute la largeur au premier point
+  const startP = trackPoints[0];
+  const nextP = trackPoints[1];
+  const sdx = nextP.x - startP.x, sdy = nextP.y - startP.y;
+  const slen = Math.sqrt(sdx*sdx + sdy*sdy) || 1;
+  const snx = -sdy / slen, sny = sdx / slen;
   
-  // Perpendiculaire à la direction
-  const perpQ = -dirR;
-  const perpR = dirQ;
-  const len = Math.sqrt(perpQ * perpQ + perpR * perpR);
-  const normPerpQ = perpQ / len;
-  const normPerpR = perpR / len;
+  for(let w = -halfW - 1; w <= halfW + 1; w++){
+    const fq = Math.round(startP.x + snx * w);
+    const fr = Math.round(startP.y + sny * w);
+    if(rValid(fq, fr, EW, EH) && grid[fr][fq] === '.') grid[fr][fq] = 'F';
+  }
   
-  for(let w = -Math.floor(trackWidth * 1.5); w <= Math.floor(trackWidth * 1.5); w++){
-    const fq = startP.q + Math.round(normPerpQ * w);
-    const fr = startP.r + Math.round(normPerpR * w);
-    if(rValid(fq, fr, EW, EH) && grid[fr][fq] === '.'){
-      grid[fr][fq] = 'F';
+  // Checkpoints à intervalles réguliers
+  const cpInterval = Math.floor(trackPoints.length / 4);
+  for(let c = 1; c <= 3; c++){
+    const cpP = trackPoints[c * cpInterval];
+    const cpNext = trackPoints[(c * cpInterval + 1) % trackPoints.length];
+    const cdx = cpNext.x - cpP.x, cdy = cpNext.y - cpP.y;
+    const clen = Math.sqrt(cdx*cdx + cdy*cdy) || 1;
+    const cnx = -cdy / clen, cny = cdx / clen;
+    for(let w = -halfW; w <= halfW; w++){
+      const cq = Math.round(cpP.x + cnx * w);
+      const cr = Math.round(cpP.y + cny * w);
+      if(rValid(cq, cr, EW, EH) && grid[cr][cq] === '.') grid[cr][cq] = 'C';
     }
   }
   
+  // Position de départ
+  const startQ = Math.round(startP.x);
+  const startR = Math.round(startP.y);
   E.grid = grid;
-  E.carPos = {q: startP.q, r: startP.r};
+  E.carPos = {q: startQ, r: startR};
+  
   // Direction initiale vers le prochain point
-  if(dirQ > 0) E.carDir = 1;
-  else if(dirQ < 0) E.carDir = 4;
-  else if(dirR > 0) E.carDir = 2;
-  else E.carDir = 5;
+  const dirAngle = Math.atan2(sdy, sdx);
+  if(dirAngle > -Math.PI/6 && dirAngle <= Math.PI/6) E.carDir = 1;
+  else if(dirAngle > Math.PI/6 && dirAngle <= Math.PI/2) E.carDir = 2;
+  else if(dirAngle > Math.PI/2 && dirAngle <= 5*Math.PI/6) E.carDir = 3;
+  else if(dirAngle > 5*Math.PI/6 || dirAngle <= -5*Math.PI/6) E.carDir = 4;
+  else if(dirAngle > -5*Math.PI/6 && dirAngle <= -Math.PI/2) E.carDir = 5;
+  else E.carDir = 0;
   
   document.getElementById('car-rotate').classList.add('on');
   resetView(); drawEditor();
-  toast(`Circuit généré ! ${trackWidth} voies, ${numTurns} virages`);
+  toast(`🏁 Circuit généré ! ${trackWidth} voies, ${complexity} virages, 3 checkpoints`);
 };
 
-let importImg = null;
-let importThreshold = 128;
-let importInvert = false;
+let importImg = null, importThreshold = 128, importInvert = false;
 
 document.getElementById('btn-import-img').onclick = () => document.getElementById('img-import').click();
-
 document.getElementById('img-import').onchange = (e) => {
   const file = e.target.files[0];
   if(!file) return;
-  
   const reader = new FileReader();
   reader.onload = (evt) => {
     importImg = new Image();
-    importImg.onload = () => {
-      showImportModal();
-    };
-    importImg.onerror = () => {
-      toast('❌ Erreur de chargement de l\'image');
-    };
+    importImg.onload = () => showImportModal();
+    importImg.onerror = () => toast('❌ Erreur image');
     importImg.src = evt.target.result;
-  };
-  reader.onerror = () => {
-    toast('❌ Erreur de lecture du fichier');
   };
   reader.readAsDataURL(file);
 };
 
 function showImportModal(){
   if(!importImg) return;
-  const modal = document.getElementById('import-modal');
   const canvas = document.getElementById('import-canvas');
   const ctx = canvas.getContext('2d');
-  
   const maxSize = 500;
-  let w = importImg.width;
-  let h = importImg.height;
-  
-  if(w > h){
-    if(w > maxSize){ h = h * maxSize / w; w = maxSize; }
-  } else {
-    if(h > maxSize){ w = w * maxSize / h; h = maxSize; }
-  }
-  
-  canvas.width = w;
-  canvas.height = h;
-  
+  let w = importImg.width, h = importImg.height;
+  if(w > h){ if(w > maxSize){ h = h * maxSize / w; w = maxSize; } }
+  else { if(h > maxSize){ w = w * maxSize / h; h = maxSize; } }
+  canvas.width = w; canvas.height = h;
   updateImportPreview();
-  modal.classList.add('on');
+  document.getElementById('import-modal').classList.add('on');
 }
 
 function updateImportPreview(){
   if(!importImg) return;
   const canvas = document.getElementById('import-canvas');
   const ctx = canvas.getContext('2d');
-  
   ctx.drawImage(importImg, 0, 0, canvas.width, canvas.height);
-  
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
-  
   for(let i = 0; i < data.length; i += 4){
     const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-    let val;
-    if(importInvert){
-      val = brightness > importThreshold ? 0 : 255;
-    } else {
-      val = brightness < importThreshold ? 0 : 255;
-    }
+    const val = importInvert ? (brightness > importThreshold ? 0 : 255) : (brightness < importThreshold ? 0 : 255);
     data[i] = data[i+1] = data[i+2] = val;
   }
-  
   ctx.putImageData(imageData, 0, 0);
 }
 
@@ -1191,69 +1224,34 @@ document.getElementById('threshold-slider').oninput = (e) => {
   document.getElementById('threshold-val').textContent = importThreshold;
   updateImportPreview();
 };
-
-document.getElementById('invert-colors').onchange = (e) => {
-  importInvert = e.target.checked;
-  updateImportPreview();
-};
-
-document.getElementById('btn-import-cancel').onclick = () => {
-  document.getElementById('import-modal').classList.remove('on');
-  importImg = null;
-};
-
+document.getElementById('invert-colors').onchange = (e) => { importInvert = e.target.checked; updateImportPreview(); };
+document.getElementById('btn-import-cancel').onclick = () => { document.getElementById('import-modal').classList.remove('on'); importImg = null; };
 document.getElementById('btn-import-confirm').onclick = () => {
   if(!importImg) return;
-  
   const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = EW;
-  tempCanvas.height = EH;
+  tempCanvas.width = EW; tempCanvas.height = EH;
   const tctx = tempCanvas.getContext('2d');
-  
   const imgRatio = importImg.width / importImg.height;
   const gridRatio = EW / EH;
-  
   let drawW, drawH, offsetX = 0, offsetY = 0;
-  
-  if(imgRatio > gridRatio){
-    drawW = EW;
-    drawH = EW / imgRatio;
-    offsetY = (EH - drawH) / 2;
-  } else {
-    drawH = EH;
-    drawW = EH * imgRatio;
-    offsetX = (EW - drawW) / 2;
-  }
-  
-  tctx.fillStyle = '#fff';
-  tctx.fillRect(0, 0, EW, EH);
+  if(imgRatio > gridRatio){ drawW = EW; drawH = EW / imgRatio; offsetY = (EH - drawH) / 2; }
+  else { drawH = EH; drawW = EH * imgRatio; offsetX = (EW - drawW) / 2; }
+  tctx.fillStyle = '#fff'; tctx.fillRect(0, 0, EW, EH);
   tctx.drawImage(importImg, offsetX, offsetY, drawW, drawH);
-  
   const imageData = tctx.getImageData(0, 0, EW, EH).data;
-  
   for(let r = 0; r < EH; r++){
     for(let q = 0; q < EW; q++){
       const idx = (r * EW + q) * 4;
       const brightness = (imageData[idx] + imageData[idx+1] + imageData[idx+2]) / 3;
-      
-      if(importInvert){
-        E.grid[r][q] = brightness > importThreshold ? '.' : '#';
-      } else {
-        E.grid[r][q] = brightness < importThreshold ? '.' : '#';
-      }
+      E.grid[r][q] = importInvert ? (brightness > importThreshold ? '.' : '#') : (brightness < importThreshold ? '.' : '#');
     }
   }
-  
-  E.carPos = null;
-  E.carDir = 0;
+  E.carPos = null; E.carDir = 0;
   document.getElementById('car-rotate').classList.remove('on');
-  
   document.getElementById('import-modal').classList.remove('on');
   importImg = null;
-  
-  resetView();
-  drawEditor();
-  toast(`✅ Circuit importé ! Place la voiture 🏎️ et l'arrivée 🏁`);
+  resetView(); drawEditor();
+  toast('✅ Circuit importé !');
 };
 
 function rValid(q, r, w, h){ return r >= 0 && r < h && q >= 0 && q < w; }
@@ -1265,23 +1263,19 @@ document.querySelectorAll('.tool').forEach(t => t.onclick = () => {
 });
 
 document.getElementById('btn-test-mode').onclick = () => {
-  if(!E.carPos){ toast('Place la voiture 🏎️ avant de tester'); return; }
+  if(!E.carPos){ toast('Place la voiture 🏎️'); return; }
   const name = document.getElementById('c-name').value.trim() || 'Circuit Test';
-  const circuitMock = {
-    id: 'test_circuit', name: name, w: EW, h: EH,
+  startRace({
+    id: 'test_circuit', name, w: EW, h: EH,
     rows: E.grid.map(row => row.join('')),
     start: {x: E.carPos.q, y: E.carPos.r, dir: E.carDir},
     laps: parseInt(document.getElementById('c-laps').value) || 1, attempts: 99
-  };
-  startRace(circuitMock, 'TesteurAdmin', 99);
-  toast('Mode test lancé !');
+  }, 'TesteurAdmin', 99);
+  toast('Mode test !');
 };
 
 const ecv = document.getElementById('ecv'); const ectx = ecv.getContext('2d');
-function fitEcv(){
-  const wrap = document.getElementById('editor-canvas-wrap');
-  ecv.width = wrap.clientWidth; ecv.height = wrap.clientHeight;
-}
+function fitEcv(){ const wrap = document.getElementById('editor-canvas-wrap'); ecv.width = wrap.clientWidth; ecv.height = wrap.clientHeight; }
 function resetView(){
   fitEcv();
   E.scale = Math.max(6, Math.floor(Math.min(ecv.width / EW, ecv.height / EH) * 1.2));
@@ -1290,100 +1284,62 @@ function resetView(){
 
 function drawEditor(){
   fitEcv();
-  
-  ectx.fillStyle = '#2d5016';
-  ectx.fillRect(0, 0, ecv.width, ecv.height);
-  
+  ectx.fillStyle = '#2d5016'; ectx.fillRect(0, 0, ecv.width, ecv.height);
   ectx.save(); ectx.translate(E.offX, E.offY);
-  
   const hexSize = E.scale;
-  
-  const viewLeft = -E.offX;
-  const viewRight = ecv.width - E.offX;
-  const viewTop = -E.offY;
-  const viewBottom = ecv.height - E.offY;
-  
+  const viewLeft = -E.offX, viewRight = ecv.width - E.offX, viewTop = -E.offY, viewBottom = ecv.height - E.offY;
   const minR = Math.max(0, Math.floor(viewTop / (hexSize * 1.5)) - 3);
   const maxR = Math.min(EH, Math.ceil(viewBottom / (hexSize * 1.5)) + 3);
-  
   for(let r = minR; r < maxR; r++){
     const minQ = Math.max(0, Math.floor(viewLeft / (hexSize * SQRT3) - r/2) - 3);
     const maxQ = Math.min(EW, Math.ceil(viewRight / (hexSize * SQRT3) - r/2) + 3);
-    
     for(let q = minQ; q < maxQ; q++){
       const t = E.grid[r][q];
       if(t === '#') continue;
       const pt = axialToPixel(q, r, hexSize);
-      
-      const baseColor = t === 'F' ? '#2a2d33' : '#3a3f47';
+      const baseColor = (t === 'F' || t === 'C') ? '#2a2d33' : '#3a3f47';
       const variation = ((q * 7 + r * 13) % 20) - 10;
       const r1 = parseInt(baseColor.slice(1,3), 16) + variation;
       const g1 = parseInt(baseColor.slice(3,5), 16) + variation;
       const b1 = parseInt(baseColor.slice(5,7), 16) + variation;
-      const asphaltColor = `rgb(${Math.max(0, Math.min(255, r1))}, ${Math.max(0, Math.min(255, g1))}, ${Math.max(0, Math.min(255, b1))})`;
-      
-      drawHex(ectx, pt.x, pt.y, hexSize * 0.95, asphaltColor, '#2c3038');
-      
+      drawHex(ectx, pt.x, pt.y, hexSize * 0.95, `rgb(${Math.max(0,Math.min(255,r1))},${Math.max(0,Math.min(255,g1))},${Math.max(0,Math.min(255,b1))})`, '#2c3038');
       if(t === 'F'){
-        const squareSize = hexSize * 0.15;
-        for(let i = 0; i < 3; i++){
-          for(let j = 0; j < 3; j++){
-            if((i + j) % 2 === 0){
-              ectx.fillStyle = '#e8e4da';
-              ectx.fillRect(pt.x - squareSize * 1.5 + i * squareSize, pt.y - squareSize * 1.5 + j * squareSize, squareSize, squareSize);
-            }
-          }
+        const sq = hexSize * 0.15;
+        for(let i = 0; i < 3; i++) for(let j = 0; j < 3; j++){
+          if((i+j) % 2 === 0){ ectx.fillStyle = '#e8e4da'; ectx.fillRect(pt.x - sq*1.5 + i*sq, pt.y - sq*1.5 + j*sq, sq, sq); }
         }
       }
-      
+      if(t === 'C'){
+        ectx.strokeStyle = '#f7c948'; ectx.lineWidth = 2; ectx.setLineDash([3, 3]);
+        ectx.beginPath(); ectx.arc(pt.x, pt.y, hexSize * 0.5, 0, Math.PI * 2); ectx.stroke();
+        ectx.setLineDash([]);
+      }
       for(let dir = 0; dir < 6; dir++){
-        const nq = q + HEX_DIRS[dir].q;
-        const nr = r + HEX_DIRS[dir].r;
+        const nq = q + HEX_DIRS[dir].q, nr = r + HEX_DIRS[dir].r;
         if(nq < 0 || nq >= EW || nr < 0 || nr >= EH || E.grid[nr][nq] === '#'){
           const angle = (Math.PI / 3) * dir - Math.PI / 6;
-          const bx = pt.x + hexSize * 0.85 * Math.cos(angle);
-          const by = pt.y + hexSize * 0.85 * Math.sin(angle);
-          
-          ectx.save();
-          ectx.translate(bx, by);
-          ectx.rotate(angle);
-          
-          const kerbWidth = hexSize * 0.15;
-          const kerbHeight = hexSize * 0.4;
+          const bx = pt.x + hexSize * 0.85 * Math.cos(angle), by = pt.y + hexSize * 0.85 * Math.sin(angle);
+          ectx.save(); ectx.translate(bx, by); ectx.rotate(angle);
+          const kw = hexSize * 0.15, kh = hexSize * 0.4;
           for(let k = 0; k < 3; k++){
             ectx.fillStyle = k % 2 === 0 ? '#d63b2f' : '#e8e4da';
-            ectx.fillRect(-kerbWidth/2, -kerbHeight/2 + k * kerbHeight/3, kerbWidth, kerbHeight/3);
+            ectx.fillRect(-kw/2, -kh/2 + k * kh/3, kw, kh/3);
           }
-          
           ectx.restore();
         }
       }
     }
   }
-  
   if(E.carPos){
     const pt = axialToPixel(E.carPos.q, E.carPos.r, hexSize);
-    ectx.save(); ectx.translate(pt.x, pt.y);
-    ectx.rotate((Math.PI / 3) * E.carDir);
-    
-    const carScale = hexSize * 0.015;
-    ectx.scale(carScale, carScale);
-    
+    ectx.save(); ectx.translate(pt.x, pt.y); ectx.rotate((Math.PI / 3) * E.carDir);
+    const carScale = hexSize * 0.018; ectx.scale(carScale, carScale);
     ectx.fillStyle = '#f7c948';
     ectx.beginPath();
-    ectx.moveTo(30, 0);
-    ectx.lineTo(15, -8);
-    ectx.lineTo(-20, -10);
-    ectx.lineTo(-25, -6);
-    ectx.lineTo(-25, 6);
-    ectx.lineTo(-20, 10);
-    ectx.lineTo(15, 8);
-    ectx.closePath();
-    ectx.fill();
-    ectx.strokeStyle = '#14161a';
-    ectx.lineWidth = 2;
-    ectx.stroke();
-    
+    ectx.moveTo(32, 0); ectx.lineTo(18, -9); ectx.lineTo(-22, -11);
+    ectx.lineTo(-28, -7); ectx.lineTo(-28, 7); ectx.lineTo(-22, 11); ectx.lineTo(18, 9);
+    ectx.closePath(); ectx.fill();
+    ectx.strokeStyle = '#14161a'; ectx.lineWidth = 2; ectx.stroke();
     ectx.restore();
   }
   ectx.restore();
@@ -1391,17 +1347,13 @@ function drawEditor(){
 
 function cellFromEventHex(e){
   const rect = ecv.getBoundingClientRect();
-  const px = (e.clientX - rect.left) - E.offX;
-  const py = (e.clientY - rect.top) - E.offY;
+  const px = (e.clientX - rect.left) - E.offX, py = (e.clientY - rect.top) - E.offY;
   const size = E.scale;
-  
   let closestQ = 0, closestR = 0, minDist = Infinity;
   const approxR = Math.round(py / (size * 1.5));
   const approxQ = Math.round(px / (size * SQRT3) - approxR/2);
-  
-  const searchRadius = 3;
-  for(let r = Math.max(0, approxR - searchRadius); r < Math.min(EH, approxR + searchRadius); r++){
-    for(let q = Math.max(0, approxQ - searchRadius); q < Math.min(EW, approxQ + searchRadius); q++){
+  for(let r = Math.max(0, approxR - 3); r < Math.min(EH, approxR + 3); r++){
+    for(let q = Math.max(0, approxQ - 3); q < Math.min(EW, approxQ + 3); q++){
       const pt = axialToPixel(q, r, size);
       const d = Math.hypot(pt.x - px, pt.y - py);
       if(d < minDist){ minDist = d; closestQ = q; closestR = r; }
@@ -1415,6 +1367,7 @@ function paintAtHex(q, r){
   if(E.tool === 'piste') E.grid[r][q] = '.';
   else if(E.tool === 'mur'){ E.grid[r][q] = '#'; if(E.carPos && E.carPos.q === q && E.carPos.r === r) E.carPos = null; }
   else if(E.tool === 'finish') E.grid[r][q] = 'F';
+  else if(E.tool === 'checkpoint') E.grid[r][q] = 'C';
   else if(E.tool === 'car'){
     if(E.grid[r][q] === '#') E.grid[r][q] = '.';
     E.carPos = {q, r};
@@ -1426,55 +1379,25 @@ function paintAtHex(q, r){
 document.getElementById('rotL').onclick = () => { E.carDir = rotHex(E.carDir, -1); drawEditor(); };
 document.getElementById('rotR').onclick = () => { E.carDir = rotHex(E.carDir, 1); drawEditor(); };
 
-let isPanning = false;
-let panStart = null;
-
+let isPanning = false, panStart = null;
 ecv.addEventListener('pointerdown', e => {
   ecv.setPointerCapture(e.pointerId);
-  if(E.tool === 'pan'){
-    isPanning = true;
-    panStart = { x: e.clientX, y: e.clientY, offX: E.offX, offY: E.offY };
-  } else {
-    const c = cellFromEventHex(e);
-    paintAtHex(c.q, c.r);
-  }
+  if(E.tool === 'pan'){ isPanning = true; panStart = { x: e.clientX, y: e.clientY, offX: E.offX, offY: E.offY }; }
+  else { const c = cellFromEventHex(e); paintAtHex(c.q, c.r); }
 });
-
 ecv.addEventListener('pointermove', e => {
-  if(isPanning && panStart){
-    E.offX = panStart.offX + (e.clientX - panStart.x);
-    E.offY = panStart.offY + (e.clientY - panStart.y);
-    drawEditor();
-  } else if(!isPanning && e.buttons === 1 && E.tool !== 'pan'){
-    const c = cellFromEventHex(e);
-    paintAtHex(c.q, c.r);
-  }
+  if(isPanning && panStart){ E.offX = panStart.offX + (e.clientX - panStart.x); E.offY = panStart.offY + (e.clientY - panStart.y); drawEditor(); }
+  else if(!isPanning && e.buttons === 1 && E.tool !== 'pan'){ const c = cellFromEventHex(e); paintAtHex(c.q, c.r); }
 });
-
-ecv.addEventListener('pointerup', e => {
-  isPanning = false;
-  panStart = null;
-  ecv.releasePointerCapture(e.pointerId);
-});
-
+ecv.addEventListener('pointerup', e => { isPanning = false; panStart = null; ecv.releasePointerCapture(e.pointerId); });
 ecv.addEventListener('wheel', e => {
   e.preventDefault();
-  const zoomIntensity = 0.1;
-  const wheel = e.deltaY < 0 ? 1 : -1;
-  const zoom = Math.exp(wheel * zoomIntensity);
-  
+  const zoom = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.1);
   const rect = ecv.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  
-  const worldX = (mouseX - E.offX) / E.scale;
-  const worldY = (mouseY - E.offY) / E.scale;
-  
+  const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+  const worldX = (mouseX - E.offX) / E.scale, worldY = (mouseY - E.offY) / E.scale;
   E.scale = Math.max(4, Math.min(60, E.scale * zoom));
-  
-  E.offX = mouseX - worldX * E.scale;
-  E.offY = mouseY - worldY * E.scale;
-  
+  E.offX = mouseX - worldX * E.scale; E.offY = mouseY - worldY * E.scale;
   drawEditor();
 }, { passive: false });
 
@@ -1484,11 +1407,10 @@ document.getElementById('zreset').onclick = () => { resetView(); drawEditor(); }
 
 async function saveCircuit(publish){
   const name = document.getElementById('c-name').value.trim();
-  if(!name){ toast('Nom du circuit requis'); return; }
-  if(!E.carPos){ toast('Place la voiture 🏎️ sur la piste'); return; }
+  if(!name){ toast('Nom requis'); return; }
+  if(!E.carPos){ toast('Place la voiture 🏎️'); return; }
   const rows = E.grid.map(r => r.join(''));
-  if(!rows.some(r => r.includes('F'))){ toast('Place une ligne d\'arrivée 🏁'); return; }
-  
+  if(!rows.some(r => r.includes('F'))){ toast('Place une arrivée 🏁'); return; }
   const body = {
     password: E.adminPw, id: E.editingId, name, w: EW, h: EH, rows,
     start: {x: E.carPos.q, y: E.carPos.r, dir: E.carDir},
@@ -1496,12 +1418,11 @@ async function saveCircuit(publish){
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
     published: publish !== undefined ? publish : E.published
   };
-  
   try{
     const res = await api('/api/formula/circuit', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
     E.editingId = res.id; E.published = body.published;
     document.getElementById('btn-delete').style.display = 'block';
-    toast(publish ? '✅ Circuit publié !' : '💾 Brouillon enregistré');
+    toast(publish ? '✅ Publié !' : '💾 Brouillon');
     loadAdminCircuitList();
   } catch(e){ toast('Erreur : ' + e.message); }
 }
@@ -1509,11 +1430,10 @@ async function saveCircuit(publish){
 document.getElementById('btn-save-draft').onclick = () => saveCircuit(false);
 document.getElementById('btn-publish').onclick = () => saveCircuit(true);
 document.getElementById('btn-delete').onclick = async () => {
-  if(!E.editingId) return;
-  if(!confirm('Supprimer ce circuit ?')) return;
+  if(!E.editingId || !confirm('Supprimer ?')) return;
   try{
     await api('/api/formula/circuit/' + E.editingId, {method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: E.adminPw})});
-    toast('Circuit supprimé'); newCircuitDraft(); loadAdminCircuitList();
+    toast('Supprimé'); newCircuitDraft(); loadAdminCircuitList();
   } catch(e){ toast('Erreur : ' + e.message); }
 };
 
