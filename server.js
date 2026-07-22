@@ -170,11 +170,12 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0 };
 }
 function bestRun(runs) {
-  if (!runs || !runs.length) return null;
-  return runs.reduce((best, r) => {
+  const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
+  if (!valid.length) return null;
+  return valid.reduce((best, r) => {
     if (!best) return r;
     if (r.moves < best.moves) return r;
     if (r.moves === best.moves && r.left > best.left) return r;
@@ -185,7 +186,7 @@ function bestRun(runs) {
 // 1er = N×10, 2e = (N-1)×10 ... où N = nombre de joueurs distincts sur ce circuit.
 // Se recalcule entièrement à chaque appel — donc à chaque nouveau joueur, tout le monde est réévalué.
 function circuitRanking(circuitId) {
-  const runs = circuitRuns[circuitId] || [];
+  const runs = (circuitRuns[circuitId] || []).filter(r => !r.crashed && Number.isFinite(r.moves));
   const bestPerPseudo = {};
   for (const r of runs) {
     const k = norm(r.pseudo);
@@ -1138,6 +1139,7 @@ app.post('/api/formula/circuit', async (req, res) => {
     start: { x: start.x, y: start.y, dir: start.dir||0 },
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
+    warmup: Math.max(0, Math.min(5, parseInt(req.body.warmup)||0)),
     published: !!published,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
@@ -1161,7 +1163,8 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const runs = circuitRuns[req.params.id] || [];
   const pseudo = (req.query.pseudo || '').trim();
   const mine = pseudo ? runs.filter(r => norm(r.pseudo) === norm(pseudo)) : [];
-  const top = [...runs].sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
+  const top = runs.filter(r => !r.crashed && Number.isFinite(r.moves))
+    .sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
     .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
   res.json({
     top,
@@ -1172,7 +1175,7 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
 });
 
 app.post('/api/formula/run', async (req, res) => {
-  const { circuitId, pseudo, moves, left, laps } = req.body;
+  const { circuitId, pseudo, moves, left, laps, cpTimes } = req.body;
   const c = circuits.find(x => x.id === circuitId);
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
@@ -1183,7 +1186,11 @@ app.post('/api/formula/run', async (req, res) => {
   const already = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
   if (already.length >= c.attempts) return res.status(403).json({ error: 'Plus d\'essais disponibles', attemptsLeft: 0 });
 
-  const run = { pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps, date: new Date().toISOString() };
+  const run = {
+    pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps,
+    cpTimes: Array.isArray(cpTimes) ? cpTimes.slice(0, 50) : [],
+    date: new Date().toISOString()
+  };
   circuitRuns[circuitId].push(run);
   try {
     await saveCircuitRuns(circuitId);
@@ -1198,7 +1205,31 @@ app.post('/api/formula/run', async (req, res) => {
     rebuildGlobalScores(); // recalcule aussi le classement général avec les points à jour de TOUS les joueurs
     saveData();
 
-    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points });
+    // Top 10 pour affichage immédiat côté client
+    const top = ranked.slice(0, 10).map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
+
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, top });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Crash = tentative abandonnée : décompte l'essai côté serveur (sinon rafraîchir = essais infinis)
+app.post('/api/formula/crash', async (req, res) => {
+  const { circuitId, pseudo } = req.body;
+  const c = circuits.find(x => x.id === circuitId);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  const cleanPseudo = (pseudo||'').trim().slice(0,24);
+  if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
+
+  circuitRuns[circuitId] = circuitRuns[circuitId] || [];
+  const already = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
+  if (already.length >= c.attempts) return res.json({ success: true, attemptsLeft: 0 });
+
+  // On enregistre un essai "abandonné" : compte pour la limite mais jamais classé (moves=null)
+  circuitRuns[circuitId].push({ pseudo: cleanPseudo, crashed: true, moves: null, left: 0, laps: 0, date: new Date().toISOString() });
+  try {
+    await saveCircuitRuns(circuitId);
+    const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length) });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
