@@ -2156,22 +2156,31 @@ function finalizeMove(r) {
     R.stressed = false;
     say('💥 CRASH ! Tentative abandonnée.', 'crash');
 
-    setTimeout(() => {
-      R.attemptsLeft--;
-
+    setTimeout(async () => {
+      // Mode test : décompte local uniquement, retour éditeur, aucun envoi serveur
+      if (R.testMode) {
+        R.attemptsLeft--;
+        document.getElementById('finish').classList.remove('on');
+        show('scr-editor');
+        return;
+      }
+      // Mode réel : le serveur décompte l'essai (sinon rafraîchir = essais infinis)
+      try {
+        const res = await api('/api/formula/crash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ circuitId: R.circuit.id, pseudo: R.pseudo })
+        });
+        R.attemptsLeft = res.attemptsLeft;
+      } catch (e) {
+        R.attemptsLeft--; // repli local si le serveur est injoignable
+      }
       if (R.attemptsLeft <= 0) {
         toast('🚫 Plus d\'essais disponibles');
       } else {
         toast('🔄 Abandon. ' + R.attemptsLeft + ' restant(s)');
       }
-
-      // Mode test → retour éditeur
-      if (R.testMode) {
-        document.getElementById('finish').classList.remove('on');
-        show('scr-editor');
-      } else {
-        setTimeout(backToMenu, 1500);
-      }
+      setTimeout(backToMenu, 1500);
     }, 1000);
 
     return;
