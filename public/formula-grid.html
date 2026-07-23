@@ -615,8 +615,8 @@ header.top {
 #dice-anim-overlay.on { display: flex; }
 
 .dice-cube {
-  width: 90px;
-  height: 90px;
+  width: 52px;
+  height: 52px;
   background: var(--panel);
   border: 3px solid var(--line);
   border-radius: 16px;
@@ -624,10 +624,10 @@ header.top {
   align-items: center;
   justify-content: center;
   font-family: ui-monospace, monospace;
-  font-size: 38px;
+  font-size: 24px;
   font-weight: 900;
   color: var(--line);
-  box-shadow: 0 0 30px rgba(247, 201, 72, 0.4);
+  box-shadow: 0 0 18px rgba(247, 201, 72, 0.35);
   animation: diceShake 0.1s infinite alternate;
 }
 
@@ -1013,7 +1013,7 @@ header.top {
     <div id="cp-toast"></div>
     <div id="zoom-indicator">×1.0</div>
     <button id="center-btn">🎯</button>
-    <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
+    <div id="minimap-wrap" style="display:none"><canvas id="minimap"></canvas></div>
   </div>
   <div id="dash">
     <div class="gauge" id="g-lap">
@@ -1050,6 +1050,14 @@ header.top {
       <div id="fuel-bar" style="height:100%;width:100%;border-radius:4px;transition:width .3s,background .3s"></div>
     </div>
   </div>
+  <div id="inertiameter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:10px 14px;border:1px solid #2c3038">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">🎯 INERTIE / BRAQUAGE</span>
+      <span id="inertia-val" style="font-family:ui-monospace,monospace;font-size:13px;font-weight:900;color:var(--line)"></span>
+    </div>
+    <div id="inertia-cells" style="display:flex;gap:3px;margin-top:7px"></div>
+    <div id="inertia-txt" style="font-size:10px;color:var(--mute);margin-top:5px;line-height:1.35"></div>
+  </div>
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
@@ -1065,7 +1073,9 @@ header.top {
      OVERLAY DÉ
      ============================================================ -->
 <div id="dice-anim-overlay">
-  <div class="eyebrow" style="color:var(--line);letter-spacing:4px">LANCER DU DÉ...</div>
+  <div class="eyebrow" id="dice-title" style="color:var(--line);letter-spacing:4px">LANCER DES DÉS...</div>
+  <div id="dice-row" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:330px"></div>
+  <div id="dice-sum" style="font-family:ui-monospace,monospace;font-size:15px;font-weight:900;color:var(--txt);letter-spacing:1px"></div>
   <div class="dice-cube" id="dice-box-val">?</div>
 </div>
 
@@ -1273,8 +1283,19 @@ const DICE_POOLS = [
   [[4, 5], [4, 5], [3, 4], [3, 4], [3, 4], [4, 5, 8]] // V6 : 6 dés (21-30)
 ];
 
-// Cooldown de virage par vitesse
-const COOLDOWN = [0, 0, 0, 1, 2, 4, 6];
+// Espacement : cases droites obligatoires ENTRE deux virages (= rapport - 1)
+const COOLDOWN = [0, 0, 1, 2, 3, 4, 5];
+
+// Inertie : cases droites obligatoires AU DÉBUT du mouvement (= rapport - 1).
+// Plus le rapport est haut, plus la voiture est "engagée" et ne peut pas esquiver.
+const INERTIA = [0, 0, 1, 2, 3, 4, 5];
+
+// PLAFOND D'INERTIE — réglage de jouabilité.
+// Au-delà de 1, la voiture qui finit son mouvement face à un mur n'a plus AUCUNE
+// manœuvre possible au coup suivant (crash inévitable, invisible pour le joueur).
+// Mesuré sur 12 courses : plafond 0 → 11/12 terminées · 1 → 9/12 · 2 → 1/12 · 3+ → 0/12.
+// Le "poids" de la voiture est déjà porté par le coût de braquage (pivot = rapport).
+const INERTIA_CAP = 1; // (obsolète — conservé pour compatibilité)
 
 // Vitesse affichée par rapport (km/h)
 const GEAR_KMH = [0, 50, 100, 160, 220, 290, 350];
@@ -1616,7 +1637,8 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   // Finish zone tracking
   R.leftFinishZone = false;
 
-  // Animation
+  // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
+  R.inertia = 0;
   R.animating = false;
   R.animPath = [];
   R.animIdx = 0;
@@ -1775,38 +1797,37 @@ function onTrackR(q, r) {
 }
 
 function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
-  const N = COOLDOWN[gear];
+  // JAUGE D'INERTIE (décompte à purger) :
+  // - Après chaque coup de volant, la jauge est chargée à (vitesse - 1).
+  // - Chaque case franchie EN LIGNE DROITE la fait baisser de 1.
+  // - Tout pivot est STRICTEMENT INTERDIT tant que la jauge est > 0.
+  // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
+  //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
+  // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
+  const reload = Math.max(0, (gear || 1) - 1);
+  const startInertia = Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
 
-  function dfs(q, r, dir, b, turnSide, cooldown, crossed, path) {
-    const key = q + ',' + r + ',' + dir + ',' + b + ',' +
-                turnSide + ',' + cooldown + ',' + crossed;
-
+  function dfs(q, r, dir, b, inertia, crossed, path) {
+    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed;
     if (memo.has(key)) return;
     memo.add(key);
 
-    // Options : tout droit + virages si cooldown = 0
-    const opts = [{ d: dir, type: 's' }];
-
-    if (cooldown === 0) {
-      if (turnSide !== 'R') opts.push({ d: rotHex(dir, -1), type: 'l' });
-      if (turnSide !== 'L') opts.push({ d: rotHex(dir, 1), type: 'r' });
-    }
-
-    // Fin du budget
-    if (b === 0) {
+    if (b <= 0) {
       results.push({
-        path: path.slice(),
-        q: q,
-        r: r,
-        dir: dir,
-        crash: false,
-        finish: false,
-        left: b,
-        lapsGained: crossed ? 1 : 0
+        path: path.slice(), q: q, r: r, dir: dir,
+        crash: false, finish: false, left: b, lapsGained: crossed ? 1 : 0,
+        inertiaEnd: inertia
       });
       return;
+    }
+
+    // Tout droit toujours possible ; pivots seulement si la jauge est purgée
+    const opts = [{ d: dir, turn: false }];
+    if (inertia === 0) {
+      opts.push({ d: rotHex(dir, -1), turn: true });
+      opts.push({ d: rotHex(dir, 1), turn: true });
     }
 
     let anyOpen = false;
@@ -1819,67 +1840,44 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       if (!onTrackR(nq, nr)) continue;
       anyOpen = true;
 
-      path.push({ q: nq, r: nr, dir: o.d });
+      path.push({ q: nq, r: nr, dir: o.d, turn: o.turn });
 
-      let newSide = turnSide;
-      let newCooldown = cooldown;
-
-      if (o.type === 'l') {
-        newSide = 'L';
-        newCooldown = N;
-      } else if (o.type === 'r') {
-        newSide = 'R';
-        newCooldown = N;
-      } else {
-        newCooldown = Math.max(0, cooldown - 1);
-      }
-
+      const nb = b - 1;
+      // Virage → recharge la jauge ; ligne droite → la purge de 1
+      const nInertia = o.turn ? reload : Math.max(0, inertia - 1);
       const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
 
-      // Franchissement ligne F
       if (cell === 'F' && !crossed && R.leftFinishZone) {
         const lapNum = lapCount + 1;
-
         if (lapNum >= targetLaps) {
           results.push({
-            path: path.slice(),
-            q: nq,
-            r: nr,
-            dir: o.d,
-            crash: false,
-            finish: true,
-            left: b - 1,
-            lapsGained: 1
+            path: path.slice(), q: nq, r: nr, dir: o.d,
+            crash: false, finish: true, left: nb, lapsGained: 1,
+            inertiaEnd: nInertia
           });
           path.pop();
           continue;
         } else {
-          dfs(nq, nr, o.d, b - 1, newSide, newCooldown, true, path);
+          dfs(nq, nr, o.d, nb, nInertia, true, path);
           path.pop();
           continue;
         }
       }
 
-      dfs(nq, nr, o.d, b - 1, newSide, newCooldown, crossed, path);
+      dfs(nq, nr, o.d, nb, nInertia, crossed, path);
       path.pop();
     }
 
-    // Impasse = crash
     if (!anyOpen) {
       results.push({
-        path: path.slice(),
-        q: q,
-        r: r,
-        dir: dir,
-        crash: true,
-        finish: false,
-        left: b,
-        lapsGained: crossed ? 1 : 0
+        path: path.slice(), q: q, r: r, dir: dir,
+        crash: true, finish: false, left: b, lapsGained: crossed ? 1 : 0,
+        inertiaEnd: inertia
       });
     }
   }
 
-  dfs(q0, r0, dir0, budget, null, 0, false, []);
+  dfs(q0, r0, dir0, budget, startInertia, false, []);
   return results;
 }
 
@@ -2192,6 +2190,43 @@ function updateFuelGauge() {
   if (R.outOfFuel) el.textContent = 'PANNE SÈCHE';
 }
 
+function updateInertiaGauge() {
+  const val = document.getElementById('inertia-val');
+  const cells = document.getElementById('inertia-cells');
+  const txt = document.getElementById('inertia-txt');
+  if (!val || !cells || !txt) return;
+
+  const g = (R.phase === 'gear') ? R.pendingGear : R.gear;
+  const reload = Math.max(0, (g || 1) - 1);   // recharge après un virage
+  const cur = Math.max(0, R.inertia || 0);    // état actuel de la jauge
+
+  if (!g) {
+    val.textContent = '—';
+    cells.innerHTML = '';
+    txt.textContent = 'À l\'arrêt.';
+    return;
+  }
+
+  val.textContent = cur > 0 ? ('🔒 ' + cur) : '✅ 0';
+  val.style.color = cur > 0 ? '#ff5d5d' : 'var(--ok)';
+
+  // Une case par point de jauge (échelle = recharge max de ce rapport, min 1)
+  const scale = Math.max(reload, cur, 1);
+  cells.innerHTML = '';
+  for (let i = 0; i < scale; i++) {
+    const c = document.createElement('div');
+    c.style.cssText = 'flex:1;height:7px;border-radius:3px;background:' +
+      (i < cur ? '#ff5d5d' : '#2b2f36');
+    cells.appendChild(c);
+  }
+
+  if (cur > 0) {
+    txt.textContent = cur + ' case(s) tout droit avant de pouvoir braquer · un virage rechargera à ' + reload + '.';
+  } else {
+    txt.textContent = 'Braquage autorisé · chaque virage rechargera la jauge à ' + reload + ' (rapport ' + g + ').';
+  }
+}
+
 function syncDash() {
   const lapEl = document.getElementById('v-lap');
   if (R.isWarmup) {
@@ -2205,6 +2240,7 @@ function syncDash() {
   document.getElementById('v-turn').textContent = R.turn;
 
   updateFuelGauge();
+  updateInertiaGauge();
   updateDeltaHud();
 
   // Bouton lancer : normalement désactivé au rapport 0, SAUF en panne sèche au rapport 0
@@ -2272,25 +2308,55 @@ function rollDiceAnim() {
   }
 
   const ov = document.getElementById('dice-anim-overlay');
-  const cubeVal = document.getElementById('dice-box-val');
+  const row = document.getElementById('dice-row');
+  const sumEl = document.getElementById('dice-sum');
+  const titleEl = document.getElementById('dice-title');
+  const pool = DICE_POOLS[R.gear] || [];
+
+  // Un cube visible PAR DÉ du pool (V5 → 5 cubes qui tournent en même temps)
+  titleEl.textContent = pool.length + (pool.length > 1 ? ' DÉS' : ' DÉ') + ' · RAPPORT ' + R.gear;
+  row.innerHTML = '';
+  const cubes = pool.map(() => {
+    const c = document.createElement('div');
+    c.className = 'dice-cube';
+    c.textContent = '?';
+    row.appendChild(c);
+    return c;
+  });
+  sumEl.textContent = '';
   ov.classList.add('on');
 
   let counter = 0;
-
   const interval = setInterval(() => {
-    const [minD, maxD] = DICE[R.gear];
-    cubeVal.textContent = minD + Math.floor(Math.random() * (maxD - minD + 1));
+    // chaque dé tourne sur ses PROPRES faces
+    let running = 0;
+    cubes.forEach((c, i) => {
+      const faces = pool[i];
+      const v = faces[Math.floor(Math.random() * faces.length)];
+      c.textContent = v;
+      running += v;
+    });
+    sumEl.textContent = 'Σ ' + running;
     counter++;
 
     if (counter > 10) {
       clearInterval(interval);
-      const finalVal = executeDiceRoll(R.gear);
-      cubeVal.textContent = finalVal;
+      // Tirage final réel, dé par dé (la somme affichée = somme des faces montrées)
+      let total = 0;
+      cubes.forEach((c, i) => {
+        const faces = pool[i];
+        const v = faces[Math.floor(Math.random() * faces.length)];
+        c.textContent = v;
+        c.style.borderColor = 'var(--ok)';
+        total += v;
+      });
+      sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + total + ' cases</span>';
 
       setTimeout(() => {
         ov.classList.remove('on');
-        processRollResult(finalVal);
-      }, 400);
+        cubes.forEach(c => { c.style.borderColor = ''; });
+        processRollResult(total);
+      }, 900);
     }
   }, 120);
 }
@@ -2443,6 +2509,9 @@ function finalizeMove(r) {
     R.dir = last.dir;
   }
 
+  // PERSISTANCE : la jauge conserve l'état exact de fin de mouvement
+  if (r.inertiaEnd !== undefined) R.inertia = r.inertiaEnd;
+
   R.lapCount += r.lapsGained || 0;
 
   // Trace par coup (pour le fantôme du prochain essai)
@@ -2507,6 +2576,7 @@ function finalizeMove(r) {
   if (r.crash) {
     R.gear = 1;
     R.stressed = false;
+    R.inertia = 0;
     say('💥 CRASH ! Tentative abandonnée.', 'crash');
 
     setTimeout(async () => {
@@ -3091,7 +3161,7 @@ function drawRace() {
 
     cctx.save();
     cctx.translate(cp.x, cp.y);
-    cctx.rotate(Math.PI / 3 * R.dir + Math.PI);
+    cctx.rotate(Math.PI / 3 * (R.dir - 1) + Math.PI);
 
     for (const sl of R.speedLines) {
       cctx.strokeStyle = 'rgba(255,255,255,' + (sl.a * 0.3) + ')';
@@ -3115,7 +3185,7 @@ function drawRace() {
   if (R.gear >= 5) {
     cctx.save();
     cctx.translate(carPt.x, carPt.y);
-    cctx.rotate(Math.PI / 3 * carPos.dir);
+    cctx.rotate(Math.PI / 3 * (carPos.dir - 1));
 
     const glow = cctx.createRadialGradient(
       -hexSize * 0.35, 0, 0,
@@ -3145,7 +3215,7 @@ function drawRace() {
       cctx.save();
       cctx.globalAlpha = 0.38;
       cctx.translate(gp.x, gp.y);
-      cctx.rotate(Math.PI / 3 * (g.dir || 0));
+      cctx.rotate(Math.PI / 3 * ((g.dir || 0) - 1));
       drawCar(cctx, hexSize);
       cctx.restore();
       // Halo pour distinguer le fantôme
@@ -3163,7 +3233,7 @@ function drawRace() {
   // 11) Voiture
   cctx.save();
   cctx.translate(carPt.x, carPt.y);
-  cctx.rotate(Math.PI / 3 * carPos.dir);
+  cctx.rotate(Math.PI / 3 * (carPos.dir - 1));
   drawCar(cctx, hexSize);
   cctx.restore();
 
@@ -3179,8 +3249,8 @@ function drawRace() {
   cctx.fillStyle = vig;
   cctx.fillRect(0, 0, size, size);
 
-  // 13) Minimap
-  drawMinimap(vp);
+  // 13) Minimap — désactivée (peu lisible à cette échelle)
+  // drawMinimap(vp);
 }
 
 // Minimap 130px avec coordonnées hex correctes
@@ -3234,7 +3304,7 @@ function drawMinimap(vp) {
 
   mctx.save();
   mctx.translate(offX + carPt.x, offY + carPt.y);
-  mctx.rotate(Math.PI / 3 * R.dir);
+  mctx.rotate(Math.PI / 3 * (R.dir - 1));
 
   mctx.fillStyle = '#f7c948';
   mctx.beginPath();
@@ -4286,7 +4356,7 @@ function drawEditor() {
 
     ectx.save();
     ectx.translate(pt.x, pt.y);
-    ectx.rotate(Math.PI / 3 * E.carDir);
+    ectx.rotate(Math.PI / 3 * (E.carDir - 1));
     drawCar(ectx, hs);
     ectx.restore();
   }
