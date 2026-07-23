@@ -198,6 +198,7 @@ function circuitRanking(circuitId) {
 function formulaGridPointsByPseudo() {
   const totals = {};
   for (const c of circuits) {
+    if (!c.published) continue; // circuits brouillon/test : classement local uniquement, aucun impact global
     const ranked = circuitRanking(c.id);
     const N = ranked.length;
     const mult = Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10;
@@ -1144,6 +1145,8 @@ app.post('/api/formula/circuit', async (req, res) => {
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     published: !!published,
+    // Le fantôme de référence survit à une réédition du circuit
+    ghost: existingIdx>=0 ? circuits[existingIdx].ghost : undefined,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
   if (existingIdx >= 0) circuits[existingIdx] = data; else circuits.push(data);
@@ -1240,6 +1243,37 @@ app.post('/api/formula/crash', async (req, res) => {
     const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
     res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length) });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ---- FANTÔME DE RÉFÉRENCE (trajectoire témoin enregistrée par l'admin) ----
+
+// L'admin enregistre son parcours comme trajectoire de référence visible par tous
+app.post('/api/formula/ghost', async (req, res) => {
+  const { password, circuitId, turns, moves } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const c = circuits.find(x => x.id === circuitId);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  if (!Array.isArray(turns) || !turns.length) return res.status(400).json({ error: 'Trajectoire vide' });
+
+  // On borne pour éviter de stocker n'importe quoi
+  c.ghost = {
+    moves: parseInt(moves) || turns.length,
+    turns: turns.slice(0, 400).map(t => ({ q: t.q | 0, r: t.r | 0, dir: t.dir | 0 })),
+    date: new Date().toISOString()
+  };
+  try { await saveCircuits(); res.json({ success: true, points: c.ghost.turns.length }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Suppression du fantôme de référence
+app.delete('/api/formula/ghost', async (req, res) => {
+  const { password, circuitId } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const c = circuits.find(x => x.id === circuitId);
+  if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
+  delete c.ghost;
+  try { await saveCircuits(); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ---- ADMIN : gestion des scores Formula (lister / modifier / supprimer) ----
