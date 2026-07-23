@@ -1661,6 +1661,13 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
 
   // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
   R.inertia = 0;
+
+  // Point de reprise en cas de crash : la ligne de départ tant qu'aucun checkpoint n'est franchi
+  R.lastCP = {
+    q: R.q, r: R.r, dir: R.dir,
+    lapCount: 0, leftFinishZone: false,
+    cpTimes: [], index: -1
+  };
   R.animating = false;
   R.animPath = [];
   R.animIdx = 0;
@@ -2051,6 +2058,11 @@ const RADIO_LINES = {
   highGear: [
     'Gros rapport engagé, attention au prochain virage.',
     'À cette vitesse, il te faut de la place pour tourner.'
+  ],
+  crash: [
+    'Sortie de piste ! On repart du checkpoint, à l\'arrêt.',
+    'Tu as tapé. Retour au dernier point de passage.',
+    'Aïe. On relance depuis le checkpoint, tout doux.'
   ],
   finish: [
     'Drapeau à damier ! Beau boulot.',
@@ -2517,8 +2529,8 @@ function buildRulesHTML() {
   big('⛽', 'Chaque dé coûte de l\'essence',
       'V6 = 6 dés = 6 points d\'essence par coup. À sec, tu es obligé de ralentir jusqu\'à l\'arrêt avant de refaire le plein.') +
 
-  big('💥', 'Sortir de piste = éliminé',
-      'Si aucune trajectoire ne reste sur la piste, la tentative est perdue et compte comme un essai.') +
+  big('💥', 'Sortir de piste = retour au checkpoint',
+      'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>. Les coups déjà joués restent comptés : tout ce que tu avais gagné depuis est perdu.') +
 
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:18px 0 9px;font-weight:800">Pour aller plus loin</div>' +
 
@@ -2707,9 +2719,21 @@ function finalizeMove(r) {
   // Checkpoints (pas pendant warmup)
   if (!R.isWarmup) {
     for (const cp of R.checkpoints) {
-      if (r.path.some(p => p.q === cp.q && p.r === cp.r)) {
+      const idx = r.path.findIndex(p => p.q === cp.q && p.r === cp.r);
+      if (idx >= 0) {
         R.cpTimes[cp.index] = R.turn;
         showCpToast(cp.index, R.turn);
+
+        // Point de reprise en cas de crash : position, cap et progression à cet instant
+        R.lastCP = {
+          q: cp.q,
+          r: cp.r,
+          dir: r.path[idx].dir,
+          lapCount: R.lapCount,
+          leftFinishZone: R.leftFinishZone,
+          cpTimes: R.cpTimes.slice(),
+          index: cp.index
+        };
       }
     }
   }
@@ -2751,40 +2775,46 @@ function finalizeMove(r) {
     return;
   }
 
-  // Crash = abandon
+  // Crash → réapparition au dernier checkpoint franchi (ou au départ), à l'arrêt.
+  // Aucun avantage : toute la distance parcourue depuis le checkpoint est perdue,
+  // les coups déjà dépensés restent comptés, et l'essence n'est pas rendue.
   if (r.crash) {
-    R.gear = 1;
-    R.stressed = false;
+    const cp = R.lastCP || { q: R.q, r: R.r, dir: R.dir, lapCount: 0, leftFinishZone: false, cpTimes: [], index: -1 };
+
+    R.q = cp.q;
+    R.r = cp.r;
+    R.dir = cp.dir;
+    R.lapCount = cp.lapCount;
+    R.leftFinishZone = cp.leftFinishZone;
+    R.cpTimes = (cp.cpTimes || []).slice();
+
+    // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
+    R.gear = 0;
+    R.pendingGear = 1;
     R.inertia = 0;
-    say('💥 CRASH — ÉLIMINÉ !', 'crash');
+    R.stressed = false;
+    R.rerolled = false;
+    R.currentKmh = 0;
 
-    setTimeout(async () => {
-      // Mode test : décompte local uniquement, retour éditeur, aucun envoi serveur
-      if (R.testMode) {
-        R.attemptsLeft--;
-        document.getElementById('finish').classList.remove('on');
-        show('scr-editor');
-        return;
-      }
-      // Mode réel : le serveur décompte l'essai (sinon rafraîchir = essais infinis)
-      try {
-        const res = await api('/api/formula/crash', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ circuitId: R.circuit.id, pseudo: R.pseudo })
-        });
-        R.attemptsLeft = res.attemptsLeft;
-      } catch (e) {
-        R.attemptsLeft--; // repli local si le serveur est injoignable
-      }
-      if (R.attemptsLeft <= 0) {
-        toast('🚫 Plus d\'essais disponibles');
-      } else {
-        toast('🔄 Abandon. ' + R.attemptsLeft + ' restant(s)');
-      }
-      setTimeout(backToMenu, 1500);
-    }, 1000);
+    R.rolled = null;
+    R.budget = null;
+    R.results = null;
+    R.ends = null;
+    R.endPaths = null;
+    R.preview = null;
+    R.trail = [];
+    R.phase = 'gear';
 
+    say(cp.index >= 0
+      ? ('💥 CRASH — retour au checkpoint ' + (cp.index + 1) + ', départ arrêté')
+      : '💥 CRASH — retour à la ligne de départ, départ arrêté', 'crash');
+    radio('crash');
+
+    renderGears();
+    syncDash();
+    updateSpeedometer();
+    if (!R.userPanned) { R.panOffsetX = 0; R.panOffsetY = 0; }
+    drawRace();
     return;
   }
 
