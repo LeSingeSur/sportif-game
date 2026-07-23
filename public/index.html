@@ -7781,9 +7781,51 @@ window.addEventListener('load',()=>{
     setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
   }
   fetch('/api/formula/circuits').then(r=>r.json()).then(list=>{
-    if(list&&list.length>0){
-      const banner=document.getElementById('fg-banner');
-      if(banner) banner.style.display='flex';
+    if(!list||!list.length) return;
+    const banner=document.getElementById('fg-banner');
+    if(!banner) return;
+
+    // Circuit le plus récent = celui qu'on met en avant
+    const c=list[list.length-1];
+    const pseudo=(localStorage.getItem('arena_pseudo')||localStorage.getItem('fg_pseudo')||'').trim();
+
+    function paint(attemptsLeft){
+      const lapTxt=c.laps+' tour'+(c.laps>1?'s':'');
+      let sub=lapTxt;
+      if(attemptsLeft===null) sub+=' · '+c.attempts+' essai'+(c.attempts>1?'s':'');
+      else if(attemptsLeft>0) sub+=' · '+attemptsLeft+' essai'+(attemptsLeft>1?'s':'')+' restant'+(attemptsLeft>1?'s':'');
+      else sub+=' · essais épuisés';
+      const done=(attemptsLeft===0);
+      banner.innerHTML=
+        '<div style="display:flex;align-items:center;gap:10px;width:100%">'+
+          '<div style="font-size:26px">🏁</div>'+
+          '<div style="flex:1;text-align:left;line-height:1.25">'+
+            '<div style="font-size:14px;font-weight:900;font-style:italic">FORMULA·GRID</div>'+
+            '<div style="font-size:11px;font-weight:700;opacity:.85">'+
+              (c.name?String(c.name).replace(/[<>&]/g,''):'Contre-la-montre')+' · '+sub+
+            '</div>'+
+          '</div>'+
+          '<div style="font-size:11px;font-weight:900;background:rgba(20,22,26,.22);padding:4px 9px;border-radius:99px">'+
+            (done?'VOIR':'JOUER')+' ›</div>'+
+        '</div>';
+      banner.style.display='flex';
+      banner.style.opacity=done?'0.75':'1';
+      if(!done){
+        banner.style.animation='fgPulse 2.4s ease-in-out infinite';
+        if(!document.getElementById('fg-pulse-style')){
+          const st=document.createElement('style'); st.id='fg-pulse-style';
+          st.textContent='@keyframes fgPulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.45)}50%{box-shadow:0 0 0 8px rgba(247,201,72,0)}}';
+          document.head.appendChild(st);
+        }
+      }
+    }
+
+    paint(null);
+    if(pseudo){
+      fetch('/api/formula/leaderboard/'+c.id+'?pseudo='+encodeURIComponent(pseudo))
+        .then(r=>r.json())
+        .then(b=>{ if(b&&typeof b.attemptsLeft==='number') paint(b.attemptsLeft); })
+        .catch(()=>{});
     }
   }).catch(()=>{});
 });

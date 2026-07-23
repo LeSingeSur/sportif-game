@@ -1026,6 +1026,15 @@ header.top {
     </div>
     <div id="speed-bar-bg"><div id="speed-bar"></div></div>
   </div>
+  <div id="fuelmeter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:10px 14px;border:1px solid #2c3038">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">⛽ ESSENCE</span>
+      <span class="val" id="fuel-val" style="font-family:ui-monospace,monospace;font-size:16px;font-weight:900">— / —</span>
+    </div>
+    <div style="width:100%;height:8px;background:#2b2f36;border-radius:4px;overflow:hidden;margin-top:6px">
+      <div id="fuel-bar" style="height:100%;width:100%;border-radius:4px;transition:width .3s,background .3s"></div>
+    </div>
+  </div>
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
@@ -1132,13 +1141,23 @@ header.top {
           <label>Tour de chauffe</label>
           <input type="number" id="c-warmup" min="0" max="3" value="0">
         </div>
-        <div class="field"></div>
+        <div class="field">
+          <label>Points × joueur</label>
+          <input type="number" id="c-mult" min="1" max="100" value="10">
+        </div>
       </div>
       <div class="row" style="margin-top:2px">
         <button class="btn" id="btn-save-draft">💾 Brouillon</button>
         <button class="btn primary" id="btn-publish">🚀 Publier</button>
       </div>
       <button class="btn danger" id="btn-delete" style="display:none">🗑️ Supprimer</button>
+    </div>
+
+    <div class="card" id="scores-panel" style="display:none;flex-direction:column;gap:8px">
+      <div class="eyebrow">🏆 Scores du circuit</div>
+      <div id="scores-info" style="font-size:11px;color:var(--mute)"></div>
+      <div id="scores-list" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto"></div>
+      <button class="btn" id="btn-reload-scores">🔄 Recharger</button>
     </div>
   </div>
 </section>
@@ -1215,10 +1234,23 @@ const DICE = [
   [0, 0],     // V0 : arrêt
   [1, 2],     // V1
   [2, 4],     // V2
-  [4, 8],     // V3 (probabilités non uniformes)
+  [4, 8],     // V3
   [7, 12],    // V4
   [11, 20],   // V5
   [21, 30]    // V6
+];
+
+// Pools de dés asymétriques (courbe de Gauss → lisse les extrêmes, réduit le hasard)
+// Chaque pool respecte exactement les bornes min/max de DICE ci-dessus.
+// Le NOMBRE de dés = le rapport engagé = la consommation d'essence du tour.
+const DICE_POOLS = [
+  [],                                              // V0 : aucun dé
+  [[1, 2]],                                         // V1 : 1 dé  (1-2)
+  [[1, 2], [1, 2]],                                 // V2 : 2 dés (2-4)
+  [[1, 2], [1, 2, 3], [2, 3]],                      // V3 : 3 dés (4-8)
+  [[2, 3], [1, 2, 3], [2, 3], [2, 3]],              // V4 : 4 dés (7-12)
+  [[2, 3, 4], [2, 3, 4], [2, 3], [2, 3], [3, 4, 6]],// V5 : 5 dés (11-20)
+  [[4, 5], [4, 5], [3, 4], [3, 4], [3, 4], [4, 5, 8]] // V6 : 6 dés (21-30)
 ];
 
 // Cooldown de virage par vitesse
@@ -1461,6 +1493,20 @@ async function openCircuit(id) {
    ================================================================ */
 const R = {};
 
+// Capacité d'essence : proportionnelle à la taille du circuit (nb de cases piste),
+// calibrée pour ~1.4 tour à plein régime avant la panne — force à gérer sur 3-4 tours.
+function fuelCapacityFor(circuit) {
+  let trackCells = 0;
+  for (const row of circuit.rows) {
+    for (const ch of row) if (ch !== '#') trackCells++;
+  }
+  const laps = circuit.laps || 1;
+  // Une course "à fond" consommerait environ trackCells/6 dés par tour (V6 = 6 cases/dé).
+  // On donne de quoi tenir la course entière en gérant, mais pas en fonçant partout.
+  const perLap = Math.max(12, Math.round(trackCells / 6));
+  return Math.max(20, Math.round(perLap * laps * 0.6));
+}
+
 document.getElementById('back-menu').onclick = backToMenu;
 
 function startRace(circuit, pseudo, attemptsLeft, testMode) {
@@ -1506,6 +1552,12 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   // Stress / relance
   R.rerolled = false;
   R.stressed = false;
+
+  // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
+  R.fuelMax = fuelCapacityFor(circuit);
+  R.fuel = R.fuelMax;
+  R.outOfFuel = false;   // true = décélération forcée en cours (roule sans consommer)
+  R.refueling = false;   // true pendant la phase d'arrêt progressif
 
   // Caméra
   R.panOffsetX = 0;
@@ -1800,7 +1852,10 @@ function renderGears() {
     const el = document.createElement('div');
     let reach = false;
 
-    if (R.gear === 0) {
+    if (R.outOfFuel) {
+      // Panne sèche : descente forcée d'exactement 1 rapport (jamais monter ni rester)
+      reach = (g === R.gear - 1);
+    } else if (R.gear === 0) {
       reach = (g === 1);
     } else if (R.stressed) {
       reach = (g <= R.gear && g >= R.gear - 1);
@@ -1829,11 +1884,26 @@ function renderGears() {
     hg.appendChild(el);
   });
 
-  // Tag stress
+  // En panne sèche : forcer la sélection sur le rapport descendant
+  if (R.outOfFuel && R.phase === 'gear') {
+    R.pendingGear = Math.max(0, R.gear - 1);
+  }
+
+  // Tag stress / panne
   const gb = document.getElementById('gearbox');
   let tag = document.getElementById('stress-tag');
 
-  if (R.stressed && R.phase === 'gear') {
+  if (R.outOfFuel && R.phase === 'gear') {
+    if (!tag) {
+      tag = document.createElement('div');
+      tag.id = 'stress-tag';
+      tag.style.cssText =
+        'margin-top:8px;font-size:11px;color:var(--crash);' +
+        'font-weight:700;text-align:center';
+      gb.appendChild(tag);
+    }
+    tag.textContent = '⛽ PANNE SÈCHE — décélération forcée jusqu\'à l\'arrêt';
+  } else if (R.stressed && R.phase === 'gear') {
     if (!tag) {
       tag = document.createElement('div');
       tag.id = 'stress-tag';
@@ -1874,6 +1944,23 @@ function say(t, cls) {
   m.className = cls || '';
 }
 
+function updateFuelGauge() {
+  const el = document.getElementById('fuel-val');
+  const bar = document.getElementById('fuel-bar');
+  if (!el || !bar) return;
+  const pct = R.fuelMax ? (R.fuel / R.fuelMax) * 100 : 0;
+  el.textContent = R.fuel + ' / ' + R.fuelMax;
+  bar.style.width = pct + '%';
+  let color;
+  if (R.outOfFuel) color = '#ff5d5d';
+  else if (pct < 20) color = '#ff5d5d';
+  else if (pct < 40) color = '#ff9f43';
+  else color = '#39d98a';
+  bar.style.background = color;
+  el.style.color = color;
+  if (R.outOfFuel) el.textContent = 'PANNE SÈCHE';
+}
+
 function syncDash() {
   const lapEl = document.getElementById('v-lap');
   if (R.isWarmup) {
@@ -1886,8 +1973,14 @@ function syncDash() {
   document.getElementById('v-roll').textContent = R.rolled ?? '—';
   document.getElementById('v-turn').textContent = R.turn;
 
-  document.getElementById('roll').disabled =
-    (R.phase !== 'gear' || R.pendingGear === 0 || R.animating);
+  updateFuelGauge();
+
+  // Bouton lancer : normalement désactivé au rapport 0, SAUF en panne sèche au rapport 0
+  // où il devient le bouton "faire le plein" (la voiture est arrêtée, 0 case parcourue).
+  const rollBtn = document.getElementById('roll');
+  const refuelStop = (R.outOfFuel && R.pendingGear === 0);
+  rollBtn.disabled = (R.phase !== 'gear' || R.animating || (R.pendingGear === 0 && !refuelStop));
+  rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : '🎲 LANCER LE DÉ';
 
   const rb = document.getElementById('reroll');
   if (rb) {
@@ -1901,25 +1994,43 @@ function syncDash() {
    ================================================================ */
 function executeDiceRoll(gear) {
   if (gear === 0) return 0;
-
-  // V3 : probabilités non uniformes
-  if (gear === 3) {
-    const arr = [4, 5, 5, 6, 6, 7, 7, 8];
-    return arr[Math.floor(Math.random() * arr.length)];
+  const pool = DICE_POOLS[gear];
+  let sum = 0;
+  for (const die of pool) {
+    sum += die[Math.floor(Math.random() * die.length)];
   }
-
-  const [a, b] = DICE[gear];
-  return a + Math.floor(Math.random() * (b - a + 1));
+  return sum;
 }
 
 function rollDiceAnim() {
   if (R.phase !== 'gear') return;
-  if (R.pendingGear === 0) return;
   if (R.animating) return;
+
+  // Cas spécial : panne sèche, rapport 0 atteint → faire le plein (pas de dé, la voiture est arrêtée)
+  if (R.outOfFuel && R.pendingGear === 0) {
+    R.gear = 0;
+    R.rolled = 0;
+    R.phase = 'pick';
+    // Résultat "sur place" : aucun déplacement, déclenche le plein dans finalizeMove
+    applyResult({ path: [], q: R.q, r: R.r, dir: R.dir, crash: false, finish: false, left: 0, lapsGained: 0 });
+    return;
+  }
+
+  if (R.pendingGear === 0) return;
 
   // Anti-spam
   R.phase = 'rolling';
   R.gear = R.pendingGear;
+
+  // Consommation d'essence = nombre de dés = rapport engagé.
+  // Exception : en panne sèche (décélération forcée), la voiture roule sur sa réserve, sans consommer.
+  if (!R.outOfFuel) {
+    R.fuel = Math.max(0, R.fuel - R.gear);
+    if (R.fuel === 0 && R.gear > 0) {
+      // Panne sèche : à partir de maintenant, décélération forcée d'un rapport par tour
+      R.outOfFuel = true;
+    }
+  }
 
   const ov = document.getElementById('dice-anim-overlay');
   const cubeVal = document.getElementById('dice-box-val');
@@ -2189,14 +2300,19 @@ function finalizeMove(r) {
   // Mouvement normal
   R.stressed = R.rerolled;
 
-  if (r.lapsGained) {
+  // Panne sèche : si on vient de retomber au rapport 0, le plein est fait → on repart plein
+  if (R.outOfFuel && R.gear === 0) {
+    R.outOfFuel = false;
+    R.fuel = R.fuelMax;
+    say('⛽ Plein effectué ! Réservoir plein, tu peux repartir.', 'go');
+  } else if (r.lapsGained) {
     say('🏁 Tour ' + R.lapCount + ' validé !', 'go');
   } else {
     say('Trajectoire validée.');
   }
 
   R.rerolled = false;
-  R.pendingGear = R.gear;
+  R.pendingGear = R.outOfFuel ? Math.max(0, R.gear - 1) : R.gear;
   R.rolled = null;
   R.budget = null;
   R.results = null;
@@ -2429,23 +2545,21 @@ function drawCar(ctx, hexSize) {
 
 // Viewport de course
 function getRaceViewport() {
-  const MIN_SPAN = 10;
+  const MIN_SPAN = 7;  // caméra plus serrée sur la voiture
 
   if (R.phase === 'pick' && R.ends && R.ends.size) {
-    let mnQ = R.q, mxQ = R.q, mnR = R.r, mxR = R.r;
-
+    // Centrer sur la voiture, avec un span juste assez large pour voir toutes les destinations
+    let maxReach = 0;
     for (const k of R.ends.keys()) {
       const [q, r] = k.split(',').map(Number);
-      mnQ = Math.min(mnQ, q);
-      mxQ = Math.max(mxQ, q);
-      mnR = Math.min(mnR, r);
-      mxR = Math.max(mxR, r);
+      const d = Math.max(Math.abs(q - R.q), Math.abs(r - R.r));
+      maxReach = Math.max(maxReach, d);
     }
-
+    const span = Math.max(MIN_SPAN, maxReach * 2 + 4);
     return {
-      q: mnQ - 2,
-      r: mnR - 2,
-      span: Math.max(mxQ - mnQ + 5, mxR - mnR + 5, MIN_SPAN)
+      q: R.q - span / 2,
+      r: R.r - span / 2,
+      span: span
     };
   }
 
@@ -2486,7 +2600,10 @@ function drawRace() {
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
   const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
-  const centerOff = axialToPixel(vp.q, vp.r, hexSize);
+  // Centrer la caméra sur la VOITURE (position animée en cours de déplacement),
+  // pas sur le coin du viewport — la voiture reste toujours au milieu de l'écran.
+  const camPos = getAnimCarPos();
+  const centerOff = axialToPixel(camPos.q, camPos.r, hexSize);
 
   // Screen shake
   let shX = 0, shY = 0;
@@ -2930,7 +3047,9 @@ function newCircuit() {
   document.getElementById('c-width').value = 3;
   document.getElementById('c-turns').value = 6;
   document.getElementById('c-warmup').value = 0;
+  document.getElementById('c-mult').value = 10;
   document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('scores-panel').style.display = 'none';
 
   resetView();
   drawEditor();
@@ -2986,15 +3105,95 @@ async function loadForEdit(id) {
     document.getElementById('c-laps').value = c.laps;
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('c-warmup').value = c.warmup || 0;
+    document.getElementById('c-mult').value = c.pointsMultiplier || 10;
     document.getElementById('btn-delete').style.display = 'block';
 
     resetView();
     drawEditor();
+    loadScores();
     toast('Circuit chargé');
   } catch (e) {
     toast('Erreur : ' + e.message);
   }
 }
+
+/* ================================================================
+   ADMIN — GESTION DES SCORES DU CIRCUIT
+   ================================================================ */
+async function loadScores() {
+  const panel = document.getElementById('scores-panel');
+  if (!E.editingId) { panel.style.display = 'none'; return; }
+  panel.style.display = 'flex';
+
+  const list = document.getElementById('scores-list');
+  const info = document.getElementById('scores-info');
+  list.innerHTML = 'Chargement…';
+
+  try {
+    const d = await api('/api/formula/admin/runs/' + E.editingId +
+      '?password=' + encodeURIComponent(E.adminPw));
+
+    const mult = (d.circuit && d.circuit.pointsMultiplier) || 10;
+    const N = d.ranking.length;
+    info.textContent = N + ' joueur(s) classé(s) · ' + d.runs.length + ' essai(s) · ' +
+      'Points : 1er = ' + (N * mult) + ' (' + N + ' × ' + mult + ')';
+
+    if (!d.runs.length) { list.innerHTML = '<div style="color:var(--mute);font-size:12px">Aucun essai.</div>'; return; }
+
+    // Rang par pseudo (pour afficher les points de chacun)
+    const rankOf = {};
+    d.ranking.forEach(r => { rankOf[r.pseudo.toLowerCase()] = r.rank; });
+
+    list.innerHTML = '';
+    d.runs.forEach(run => {
+      const row = document.createElement('div');
+      row.style.cssText = 'background:var(--panel2);border-radius:9px;padding:8px 10px;font-size:12px';
+
+      const rank = rankOf[(run.pseudo || '').toLowerCase()];
+      const pts = rank ? (N - rank + 1) * mult : 0;
+      const tag = run.crashed
+        ? '<span style="color:var(--crash)">💥 abandon</span>'
+        : (run.moves + ' coups · +' + run.left + (rank ? ' · 🏆 ' + pts + ' pts (rang ' + rank + ')' : ''));
+
+      row.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<b style="flex:1">' + esc(run.pseudo) + '</b>' +
+          '<button class="btn" data-act="edit" style="padding:4px 8px;font-size:11px">✏️</button>' +
+          '<button class="btn danger" data-act="del" style="padding:4px 8px;font-size:11px">🗑️</button>' +
+        '</div>' +
+        '<div style="color:var(--mute);margin-top:3px">' + tag + '</div>';
+
+      row.querySelector('[data-act="edit"]').onclick = async () => {
+        const nm = prompt('Nombre de coups pour ' + run.pseudo + ' :', run.moves || '');
+        if (nm === null) return;
+        try {
+          await api('/api/formula/admin/run', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: E.adminPw, circuitId: E.editingId, index: run.index, moves: nm })
+          });
+          toast('✅ Score modifié'); loadScores();
+        } catch (e) { toast('Erreur : ' + e.message); }
+      };
+
+      row.querySelector('[data-act="del"]').onclick = async () => {
+        if (!confirm('Supprimer cet essai de ' + run.pseudo + ' ?')) return;
+        try {
+          await api('/api/formula/admin/run', {
+            method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: E.adminPw, circuitId: E.editingId, index: run.index })
+          });
+          toast('🗑️ Essai supprimé'); loadScores();
+        } catch (e) { toast('Erreur : ' + e.message); }
+      };
+
+      list.appendChild(row);
+    });
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--crash);font-size:12px">Erreur : ' + esc(e.message) + '</div>';
+  }
+}
+
+document.getElementById('btn-reload-scores').onclick = loadScores;
 
 document.getElementById('btn-new-circuit').onclick = newCircuit;
 
@@ -3025,32 +3224,40 @@ function catmullRom(p0, p1, p2, p3, t) {
 
 // Vérification de solvabilité (BFS)
 function isSolvable(grid, sq, sr, sd) {
+  // Un vrai tour : la voiture doit d'abord S'ÉLOIGNER de la ligne de départ,
+  // puis atteindre une case F. Sinon un départ collé à F valide un "tour" en 1 pas.
   const visited = new Set();
-  const queue = [{ q: sq, r: sr, dir: sd }];
+  const queue = [{ q: sq, r: sr, dir: sd, left: false }];
   let steps = 0;
+  const MIN_AWAY = 4; // distance minimale à parcourir avant de pouvoir valider
 
-  while (queue.length > 0 && steps < 5000) {
+  function hexDist(aq, ar, bq, br) {
+    return (Math.abs(aq - bq) + Math.abs(ar - br) + Math.abs((aq + ar) - (bq + br))) / 2;
+  }
+
+  while (queue.length > 0 && steps < 40000) {
     steps++;
     const cur = queue.shift();
-    const key = cur.q + ',' + cur.r + ',' + cur.dir;
-
+    const key = cur.q + ',' + cur.r + ',' + cur.dir + ',' + (cur.left ? 1 : 0);
     if (visited.has(key)) continue;
     visited.add(key);
 
-    if (grid[cur.r] && grid[cur.r][cur.q] === 'F' && steps > 5) {
+    const away = hexDist(cur.q, cur.r, sq, sr) >= MIN_AWAY;
+    const left = cur.left || away;
+
+    // Valider si, après s'être éloigné du départ, on atteint une case F
+    if (left && grid[cur.r] && grid[cur.r][cur.q] === 'F') {
       return true;
     }
 
     for (let d = 0; d < 6; d++) {
       const nq = cur.q + HEX_DIRS[d].q;
       const nr = cur.r + HEX_DIRS[d].r;
-
       if (nr >= 0 && nr < EH && nq >= 0 && nq < EW && grid[nr][nq] !== '#') {
-        queue.push({ q: nq, r: nr, dir: d });
+        queue.push({ q: nq, r: nr, dir: d, left });
       }
     }
   }
-
   return false;
 }
 
@@ -3253,7 +3460,7 @@ document.getElementById('btn-generate').onclick = () => {
   let startQ = 0, startR = 0, startDir = 0;
   let success = false;
 
-  for (let attempt = 0; attempt < 8 && !success; attempt++) {
+  for (let attempt = 0; attempt < 25 && !success; attempt++) {
     grid = emptyGrid();
 
     // Points de contrôle selon une forme aléatoire
@@ -3310,20 +3517,21 @@ document.getElementById('btn-generate').onclick = () => {
       }
     }
 
-    // Ligne F perpendiculaire
+    // Ligne F perpendiculaire — cubeRound pour coïncider avec la rasterisation
     const s0 = smoothed[0];
     const s1 = smoothed[1];
     const perp = perpInPixel(s0.q, s0.r, s1.q, s1.r);
-
-    for (let w = -trackW; w <= trackW; w++) {
+    const s0c = cubeRound(s0.q, s0.r);
+    let fPainted = 0;
+    for (let w = -trackW - 1; w <= trackW + 1; w++) {
       const offAx = visualToAxial(perp.nx * w, perp.ny * w);
-      const fq = Math.round(s0.q + offAx.q);
-      const fr = Math.round(s0.r + offAx.r);
-
-      if (fq >= 0 && fq < EW && fr >= 0 && fr < EH && grid[fr][fq] === '.') {
-        grid[fr][fq] = 'F';
+      const fc = cubeRound(s0.q + offAx.q, s0.r + offAx.r);
+      if (fc.q >= 0 && fc.q < EW && fc.r >= 0 && fc.r < EH && grid[fc.r][fc.q] === '.') {
+        grid[fc.r][fc.q] = 'F';
+        fPainted++;
       }
     }
+    if (fPainted === 0) continue; // ligne F non tracée → circuit raté, on retente
 
     // Checkpoints
     for (let c = 1; c <= 3; c++) {
@@ -3331,37 +3539,46 @@ document.getElementById('btn-generate').onclick = () => {
       const cp = smoothed[idx];
       const cpn = smoothed[(idx + 1) % smoothed.length];
       const cpPerp = perpInPixel(cp.q, cp.r, cpn.q, cpn.r);
-
-      for (let w = -trackW; w <= trackW; w++) {
+      for (let w = -trackW - 1; w <= trackW + 1; w++) {
         const offAx = visualToAxial(cpPerp.nx * w, cpPerp.ny * w);
-        const cq2 = Math.round(cp.q + offAx.q);
-        const cr2 = Math.round(cp.r + offAx.r);
-
-        if (cq2 >= 0 && cq2 < EW && cr2 >= 0 && cr2 < EH && grid[cr2][cq2] === '.') {
-          grid[cr2][cq2] = 'C';
+        const cc = cubeRound(cp.q + offAx.q, cp.r + offAx.r);
+        if (cc.q >= 0 && cc.q < EW && cc.r >= 0 && cc.r < EH && grid[cc.r][cc.q] === '.') {
+          grid[cc.r][cc.q] = 'C';
         }
       }
     }
 
-    // Départ sur F
-    startQ = Math.round(s0.q);
-    startR = Math.round(s0.r);
-
-    if (startQ >= 0 && startQ < EW && startR >= 0 && startR < EH) {
-      grid[startR][startQ] = 'F';
+    // Départ : reculer le long de la spline, puis ANCRER sur une vraie case de piste
+    const setback = Math.max(6, Math.floor(smoothed.length * 0.08));
+    const backIdx = (smoothed.length - setback + smoothed.length) % smoothed.length;
+    const sp = smoothed[backIdx];
+    const spNext = smoothed[(backIdx + 1) % smoothed.length];
+    let sc = cubeRound(sp.q, sp.r);
+    // Si la case tombe sur un mur ou sur F, chercher la case de piste '.' la plus proche
+    if (!grid[sc.r] || grid[sc.r][sc.q] !== '.') {
+      let found = null, bestD = 99;
+      for (let dr = -3; dr <= 3 && !found; dr++) {
+        for (let dq = -3; dq <= 3; dq++) {
+          const nq = sc.q + dq, nr = sc.r + dr;
+          if (grid[nr] && grid[nr][nq] === '.') {
+            const d = Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr);
+            if (d < bestD) { bestD = d; found = { q: nq, r: nr }; }
+          }
+        }
+      }
+      if (found) sc = found;
     }
+    startQ = sc.q;
+    startR = sc.r;
+    if (!grid[startR] || grid[startR][startQ] !== '.') continue; // départ invalide → on retente
 
-    // Direction initiale
-    const ndq = s1.q - s0.q;
-    const ndr = s1.r - s0.r;
+    // Direction initiale : tangente de la spline au point de départ
+    const ndq = spNext.q - sp.q;
+    const ndr = spNext.r - sp.r;
     let bd = 0, bdot = -Infinity;
-
     for (let d = 0; d < 6; d++) {
       const dot = HEX_DIRS[d].q * ndq + HEX_DIRS[d].r * ndr;
-      if (dot > bdot) {
-        bdot = dot;
-        bd = d;
-      }
+      if (dot > bdot) { bdot = dot; bd = d; }
     }
     startDir = bd;
 
@@ -3391,7 +3608,9 @@ document.getElementById('btn-generate').onclick = () => {
   // Centrer sur le circuit
   centerOnCircuit();
 
-  toast('🏁 ' + (trackW * 2 + 1) + ' cases · ' + numTurns + ' virages' + (success ? '' : ' (secours)'));
+  toast(success
+    ? ('🏁 ' + (trackW * 2 + 1) + ' cases de large · ' + numTurns + ' virages')
+    : ('⚠️ Aucun circuit valide trouvé — ovale de secours (' + (trackW * 2 + 1) + ' cases)'));
 };
 
 /* ================================================================
@@ -3943,6 +4162,7 @@ async function saveCircuit(publish) {
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
     warmup: parseInt(document.getElementById('c-warmup').value) || 0,
+    pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
     published: (publish !== undefined) ? publish : E.published
   };
 
