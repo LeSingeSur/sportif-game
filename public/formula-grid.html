@@ -1000,6 +1000,8 @@ header.top {
 <section class="scr" id="scr-race">
   <div style="display:flex;align-items:center;gap:8px;width:100%">
     <button id="back-menu" style="flex:1;text-align:left">← Circuits</button>
+    <button id="gh-ref" class="btn" style="padding:6px 9px;font-size:11px" title="Fantôme de l'organisateur">👻</button>
+    <button id="gh-own" class="btn" style="padding:6px 9px;font-size:11px" title="Ton meilleur tour">👤</button>
     <button id="btn-rules-race" class="btn" style="padding:6px 12px;font-size:12px">📖 Règles</button>
   </div>
   <div id="trackwrap">
@@ -1246,6 +1248,9 @@ header.top {
   <div class="stats" id="fstats"></div>
   <p id="fsub"></p>
   <div class="lb" id="flb"></div>
+  <button class="btn" id="btn-publish-ghost" style="display:none;background:rgba(155,140,255,.15);border:1px solid rgba(155,140,255,.5);color:#9b8cff">
+    👻 Publier cette trajectoire comme référence
+  </button>
   <div class="btnrow">
     <button class="btn" onclick="backToMenu()">Circuits</button>
     <button class="btn primary" id="btn-retry">Réessayer</button>
@@ -1590,6 +1595,78 @@ function autoFuelCapacity(circuit) {
 
 document.getElementById('back-menu').onclick = backToMenu;
 
+// Regroupe les cases 'C' contiguës en lignes de checkpoint, puis les ordonne
+// selon la distance parcourue depuis le départ en suivant la piste.
+function buildCheckpoints() {
+  const seen = new Set();
+  const groups = [];
+
+  for (let r = 0; r < R.H; r++) {
+    for (let q = 0; q < R.W; q++) {
+      if (!R.grid[r] || R.grid[r][q] !== 'C') continue;
+      const key = q + ',' + r;
+      if (seen.has(key)) continue;
+
+      // flood fill sur les cases 'C' voisines → une seule ligne de checkpoint
+      const cells = [];
+      const stack = [[q, r]];
+      seen.add(key);
+      while (stack.length) {
+        const [cq, cr] = stack.pop();
+        cells.push({ q: cq, r: cr });
+        for (const d of HEX_DIRS) {
+          const nq = cq + d.q, nr = cr + d.r;
+          const k2 = nq + ',' + nr;
+          if (seen.has(k2)) continue;
+          if (nr < 0 || nr >= R.H || nq < 0 || nq >= R.W) continue;
+          if (!R.grid[nr] || R.grid[nr][nq] !== 'C') continue;
+          seen.add(k2);
+          stack.push([nq, nr]);
+        }
+      }
+      groups.push({ cells: cells });
+    }
+  }
+
+  if (!groups.length) return [];
+
+  // Distance depuis le départ en suivant la piste (BFS sur les cases roulables)
+  const dist = new Map();
+  const q0 = [[R.q, R.r, 0]];
+  dist.set(R.q + ',' + R.r, 0);
+  while (q0.length) {
+    const [cq, cr, d0] = q0.shift();
+    for (const d of HEX_DIRS) {
+      const nq = cq + d.q, nr = cr + d.r;
+      if (nr < 0 || nr >= R.H || nq < 0 || nq >= R.W) continue;
+      if (!R.grid[nr] || R.grid[nr][nq] === '#') continue;
+      const k = nq + ',' + nr;
+      if (dist.has(k)) continue;
+      dist.set(k, d0 + 1);
+      q0.push([nq, nr, d0 + 1]);
+    }
+  }
+
+  // Chaque groupe prend la distance de sa case la plus proche du départ
+  groups.forEach(g => {
+    let best = Infinity;
+    for (const c of g.cells) {
+      const d = dist.get(c.q + ',' + c.r);
+      if (d !== undefined && d < best) best = d;
+    }
+    g.dist = best;
+  });
+
+  groups.sort((a, b) => a.dist - b.dist);
+
+  // Une entrée par CASE, mais toutes les cases d'une même ligne partagent le même numéro
+  const out = [];
+  groups.forEach((g, i) => {
+    g.cells.forEach(c => out.push({ q: c.q, r: c.r, index: i }));
+  });
+  return out;
+}
+
 function startRace(circuit, pseudo, attemptsLeft, testMode) {
   // Identifiants
   R.circuit = circuit;
@@ -1654,7 +1731,10 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.bestCpTimes = [];
 
   // Immersion : fantôme perso + meilleur temps mondial + trace par coup
-  R.ghost = loadGhost(circuit.id);
+  // Deux fantômes indépendants, chacun affichable ou non par le joueur
+  R.ghostRef = (circuit.ghost && circuit.ghost.turns && circuit.ghost.turns.length) ? circuit.ghost : null;
+  R.ghostOwn = loadGhost(circuit.id);
+  R.ghost = R.ghostRef || R.ghostOwn;   // référence pour le delta chrono
   R.worldBest = circuit.worldBest || null;
   R.turnPositions = [{ q: circuit.start.x, r: circuit.start.y, dir: circuit.start.dir || 0 }];
   R.lightsDone = false;
@@ -1682,18 +1762,9 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.animT = 0;
   R.animResult = null;
 
-  // Identifier les checkpoints sur la grille
-  for (let r = 0; r < R.H; r++) {
-    for (let q = 0; q < R.W; q++) {
-      if (R.grid[r][q] === 'C') {
-        R.checkpoints.push({
-          q: q,
-          r: r,
-          index: R.checkpoints.length
-        });
-      }
-    }
-  }
+  // Identifier les checkpoints : on REGROUPE les cases 'C' contiguës en une seule ligne,
+  // puis on les numérote dans l'ORDRE OÙ ON LES RENCONTRE sur le circuit (pas l'ordre de la grille).
+  R.checkpoints = buildCheckpoints();
 
   // Meilleurs splits (localStorage)
   R.bestCpTimes = JSON.parse(
@@ -1714,6 +1785,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   renderGears();
   syncDash();
   updateSpeedometer();
+  refreshGhostButtons();
   show('scr-race');
   setupRaceControls();
 
@@ -2166,6 +2238,35 @@ function showLapFlag(text, sub) {
 /* ================================================================
    IMMERSION — FANTÔME (meilleur run perso, position par coup)
    ================================================================ */
+// Préférences d'affichage des fantômes (mémorisées d'une partie à l'autre)
+function showGhostRef() { return localStorage.getItem('fg_hide_ghost_ref') !== '1'; }
+function showGhostOwn() { return localStorage.getItem('fg_hide_ghost_own') !== '1'; }
+
+// Dessine un fantôme à sa position au coup courant
+function drawGhost(ghost, enabled, color, hexSize) {
+  if (!enabled || !ghost || !ghost.turns || !ghost.turns.length) return;
+  const gi = Math.min(R.turn, ghost.turns.length - 1);
+  const g = ghost.turns[gi];
+  if (!g) return;
+
+  const gp = axialToPixel(g.q, g.r, hexSize);
+  cctx.save();
+  cctx.globalAlpha = 0.38;
+  cctx.translate(gp.x, gp.y);
+  cctx.rotate(Math.PI / 3 * ((g.dir || 0) - 1));
+  drawCar(cctx, hexSize);
+  cctx.restore();
+
+  cctx.save();
+  cctx.globalAlpha = 0.5;
+  cctx.strokeStyle = color;
+  cctx.lineWidth = Math.max(1, hexSize * 0.05);
+  cctx.beginPath();
+  cctx.arc(gp.x, gp.y, hexSize * 0.5, 0, Math.PI * 2);
+  cctx.stroke();
+  cctx.restore();
+}
+
 function ghostKey(circuitId) { return 'fg_ghost_' + circuitId; }
 
 function loadGhost(circuitId) {
@@ -2561,6 +2662,12 @@ function buildRulesHTML() {
     'Le classement du circuit se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte. Ces points s\'ajoutent à ton total Arena Sport.<br><br>' +
     'À égalité de coups, le plus de cases restantes sur la dernière ligne départage.') +
 
+  details('👻 Les fantômes',
+    'Deux voitures translucides peuvent rouler avec toi :<br><br>' +
+    '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : elle te montre la ligne à suivre.<br>' +
+    '<b style="color:#4ac7ff">👤 Bleu</b> — ton propre meilleur tour, pour voir où tu gagnes ou perds du temps.<br><br>' +
+    'Les deux boutons en haut de l\'écran de course permettent de les <b>afficher ou masquer à tout moment</b>, indépendamment. Ton choix est mémorisé pour les parties suivantes.') +
+
   details('📍 Secteurs et tour de chauffe',
     'Aux checkpoints, ton temps s\'affiche en <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, en <b style="color:var(--ok)">vert</b> si tu bats ton record perso.<br><br>' +
     'Si l\'organisateur a prévu un tour de chauffe, il ne compte pas au score : sers-t\'en pour repérer le tracé.');
@@ -2586,6 +2693,42 @@ const _bra = document.getElementById('btn-rules-admin');
 if (_bra) _bra.onclick = openRules;
 const _brr = document.getElementById('btn-rules-race');
 if (_brr) _brr.onclick = openRules;
+
+// Bascules d'affichage des fantômes — actives à tout moment pendant la course
+function refreshGhostButtons() {
+  const br = document.getElementById('gh-ref');
+  const bo = document.getElementById('gh-own');
+  if (!br || !bo) return;
+
+  const hasRef = !!(R.ghostRef && R.ghostRef.turns && R.ghostRef.turns.length);
+  const hasOwn = !!(R.ghostOwn && R.ghostOwn.turns && R.ghostOwn.turns.length);
+
+  // Bouton masqué si le fantôme correspondant n'existe pas pour ce circuit
+  br.style.display = hasRef ? 'block' : 'none';
+  bo.style.display = hasOwn ? 'block' : 'none';
+
+  const on = (el, active, color) => {
+    el.style.opacity = active ? '1' : '0.4';
+    el.style.borderColor = active ? color : '#2c3038';
+    el.style.background = active ? (color + '22') : 'var(--panel2)';
+  };
+  on(br, showGhostRef(), '#9b8cff');
+  on(bo, showGhostOwn(), '#4ac7ff');
+}
+
+document.getElementById('gh-ref').onclick = () => {
+  localStorage.setItem('fg_hide_ghost_ref', showGhostRef() ? '1' : '0');
+  refreshGhostButtons();
+  drawRace();
+  toast(showGhostRef() ? '👻 Fantôme organisateur affiché' : '👻 Fantôme organisateur masqué');
+};
+
+document.getElementById('gh-own').onclick = () => {
+  localStorage.setItem('fg_hide_ghost_own', showGhostOwn() ? '1' : '0');
+  refreshGhostButtons();
+  drawRace();
+  toast(showGhostOwn() ? '👤 Ton fantôme affiché' : '👤 Ton fantôme masqué');
+};
 
 document.getElementById('roll').onclick = rollDiceAnim;
 
@@ -2726,9 +2869,14 @@ function finalizeMove(r) {
 
   // Checkpoints (pas pendant warmup)
   if (!R.isWarmup) {
+    const hitThisMove = new Set();
     for (const cp of R.checkpoints) {
       const idx = r.path.findIndex(p => p.q === cp.q && p.r === cp.r);
       if (idx >= 0) {
+        // Une ligne de checkpoint fait plusieurs cases : ne la compter qu'UNE fois
+        if (hitThisMove.has(cp.index)) continue;
+        hitThisMove.add(cp.index);
+
         R.cpTimes[cp.index] = R.turn;
         showCpToast(cp.index, R.turn);
 
@@ -2945,6 +3093,42 @@ async function finishRace(r) {
   document.getElementById('flb').innerHTML = '';
   document.getElementById('btn-retry').disabled = true;
   document.getElementById('finish').classList.add('on');
+
+  // Admin : proposer de publier cette trajectoire comme référence pour tous les joueurs
+  const pg = document.getElementById('btn-publish-ghost');
+  if (pg) {
+    const isAdmin = !!(E && E.adminPw);
+    // En mode test l'id est fictif ('test_circuit') : on retombe sur le circuit
+    // réellement en cours d'édition, pour que ça marche AUSSI depuis le mode test.
+    let cid = (R.circuit && R.circuit.id) || '';
+    if ((!cid || cid === 'test_circuit') && E && E.editingId) cid = E.editingId;
+    const realCircuit = cid && cid !== 'test_circuit';
+    pg.style.display = (isAdmin && realCircuit && R.turnPositions.length > 1) ? 'block' : 'none';
+    pg.textContent = '👻 Publier cette trajectoire comme référence';
+    pg.disabled = false;
+    pg.onclick = async () => {
+      pg.disabled = true;
+      pg.textContent = 'Envoi…';
+      try {
+        const res = await api('/api/formula/ghost', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: E.adminPw,
+            circuitId: cid,
+            turns: R.turnPositions,
+            moves: R.turn
+          })
+        });
+        pg.textContent = '✅ Trajectoire publiée (' + res.points + ' points)';
+        toast('👻 Fantôme de référence enregistré');
+      } catch (e) {
+        pg.disabled = false;
+        pg.textContent = '👻 Publier cette trajectoire comme référence';
+        toast('Erreur : ' + e.message);
+      }
+    };
+  }
 
   // Mode test : pas d'envoi serveur
   if (R.testMode) {
@@ -3511,28 +3695,8 @@ function drawRace() {
   }
 
   // 10bis) Fantôme : ta meilleure trajectoire, au même nombre de coups
-  if (R.ghost && R.ghost.turns && R.ghost.turns.length) {
-    const gi = Math.min(R.turn, R.ghost.turns.length - 1);
-    const g = R.ghost.turns[gi];
-    if (g) {
-      const gp = axialToPixel(g.q, g.r, hexSize);
-      cctx.save();
-      cctx.globalAlpha = 0.38;
-      cctx.translate(gp.x, gp.y);
-      cctx.rotate(Math.PI / 3 * ((g.dir || 0) - 1));
-      drawCar(cctx, hexSize);
-      cctx.restore();
-      // Halo pour distinguer le fantôme
-      cctx.save();
-      cctx.globalAlpha = 0.5;
-      cctx.strokeStyle = '#9b8cff';
-      cctx.lineWidth = Math.max(1, hexSize * 0.05);
-      cctx.beginPath();
-      cctx.arc(gp.x, gp.y, hexSize * 0.5, 0, Math.PI * 2);
-      cctx.stroke();
-      cctx.restore();
-    }
-  }
+  drawGhost(R.ghostRef, showGhostRef(), '#9b8cff', hexSize);   // référence de l'organisateur
+  drawGhost(R.ghostOwn, showGhostOwn(), '#4ac7ff', hexSize);   // ton meilleur tour
 
   // 11) Voiture
   cctx.save();
