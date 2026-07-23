@@ -994,6 +994,21 @@ header.top {
   <div id="trackwrap">
     <div id="pan-hint">🤚 Glisser · Pincer pour zoomer</div>
     <div id="warmup-badge">🔥 TOUR DE CHAUFFE</div>
+    <div id="delta-hud" style="position:absolute;top:12px;right:12px;z-index:6;display:none;font-family:ui-monospace,monospace;font-size:12px;font-weight:900;padding:5px 10px;border-radius:8px;background:rgba(26,29,35,.92);border:1px solid #2c3038"></div>
+    <div id="radio-hud" style="position:absolute;left:12px;top:12px;right:96px;z-index:7;display:none;pointer-events:none">
+      <div style="display:flex;align-items:flex-start;gap:7px;background:rgba(12,14,18,.93);border-left:3px solid var(--line);border-radius:8px;padding:7px 9px">
+        <span style="font-size:13px;line-height:1">📻</span>
+        <span id="radio-txt" style="font-size:11px;font-weight:700;line-height:1.3;color:var(--txt)"></span>
+      </div>
+    </div>
+    <div id="start-lights" style="position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(8,9,11,.72);backdrop-filter:blur(3px)">
+      <div style="display:flex;gap:10px" id="lights-row"></div>
+      <div id="lights-msg" style="font-size:13px;letter-spacing:3px;font-weight:900;color:var(--mute)">PRÉPARATION…</div>
+    </div>
+    <div id="lap-flag" style="position:absolute;inset:0;z-index:11;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none">
+      <div id="lap-flag-img" style="width:120px;height:80px;border-radius:6px;background:repeating-conic-gradient(#e8e4da 0 25%,#14161a 0 50%) 0 0/24px 24px;box-shadow:0 6px 24px rgba(0,0,0,.6)"></div>
+      <div id="lap-flag-txt" style="font-size:20px;font-weight:900;font-style:italic;letter-spacing:2px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.9)"></div>
+    </div>
     <canvas id="cv"></canvas>
     <div id="cp-toast"></div>
     <div id="zoom-indicator">×1.0</div>
@@ -1145,6 +1160,11 @@ header.top {
           <label>Points × joueur</label>
           <input type="number" id="c-mult" min="1" max="100" value="10">
         </div>
+      </div>
+      <div class="field">
+        <label>Essence (0 = automatique)</label>
+        <input type="number" id="c-fuel" min="0" max="9999" value="0">
+        <div id="fuel-hint" style="font-size:10px;color:var(--mute);margin-top:4px"></div>
       </div>
       <div class="row" style="margin-top:2px">
         <button class="btn" id="btn-save-draft">💾 Brouillon</button>
@@ -1482,6 +1502,9 @@ async function openCircuit(id) {
       return;
     }
 
+    // Meilleur temps tous joueurs (pour le delta en course)
+    circuit.worldBest = board.worldBest || null;
+
     startRace(circuit, pseudo, board.attemptsLeft, false);
   } catch (e) {
     toast('Erreur : ' + e.message);
@@ -1495,14 +1518,21 @@ const R = {};
 
 // Capacité d'essence : proportionnelle à la taille du circuit (nb de cases piste),
 // calibrée pour ~1.4 tour à plein régime avant la panne — force à gérer sur 3-4 tours.
+// Capacité d'essence : valeur fixée par l'admin, ou calcul automatique si 0/absent.
+// L'auto est proportionnel à la taille du circuit et au nombre de tours.
 function fuelCapacityFor(circuit) {
+  const manual = parseInt(circuit.fuelCapacity) || 0;
+  if (manual > 0) return manual;
+  return autoFuelCapacity(circuit);
+}
+
+function autoFuelCapacity(circuit) {
   let trackCells = 0;
   for (const row of circuit.rows) {
     for (const ch of row) if (ch !== '#') trackCells++;
   }
   const laps = circuit.laps || 1;
   // Une course "à fond" consommerait environ trackCells/6 dés par tour (V6 = 6 cases/dé).
-  // On donne de quoi tenir la course entière en gérant, mais pas en fonçant partout.
   const perLap = Math.max(12, Math.round(trackCells / 6));
   return Math.max(20, Math.round(perLap * laps * 0.6));
 }
@@ -1572,6 +1602,12 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.cpTimes = [];
   R.bestCpTimes = [];
 
+  // Immersion : fantôme perso + meilleur temps mondial + trace par coup
+  R.ghost = loadGhost(circuit.id);
+  R.worldBest = circuit.worldBest || null;
+  R.turnPositions = [{ q: circuit.start.x, r: circuit.start.y, dir: circuit.start.dir || 0 }];
+  R.lightsDone = false;
+
   // Effets visuels
   R.shakeAmount = 0;
   R.speedLines = [];
@@ -1622,10 +1658,16 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   show('scr-race');
   setupRaceControls();
 
-  // Premier rendu + centrage
+  // Premier rendu + centrage, puis feux de départ
   requestAnimationFrame(() => {
     drawRace();
     centerOnCar();
+    runStartLights(() => {
+      R.lightsDone = true;
+      syncDash();
+      if (R.isWarmup) say('🔥 Tour de chauffe — les temps ne comptent pas', 'warmup');
+      else say('C\'est parti ! Sélectionne la vitesse 1.', 'go');
+    });
   });
 }
 
@@ -1944,6 +1986,195 @@ function say(t, cls) {
   m.className = cls || '';
 }
 
+/* ================================================================
+   IMMERSION — FEUX DE DÉPART
+   ================================================================ */
+/* ================================================================
+   IMMERSION — RADIO INGÉNIEUR
+   ================================================================ */
+const RADIO_LINES = {
+  fuelLow: [
+    'Attention essence, il faut lever le pied.',
+    'On surveille la conso, reste propre.',
+    'Le réservoir descend vite, gère tes rapports.'
+  ],
+  fuelCritical: [
+    'Essence critique ! Passe en mode économie.',
+    'On est très juste en carburant, lève le pied MAINTENANT.'
+  ],
+  outOfFuel: [
+    'Panne sèche ! Rétrograde jusqu\'à l\'arrêt.',
+    'Plus rien dans le réservoir, ramène-la doucement.'
+  ],
+  refuel: [
+    'Plein terminé, tu peux repartir. Vas-y !',
+    'Réservoir plein. On repart de zéro, attaque.'
+  ],
+  purple: [
+    'Secteur violet ! Magnifique.',
+    'Meilleur secteur de tous, continue comme ça !'
+  ],
+  personalBest: [
+    'Bon secteur, tu bats ton record.',
+    'C\'est mieux que ton meilleur passage, on progresse.'
+  ],
+  lastLap: [
+    'Dernier tour ! Tout donner maintenant.',
+    'C\'est le dernier, lâche les chevaux.'
+  ],
+  stressed: [
+    'La boîte a pris un coup, montée bloquée ce tour.',
+    'Attention, boîte sous tension. On assure.'
+  ],
+  highGear: [
+    'Gros rapport engagé, attention au prochain virage.',
+    'À cette vitesse, il te faut de la place pour tourner.'
+  ],
+  finish: [
+    'Drapeau à damier ! Beau boulot.',
+    'C\'est fini, excellente course !'
+  ]
+};
+
+function radio(kind, custom) {
+  const el = document.getElementById('radio-hud');
+  const txt = document.getElementById('radio-txt');
+  if (!el || !txt) return;
+
+  let line = custom;
+  if (!line) {
+    const pool = RADIO_LINES[kind];
+    if (!pool || !pool.length) return;
+    line = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  txt.textContent = line;
+  el.style.display = 'block';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .18s';
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+
+  clearTimeout(radio._t);
+  radio._t = setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 200);
+  }, 3000);
+}
+
+function runStartLights(done) {
+  const ov = document.getElementById('start-lights');
+  const row = document.getElementById('lights-row');
+  const msg = document.getElementById('lights-msg');
+  row.innerHTML = '';
+
+  const lights = [];
+  for (let i = 0; i < 5; i++) {
+    const l = document.createElement('div');
+    l.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#2b2f36;' +
+      'border:2px solid #14161a;transition:background .12s,box-shadow .12s';
+    row.appendChild(l);
+    lights.push(l);
+  }
+
+  ov.style.display = 'flex';
+  msg.textContent = 'PRÉPARATION…';
+  msg.style.color = 'var(--mute)';
+
+  let i = 0;
+  const step = () => {
+    if (i < 5) {
+      lights[i].style.background = '#ff2d2d';
+      lights[i].style.boxShadow = '0 0 14px rgba(255,45,45,.85)';
+      i++;
+      setTimeout(step, 620);
+    } else {
+      // Suspense avant extinction
+      setTimeout(() => {
+        lights.forEach(l => { l.style.background = '#2b2f36'; l.style.boxShadow = 'none'; });
+        msg.textContent = '🟢 GO !';
+        msg.style.color = 'var(--ok)';
+        setTimeout(() => { ov.style.display = 'none'; if (done) done(); }, 550);
+      }, 500 + Math.random() * 900);
+    }
+  };
+  setTimeout(step, 400);
+}
+
+/* ================================================================
+   IMMERSION — DRAPEAU À DAMIER PAR TOUR
+   ================================================================ */
+function showLapFlag(text, sub) {
+  const ov = document.getElementById('lap-flag');
+  const img = document.getElementById('lap-flag-img');
+  const txt = document.getElementById('lap-flag-txt');
+  txt.textContent = text + (sub ? ' — ' + sub : '');
+  ov.style.display = 'flex';
+  img.style.transition = 'none';
+  img.style.transform = 'scale(.6) rotate(-8deg)';
+  img.style.opacity = '0';
+  requestAnimationFrame(() => {
+    img.style.transition = 'transform .45s cubic-bezier(.2,1.4,.4,1),opacity .3s';
+    img.style.transform = 'scale(1) rotate(0deg)';
+    img.style.opacity = '1';
+  });
+  clearTimeout(showLapFlag._t);
+  showLapFlag._t = setTimeout(() => { ov.style.display = 'none'; }, 1500);
+}
+
+/* ================================================================
+   IMMERSION — FANTÔME (meilleur run perso, position par coup)
+   ================================================================ */
+function ghostKey(circuitId) { return 'fg_ghost_' + circuitId; }
+
+function loadGhost(circuitId) {
+  try {
+    const raw = localStorage.getItem(ghostKey(circuitId));
+    if (!raw) return null;
+    const g = JSON.parse(raw);
+    return (g && Array.isArray(g.turns) && g.turns.length) ? g : null;
+  } catch (e) { return null; }
+}
+
+function saveGhostIfBetter(circuitId, turns, moves) {
+  try {
+    const prev = loadGhost(circuitId);
+    if (prev && prev.moves <= moves) return;
+    localStorage.setItem(ghostKey(circuitId), JSON.stringify({ moves: moves, turns: turns }));
+  } catch (e) { /* quota */ }
+}
+
+/* ================================================================
+   IMMERSION — DELTA (vs meilleur temps tous joueurs)
+   ================================================================ */
+function updateDeltaHud() {
+  const el = document.getElementById('delta-hud');
+  if (!el) return;
+
+  // Référence : meilleur temps mondial aux checkpoints, sinon fantôme perso
+  const wb = R.worldBest;
+  let ref = null, label = '';
+
+  if (wb && wb.cpTimes && wb.cpTimes.length && R.cpTimes.length) {
+    const i = R.cpTimes.length - 1;
+    if (R.cpTimes[i] !== undefined && wb.cpTimes[i] !== undefined) {
+      ref = R.cpTimes[i] - wb.cpTimes[i];
+      label = 'vs ' + (wb.pseudo || 'record');
+    }
+  }
+  if (ref === null && R.ghost && R.ghost.turns[R.turn]) {
+    ref = 0; label = '';
+  }
+
+  if (ref === null) { el.style.display = 'none'; return; }
+
+  const sign = ref > 0 ? '+' : (ref < 0 ? '−' : '=');
+  const val = Math.abs(ref);
+  el.style.display = 'block';
+  el.textContent = (ref === 0 ? '= ' : sign + val + ' ') + label;
+  el.style.color = ref > 0 ? 'var(--crash)' : (ref < 0 ? '#b14aed' : 'var(--txt)');
+  el.style.borderColor = ref > 0 ? 'rgba(255,93,93,.5)' : (ref < 0 ? 'rgba(177,74,237,.6)' : '#2c3038');
+}
+
 function updateFuelGauge() {
   const el = document.getElementById('fuel-val');
   const bar = document.getElementById('fuel-bar');
@@ -1974,13 +2205,14 @@ function syncDash() {
   document.getElementById('v-turn').textContent = R.turn;
 
   updateFuelGauge();
+  updateDeltaHud();
 
   // Bouton lancer : normalement désactivé au rapport 0, SAUF en panne sèche au rapport 0
   // où il devient le bouton "faire le plein" (la voiture est arrêtée, 0 case parcourue).
   const rollBtn = document.getElementById('roll');
   const refuelStop = (R.outOfFuel && R.pendingGear === 0);
-  rollBtn.disabled = (R.phase !== 'gear' || R.animating || (R.pendingGear === 0 && !refuelStop));
-  rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : '🎲 LANCER LE DÉ';
+  rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || (R.pendingGear === 0 && !refuelStop));
+  rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : (R.lightsDone ? '🎲 LANCER LE DÉ' : '🚦 Attends les feux…');
 
   const rb = document.getElementById('reroll');
   if (rb) {
@@ -2025,10 +2257,17 @@ function rollDiceAnim() {
   // Consommation d'essence = nombre de dés = rapport engagé.
   // Exception : en panne sèche (décélération forcée), la voiture roule sur sa réserve, sans consommer.
   if (!R.outOfFuel) {
+    const before = R.fuel;
     R.fuel = Math.max(0, R.fuel - R.gear);
     if (R.fuel === 0 && R.gear > 0) {
       // Panne sèche : à partir de maintenant, décélération forcée d'un rapport par tour
       R.outOfFuel = true;
+      radio('outOfFuel');
+    } else if (R.fuelMax) {
+      const pctBefore = before / R.fuelMax, pctNow = R.fuel / R.fuelMax;
+      if (pctBefore > 0.15 && pctNow <= 0.15) radio('fuelCritical');
+      else if (pctBefore > 0.35 && pctNow <= 0.35) radio('fuelLow');
+      else if (R.gear >= 5 && Math.random() < 0.25) radio('highGear');
     }
   }
 
@@ -2206,6 +2445,9 @@ function finalizeMove(r) {
 
   R.lapCount += r.lapsGained || 0;
 
+  // Trace par coup (pour le fantôme du prochain essai)
+  R.turnPositions.push({ q: R.q, r: R.r, dir: R.dir });
+
   // Gestion leftFinishZone
   const currentCell = R.grid[R.r] ? R.grid[R.r][R.q] : '#';
   if (currentCell === 'F' && r.lapsGained > 0) {
@@ -2299,13 +2541,18 @@ function finalizeMove(r) {
 
   // Mouvement normal
   R.stressed = R.rerolled;
+  if (R.stressed) radio('stressed');
 
   // Panne sèche : si on vient de retomber au rapport 0, le plein est fait → on repart plein
   if (R.outOfFuel && R.gear === 0) {
     R.outOfFuel = false;
     R.fuel = R.fuelMax;
     say('⛽ Plein effectué ! Réservoir plein, tu peux repartir.', 'go');
+    radio('refuel');
   } else if (r.lapsGained) {
+    const remaining = R.targetLaps - R.lapCount;
+    if (remaining === 1) { showLapFlag('DERNIER TOUR', null); radio('lastLap'); }
+    else if (remaining > 1) showLapFlag('TOUR ' + (R.lapCount + 1), 'sur ' + R.targetLaps);
     say('🏁 Tour ' + R.lapCount + ' validé !', 'go');
   } else {
     say('Trajectoire validée.');
@@ -2338,26 +2585,40 @@ function showCpToast(index, time) {
   const el = document.getElementById('cp-toast');
   let html = '📍 CP' + (index + 1) + ' : ' + time + ' coups';
 
-  if (R.bestCpTimes[index] !== undefined) {
-    const diff = time - R.bestCpTimes[index];
+  const wb = R.worldBest;
+  const wbT = (wb && wb.cpTimes) ? wb.cpTimes[index] : undefined;
+  const myBest = R.bestCpTimes[index];
 
-    if (diff < 0) {
-      html += '<div class="cp-diff better">▲ ' + Math.abs(diff) + ' mieux</div>';
-    } else if (diff > 0) {
-      html += '<div class="cp-diff worse">▼ +' + diff + '</div>';
-    } else {
-      html += '<div class="cp-diff">= Même temps</div>';
-    }
+  // Code couleur F1 : violet = meilleur de tous, vert = record perso, jaune sinon
+  let color = 'var(--line)';
+  if (wbT !== undefined && time < wbT) {
+    color = '#b14aed';
+    radio('purple');
+    html += '<div class="cp-diff" style="color:#b14aed">🟪 MEILLEUR SECTEUR ! (−' + (wbT - time) + ' vs ' + esc(wb.pseudo) + ')</div>';
+  } else if (myBest !== undefined && time < myBest) {
+    color = 'var(--ok)';
+    radio('personalBest');
+    html += '<div class="cp-diff better">🟩 Record perso (−' + (myBest - time) + ')</div>';
+  } else if (myBest !== undefined) {
+    const diff = time - myBest;
+    html += (diff > 0)
+      ? '<div class="cp-diff worse">▼ +' + diff + ' vs ton record</div>'
+      : '<div class="cp-diff">= Même temps</div>';
   } else {
     html += '<div class="cp-diff">Premier passage</div>';
   }
 
+  if (wbT !== undefined && time >= wbT) {
+    html += '<div class="cp-diff" style="opacity:.75">Record : ' + wbT + ' (' + esc(wb.pseudo) + ')</div>';
+  }
+
   el.innerHTML = html;
+  el.style.borderColor = color;
   el.classList.add('on');
 
   setTimeout(() => {
     el.classList.remove('on');
-  }, 2000);
+  }, 2200);
 
   say('📍 Checkpoint ' + (index + 1), 'checkpoint');
 }
@@ -2382,6 +2643,11 @@ async function finishRace(r) {
     'fg_bestcp_' + R.circuit.id,
     JSON.stringify(R.bestCpTimes)
   );
+
+  // Fantôme : mémorise ce run s'il est meilleur que le précédent
+  if (!R.isWarmup) saveGhostIfBetter(R.circuit.id, R.turnPositions, R.turn);
+  showLapFlag('ARRIVÉE !', R.turn + ' coups');
+  radio('finish');
 
   // UI
   document.getElementById('fh2').textContent = 'ARRIVÉE !';
@@ -2855,6 +3121,30 @@ function drawRace() {
     cctx.restore();
   }
 
+  // 10bis) Fantôme : ta meilleure trajectoire, au même nombre de coups
+  if (R.ghost && R.ghost.turns && R.ghost.turns.length) {
+    const gi = Math.min(R.turn, R.ghost.turns.length - 1);
+    const g = R.ghost.turns[gi];
+    if (g) {
+      const gp = axialToPixel(g.q, g.r, hexSize);
+      cctx.save();
+      cctx.globalAlpha = 0.38;
+      cctx.translate(gp.x, gp.y);
+      cctx.rotate(Math.PI / 3 * (g.dir || 0));
+      drawCar(cctx, hexSize);
+      cctx.restore();
+      // Halo pour distinguer le fantôme
+      cctx.save();
+      cctx.globalAlpha = 0.5;
+      cctx.strokeStyle = '#9b8cff';
+      cctx.lineWidth = Math.max(1, hexSize * 0.05);
+      cctx.beginPath();
+      cctx.arc(gp.x, gp.y, hexSize * 0.5, 0, Math.PI * 2);
+      cctx.stroke();
+      cctx.restore();
+    }
+  }
+
   // 11) Voiture
   cctx.save();
   cctx.translate(carPt.x, carPt.y);
@@ -3048,6 +3338,7 @@ function newCircuit() {
   document.getElementById('c-turns').value = 6;
   document.getElementById('c-warmup').value = 0;
   document.getElementById('c-mult').value = 10;
+  document.getElementById('c-fuel').value = 0;
   document.getElementById('btn-delete').style.display = 'none';
   document.getElementById('scores-panel').style.display = 'none';
 
@@ -3106,11 +3397,13 @@ async function loadForEdit(id) {
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('c-warmup').value = c.warmup || 0;
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
+    document.getElementById('c-fuel').value = c.fuelCapacity || 0;
     document.getElementById('btn-delete').style.display = 'block';
 
     resetView();
     drawEditor();
     loadScores();
+    updateFuelHint();
     toast('Circuit chargé');
   } catch (e) {
     toast('Erreur : ' + e.message);
@@ -3194,6 +3487,21 @@ async function loadScores() {
 }
 
 document.getElementById('btn-reload-scores').onclick = loadScores;
+
+// Indicateur : montre ce que donne le mode automatique sur le circuit courant
+function updateFuelHint() {
+  const hint = document.getElementById('fuel-hint');
+  if (!hint || !E.grid) return;
+  const rows = E.grid.map(r => r.join(''));
+  const laps = parseInt(document.getElementById('c-laps').value) || 1;
+  const auto = autoFuelCapacity({ rows: rows, laps: laps });
+  const manual = parseInt(document.getElementById('c-fuel').value) || 0;
+  const used = manual > 0 ? manual : auto;
+  hint.textContent = 'Auto = ' + auto + ' pts · utilisé : ' + used +
+    ' → ~' + Math.floor(used / 6) + ' lancers en V6 ou ~' + Math.floor(used / 3) + ' en V3';
+}
+document.getElementById('c-fuel').oninput = updateFuelHint;
+document.getElementById('c-laps').addEventListener('input', updateFuelHint);
 
 document.getElementById('btn-new-circuit').onclick = newCircuit;
 
@@ -3607,6 +3915,7 @@ document.getElementById('btn-generate').onclick = () => {
 
   // Centrer sur le circuit
   centerOnCircuit();
+  if (typeof updateFuelHint === 'function') updateFuelHint();
 
   toast(success
     ? ('🏁 ' + (trackW * 2 + 1) + ' cases de large · ' + numTurns + ' virages')
@@ -3831,7 +4140,8 @@ document.getElementById('btn-test-mode').onclick = () => {
     },
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
-    warmup: parseInt(document.getElementById('c-warmup').value) || 0
+    warmup: parseInt(document.getElementById('c-warmup').value) || 0,
+    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0
   }, 'TesteurAdmin', 99, true);
 };
 
@@ -4163,6 +4473,7 @@ async function saveCircuit(publish) {
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
     warmup: parseInt(document.getElementById('c-warmup').value) || 0,
     pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
+    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
     published: (publish !== undefined) ? publish : E.published
   };
 
