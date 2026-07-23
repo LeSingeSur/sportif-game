@@ -170,7 +170,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0 };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -1142,6 +1142,7 @@ app.post('/api/formula/circuit', async (req, res) => {
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
     warmup: Math.max(0, Math.min(5, parseInt(req.body.warmup)||0)),
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
+    fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     published: !!published,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
@@ -1172,7 +1173,13 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
     top,
     attemptsUsed: mine.length,
     attemptsLeft: Math.max(0, c.attempts - mine.length),
-    best: bestRun(mine)
+    best: bestRun(mine),
+    // Meilleur temps TOUS JOUEURS confondus + ses splits (pour le delta en course)
+    worldBest: (() => {
+      const wb = bestRun(runs);
+      if (!wb) return null;
+      return { pseudo: wb.pseudo, moves: wb.moves, left: wb.left||0, cpTimes: wb.cpTimes || [] };
+    })()
   });
 });
 
