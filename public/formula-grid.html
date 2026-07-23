@@ -57,12 +57,15 @@ body {
   width: 100%;
   max-width: 560px;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
 .scr.on {
   display: flex;
 }
+
+/* Course : écarts resserrés pour garder le bouton LANCER visible sans scroller */
+#scr-race.on { gap: 7px; }
 
 /* ============================================================
    TYPOGRAPHIE
@@ -261,7 +264,11 @@ header.top {
 #cv {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1.45;
+  /* Plafonne la piste pour que la boîte de vitesses et le bouton LANCER
+     restent visibles sans scroller, même sur petit téléphone. */
+  max-height: 34vh;
+  margin: 0 auto;
   border-radius: 8px;
   touch-action: none;
 }
@@ -309,7 +316,7 @@ header.top {
 .gauge {
   background: var(--panel);
   border-radius: var(--r);
-  padding: 7px 4px;
+  padding: 4px 4px;
   text-align: center;
 }
 
@@ -321,7 +328,7 @@ header.top {
 
 .gauge .val {
   font-family: ui-monospace, monospace;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.25;
 }
@@ -393,7 +400,7 @@ header.top {
   width: 100%;
   background: var(--panel);
   border-radius: var(--r);
-  padding: 12px 14px;
+  padding: 8px 12px;
   border: 1px solid #2c3038;
 }
 
@@ -401,7 +408,7 @@ header.top {
   font-size: 10px;
   letter-spacing: 2px;
   color: var(--mute);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   text-align: center;
 }
 
@@ -414,8 +421,8 @@ header.top {
 }
 
 .gear {
-  width: 44px;
-  height: 62px;
+  width: 42px;
+  height: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -467,7 +474,7 @@ header.top {
    ============================================================ */
 #roll {
   width: 100%;
-  padding: 15px;
+  padding: 11px;
   border: none;
   border-radius: var(--r);
   background: var(--line);
@@ -487,7 +494,7 @@ header.top {
 #msg {
   width: 100%;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--mute);
   min-height: 18px;
   margin-top: 4px;
@@ -1037,6 +1044,26 @@ header.top {
       <div class="val" id="v-turn">0</div>
     </div>
   </div>
+  <div id="inertiameter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:7px 12px;border:1px solid #2c3038">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">🎯 INERTIE / BRAQUAGE</span>
+      <span id="inertia-val" style="font-family:ui-monospace,monospace;font-size:13px;font-weight:900;color:var(--line)"></span>
+    </div>
+    <div id="inertia-cells" style="display:flex;gap:3px;margin-top:5px"></div>
+    <div id="inertia-txt" style="font-size:9.5px;color:var(--mute);margin-top:4px;line-height:1.3"></div>
+  </div>
+  <div id="gearbox">
+    <div class="lbl">BOÎTE SÉQUENTIELLE</div>
+    <div id="hgrid"></div>
+  </div>
+  <button id="roll">🎲 LANCER LE DÉ</button>
+  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">
+    🎲 Relancer (stresse la voiture)
+  </button>
+  <button id="alt-path" class="btn" style="display:none;background:rgba(247,201,72,.12);border:1px solid rgba(247,201,72,.4);color:var(--line)">
+    ↻ Autre trajectoire vers cette case
+  </button>
+  <div id="msg">Choisis ta vitesse puis lance le dé.</div>
   <div id="speedometer">
     <div id="speed-warning"></div>
     <div id="speed-label">
@@ -1054,26 +1081,7 @@ header.top {
       <div id="fuel-bar" style="height:100%;width:100%;border-radius:4px;transition:width .3s,background .3s"></div>
     </div>
   </div>
-  <div id="inertiameter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:10px 14px;border:1px solid #2c3038">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">🎯 INERTIE / BRAQUAGE</span>
-      <span id="inertia-val" style="font-family:ui-monospace,monospace;font-size:13px;font-weight:900;color:var(--line)"></span>
-    </div>
-    <div id="inertia-cells" style="display:flex;gap:3px;margin-top:7px"></div>
-    <div id="inertia-txt" style="font-size:10px;color:var(--mute);margin-top:5px;line-height:1.35"></div>
-  </div>
-  <div id="gearbox">
-    <div class="lbl">BOÎTE SÉQUENTIELLE</div>
-    <div id="hgrid"></div>
-  </div>
-  <button id="roll">🎲 LANCER LE DÉ</button>
-  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">
-    🎲 Relancer (stresse la voiture)
-  </button>
-  <button id="alt-path" class="btn" style="display:none;background:rgba(247,201,72,.12);border:1px solid rgba(247,201,72,.4);color:var(--line)">
-    ↻ Autre trajectoire vers cette case
-  </button>
-  <div id="msg">Choisis ta vitesse puis lance le dé.</div>
+
 </section>
 
 <!-- ============================================================
@@ -3169,9 +3177,15 @@ function getVisibleRange(hexSize, centerOff, canvasSize) {
 // Rendu principal de la course
 function drawRace() {
   const wrap = document.getElementById('trackwrap');
-  const size = wrap.clientWidth - 12;
-  cv.width = size;
-  cv.height = size;
+  // Taille réellement affichée : le max-height CSS peut réduire le canvas
+  const rect = cv.getBoundingClientRect();
+  // Buffer aligné sur la taille RÉELLEMENT affichée : sinon les hexagones sont étirés
+  // et les clics tombent à côté verticalement.
+  const cw = Math.max(120, Math.round(rect.width || (wrap.clientWidth - 12)));
+  const ch = Math.max(100, Math.round(rect.height || cw));
+  cv.width = cw;
+  cv.height = ch;
+  const size = Math.min(cw, ch);   // échelle de zoom basée sur la plus petite dimension
 
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
@@ -3192,17 +3206,17 @@ function drawRace() {
   // 1) Herbe texturée
   if (grassPattern) {
     cctx.fillStyle = cctx.createPattern(grassPattern, 'repeat');
-    cctx.fillRect(0, 0, size, size);
+    cctx.fillRect(0, 0, cw, ch);
   } else {
     cctx.fillStyle = '#2d5016';
-    cctx.fillRect(0, 0, size, size);
+    cctx.fillRect(0, 0, cw, ch);
   }
 
   cctx.save();
-  cctx.translate(R.panOffsetX + size / 2 + shX, R.panOffsetY + size / 2 + shY);
+  cctx.translate(R.panOffsetX + cw / 2 + shX, R.panOffsetY + ch / 2 + shY);
   cctx.translate(-centerOff.x, -centerOff.y);
 
-  const vis = getVisibleRange(hexSize, centerOff, size);
+  const vis = getVisibleRange(hexSize, centerOff, Math.max(cw, ch));
 
   // 2) Asphalte (ruban lisse)
   for (let r = vis.minR; r <= vis.maxR; r++) {
@@ -3531,13 +3545,13 @@ function drawRace() {
 
   // 12) Vignette
   const vig = cctx.createRadialGradient(
-    size / 2, size / 2, size * 0.4,
-    size / 2, size / 2, size * 0.72
+    cw / 2, ch / 2, size * 0.4,
+    cw / 2, ch / 2, size * 0.72
   );
   vig.addColorStop(0, 'rgba(0,0,0,0)');
   vig.addColorStop(1, 'rgba(0,0,0,0.2)');
   cctx.fillStyle = vig;
-  cctx.fillRect(0, 0, size, size);
+  cctx.fillRect(0, 0, cw, ch);
 
   // 13) Minimap — désactivée (peu lisible à cette échelle)
   // drawMinimap(vp);
@@ -3614,9 +3628,11 @@ cv.addEventListener('pointerdown', (e) => {
   if (R.animating) return;
 
   const rect = cv.getBoundingClientRect();
-  const size = cv.width;
-  // Le canvas peut être affiché à une taille CSS différente de son buffer → facteur d'échelle
-  const scale = rect.width ? (size / rect.width) : 1;
+  const cw = cv.width, ch = cv.height;
+  // Échelles X et Y SÉPARÉES : le canvas n'est pas forcément carré
+  const sx = rect.width ? (cw / rect.width) : 1;
+  const sy = rect.height ? (ch / rect.height) : 1;
+  const size = Math.min(cw, ch);   // même base d'échelle que drawRace
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
   const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
@@ -3624,8 +3640,8 @@ cv.addEventListener('pointerdown', (e) => {
   const camPos = getAnimCarPos();
   const co = axialToPixel(camPos.q, camPos.r, hexSize);
 
-  const clickX = (e.clientX - rect.left) * scale + co.x - R.panOffsetX - size / 2;
-  const clickY = (e.clientY - rect.top) * scale + co.y - R.panOffsetY - size / 2;
+  const clickX = (e.clientX - rect.left) * sx + co.x - R.panOffsetX - cw / 2;
+  const clickY = (e.clientY - rect.top) * sy + co.y - R.panOffsetY - ch / 2;
 
   let closest = null;
   let closestKey = null;
