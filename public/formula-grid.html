@@ -415,7 +415,7 @@ header.top {
 
 .gear {
   width: 44px;
-  height: 52px;
+  height: 62px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1109,7 +1109,10 @@ header.top {
       </div>
       <input type="file" id="img-import" accept="image/*" style="display:none">
       <button class="btn primary" id="btn-test-mode" style="background:var(--ok);color:#14161a">
-        🏎️ Tester
+        🏎️ Tester (solo, sans sauvegarde)
+      </button>
+      <button class="btn" id="btn-test-link" style="display:none">
+        🔗 Copier le lien de test (plusieurs joueurs, scores enregistrés)
       </button>
     </div>
 
@@ -1804,7 +1807,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
   //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
   // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
-  const reload = Math.max(0, (gear || 1) - 1);
+  const reload = gear || 1;  // inertie au niveau du rapport : V1=1, V6=6
   const startInertia = Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
@@ -1911,7 +1914,9 @@ function renderGears() {
     el.className = cls;
 
     const label = (g === 0) ? 'STOP' : GEAR_KMH[g] + 'km/h';
-    el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>';
+    const range = (g >= 1 && DICE[g]) ? (DICE[g][0] + '-' + DICE[g][1]) : '';
+    el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>' +
+      (range ? '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' + range + '</i>' : '');
 
     if (reach && R.phase === 'gear') {
       el.onclick = () => {
@@ -2197,7 +2202,7 @@ function updateInertiaGauge() {
   if (!val || !cells || !txt) return;
 
   const g = (R.phase === 'gear') ? R.pendingGear : R.gear;
-  const reload = Math.max(0, (g || 1) - 1);   // recharge après un virage
+  const reload = g || 1;   // inertie = rapport : V1=1 ... V6=6
   const cur = Math.max(0, R.inertia || 0);    // état actuel de la jauge
 
   if (!g) {
@@ -2577,7 +2582,7 @@ function finalizeMove(r) {
     R.gear = 1;
     R.stressed = false;
     R.inertia = 0;
-    say('💥 CRASH ! Tentative abandonnée.', 'crash');
+    say('💥 CRASH — ÉLIMINÉ !', 'crash');
 
     setTimeout(async () => {
       // Mode test : décompte local uniquement, retour éditeur, aucun envoi serveur
@@ -3388,6 +3393,17 @@ function emptyGrid() {
 const params = new URLSearchParams(location.search);
 if (params.get('edit') === '1') {
   show('scr-editor');
+} else if (params.get('play')) {
+  // Lien de test partageable : ouvre directement un circuit (même non publié) sans mot de passe admin.
+  // Plusieurs testeurs peuvent l'utiliser en parallèle, chacun avec son pseudo — scores réellement enregistrés.
+  show('scr-menu');
+  document.getElementById('circuit-list').innerHTML =
+    '<div class="empty-state">Entre ton pseudo ci-dessus puis reviens sur ce lien pour jouer.</div>';
+  const playId = params.get('play');
+  const tryOpen = () => { if (pseudoIn.value.trim()) openCircuit(playId); };
+  document.getElementById('pseudo-in').addEventListener('change', tryOpen);
+  document.getElementById('pseudo-in').addEventListener('blur', tryOpen);
+  if (pseudoIn.value.trim()) tryOpen();
 }
 
 document.getElementById('gate-btn').onclick = async () => {
@@ -3412,6 +3428,24 @@ document.getElementById('gate-btn').onclick = async () => {
   }
 };
 
+function updateTestLinkBtn() {
+  const btn = document.getElementById('btn-test-link');
+  if (!btn) return;
+  if (E.editingId) {
+    btn.style.display = 'block';
+    btn.onclick = () => {
+      const url = location.origin + location.pathname + '?play=' + encodeURIComponent(E.editingId);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => toast('🔗 Lien copié !')).catch(() => prompt('Copie le lien :', url));
+      } else {
+        prompt('Copie le lien :', url);
+      }
+    };
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
 function newCircuit() {
   E.grid = emptyGrid();
   E.carPos = null;
@@ -3430,6 +3464,7 @@ function newCircuit() {
   document.getElementById('c-fuel').value = 0;
   document.getElementById('btn-delete').style.display = 'none';
   document.getElementById('scores-panel').style.display = 'none';
+  updateTestLinkBtn();
 
   resetView();
   drawEditor();
@@ -3488,6 +3523,7 @@ async function loadForEdit(id) {
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
     document.getElementById('c-fuel').value = c.fuelCapacity || 0;
     document.getElementById('btn-delete').style.display = 'block';
+    updateTestLinkBtn();
 
     resetView();
     drawEditor();
@@ -4561,6 +4597,7 @@ async function saveCircuit(publish) {
     E.published = publish;
 
     document.getElementById('btn-delete').style.display = 'block';
+    updateTestLinkBtn();
 
     toast(publish ? '✅ Circuit publié !' : '💾 Brouillon enregistré');
     loadAdminList();
