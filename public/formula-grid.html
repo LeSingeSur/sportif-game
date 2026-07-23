@@ -2737,6 +2737,37 @@ const cctx = cv.getContext('2d');
 const mm = document.getElementById('minimap');
 const mctx = mm.getContext('2d');
 
+// Barrière : trace l'ARÊTE COMPLÈTE (sommet à sommet) partagée avec un mur.
+// Les arêtes de cases voisines se rejoignent exactement → ligne continue le long du circuit.
+function drawKerbEdge(ctx, pt, hexSize, d, q, r) {
+  // Le voisin d est à l'angle (d-1)*60° ; l'arête correspondante joint les 2 sommets à ±30°
+  const aMid = (d - 1) * Math.PI / 3;
+  const a1 = aMid - Math.PI / 6;
+  const a2 = aMid + Math.PI / 6;
+  const inset = 0.95; // légèrement rentré pour poser la barrière sur la piste
+
+  const x1 = pt.x + hexSize * inset * Math.cos(a1);
+  const y1 = pt.y + hexSize * inset * Math.sin(a1);
+  const x2 = pt.x + hexSize * inset * Math.cos(a2);
+  const y2 = pt.y + hexSize * inset * Math.sin(a2);
+
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.lineWidth = Math.max(1.5, hexSize * 0.16);
+
+  // Damier rouge/blanc réparti sur toute l'arête (3 tronçons)
+  const SEG = 3;
+  for (let k = 0; k < SEG; k++) {
+    const t0 = k / SEG, t1 = (k + 1) / SEG;
+    ctx.strokeStyle = ((q + r + d + k) % 2 === 0) ? '#c0392b' : '#ecf0f1';
+    ctx.beginPath();
+    ctx.moveTo(x1 + (x2 - x1) * t0, y1 + (y2 - y1) * t0);
+    ctx.lineTo(x1 + (x2 - x1) * t1, y1 + (y2 - y1) * t1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // Tracé d'un hexagone
 function hexPath(ctx, x, y, s) {
   ctx.beginPath();
@@ -2968,23 +2999,7 @@ function drawRace() {
 
         if (!isWall) continue;
 
-        const angle = Math.PI / 3 * d - Math.PI / 6;
-        const bx = pt.x + hexSize * 0.92 * Math.cos(angle);
-        const by = pt.y + hexSize * 0.92 * Math.sin(angle);
-
-        cctx.save();
-        cctx.translate(bx, by);
-        cctx.rotate(angle);
-
-        const kw = hexSize * 0.08;
-        const kh = hexSize * 0.3;
-
-        for (let k = 0; k < 3; k++) {
-          cctx.fillStyle = (k % 2 === 0) ? '#c0392b' : '#ecf0f1';
-          cctx.fillRect(-kw / 2, -kh / 2 + k * kh / 3, kw, kh / 3);
-        }
-
-        cctx.restore();
+        drawKerbEdge(cctx, pt, hexSize, d, q, r);
       }
     }
   }
@@ -3240,13 +3255,17 @@ cv.addEventListener('pointerdown', (e) => {
 
   const rect = cv.getBoundingClientRect();
   const size = cv.width;
+  // Le canvas peut être affiché à une taille CSS différente de son buffer → facteur d'échelle
+  const scale = rect.width ? (size / rect.width) : 1;
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
   const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
-  const co = axialToPixel(vp.q, vp.r, hexSize);
+  // IMPORTANT : même référentiel que drawRace (centré sur la voiture), sinon les clics tombent à côté
+  const camPos = getAnimCarPos();
+  const co = axialToPixel(camPos.q, camPos.r, hexSize);
 
-  const clickX = (e.clientX - rect.left) + co.x - R.panOffsetX - size / 2;
-  const clickY = (e.clientY - rect.top) + co.y - R.panOffsetY - size / 2;
+  const clickX = (e.clientX - rect.left) * scale + co.x - R.panOffsetX - size / 2;
+  const clickY = (e.clientY - rect.top) * scale + co.y - R.panOffsetY - size / 2;
 
   let closest = null;
   let minDist = Infinity;
@@ -4256,23 +4275,7 @@ function drawEditor() {
 
         if (!isWall) continue;
 
-        const angle = Math.PI / 3 * d - Math.PI / 6;
-        const bx = pt.x + hs * 0.92 * Math.cos(angle);
-        const by = pt.y + hs * 0.92 * Math.sin(angle);
-
-        ectx.save();
-        ectx.translate(bx, by);
-        ectx.rotate(angle);
-
-        const kw = hs * 0.08;
-        const kh = hs * 0.3;
-
-        for (let k = 0; k < 3; k++) {
-          ectx.fillStyle = (k % 2 === 0) ? '#c0392b' : '#ecf0f1';
-          ectx.fillRect(-kw / 2, -kh / 2 + k * kh / 3, kw, kh / 3);
-        }
-
-        ectx.restore();
+        drawKerbEdge(ectx, pt, hs, d, q, r);
       }
     }
   }
