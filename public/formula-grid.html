@@ -981,6 +981,7 @@ header.top {
   <div id="circuit-list">
     <div class="empty-state">Chargement…</div>
   </div>
+  <button class="btn" id="btn-rules" style="margin-top:6px">📖 Règles du jeu</button>
   <div id="editor-entry">
     <a class="link" href="?edit=1">🛠️ Éditeur de circuit (admin)</a>
   </div>
@@ -1066,6 +1067,9 @@ header.top {
   <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">
     🎲 Relancer (stresse la voiture)
   </button>
+  <button id="alt-path" class="btn" style="display:none;background:rgba(247,201,72,.12);border:1px solid rgba(247,201,72,.4);color:var(--line)">
+    ↻ Autre trajectoire vers cette case
+  </button>
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
 </section>
 
@@ -1111,6 +1115,7 @@ header.top {
       <button class="btn primary" id="btn-test-mode" style="background:var(--ok);color:#14161a">
         🏎️ Tester (solo, sans sauvegarde)
       </button>
+      <button class="btn" id="btn-rules-admin">📖 Règles du jeu</button>
       <button class="btn" id="btn-test-link" style="display:none">
         🔗 Copier le lien de test (plusieurs joueurs, scores enregistrés)
       </button>
@@ -1234,6 +1239,17 @@ header.top {
     <button class="btn" onclick="backToMenu()">Circuits</button>
     <button class="btn primary" id="btn-retry">Réessayer</button>
   </div>
+</div>
+
+<!-- ============================================================
+     MODALE RÈGLES
+     ============================================================ -->
+<div id="rules-modal" style="position:fixed;inset:0;background:rgba(8,9,11,.96);z-index:60;display:none;flex-direction:column;backdrop-filter:blur(8px)">
+  <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #2c3038;flex-shrink:0">
+    <h1 style="font-size:15px;flex:1">📖 RÈGLES<em style="color:var(--line)"> DU JEU</em></h1>
+    <button class="btn" id="rules-close" style="padding:8px 14px">✕ Fermer</button>
+  </div>
+  <div id="rules-body" style="flex:1;overflow-y:auto;padding:16px;max-width:560px;width:100%;margin:0 auto;font-size:13px;line-height:1.55"></div>
 </div>
 
 <!-- TOAST -->
@@ -2255,6 +2271,12 @@ function syncDash() {
   rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || (R.pendingGear === 0 && !refuelStop));
   rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : (R.lightsDone ? '🎲 LANCER LE DÉ' : '🚦 Attends les feux…');
 
+  const ap = document.getElementById('alt-path');
+  if (ap) {
+    const n = (R.preview && R.endPaths) ? (R.endPaths.get(R.preview.key) || []).length : 0;
+    ap.style.display = (R.phase === 'pick' && n > 1 && !R.animating) ? 'block' : 'none';
+  }
+
   const rb = document.getElementById('reroll');
   if (rb) {
     rb.style.display =
@@ -2366,6 +2388,30 @@ function rollDiceAnim() {
   }, 120);
 }
 
+// Combien de cases dégagées devant soi dans une direction donnée (max 8)
+// → sert à préférer les trajectoires qui finissent "dans le sens du circuit"
+function openRoadAhead(q, r, dir, limit) {
+  limit = limit || 8;
+  let n = 0, cq = q, cr = r;
+  for (let i = 0; i < limit; i++) {
+    const d = HEX_DIRS[dir];
+    cq += d.q; cr += d.r;
+    if (!onTrackR(cq, cr)) break;
+    n++;
+  }
+  return n;
+}
+
+// Qualité d'une trajectoire : d'abord ne pas crasher, puis finir face à la piste dégagée
+function scorePath(res) {
+  if (res.crash) return -1000;
+  let s = openRoadAhead(res.q, res.r, res.dir) * 10;
+  if (res.finish) s += 5000;
+  // léger bonus si la jauge d'inertie finit basse (on pourra tourner au coup suivant)
+  s -= (res.inertiaEnd || 0);
+  return s;
+}
+
 function processRollResult(val) {
   R.rolled = val;
   R.budget = val;
@@ -2376,16 +2422,33 @@ function processRollResult(val) {
     R.lapCount, R.targetLaps
   );
 
-  // Regrouper les destinations uniques
-  R.ends = new Map();
+  // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
+  // triées de la meilleure à la moins bonne (sens du circuit d'abord).
+  const byCell = new Map();
   for (const r of R.results) {
     const k = r.q + ',' + r.r;
-    const prev = R.ends.get(k);
-    if (!prev || (prev.crash && !r.crash) || (r.finish && !prev.finish)) {
-      R.ends.set(k, r);
-    }
+    if (!byCell.has(k)) byCell.set(k, []);
+    byCell.get(k).push(r);
   }
 
+  R.endPaths = new Map();
+  R.ends = new Map();
+  for (const [k, list] of byCell.entries()) {
+    list.sort((a, b) => scorePath(b) - scorePath(a));
+    // dédoublonne les trajectoires identiques en direction finale ET forme
+    const seen = new Set();
+    const uniq = [];
+    for (const r of list) {
+      const sig = r.dir + '|' + r.path.map(p => p.q + ',' + p.r).join(';');
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      uniq.push(r);
+    }
+    R.endPaths.set(k, uniq);
+    R.ends.set(k, uniq[0]);
+  }
+
+  R.preview = null;   // aucune trajectoire prévisualisée au départ
   R.phase = 'pick';
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
 
@@ -2397,14 +2460,107 @@ function processRollResult(val) {
     say('💥 Crash inévitable !', 'crash');
     setTimeout(() => applyResult(best), 800);
   } else {
-    say('Choisis une case d\'arrivée (' + okCount + ' options)', 'go');
+    say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
   }
 
   syncDash();
   drawRace();
 }
 
+/* ================================================================
+   MENU RÈGLES
+   ================================================================ */
+function buildRulesHTML() {
+  const H = (t) => '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:18px 0 7px;font-weight:800">' + t + '</div>';
+  const P = (t) => '<p style="margin-bottom:9px;color:var(--txt)">' + t + '</p>';
+  const NOTE = (t) => '<div style="background:var(--panel);border-left:3px solid var(--line);border-radius:6px;padding:9px 11px;margin:10px 0;font-size:12px;color:var(--mute)">' + t + '</div>';
+
+  // Tableau des rapports, généré depuis les vraies constantes du moteur
+  let rows = '';
+  for (let g = 1; g <= 6; g++) {
+    rows += '<tr>' +
+      '<td style="padding:5px 6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
+      '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + g + '</td>' +
+      '</tr>';
+  }
+
+  return '' +
+  H('🎯 Le but') +
+  P('Boucler tous les tours du circuit en <b>le moins de coups possible</b>. Un « coup » = un lancer de dés. Le meilleur temps, c\'est donc le moins de lancers, pas le plus de vitesse.') +
+  NOTE('En cas d\'égalité, celui qui a le plus de cases de rab sur sa dernière ligne droite passe devant.') +
+
+  H('🎲 Les dés et la vitesse') +
+  P('Tu choisis un rapport de 1 à 6 avant chaque lancer. <b>Le rapport = le nombre de dés lancés</b> : en V5 tu lances 5 dés, tu les additionnes, et le total est le nombre de cases que tu parcours.') +
+  P('Tu ne peux changer que d\'<b>un rapport à la fois</b> (monter ou descendre), jamais sauter de V2 à V5.') +
+  '<table style="width:100%;border-collapse:collapse;font-size:12px;background:var(--panel);border-radius:8px;overflow:hidden;margin:8px 0">' +
+    '<tr style="background:var(--panel2);font-size:10px;letter-spacing:1px;color:var(--mute)">' +
+      '<th style="padding:6px">RAPPORT</th><th style="padding:6px">CASES</th><th style="padding:6px">DÉS</th><th style="padding:6px">⛽</th><th style="padding:6px">INERTIE</th>' +
+    '</tr>' + rows +
+  '</table>' +
+
+  H('🎯 L\'inertie : la clé du pilotage') +
+  P('Une F1 lancée ne tourne pas sur place. C\'est ce que représente la <b>jauge d\'inertie</b>, affichée en course sous la jauge d\'essence.') +
+  P('<b>Tant que la jauge n\'est pas à zéro, tu ne peux pas tourner.</b> Chaque case parcourue en ligne droite la fait baisser de 1. Quand elle atteint 0, tu peux braquer.') +
+  P('Dès que tu tournes, la jauge se <b>recharge au niveau de ton rapport</b> : un virage en V6 la remet à 6, il faudra donc 6 cases droites avant de pouvoir tourner à nouveau. En V1 elle ne remonte qu\'à 1 : tu enchaînes les virages presque librement.') +
+  NOTE('⚠️ La jauge <b>ne se remet jamais à zéro entre deux lancers</b>. Si tu finis ton déplacement avec 4 d\'inertie, tu commences le suivant avec 4. Surveille-la avant de choisir ton rapport.') +
+
+  H('🛣️ Choisir sa trajectoire') +
+  P('Après le lancer, les cases où tu peux atterrir s\'allument en vert. <b>Un premier appui affiche le chemin</b> : la ligne jaune montre la trajectoire exacte, les pastilles orange ↻ marquent les virages, et la flèche verte indique la direction dans laquelle tu repartiras.') +
+  P('<b>Un second appui sur la même case valide</b> le déplacement. Si plusieurs trajectoires mènent à la même case, le bouton ↻ permet de les faire défiler.') +
+  NOTE('Le jeu propose par défaut la trajectoire qui te laisse le plus de route dégagée devant toi — souvent la plus sûre pour le coup suivant.') +
+
+  H('⛽ L\'essence') +
+  P('Chaque dé lancé consomme <b>1 point d\'essence</b> : rouler en V6 coûte 6 points par coup, en V2 seulement 2. Foncer en permanence vide le réservoir très vite.') +
+  P('À sec, c\'est la <b>panne sèche</b> : tu es obligé de descendre d\'un rapport à chaque coup jusqu\'à l\'arrêt complet. Tu roules sans consommer pendant cette descente, puis le plein se fait automatiquement et tu repars réservoir plein.') +
+  NOTE('Tomber en panne à V6 coûte 6 coups de décélération. À V2, seulement 2. L\'imprudence se paie au prix fort.') +
+
+  H('💥 Le crash') +
+  P('Si aucune trajectoire ne permet de rester sur la piste, c\'est le crash : <b>ta tentative est terminée</b> et elle compte comme un essai utilisé. Le score n\'est pas enregistré.') +
+  P('Tu peux <b>relancer les dés une fois par coup</b> si le résultat ne te convient pas, mais ça met la boîte sous tension : au coup suivant tu ne pourras pas monter de rapport.') +
+
+  H('🏁 Points et classement') +
+  P('Sur chaque circuit, le classement est <b>recalculé en direct</b> : le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, et ainsi de suite. Plus il y a de participants, plus la victoire rapporte.') +
+  P('Ces points s\'ajoutent à ton total dans le classement général d\'Arena Sport.') +
+
+  H('📍 Secteurs et chrono') +
+  P('Des checkpoints jalonnent le circuit. À chaque passage tu vois ton temps : <b style="color:#b14aed">violet</b> si c\'est le meilleur secteur tous joueurs confondus, <b style="color:var(--ok)">vert</b> si tu bats ton propre record, sinon neutre.') +
+  P('Si l\'organisateur a prévu un <b>tour de chauffe</b>, il ne compte pas : profites-en pour repérer le tracé.');
+}
+
+function openRules() {
+  const body = document.getElementById('rules-body');
+  if (body && !body.dataset.filled) {
+    body.innerHTML = buildRulesHTML();
+    body.dataset.filled = '1';
+  }
+  document.getElementById('rules-modal').style.display = 'flex';
+}
+
+function closeRules() {
+  document.getElementById('rules-modal').style.display = 'none';
+}
+
+document.getElementById('rules-close').onclick = closeRules;
+const _br = document.getElementById('btn-rules');
+if (_br) _br.onclick = openRules;
+const _bra = document.getElementById('btn-rules-admin');
+if (_bra) _bra.onclick = openRules;
+
 document.getElementById('roll').onclick = rollDiceAnim;
+
+// Faire défiler les trajectoires alternatives menant à la même case d'arrivée
+document.getElementById('alt-path').onclick = () => {
+  if (!R.preview) return;
+  const list = R.endPaths.get(R.preview.key) || [];
+  if (list.length < 2) return;
+  R.preview.index = (R.preview.index + 1) % list.length;
+  say('Chemin ' + (R.preview.index + 1) + '/' + list.length +
+      ' — retouche la case pour valider', 'go');
+  drawRace();
+};
 
 document.getElementById('reroll').onclick = () => {
   if (R.phase !== 'pick') return;
@@ -3137,25 +3293,106 @@ function drawRace() {
     }
   }
 
-  // 8) Destinations cliquables
+  // 8) Destinations cliquables + trajectoire prévisualisée
   if (R.phase === 'pick' && R.ends) {
-    for (const res of R.ends.values()) {
+    const prevKey = R.preview ? R.preview.key : null;
+
+    // 8a) Trajectoires en fond : toutes les cases traversées, très discrètes
+    if (!prevKey) {
+      const touched = new Set();
+      for (const res of R.ends.values()) {
+        if (res.crash) continue;
+        for (const st of res.path) touched.add(st.q + ',' + st.r);
+      }
+      cctx.fillStyle = 'rgba(57,217,138,0.10)';
+      for (const k of touched) {
+        const [tq, tr] = k.split(',').map(Number);
+        const pt = axialToPixel(tq, tr, hexSize);
+        hexPath(cctx, pt.x, pt.y, hexSize * 0.9);
+        cctx.fill();
+      }
+    }
+
+    // 8b) Trajectoire choisie : tracé complet, épais, avec repères de virage
+    if (prevKey) {
+      const list = R.endPaths.get(prevKey) || [];
+      const res = list[R.preview.index] || list[0];
+      if (res && res.path.length) {
+        const pts = [{ q: R.q, r: R.r }].concat(res.path);
+
+        // ligne principale
+        cctx.strokeStyle = res.crash ? 'rgba(255,93,93,0.95)' : 'rgba(247,201,72,0.95)';
+        cctx.lineWidth = Math.max(2, hexSize * 0.18);
+        cctx.lineJoin = 'round';
+        cctx.lineCap = 'round';
+        cctx.beginPath();
+        pts.forEach((p, i) => {
+          const a = axialToPixel(p.q, p.r, hexSize);
+          if (i === 0) cctx.moveTo(a.x, a.y); else cctx.lineTo(a.x, a.y);
+        });
+        cctx.stroke();
+
+        // numéro de case + marqueur de virage
+        res.path.forEach((st, i) => {
+          const a = axialToPixel(st.q, st.r, hexSize);
+          if (st.turn) {
+            // pivot : gros point orange bien visible
+            cctx.beginPath();
+            cctx.arc(a.x, a.y, hexSize * 0.3, 0, Math.PI * 2);
+            cctx.fillStyle = '#ff9f43';
+            cctx.fill();
+            cctx.strokeStyle = '#14161a';
+            cctx.lineWidth = 2;
+            cctx.stroke();
+            cctx.fillStyle = '#14161a';
+            cctx.font = 'bold ' + Math.max(8, hexSize * 0.3) + 'px sans-serif';
+            cctx.textAlign = 'center';
+            cctx.textBaseline = 'middle';
+            cctx.fillText('↻', a.x, a.y);
+          } else {
+            cctx.beginPath();
+            cctx.arc(a.x, a.y, hexSize * 0.12, 0, Math.PI * 2);
+            cctx.fillStyle = 'rgba(20,22,26,0.55)';
+            cctx.fill();
+          }
+        });
+
+        // flèche de direction finale (le "sens" dans lequel on repart)
+        const last = res.path[res.path.length - 1];
+        const lp = axialToPixel(last.q, last.r, hexSize);
+        const ang = Math.PI / 3 * (last.dir - 1);
+        cctx.save();
+        cctx.translate(lp.x, lp.y);
+        cctx.rotate(ang);
+        cctx.fillStyle = res.crash ? '#ff5d5d' : '#39d98a';
+        cctx.beginPath();
+        cctx.moveTo(hexSize * 0.75, 0);
+        cctx.lineTo(hexSize * 0.35, -hexSize * 0.26);
+        cctx.lineTo(hexSize * 0.35, hexSize * 0.26);
+        cctx.closePath();
+        cctx.fill();
+        cctx.strokeStyle = '#14161a';
+        cctx.lineWidth = 1.5;
+        cctx.stroke();
+        cctx.restore();
+      }
+    }
+
+    // 8c) Pastilles d'arrivée
+    for (const [k, res] of R.ends.entries()) {
       const pt = axialToPixel(res.q, res.r, hexSize);
+      const isPrev = (k === prevKey);
 
       cctx.beginPath();
-      cctx.arc(pt.x, pt.y, hexSize * 0.35, 0, Math.PI * 2);
+      cctx.arc(pt.x, pt.y, hexSize * (isPrev ? 0.42 : 0.33), 0, Math.PI * 2);
 
-      if (res.crash) {
-        cctx.fillStyle = 'rgba(255,93,93,0.75)';
-      } else if (res.finish) {
-        cctx.fillStyle = 'rgba(247,201,72,0.85)';
-      } else {
-        cctx.fillStyle = 'rgba(57,217,138,0.75)';
-      }
+      if (res.crash) cctx.fillStyle = 'rgba(255,93,93,0.75)';
+      else if (res.finish) cctx.fillStyle = 'rgba(247,201,72,0.9)';
+      else cctx.fillStyle = isPrev ? 'rgba(57,217,138,0.95)' : 'rgba(57,217,138,0.6)';
 
       cctx.fill();
-      cctx.strokeStyle = '#fff';
-      cctx.lineWidth = 1.5;
+      cctx.strokeStyle = isPrev ? '#fff' : 'rgba(255,255,255,0.65)';
+      cctx.lineWidth = isPrev ? 3 : 1.5;
       cctx.stroke();
     }
   }
@@ -3343,6 +3580,7 @@ cv.addEventListener('pointerdown', (e) => {
   const clickY = (e.clientY - rect.top) * scale + co.y - R.panOffsetY - size / 2;
 
   let closest = null;
+  let closestKey = null;
   let minDist = Infinity;
 
   for (const [k, res] of R.ends.entries()) {
@@ -3352,12 +3590,28 @@ cv.addEventListener('pointerdown', (e) => {
     if (d < hexSize * 0.8 && d < minDist) {
       minDist = d;
       closest = res;
+      closestKey = k;
     }
   }
 
-  if (closest) {
-    applyResult(closest);
+  if (!closest) return;
+
+  // 1er appui : on prévisualise le chemin. 2e appui sur la MÊME case : on valide.
+  // Évite les mauvais clics et permet de voir où l'on tourne avant de s'engager.
+  if (R.preview && R.preview.key === closestKey) {
+    const list = R.endPaths.get(closestKey) || [closest];
+    applyResult(list[R.preview.index] || closest);
+    R.preview = null;
+    return;
   }
+
+  R.preview = { key: closestKey, index: 0 };
+  const alts = (R.endPaths.get(closestKey) || []).length;
+  say(alts > 1
+    ? ('Chemin 1/' + alts + ' — ↻ pour changer, retouche la case pour valider')
+    : 'Chemin affiché — retouche la case pour valider', 'go');
+  syncDash();
+  drawRace();
 });
 
 // Resize avec debounce
