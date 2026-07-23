@@ -991,7 +991,10 @@ header.top {
      ÉCRAN COURSE
      ============================================================ -->
 <section class="scr" id="scr-race">
-  <button id="back-menu">← Circuits</button>
+  <div style="display:flex;align-items:center;gap:8px;width:100%">
+    <button id="back-menu" style="flex:1;text-align:left">← Circuits</button>
+    <button id="btn-rules-race" class="btn" style="padding:6px 12px;font-size:12px">📖 Règles</button>
+  </div>
   <div id="trackwrap">
     <div id="pan-hint">🤚 Glisser · Pincer pour zoomer</div>
     <div id="warmup-badge">🔥 TOUR DE CHAUFFE</div>
@@ -2471,63 +2474,76 @@ function processRollResult(val) {
    MENU RÈGLES
    ================================================================ */
 function buildRulesHTML() {
-  const H = (t) => '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:18px 0 7px;font-weight:800">' + t + '</div>';
-  const P = (t) => '<p style="margin-bottom:9px;color:var(--txt)">' + t + '</p>';
-  const NOTE = (t) => '<div style="background:var(--panel);border-left:3px solid var(--line);border-radius:6px;padding:9px 11px;margin:10px 0;font-size:12px;color:var(--mute)">' + t + '</div>';
-
-  // Tableau des rapports, généré depuis les vraies constantes du moteur
+  // Tableau compact des rapports, généré depuis les vraies constantes du moteur
   let rows = '';
   for (let g = 1; g <= 6; g++) {
     rows += '<tr>' +
-      '<td style="padding:5px 6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
-      '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
-      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
-      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
-      '<td style="padding:5px 6px;text-align:center">' + g + '</td>' +
+      '<td style="padding:6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
+      '<td style="padding:6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
+      '<td style="padding:6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
+      '<td style="padding:6px;text-align:center">' + g + '</td>' +
       '</tr>';
   }
 
+  const big = (n, t, d) =>
+    '<div style="display:flex;gap:11px;margin-bottom:14px;align-items:flex-start">' +
+      '<div style="font-size:22px;flex-shrink:0;line-height:1.1">' + n + '</div>' +
+      '<div><div style="font-weight:800;margin-bottom:2px">' + t + '</div>' +
+      '<div style="color:var(--mute);font-size:12.5px;line-height:1.5">' + d + '</div></div>' +
+    '</div>';
+
+  const details = (t, c) =>
+    '<details style="background:var(--panel);border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
+      '<summary style="cursor:pointer;font-weight:700;font-size:12.5px;color:var(--line)">' + t + '</summary>' +
+      '<div style="color:var(--mute);font-size:12.5px;line-height:1.5;margin-top:8px">' + c + '</div>' +
+    '</details>';
+
   return '' +
-  H('🎯 Le but') +
-  P('Boucler tous les tours du circuit en <b>le moins de coups possible</b>. Un « coup » = un lancer de dés. Le meilleur temps, c\'est donc le moins de lancers, pas le plus de vitesse.') +
-  NOTE('En cas d\'égalité, celui qui a le plus de cases de rab sur sa dernière ligne droite passe devant.') +
+  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px;text-align:center">' +
+    '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line)">BOUCLE LE CIRCUIT</div>' +
+    '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line)">EN UN MINIMUM DE COUPS</div>' +
+    '<div style="font-size:11.5px;color:var(--mute);margin-top:5px">1 coup = 1 lancer de dés</div>' +
+  '</div>' +
 
-  H('🎲 Les dés et la vitesse') +
-  P('Tu choisis un rapport de 1 à 6 avant chaque lancer. <b>Le rapport = le nombre de dés lancés</b> : en V5 tu lances 5 dés, tu les additionnes, et le total est le nombre de cases que tu parcours.') +
-  P('Tu ne peux changer que d\'<b>un rapport à la fois</b> (monter ou descendre), jamais sauter de V2 à V5.') +
-  '<table style="width:100%;border-collapse:collapse;font-size:12px;background:var(--panel);border-radius:8px;overflow:hidden;margin:8px 0">' +
-    '<tr style="background:var(--panel2);font-size:10px;letter-spacing:1px;color:var(--mute)">' +
-      '<th style="padding:6px">RAPPORT</th><th style="padding:6px">CASES</th><th style="padding:6px">DÉS</th><th style="padding:6px">⛽</th><th style="padding:6px">INERTIE</th>' +
-    '</tr>' + rows +
-  '</table>' +
+  big('🎲', 'Choisis ta vitesse, lance les dés',
+      'Le rapport choisi (1 à 6) donne le nombre de dés lancés. Leur somme = le nombre de cases parcourues. Tu ne peux changer que d\'un rapport à la fois.') +
 
-  H('🎯 L\'inertie : la clé du pilotage') +
-  P('Une F1 lancée ne tourne pas sur place. C\'est ce que représente la <b>jauge d\'inertie</b>, affichée en course sous la jauge d\'essence.') +
-  P('<b>Tant que la jauge n\'est pas à zéro, tu ne peux pas tourner.</b> Chaque case parcourue en ligne droite la fait baisser de 1. Quand elle atteint 0, tu peux braquer.') +
-  P('Dès que tu tournes, la jauge se <b>recharge au niveau de ton rapport</b> : un virage en V6 la remet à 6, il faudra donc 6 cases droites avant de pouvoir tourner à nouveau. En V1 elle ne remonte qu\'à 1 : tu enchaînes les virages presque librement.') +
-  NOTE('⚠️ La jauge <b>ne se remet jamais à zéro entre deux lancers</b>. Si tu finis ton déplacement avec 4 d\'inertie, tu commences le suivant avec 4. Surveille-la avant de choisir ton rapport.') +
+  big('👆', 'Un appui pour voir, deux pour partir',
+      'Touche une case verte : le chemin s\'affiche en jaune, les ↻ orange marquent les virages, la flèche verte ta direction de sortie. Retouche la même case pour valider.') +
 
-  H('🛣️ Choisir sa trajectoire') +
-  P('Après le lancer, les cases où tu peux atterrir s\'allument en vert. <b>Un premier appui affiche le chemin</b> : la ligne jaune montre la trajectoire exacte, les pastilles orange ↻ marquent les virages, et la flèche verte indique la direction dans laquelle tu repartiras.') +
-  P('<b>Un second appui sur la même case valide</b> le déplacement. Si plusieurs trajectoires mènent à la même case, le bouton ↻ permet de les faire défiler.') +
-  NOTE('Le jeu propose par défaut la trajectoire qui te laisse le plus de route dégagée devant toi — souvent la plus sûre pour le coup suivant.') +
+  big('🎯', 'L\'inertie t\'empêche de tourner',
+      'Plus tu vas vite, plus il faut de ligne droite avant de pouvoir braquer. La jauge descend d\'1 par case droite ; à 0 tu peux tourner. Un virage la recharge au niveau de ton rapport.') +
 
-  H('⛽ L\'essence') +
-  P('Chaque dé lancé consomme <b>1 point d\'essence</b> : rouler en V6 coûte 6 points par coup, en V2 seulement 2. Foncer en permanence vide le réservoir très vite.') +
-  P('À sec, c\'est la <b>panne sèche</b> : tu es obligé de descendre d\'un rapport à chaque coup jusqu\'à l\'arrêt complet. Tu roules sans consommer pendant cette descente, puis le plein se fait automatiquement et tu repars réservoir plein.') +
-  NOTE('Tomber en panne à V6 coûte 6 coups de décélération. À V2, seulement 2. L\'imprudence se paie au prix fort.') +
+  big('⛽', 'Chaque dé coûte de l\'essence',
+      'V6 = 6 dés = 6 points d\'essence par coup. À sec, tu es obligé de ralentir jusqu\'à l\'arrêt avant de refaire le plein.') +
 
-  H('💥 Le crash') +
-  P('Si aucune trajectoire ne permet de rester sur la piste, c\'est le crash : <b>ta tentative est terminée</b> et elle compte comme un essai utilisé. Le score n\'est pas enregistré.') +
-  P('Tu peux <b>relancer les dés une fois par coup</b> si le résultat ne te convient pas, mais ça met la boîte sous tension : au coup suivant tu ne pourras pas monter de rapport.') +
+  big('💥', 'Sortir de piste = éliminé',
+      'Si aucune trajectoire ne reste sur la piste, la tentative est perdue et compte comme un essai.') +
 
-  H('🏁 Points et classement') +
-  P('Sur chaque circuit, le classement est <b>recalculé en direct</b> : le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, et ainsi de suite. Plus il y a de participants, plus la victoire rapporte.') +
-  P('Ces points s\'ajoutent à ton total dans le classement général d\'Arena Sport.') +
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:18px 0 9px;font-weight:800">Pour aller plus loin</div>' +
 
-  H('📍 Secteurs et chrono') +
-  P('Des checkpoints jalonnent le circuit. À chaque passage tu vois ton temps : <b style="color:#b14aed">violet</b> si c\'est le meilleur secteur tous joueurs confondus, <b style="color:var(--ok)">vert</b> si tu bats ton propre record, sinon neutre.') +
-  P('Si l\'organisateur a prévu un <b>tour de chauffe</b>, il ne compte pas : profites-en pour repérer le tracé.');
+  details('📊 Tableau des rapports',
+    '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
+        '<th style="padding:6px">RAPPORT</th><th style="padding:6px">CASES</th><th style="padding:6px">DÉS</th><th style="padding:6px">INERTIE</th>' +
+      '</tr>' + rows +
+    '</table>' +
+    '<div style="margin-top:7px">Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
+
+  details('🎯 L\'inertie en détail',
+    '<b>Le piège à connaître :</b> la jauge ne se remet jamais à zéro entre deux lancers. Si tu termines un déplacement avec 4 d\'inertie, tu commences le suivant avec 4 — donc 4 cases tout droit avant de pouvoir tourner.<br><br>' +
+    'Regarde-la avant de choisir ton rapport : monter en V6 juste avant un virage serré, c\'est le mur assuré.') +
+
+  details('🔄 La relance',
+    'Une fois par coup, tu peux relancer les dés si le résultat ne te plaît pas. En contrepartie, la boîte est sous tension : au coup suivant tu ne pourras pas monter de rapport.') +
+
+  details('🏁 Points et classement',
+    'Le classement du circuit se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte. Ces points s\'ajoutent à ton total Arena Sport.<br><br>' +
+    'À égalité de coups, le plus de cases restantes sur la dernière ligne départage.') +
+
+  details('📍 Secteurs et tour de chauffe',
+    'Aux checkpoints, ton temps s\'affiche en <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, en <b style="color:var(--ok)">vert</b> si tu bats ton record perso.<br><br>' +
+    'Si l\'organisateur a prévu un tour de chauffe, il ne compte pas au score : sers-t\'en pour repérer le tracé.');
 }
 
 function openRules() {
@@ -2548,6 +2564,8 @@ const _br = document.getElementById('btn-rules');
 if (_br) _br.onclick = openRules;
 const _bra = document.getElementById('btn-rules-admin');
 if (_bra) _bra.onclick = openRules;
+const _brr = document.getElementById('btn-rules-race');
+if (_brr) _brr.onclick = openRules;
 
 document.getElementById('roll').onclick = rollDiceAnim;
 
