@@ -170,7 +170,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0 };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -200,8 +200,9 @@ function formulaGridPointsByPseudo() {
   for (const c of circuits) {
     const ranked = circuitRanking(c.id);
     const N = ranked.length;
+    const mult = Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10;
     ranked.forEach((r, i) => {
-      const points = (N - i) * 10;
+      const points = (N - i) * mult;
       const k = norm(r.pseudo);
       if (!totals[k]) totals[k] = { pseudo: r.pseudo, score: 0, date: r.date };
       totals[k].score += points;
@@ -1140,6 +1141,7 @@ app.post('/api/formula/circuit', async (req, res) => {
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
     warmup: Math.max(0, Math.min(5, parseInt(req.body.warmup)||0)),
+    pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     published: !!published,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
@@ -1200,7 +1202,7 @@ app.post('/api/formula/run', async (req, res) => {
     const ranked = circuitRanking(circuitId);
     const N = ranked.length;
     const myRank = ranked.findIndex(r => norm(r.pseudo) === norm(cleanPseudo)) + 1;
-    const points = (N - myRank + 1) * 10;
+    const points = (N - myRank + 1) * (Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10);
 
     rebuildGlobalScores(); // recalcule aussi le classement général avec les points à jour de TOUS les joueurs
     saveData();
@@ -1230,6 +1232,68 @@ app.post('/api/formula/crash', async (req, res) => {
     await saveCircuitRuns(circuitId);
     const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
     res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ---- ADMIN : gestion des scores Formula (lister / modifier / supprimer) ----
+
+// Liste tous les essais d'un circuit
+app.get('/api/formula/admin/runs/:circuitId', (req, res) => {
+  if (req.query.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const runs = circuitRuns[req.params.circuitId] || [];
+  const c = circuits.find(x => x.id === req.params.circuitId);
+  res.json({
+    circuit: c ? { id: c.id, name: c.name, laps: c.laps, attempts: c.attempts, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 } : null,
+    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date })),
+    ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0 }))
+  });
+});
+
+// Modifie un essai (coups / bonus / pseudo)
+app.post('/api/formula/admin/run', async (req, res) => {
+  const { password, circuitId, index, moves, left, pseudo } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const runs = circuitRuns[circuitId];
+  if (!runs || !runs[index]) return res.status(404).json({ error: 'Essai introuvable' });
+  if (pseudo !== undefined) runs[index].pseudo = String(pseudo).trim().slice(0,24);
+  if (moves !== undefined) {
+    const m = parseInt(moves);
+    if (Number.isFinite(m) && m > 0) { runs[index].moves = m; runs[index].crashed = false; }
+  }
+  if (left !== undefined) runs[index].left = Math.max(0, parseInt(left)||0);
+  try {
+    await saveCircuitRuns(circuitId);
+    rebuildGlobalScores(); saveData();
+    res.json({ success: true, ranking: circuitRanking(circuitId) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Supprime un essai précis
+app.delete('/api/formula/admin/run', async (req, res) => {
+  const { password, circuitId, index } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const runs = circuitRuns[circuitId];
+  if (!runs || !runs[index]) return res.status(404).json({ error: 'Essai introuvable' });
+  runs.splice(index, 1);
+  try {
+    await saveCircuitRuns(circuitId);
+    rebuildGlobalScores(); saveData();
+    res.json({ success: true, remaining: runs.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Supprime TOUS les essais d'un joueur sur un circuit (lui rend ses essais)
+app.delete('/api/formula/admin/player', async (req, res) => {
+  const { password, circuitId, pseudo } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const runs = circuitRuns[circuitId];
+  if (!runs) return res.status(404).json({ error: 'Circuit introuvable' });
+  const before = runs.length;
+  circuitRuns[circuitId] = runs.filter(r => norm(r.pseudo) !== norm(pseudo));
+  try {
+    await saveCircuitRuns(circuitId);
+    rebuildGlobalScores(); saveData();
+    res.json({ success: true, removed: before - circuitRuns[circuitId].length });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
