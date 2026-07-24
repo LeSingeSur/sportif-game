@@ -591,7 +591,13 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🔀</div><div class="gt-name">Méli-Mélo</div></div>
       <div class="gt-item"><div class="gt-ico">📦</div><div class="gt-name">À Prendre ou À Laisser</div></div>
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Trivial Pursuit</div></div>
-      <div class="gt-item"><div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div></div>
+      <div class="gt-item" id="gt-formula" style="position:relative">
+        <div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div>
+        <a href="formula-grid.html" style="display:block;margin-top:5px;font-size:9px;font-weight:900;letter-spacing:.5px;
+          background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;border-radius:6px;padding:3px 4px;text-decoration:none">
+          ▶ JOUER
+        </a>
+      </div>
     </div>
     <a href="formula-grid.html" id="fg-banner" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px">
       🏁 FORMULA·GRID — Contre-la-montre
@@ -2414,6 +2420,7 @@ async function finishAccountWithTeam(teamId){
     }
     // Sinon — connexion initiale
     GAME.pseudo=pseudo;
+  localStorage.setItem('fg_pseudo', pseudo); localStorage.setItem('arena_pseudo', pseudo); // pseudo partagé avec Formula·Grid
     const audio=document.getElementById('music-audio');
     if(audio){audio.pause();audio.currentTime=0;}
     document.getElementById('ptag').textContent=pseudo;
@@ -2570,6 +2577,7 @@ async function startGame(){
       const audio=document.getElementById('music-audio');
       if(audio){audio.pause();audio.currentTime=0;}
       GAME.pseudo=pseudo;GAME.team=null;
+  localStorage.setItem('fg_pseudo', pseudo); localStorage.setItem('arena_pseudo', pseudo); // pseudo partagé avec Formula·Grid
       document.getElementById('ptag').textContent=pseudo;
       // Load team info for existing account
       fetch('/api/account/team?pseudo='+encodeURIComponent(pseudo))

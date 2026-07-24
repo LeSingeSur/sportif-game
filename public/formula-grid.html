@@ -1214,6 +1214,9 @@ header.top {
         <button class="btn" id="btn-save-draft">💾 Brouillon</button>
         <button class="btn primary" id="btn-publish">🚀 Publier</button>
       </div>
+      <button class="btn" id="btn-unpublish" style="display:none;background:rgba(255,159,67,.12);border:1px solid rgba(255,159,67,.4);color:#ff9f43">
+        📥 Dépublier (repasser en brouillon)
+      </button>
       <button class="btn danger" id="btn-delete" style="display:none">🗑️ Supprimer</button>
     </div>
 
@@ -4322,6 +4325,7 @@ function newCircuit() {
   document.getElementById('c-fuel-on').checked = true;
   toggleFuelFields();
   document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('btn-unpublish').style.display = 'none';
   document.getElementById('scores-panel').style.display = 'none';
   updateTestLinkBtn();
 
@@ -4385,6 +4389,7 @@ async function loadForEdit(id) {
     document.getElementById('c-fuel-on').checked = (c.fuelEnabled !== false);
     toggleFuelFields();
     document.getElementById('btn-delete').style.display = 'block';
+    document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
     updateTestLinkBtn();
 
     resetView();
@@ -5581,9 +5586,10 @@ async function saveCircuit(publish) {
     E.published = publish;
 
     document.getElementById('btn-delete').style.display = 'block';
+    document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
     updateTestLinkBtn();
 
-    toast(publish ? '✅ Circuit publié !' : '💾 Brouillon enregistré');
+    toast(publish ? '✅ Circuit publié !' : '📥 Circuit dépublié — invisible pour les joueurs');
     loadAdminList();
   } catch (e) {
     toast('Erreur : ' + e.message);
@@ -5591,6 +5597,11 @@ async function saveCircuit(publish) {
 }
 
 document.getElementById('btn-save-draft').onclick = () => {
+  saveCircuit(false);
+};
+
+document.getElementById('btn-unpublish').onclick = () => {
+  if (!confirm('Dépublier ce circuit ?\n\nIl redevient un brouillon : invisible pour les joueurs, mais rien n\'est supprimé (scores, fantôme, réglages conservés).')) return;
   saveCircuit(false);
 };
 
