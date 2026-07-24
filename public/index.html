@@ -591,8 +591,17 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🔀</div><div class="gt-name">Méli-Mélo</div></div>
       <div class="gt-item"><div class="gt-ico">📦</div><div class="gt-name">À Prendre ou À Laisser</div></div>
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Trivial Pursuit</div></div>
-      <div class="gt-item"><div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div></div>
+      <div class="gt-item" id="gt-formula" style="position:relative">
+        <div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div>
+        <a href="formula-grid.html" style="display:block;margin-top:5px;font-size:9px;font-weight:900;letter-spacing:.5px;
+          background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;border-radius:6px;padding:3px 4px;text-decoration:none">
+          ▶ JOUER
+        </a>
+      </div>
     </div>
+    <a href="formula-grid.html" id="fg-banner" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px">
+      🏁 FORMULA·GRID — Contre-la-montre
+    </a>
     <div class="welcome-divider"></div>
     <div class="pseudo-block" style="margin-top:12px">
       <!-- Étape 1: pseudo -->
@@ -659,9 +668,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       </div>
 
       <div style="text-align:center;margin-top:4px">
-        <a href="formula-grid.html" id="fg-play-btn" style="display:none;align-items:center;justify-content:flex-start;gap:10px;margin-bottom:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px">
-          🏁 JOUER FORMULA·GRID
-        </a>
         <button id="btn-lb-open" style="background:none;border:none;color:var(--mute);font-size:13px;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:3px">🏆 Voir le classement</button>
         <!-- Équipe du joueur -->
         <div id="player-team-display" style="display:none;flex-direction:column;align-items:center;gap:6px;margin-top:4px">
@@ -1809,8 +1815,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Règles -->
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">ouvrir une boîte</strong><br>
-      📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
+      5 questions · 20 pts chacune · Après chaque réponse : <strong style="color:#ffb400">ouvrir une boîte</strong> ou <strong style="color:var(--txt)">passer</strong><br>
+      📦 Boîtes : ⚡ Double ou Rien · 🙈 Question Voilée · 🎰 Jackpot · ⚖️ Pari · 🔮 Prophétie
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
     </div>
     <!-- Questions -->
@@ -1836,7 +1842,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Dilemme final -->
     <div id="apol-dilemme" style="display:none;flex-direction:column;gap:14px">
       <div style="text-align:center">
-        <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
+        <div id="apol-dilemme-title" style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
         <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
       </div>
@@ -1845,8 +1851,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button id="apol-continue-btn" onclick="apolContinuePasser()" style="display:none;width:100%!important;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-family:var(--fh);font-size:13px;cursor:pointer;letter-spacing:1px">⏭ PROCHAINE QUESTION</button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
-        Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
-        <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
+        Chaque boîte cache un effet surprise :<br>
+        <span style="color:#f39c12">⚡ Double ou Rien</span> · <span style="color:#b464ff">🙈 Question Voilée</span> · <span style="color:#27ae60">🎰 Jackpot</span> · <span style="color:#64c8ff">⚖️ Pari</span> · <span style="color:#ff6666">🔮 Prophétie</span>
       </div>
       
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
@@ -2279,7 +2285,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div class="done-ico">🏅</div>
   <div class="done-title">TERMINÉ !</div>
   <p class="done-sub">Tu as joué tous les défis disponibles.<br>Reviens bientôt pour de nouveaux sportifs !</p>
-  <a href="formula-grid.html" id="fg-play-btn-2" style="display:none;align-items:center;justify-content:flex-start;gap:10px;margin-top:16px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px;width:100%;max-width:320px"></a>
   <button class="btn btn-s" id="btn-done-lb" style="margin-top:16px">🏆 Voir le classement</button>
 </section>
 
@@ -2416,7 +2421,6 @@ async function finishAccountWithTeam(teamId){
     // Sinon — connexion initiale
     GAME.pseudo=pseudo;
   localStorage.setItem('fg_pseudo', pseudo); localStorage.setItem('arena_pseudo', pseudo); // pseudo partagé avec Formula·Grid
-  refreshFormulaPlayBtn(); // connecté → le bouton Formula·Grid peut s'afficher
     const audio=document.getElementById('music-audio');
     if(audio){audio.pause();audio.currentTime=0;}
     document.getElementById('ptag').textContent=pseudo;
@@ -2574,7 +2578,6 @@ async function startGame(){
       if(audio){audio.pause();audio.currentTime=0;}
       GAME.pseudo=pseudo;GAME.team=null;
   localStorage.setItem('fg_pseudo', pseudo); localStorage.setItem('arena_pseudo', pseudo); // pseudo partagé avec Formula·Grid
-  refreshFormulaPlayBtn(); // connecté → le bouton Formula·Grid peut s'afficher
       document.getElementById('ptag').textContent=pseudo;
       // Load team info for existing account
       fetch('/api/account/team?pseudo='+encodeURIComponent(pseudo))
@@ -2620,7 +2623,7 @@ async function loadAthlete(){
       res = await fetch('/api/athlete?pseudo='+encodeURIComponent(GAME.pseudo));
     }
     const data=await res.json();
-    if(!PREVIEW_MODE && data.done){show('sd');refreshFormulaPlayBtn();return}
+    if(!PREVIEW_MODE && data.done){show('sd');return}
     // Toujours cacher toutes les zones avant de dispatcher
     hideAllZones();
     document.getElementById('std-ans-area').style.display='none';
@@ -7741,6 +7744,43 @@ async function showTab(tabId,list){
       });
       return;
     }
+    // Onglet Formula·Grid : circuits + classements + lien pour jouer
+    if(tabId==='formula-grid'){
+      const res=await fetch('/api/formula/circuits');
+      const circuits=await res.json();
+      list.innerHTML='';
+      if(!circuits||!circuits.length){list.innerHTML='<div class="empty">Aucun circuit publié. 🏁</div>';return}
+      for(const c of circuits){
+        let lb=null;
+        try{
+          const r=await fetch('/api/formula/leaderboard/'+encodeURIComponent(c.id)+'?pseudo='+encodeURIComponent(GAME.pseudo||''));
+          lb=await r.json();
+        }catch(e){}
+        const wrap=document.createElement('div');
+        wrap.style.cssText='background:var(--c2);border-radius:12px;padding:12px;margin-bottom:10px';
+        const lapTxt=c.laps+' tour'+(c.laps>1?'s':'');
+        const attLeft=lb&&typeof lb.attemptsLeft==='number'?lb.attemptsLeft:null;
+        const attTxt=attLeft===null?(c.attempts+' essai'+(c.attempts>1?'s':'')):(attLeft>0?attLeft+' essai'+(attLeft>1?'s':'')+' restant'+(attLeft>1?'s':''):'essais épuisés');
+        let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+          '<div style="font-size:22px">🏁</div>'+
+          '<div style="flex:1"><div style="font-weight:900;font-style:italic">'+esc(c.name||'Circuit')+'</div>'+
+          '<div style="font-size:11px;color:var(--mute)">'+lapTxt+' · '+attTxt+(lb&&lb.best?' · ton meilleur : '+lb.best.moves+' coups':'')+(c.laps>1&&lb&&lb.worldBestLap?' · 🏆 tour : '+lb.worldBestLap.lap+' ('+esc(lb.worldBestLap.pseudo)+')':'')+'</div></div>'+
+          '<a href="formula-grid.html" style="font-size:11px;font-weight:900;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;padding:5px 10px;border-radius:99px;text-decoration:none">'+(attLeft===0?'VOIR':'JOUER')+' ›</a></div>';
+        const top=(lb&&lb.top)||[];
+        if(top.length){
+          top.slice(0,5).forEach((e,i)=>{
+            const ico=['🥇','🥈','🥉'][i]||(i+1)+'.';
+            html+='<div style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px">'+
+              '<span style="min-width:24px">'+ico+'</span>'+
+              '<span style="flex:1">'+esc(e.pseudo)+'</span>'+
+              '<span style="font-family:var(--fh)">'+e.moves+' <span style="font-size:10px;color:var(--mute)">coups</span></span></div>';
+          });
+        } else html+='<div style="font-size:12px;color:var(--mute);text-align:center;padding:4px">Aucun temps validé encore. 🚀</div>';
+        wrap.innerHTML=html;
+        list.appendChild(wrap);
+      }
+      return;
+    }
     const url=tabId==='global'
       ?'/api/scores/global?pseudo='+encodeURIComponent(GAME.pseudo||'')
       :'/api/scores/'+tabId+'?pseudo='+encodeURIComponent(GAME.pseudo||'');
@@ -7778,19 +7818,21 @@ function confetti(){
 
 function shake(id){const el=document.getElementById(id);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),400)}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-function refreshFormulaPlayBtn(){
-  // Le bouton existe sur plusieurs écrans (menu connecté, écran "terminé") :
-  // on met à jour toutes ses instances en une fois.
-  const btns=['fg-play-btn','fg-play-btn-2'].map(id=>document.getElementById(id)).filter(Boolean);
-  if(!btns.length) return;
-  // Le bouton ne s'affiche QUE si le joueur est connecté — le score doit
-  // toujours être rattaché à un compte, comme pour les autres mini-jeux.
-  if(!GAME.pseudo){ btns.forEach(b=>b.style.display='none'); return; }
-
+window.addEventListener('load',()=>{
+  if(PREVIEW_MODE){
+    show('sg');
+    loadAthlete();
+  } else {
+    setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
+  }
   fetch('/api/formula/circuits').then(r=>r.json()).then(list=>{
-    if(!list||!list.length){ btns.forEach(b=>b.style.display='none'); return; }
+    if(!list||!list.length) return;
+    const banner=document.getElementById('fg-banner');
+    if(!banner) return;
 
+    // Circuit le plus récent = celui qu'on met en avant
     const c=list[list.length-1];
+    const pseudo=(localStorage.getItem('arena_pseudo')||localStorage.getItem('fg_pseudo')||'').trim();
 
     function paint(attemptsLeft){
       const lapTxt=c.laps+' tour'+(c.laps>1?'s':'');
@@ -7799,47 +7841,38 @@ function refreshFormulaPlayBtn(){
       else if(attemptsLeft>0) sub+=' · '+attemptsLeft+' essai'+(attemptsLeft>1?'s':'')+' restant'+(attemptsLeft>1?'s':'');
       else sub+=' · essais épuisés';
       const done=(attemptsLeft===0);
-      const html=
-        '<div style="font-size:26px">🏁</div>'+
-        '<div style="flex:1;text-align:left;line-height:1.25">'+
-          '<div style="font-size:14px;font-weight:900;font-style:italic">FORMULA·GRID</div>'+
-          '<div style="font-size:11px;font-weight:700;opacity:.85">'+
-            (c.name?String(c.name).replace(/[<>&]/g,''):'Contre-la-montre')+' · '+sub+
+      banner.innerHTML=
+        '<div style="display:flex;align-items:center;gap:10px;width:100%">'+
+          '<div style="font-size:26px">🏁</div>'+
+          '<div style="flex:1;text-align:left;line-height:1.25">'+
+            '<div style="font-size:14px;font-weight:900;font-style:italic">FORMULA·GRID</div>'+
+            '<div style="font-size:11px;font-weight:700;opacity:.85">'+
+              (c.name?String(c.name).replace(/[<>&]/g,''):'Contre-la-montre')+' · '+sub+
+            '</div>'+
           '</div>'+
-        '</div>'+
-        '<div style="font-size:11px;font-weight:900;background:rgba(20,22,26,.22);padding:4px 9px;border-radius:99px">'+
-          (done?'VOIR':'JOUER')+' ›</div>';
-      btns.forEach(btn=>{
-        btn.innerHTML=html;
-        btn.style.display='flex';
-        btn.style.opacity=done?'0.75':'1';
-        if(!done){
-          btn.style.animation='fgPulse 2.4s ease-in-out infinite';
+          '<div style="font-size:11px;font-weight:900;background:rgba(20,22,26,.22);padding:4px 9px;border-radius:99px">'+
+            (done?'VOIR':'JOUER')+' ›</div>'+
+        '</div>';
+      banner.style.display='flex';
+      banner.style.opacity=done?'0.75':'1';
+      if(!done){
+        banner.style.animation='fgPulse 2.4s ease-in-out infinite';
+        if(!document.getElementById('fg-pulse-style')){
+          const st=document.createElement('style'); st.id='fg-pulse-style';
+          st.textContent='@keyframes fgPulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.45)}50%{box-shadow:0 0 0 8px rgba(247,201,72,0)}}';
+          document.head.appendChild(st);
         }
-      });
-      if(!done && !document.getElementById('fg-pulse-style')){
-        const st=document.createElement('style'); st.id='fg-pulse-style';
-        st.textContent='@keyframes fgPulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.45)}50%{box-shadow:0 0 0 8px rgba(247,201,72,0)}}';
-        document.head.appendChild(st);
       }
     }
 
     paint(null);
-    fetch('/api/formula/leaderboard/'+c.id+'?pseudo='+encodeURIComponent(GAME.pseudo))
-      .then(r=>r.json())
-      .then(b=>{ if(b&&typeof b.attemptsLeft==='number') paint(b.attemptsLeft); })
-      .catch(()=>{});
+    if(pseudo){
+      fetch('/api/formula/leaderboard/'+c.id+'?pseudo='+encodeURIComponent(pseudo))
+        .then(r=>r.json())
+        .then(b=>{ if(b&&typeof b.attemptsLeft==='number') paint(b.attemptsLeft); })
+        .catch(()=>{});
+    }
   }).catch(()=>{});
-}
-
-window.addEventListener('load',()=>{
-  if(PREVIEW_MODE){
-    show('sg');
-    loadAthlete();
-  } else {
-    setTimeout(()=>document.getElementById('pseudo-in').focus(),300);
-  }
-  refreshFormulaPlayBtn();
 });
 
 // --------------------------------------------------------------------------
@@ -11153,7 +11186,7 @@ const APOL={
   data:null, qIdx:0, score:0, done:false, _isFinal:false,
   effect:null, jackpotStreak:0, prophecy:null,
   voileeActive:false, parisActive:false,
-  _pendingAnswer:null, _pendingPari:null, _wasVoilee:false,
+  _pendingAnswer:null, _pendingPari:null, _bonusA:null, _wasVoilee:false,
   boxItems:[
     {id:'double',    label:'Double ou Rien',    emoji:'⚡', color:'#f39c12'},
     {id:'voilee',    label:'Question Voilée',   emoji:'🙈', color:'#8e44ad'},
@@ -11380,8 +11413,9 @@ function apolRevealEffect(item){
   };
 
   if(item.id==='double'){
-    const bonusQ=APOL.data.bonusQ;
+    const bonusQ=APOL.data.bonusQ, bonusA=APOL.data.bonusA;
     if(!bonusQ){noEffect('pas de question bonus configurée');return;}
+    APOL._bonusA=bonusA||'';
     if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#f39c12;margin-bottom:8px">⚡ DOUBLE OU RIEN — +40 ou −20</div>'+
       '<div style="font-size:15px;font-weight:800;color:var(--txt);background:rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px">'+bonusQ+'</div>'+
       '<div style="display:flex;gap:8px"><input type="text" id="apol-bonus-in" placeholder="Ta réponse…" autocomplete="off" style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(243,156,18,.4);color:var(--txt);font-size:15px;border-radius:8px;padding:10px;outline:none" onkeydown="if(event.key===\'Enter\')apolSubmitDouble()">'+
@@ -11438,37 +11472,25 @@ function apolSetProphetie(prediction,remaining){
   if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=apolContinuePasser;}
 }
 
-async function apolSubmitDouble(){
+function apolSubmitDouble(){
   const inp=document.getElementById('apol-bonus-in');
   const val=(inp?.value||'').trim(); if(!val)return;
-  if(inp)inp.disabled=true;
-  let correct=false, revealedAnswer='';
-  try{
-    const r=await fetch('/api/apol-bonus-check',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({athleteId:GAME.athleteId,answer:val})});
-    const d=await r.json();
-    correct=!!d.correct; revealedAnswer=d.answer||'';
-  }catch(e){ correct=false; }
+  const correct=levenshtein(normStr(val),normStr(APOL._bonusA))<=1;
   const fb=document.getElementById('apol-bonus-fb');
   if(correct){APOL.score=Math.min(200,APOL.score+40);if(fb){fb.textContent='✅ +40 pts';fb.style.color='#00dc78';}}
-  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+revealedAnswer+'</strong> · −20 pts';fb.style.color='var(--red)';}}
+  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+APOL._bonusA+'</strong> · −20 pts';fb.style.color='var(--red)';}}
   document.getElementById('apol-score').textContent=APOL.score;
   GAME.score=APOL.score; setScore(APOL.score,false);
+  if(inp)inp.disabled=true;
   setTimeout(apolContinuePasser,1500);
 }
 
-async function apolResolveAnswer(effectApplied){
+function apolResolveAnswer(effectApplied){
   const qs=APOL.data.apolQuestions||[];
   const q=qs[APOL.qIdx];
   const val=APOL._pendingAnswer||'';
-  // Vérification côté serveur : la réponse n'est jamais connue du navigateur avant ce moment
-  let correct=false, revealedAnswer='';
-  try{
-    const r=await fetch('/api/apol-check',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({athleteId:GAME.athleteId,qIdx:APOL.qIdx,answer:val})});
-    const d=await r.json();
-    correct=!!d.correct; revealedAnswer=d.answer||'';
-  }catch(e){ correct=false; }
+  const tol=q.tol!=null?parseInt(q.tol):1;
+  const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
   const pts=APOL._wasVoilee?30:20;
   let delta=correct?pts:0, bonusMsg='';
 
@@ -11498,7 +11520,7 @@ async function apolResolveAnswer(effectApplied){
 
   const res=document.getElementById('apol-box-result');
   const col=correct?'#00dc78':'var(--red)';
-  if(res) res.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.05)">'+(correct?'✅ Bonne réponse !':'❌ Faux ! C\'était <strong>'+revealedAnswer+'</strong>')+' <span style="color:'+col+'">'+(correct?'+'+pts+' pts':'')+bonusMsg+'</span></div>';
+  if(res) res.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.05)">'+(correct?'✅ Bonne réponse !':'❌ Faux ! C\'était <strong>'+q.answer+'</strong>')+' <span style="color:'+col+'">'+(correct?'+'+pts+' pts':'')+bonusMsg+'</span></div>';
 
   APOL.qIdx++;
   const isFinal=(APOL.qIdx>=qs.length);
@@ -11538,7 +11560,7 @@ function setupNageSync(data){
   document.getElementById('ns-zone').style.display='flex';
   // Règles
   const fb=document.getElementById('ns-fb');
-  if(fb){fb.style.color='var(--mute)';fb.innerHTML='<div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.8;margin-bottom:4px">🏊 Clique un sportif puis un couloir pour le placer.<br>✅ <strong>20 pts</strong> par bonne assoc. · <strong>3 essais</strong> max<br>Essai 1 = 20pts · Essai 2 = 15pts · Essai 3 = 10pts<br>Après chaque essai : tu sais <em>combien</em> sont corrects, pas lesquels.</div>';}
+  if(fb){fb.style.color='var(--mute)';fb.innerHTML='<div style="background:var(--c2);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.8;margin-bottom:4px">🏊 Clique un sportif puis un couloir pour le placer.<br>✅ <strong>100 ÷ nb sportifs</strong> pts par bonne assoc. · <strong>3 essais</strong> max<br>Essai 1 = 100% · Essai 2 = −25% · Essai 3 = −50%<br>Après chaque essai : tu sais <em>combien</em> sont corrects, pas lesquels.</div>';}
   // Chrono 60s
   let t=60;
   const cEl=document.getElementById('ns-chrono');

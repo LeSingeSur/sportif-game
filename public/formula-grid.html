@@ -1006,7 +1006,8 @@ header.top {
   </div>
   <div id="trackwrap">
     <div id="pan-hint">🤚 Glisser · Pincer pour zoomer</div>
-    <div id="warmup-badge">🔥 TOUR DE CHAUFFE</div>
+    <div id="warmup-badge">🔧 ESSAIS LIBRES</div>
+    <button id="btn-end-practice" style="display:none;position:absolute;top:76px;left:50%;transform:translateX(-50%);z-index:6;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:900;font-style:italic;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4)">🏁 FIN DES ESSAIS</button>
     <div id="delta-hud" style="position:absolute;top:12px;right:12px;z-index:6;display:none;font-family:ui-monospace,monospace;font-size:12px;font-weight:900;padding:5px 10px;border-radius:8px;background:rgba(26,29,35,.92);border:1px solid #2c3038"></div>
     <div id="radio-hud" style="position:absolute;left:12px;top:12px;right:96px;z-index:7;display:none;pointer-events:none">
       <div style="display:flex;align-items:flex-start;gap:7px;background:rgba(12,14,18,.93);border-left:3px solid var(--line);border-radius:8px;padding:7px 9px">
@@ -1191,8 +1192,11 @@ header.top {
       </div>
       <div class="row">
         <div class="field">
-          <label>Tour de chauffe</label>
-          <input type="number" id="c-warmup" min="0" max="3" value="0">
+          <label>Essais libres</label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
+            <input type="checkbox" id="c-warmup" style="width:18px;height:18px;accent-color:#f7c948">
+            <span style="font-size:12px;color:var(--mute)">Avant la course, jusqu'à "Fin des essais"</span>
+          </label>
         </div>
         <div class="field">
           <label>Points × joueur</label>
@@ -1555,7 +1559,7 @@ async function loadCircuitList() {
 
       const lapsTxt = c.laps + ' tour' + (c.laps > 1 ? 's' : '');
       const attTxt = c.attempts + ' essai' + (c.attempts > 1 ? 's' : '');
-      const warmTxt = c.warmup ? ' · 🔥' : '';
+      const warmTxt = (c.freePractice || c.warmup) ? ' · 🔧 essais libres' : '';
 
       el.innerHTML =
         '<div class="ico">🏁</div>' +
@@ -1593,6 +1597,8 @@ async function openCircuit(id) {
 
     // Meilleur temps tous joueurs (pour le delta en course)
     circuit.worldBest = board.worldBest || null;
+    // Mes meilleurs splits enregistrés côté serveur (fusionnés avec le localStorage)
+    circuit.myBestCp = board.myBestCp || null;
 
     startRace(circuit, pseudo, board.attemptsLeft, false);
   } catch (e) {
@@ -1700,7 +1706,7 @@ function buildCheckpoints() {
   return out;
 }
 
-function startRace(circuit, pseudo, attemptsLeft, testMode) {
+function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // Identifiants
   R.circuit = circuit;
   R.pseudo = pseudo;
@@ -1724,10 +1730,13 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.lapCount = 0;
   R.targetLaps = circuit.laps;
 
-  // Warmup
-  R.warmupLaps = circuit.warmup || 0;
+  // Essais libres (ex tours de chauffe) : activés par l'admin, terminés par le joueur
+  R.freePractice = !skipPractice && !!(circuit.freePractice || (circuit.warmup||0) > 0);
   R.warmupDone = 0;
-  R.isWarmup = R.warmupLaps > 0;
+  R.isWarmup = R.freePractice;
+
+  // Temps de passage de chaque tour complet (nb de coups cumulés à la fin du tour N)
+  R.lapMoves = [];
 
   // Dé & budget
   R.rolled = null;
@@ -1798,18 +1807,25 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   // puis on les numérote dans l'ORDRE OÙ ON LES RENCONTRE sur le circuit (pas l'ordre de la grille).
   R.checkpoints = buildCheckpoints();
 
-  // Meilleurs splits (localStorage)
+  // Meilleurs splits : localStorage + serveur (min des deux)
   R.bestCpTimes = JSON.parse(
     localStorage.getItem('fg_bestcp_' + circuit.id) || '[]'
   );
+  if (Array.isArray(circuit.myBestCp)) {
+    circuit.myBestCp.forEach((v, i) => {
+      if (v != null && (R.bestCpTimes[i] == null || v < R.bestCpTimes[i])) R.bestCpTimes[i] = v;
+    });
+  }
 
   // UI
   document.getElementById('finish').classList.remove('on');
   document.getElementById('warmup-badge').style.display =
     R.isWarmup ? 'block' : 'none';
+  document.getElementById('btn-end-practice').style.display =
+    R.isWarmup ? 'block' : 'none';
 
   if (R.isWarmup) {
-    say('🔥 Tour de chauffe — les temps ne comptent pas', 'warmup');
+    say('🔧 Essais libres — roule autant que tu veux, puis clique 🏁 FIN DES ESSAIS', 'warmup');
   } else {
     say('Départ arrêté : Sélectionne la vitesse 1 !');
   }
@@ -1828,7 +1844,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
     runStartLights(() => {
       R.lightsDone = true;
       syncDash();
-      if (R.isWarmup) say('🔥 Tour de chauffe — les temps ne comptent pas', 'warmup');
+      if (R.isWarmup) say('🔧 Essais libres — clique 🏁 FIN DES ESSAIS quand tu es prêt', 'warmup');
       else say('C\'est parti ! Sélectionne la vitesse 1.', 'go');
     });
   });
@@ -1928,6 +1944,13 @@ function updateZoomIndicator() {
 }
 
 document.getElementById('center-btn').onclick = centerOnCar;
+
+// Essais libres : le joueur décide quand lancer la vraie course
+document.getElementById('btn-end-practice').onclick = () => {
+  if (!R.isWarmup) return;
+  toast('🏁 Fin des essais — départ de la course !');
+  startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode, true);
+};
 
 /* ================================================================
    COURSE — PATHFINDING HEXAGONAL
@@ -2574,7 +2597,7 @@ function processRollResult(val) {
   R.results = getValidPaths(
     R.q, R.r, R.dir,
     R.budget, R.gear,
-    R.lapCount, R.targetLaps
+    R.isWarmup ? 0 : R.lapCount, R.targetLaps
   );
 
   // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
@@ -3068,9 +3091,9 @@ document.getElementById('btn-restart').onclick = async () => {
   const enChauffe = !!R.isWarmup;
 
   if (enChauffe) {
-    if (!confirm('Recommencer le tour de chauffe ?\n\nGratuit : la chauffe ne compte pas.')) return;
+    if (!confirm('Repartir de la ligne de départ ?\n\nGratuit : les essais libres ne comptent pas.')) return;
     startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode);
-    toast('🔄 Tour de chauffe relancé');
+    toast('🔄 Essais libres relancés');
     return;
   }
 
@@ -3228,6 +3251,8 @@ function finalizeMove(r) {
   if (r.inertiaEnd !== undefined) R.inertia = r.inertiaEnd;
 
   R.lapCount += r.lapsGained || 0;
+  // Temps du tour complet (course uniquement, pas si le coup se termine en crash)
+  if (r.lapsGained && !R.isWarmup && !r.crash) R.lapMoves[R.lapCount - 1] = R.turn;
 
   // Trace par coup (pour le fantôme du prochain essai)
   R.turnPositions.push({ q: R.q, r: R.r, dir: R.dir });
@@ -3268,22 +3293,11 @@ function finalizeMove(r) {
     }
   }
 
-  // Gestion warmup
+  // Essais libres : on boucle librement, seule la FIN DES ESSAIS lance la course
   if (r.lapsGained && R.isWarmup) {
     R.warmupDone++;
-
-    if (R.warmupDone >= R.warmupLaps) {
-      R.isWarmup = false;
-      R.lapCount = 0;
-      R.turn = 0;
-      R.cells = 0;
-      R.fullTrail = [];
-      R.cpTimes = [];
-      document.getElementById('warmup-badge').style.display = 'none';
-      say('🏁 Chauffe terminée — LA COURSE COMMENCE !', 'go');
-    } else {
-      say('🔥 Chauffe ' + R.warmupDone + '/' + R.warmupLaps, 'warmup');
-    }
+    R.lapCount = 0;
+    say('🔧 Essais libres — tour ' + R.warmupDone + ' bouclé · clique 🏁 FIN DES ESSAIS quand tu es prêt', 'warmup');
     R.pendingGear = R.gear;
     R.rolled = null;
     R.budget = null;
@@ -3298,8 +3312,8 @@ function finalizeMove(r) {
     return;
   }
 
-  // Arrivée
-  if (r.finish) {
+  // Arrivée (jamais pendant les essais libres)
+  if (r.finish && !R.isWarmup) {
     finishRace(r);
     return;
   }
@@ -3316,6 +3330,7 @@ function finalizeMove(r) {
     R.lapCount = cp.lapCount;
     R.leftFinishZone = cp.leftFinishZone;
     R.cpTimes = (cp.cpTimes || []).slice();
+    R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
 
     // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
@@ -3458,13 +3473,20 @@ async function finishRace(r) {
 
   // Fantôme : mémorise ce run s'il est meilleur que le précédent
   if (!R.isWarmup) saveGhostIfBetter(R.circuit.id, R.turnPositions, R.turn);
+  // Meilleur tour (courses multi-tours)
+  let bestLapTxt = '';
+  if (R.targetLaps > 1 && R.lapMoves.length) {
+    const durs = R.lapMoves.map((m, i) => m - (i ? R.lapMoves[i - 1] : 0)).filter(d => Number.isFinite(d) && d > 0);
+    if (durs.length) bestLapTxt = ' · 🏆 Meilleur tour : ' + Math.min(...durs) + ' coups';
+  }
+
   showLapFlag('ARRIVÉE !', R.turn + ' coups');
   radio('finish');
 
   // UI
   document.getElementById('fh2').textContent = 'ARRIVÉE !';
   document.getElementById('fstats').textContent =
-    R.turn + ' coup(s) · +' + r.left + ' cases bonus';
+    R.turn + ' coup(s) · +' + r.left + ' cases bonus' + bestLapTxt;
   document.getElementById('fsub').textContent =
     'Score = nombre de coups. Surplus = départage.';
   document.getElementById('flb').innerHTML = '';
@@ -3532,7 +3554,8 @@ async function finishRace(r) {
         moves: R.turn,
         left: r.left,
         laps: R.targetLaps,
-        cpTimes: R.cpTimes
+        cpTimes: R.cpTimes,
+        lapMoves: R.lapMoves
       })
     });
 
@@ -4319,7 +4342,7 @@ function newCircuit() {
   document.getElementById('c-attempts').value = 3;
   document.getElementById('c-width').value = 3;
   document.getElementById('c-turns').value = 6;
-  document.getElementById('c-warmup').value = 0;
+  document.getElementById('c-warmup').checked = false;
   document.getElementById('c-mult').value = 10;
   document.getElementById('c-fuel').value = 0;
   document.getElementById('c-fuel-on').checked = true;
@@ -4383,7 +4406,7 @@ async function loadForEdit(id) {
     document.getElementById('c-name').value = c.name;
     document.getElementById('c-laps').value = c.laps;
     document.getElementById('c-attempts').value = c.attempts;
-    document.getElementById('c-warmup').value = c.warmup || 0;
+    document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
     document.getElementById('c-fuel').value = c.fuelCapacity || 0;
     document.getElementById('c-fuel-on').checked = (c.fuelEnabled !== false);
@@ -5252,7 +5275,7 @@ document.getElementById('btn-test-mode').onclick = () => {
     },
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
-    warmup: parseInt(document.getElementById('c-warmup').value) || 0,
+    freePractice: document.getElementById('c-warmup').checked,
     fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
     fuelEnabled: document.getElementById('c-fuel-on').checked
   }, 'TesteurAdmin', 99, true);
@@ -5568,7 +5591,7 @@ async function saveCircuit(publish) {
     },
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
-    warmup: parseInt(document.getElementById('c-warmup').value) || 0,
+    freePractice: document.getElementById('c-warmup').checked,
     pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
     fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
     fuelEnabled: document.getElementById('c-fuel-on').checked,
