@@ -1066,6 +1066,9 @@ header.top {
     ↻ Autre trajectoire vers cette case
   </button>
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
+  <button id="btn-restart" class="btn" style="background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.35);color:var(--crash);font-size:12px;padding:9px">
+    🔄 Recommencer la course
+  </button>
   <div id="speedometer">
     <div id="speed-warning"></div>
     <div id="speed-label">
@@ -1093,7 +1096,6 @@ header.top {
   <div class="eyebrow" id="dice-title" style="color:var(--line);letter-spacing:4px">LANCER DES DÉS...</div>
   <div id="dice-row" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:330px"></div>
   <div id="dice-sum" style="font-family:ui-monospace,monospace;font-size:15px;font-weight:900;color:var(--txt);letter-spacing:1px"></div>
-  <div class="dice-cube" id="dice-box-val">?</div>
 </div>
 
 <!-- ============================================================
@@ -1138,7 +1140,7 @@ header.top {
       <div class="tool sel" data-tool="piste">🛣️<span class="tname">Piste</span></div>
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
       <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
-      <div class="tool" data-tool="checkpoint">📍<span class="tname">Check</span></div>
+      <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
@@ -1182,6 +1184,13 @@ header.top {
           <input type="number" id="c-turns" min="3" max="12" value="6">
         </div>
       </div>
+      <div class="field">
+        <label>Longueur du tour (cases)</label>
+        <input type="number" id="c-length" min="60" max="280" step="10" value="180">
+        <div style="font-size:10px;color:var(--mute);margin-top:4px">
+          Longueur approximative d'un tour (60 à 280 cases). Tu places ensuite 🏁 arrivée, 📍 checkpoints et 🏎️ départ.
+        </div>
+      </div>
       <div class="row">
         <div class="field">
           <label>Tour de chauffe</label>
@@ -1193,9 +1202,15 @@ header.top {
         </div>
       </div>
       <div class="field">
-        <label>Essence (0 = automatique)</label>
-        <input type="number" id="c-fuel" min="0" max="9999" value="0">
-        <div id="fuel-hint" style="font-size:10px;color:var(--mute);margin-top:4px"></div>
+        <label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--txt)">
+          <input type="checkbox" id="c-fuel-on" checked style="width:18px;height:18px;accent-color:var(--line)">
+          ⛽ Gérer l'essence (sinon illimitée)
+        </label>
+        <div id="fuel-fields" style="margin-top:7px">
+          <label>Réservoir (0 = automatique)</label>
+          <input type="number" id="c-fuel" min="0" max="9999" value="0">
+          <div id="fuel-hint" style="font-size:10px;color:var(--mute);margin-top:4px"></div>
+        </div>
       </div>
       <div class="row" style="margin-top:2px">
         <button class="btn" id="btn-save-draft">💾 Brouillon</button>
@@ -1226,6 +1241,20 @@ header.top {
       <input type="range" id="threshold-slider" min="0" max="255" value="128">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute)">
         <span>0</span><span id="threshold-val">128</span><span>255</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Taille du circuit</label>
+      <input type="range" id="size-slider" min="40" max="100" value="85">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute)">
+        <span>petit</span><span id="size-val">85 %</span><span>grand</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Largeur de piste</label>
+      <input type="range" id="width-slider" min="0" max="4" value="1">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute)">
+        <span>fine</span><span id="width-val">+1</span><span>large</span>
       </div>
     </div>
     <div class="checkbox-field">
@@ -1265,7 +1294,19 @@ header.top {
     <h1 style="font-size:15px;flex:1">📖 RÈGLES<em style="color:var(--line)"> DU JEU</em></h1>
     <button class="btn" id="rules-close" style="padding:8px 14px">✕ Fermer</button>
   </div>
-  <div id="rules-body" style="flex:1;overflow-y:auto;padding:16px;max-width:560px;width:100%;margin:0 auto;font-size:13px;line-height:1.55"></div>
+  <div style="flex:1;overflow-y:auto;padding:16px;max-width:560px;width:100%;margin:0 auto">
+    <div style="background:var(--panel);border-radius:10px;padding:11px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+        <span style="font-size:10px;letter-spacing:2px;color:var(--line);font-weight:800;flex:1">▶ DÉMO ANIMÉE</span>
+        <button class="btn" id="tuto-prev" style="padding:4px 9px;font-size:11px">‹</button>
+        <span id="tuto-step" style="font-family:ui-monospace,monospace;font-size:11px;color:var(--mute);min-width:30px;text-align:center">1/4</span>
+        <button class="btn" id="tuto-next" style="padding:4px 9px;font-size:11px">›</button>
+      </div>
+      <canvas id="tuto-cv" style="width:100%;aspect-ratio:1.6;background:#2d5016;border-radius:8px;display:block"></canvas>
+      <div id="tuto-txt" style="font-size:12.5px;color:var(--txt);margin-top:9px;line-height:1.45;min-height:34px"></div>
+    </div>
+    <div id="rules-body" style="font-size:13px;line-height:1.55"></div>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -1318,26 +1359,17 @@ const DICE_POOLS = [
   [[4, 5], [4, 5], [3, 4], [3, 4], [3, 4], [4, 5, 8]] // V6 : 6 dés (21-30)
 ];
 
-// Espacement : cases droites obligatoires ENTRE deux virages (= rapport - 1)
-const COOLDOWN = [0, 0, 1, 2, 3, 4, 5];
-
 // Inertie : cases droites obligatoires AU DÉBUT du mouvement (= rapport - 1).
 // Plus le rapport est haut, plus la voiture est "engagée" et ne peut pas esquiver.
 const INERTIA = [0, 0, 1, 2, 3, 4, 5];
 
-// PLAFOND D'INERTIE — réglage de jouabilité.
-// Au-delà de 1, la voiture qui finit son mouvement face à un mur n'a plus AUCUNE
-// manœuvre possible au coup suivant (crash inévitable, invisible pour le joueur).
-// Mesuré sur 12 courses : plafond 0 → 11/12 terminées · 1 → 9/12 · 2 → 1/12 · 3+ → 0/12.
-// Le "poids" de la voiture est déjà porté par le coût de braquage (pivot = rapport).
-const INERTIA_CAP = 1; // (obsolète — conservé pour compatibilité)
 
 // Vitesse affichée par rapport (km/h)
 const GEAR_KMH = [0, 50, 100, 160, 220, 290, 350];
 
 // Dimensions de la grille éditeur
-const EW = 100;
-const EH = 100;
+const EW = 180;
+const EH = 180;
 
 // Limites de zoom
 const ZOOM_MIN = 0.15;
@@ -1441,7 +1473,7 @@ function hexGridExtent(w, h) {
   };
 }
 
-// Perpendiculaire en espace pixel (pour lignes F/CP correctes)
+// Perpendiculaire en espace pixel (pour lignes arrivée / checkpoint correctes)
 function perpInPixel(q0, r0, q1, r1) {
   const p0 = axialToPixel(q0, r0, 1);
   const p1 = axialToPixel(q1, r1, 1);
@@ -1712,7 +1744,8 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.stressed = false;
 
   // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
-  R.fuelMax = fuelCapacityFor(circuit);
+  R.fuelEnabled = circuit.fuelEnabled !== false;
+  R.fuelMax = R.fuelEnabled ? fuelCapacityFor(circuit) : Infinity;
   R.fuel = R.fuelMax;
   R.outOfFuel = false;   // true = décélération forcée en cours (roule sans consommer)
   R.refueling = false;   // true pendant la phase d'arrêt progressif
@@ -2322,6 +2355,17 @@ function updateFuelGauge() {
   const el = document.getElementById('fuel-val');
   const bar = document.getElementById('fuel-bar');
   if (!el || !bar) return;
+
+  // Essence désactivée par l'organisateur : réservoir infini
+  if (!R.fuelEnabled) {
+    el.textContent = '∞ ILLIMITÉE';
+    el.style.color = 'var(--mute)';
+    bar.style.width = '100%';
+    bar.style.background = 'linear-gradient(90deg,#39d98a,#4ac7ff)';
+    bar.style.opacity = '0.35';
+    return;
+  }
+  bar.style.opacity = '1';
   const pct = R.fuelMax ? (R.fuel / R.fuelMax) * 100 : 0;
   el.textContent = R.fuel + ' / ' + R.fuelMax;
   bar.style.width = pct + '%';
@@ -2395,6 +2439,15 @@ function syncDash() {
   rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || (R.pendingGear === 0 && !refuelStop));
   rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : (R.lightsDone ? '🎲 LANCER LE DÉ' : '🚦 Attends les feux…');
 
+  const rs = document.getElementById('btn-restart');
+  if (rs) {
+    // Masqué à l'arrivée et pendant les animations
+    rs.style.display = (R.phase === 'done' || R.animating) ? 'none' : 'block';
+    rs.textContent = R.isWarmup
+      ? '🔄 Recommencer la chauffe (gratuit)'
+      : '🔄 Recommencer la course (−1 essai)';
+  }
+
   const ap = document.getElementById('alt-path');
   if (ap) {
     const n = (R.preview && R.endPaths) ? (R.endPaths.get(R.preview.key) || []).length : 0;
@@ -2443,7 +2496,7 @@ function rollDiceAnim() {
 
   // Consommation d'essence = nombre de dés = rapport engagé.
   // Exception : en panne sèche (décélération forcée), la voiture roule sur sa réserve, sans consommer.
-  if (!R.outOfFuel) {
+  if (!R.outOfFuel && R.fuelEnabled) {
     const before = R.fuel;
     R.fuel = Math.max(0, R.fuel - R.gear);
     if (R.fuel === 0 && R.gear > 0) {
@@ -2595,83 +2648,270 @@ function processRollResult(val) {
    MENU RÈGLES
    ================================================================ */
 function buildRulesHTML() {
-  // Tableau compact des rapports, généré depuis les vraies constantes du moteur
   let rows = '';
   for (let g = 1; g <= 6; g++) {
     rows += '<tr>' +
-      '<td style="padding:6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
-      '<td style="padding:6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
-      '<td style="padding:6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
-      '<td style="padding:6px;text-align:center">' + g + '</td>' +
+      '<td style="padding:5px 6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
+      '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + g + '</td>' +
       '</tr>';
   }
 
-  const big = (n, t, d) =>
-    '<div style="display:flex;gap:11px;margin-bottom:14px;align-items:flex-start">' +
-      '<div style="font-size:22px;flex-shrink:0;line-height:1.1">' + n + '</div>' +
-      '<div><div style="font-weight:800;margin-bottom:2px">' + t + '</div>' +
+  const step = (n, t, d) =>
+    '<div style="display:flex;gap:12px;margin-bottom:15px;align-items:flex-start">' +
+      '<div style="width:26px;height:26px;border-radius:50%;background:var(--line);color:#14161a;' +
+        'font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + n + '</div>' +
+      '<div style="padding-top:2px"><div style="font-weight:800;margin-bottom:3px">' + t + '</div>' +
       '<div style="color:var(--mute);font-size:12.5px;line-height:1.5">' + d + '</div></div>' +
     '</div>';
 
   const details = (t, c) =>
-    '<details style="background:var(--panel);border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
+    '<details style="background:var(--panel);border-radius:8px;padding:10px 12px;margin-bottom:7px">' +
       '<summary style="cursor:pointer;font-weight:700;font-size:12.5px;color:var(--line)">' + t + '</summary>' +
-      '<div style="color:var(--mute);font-size:12.5px;line-height:1.5;margin-top:8px">' + c + '</div>' +
+      '<div style="color:var(--mute);font-size:12.5px;line-height:1.5;margin-top:9px">' + c + '</div>' +
     '</details>';
 
   return '' +
-  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px;text-align:center">' +
-    '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line)">BOUCLE LE CIRCUIT</div>' +
-    '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line)">EN UN MINIMUM DE COUPS</div>' +
-    '<div style="font-size:11.5px;color:var(--mute);margin-top:5px">1 coup = 1 lancer de dés</div>' +
+  // ---------- LE BUT ----------
+  '<div style="background:var(--panel);border-radius:10px;padding:14px;margin-bottom:18px;text-align:center">' +
+    '<div style="font-size:10px;letter-spacing:2px;color:var(--mute);margin-bottom:5px">LE BUT</div>' +
+    '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line);line-height:1.3">' +
+      'BOUCLER LE CIRCUIT<br>EN UN MINIMUM DE COUPS</div>' +
+    '<div style="font-size:11.5px;color:var(--mute);margin-top:6px">1 coup = 1 lancer de dés</div>' +
   '</div>' +
 
-  big('🎲', 'Choisis ta vitesse, lance les dés',
-      'Le rapport choisi (1 à 6) donne le nombre de dés lancés. Leur somme = le nombre de cases parcourues. Tu ne peux changer que d\'un rapport à la fois.') +
+  // ---------- COMMENT ON JOUE ----------
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin-bottom:11px;font-weight:800">Comment on joue</div>' +
 
-  big('👆', 'Un appui pour voir, deux pour partir',
-      'Touche une case verte : le chemin s\'affiche en jaune, les ↻ orange marquent les virages, la flèche verte ta direction de sortie. Retouche la même case pour valider.') +
+  step('1', 'Choisis ta vitesse',
+    'De 1 à 6, un cran à la fois. Plus le rapport est élevé, plus tu avances loin.') +
 
-  big('🎯', 'L\'inertie t\'empêche de tourner',
-      'Plus tu vas vite, plus il faut de ligne droite avant de pouvoir braquer. La jauge descend d\'1 par case droite ; à 0 tu peux tourner. Un virage la recharge au niveau de ton rapport.') +
+  step('2', 'Lance les dés',
+    'Le rapport donne le nombre de dés. Leur total = le nombre de cases que tu parcours.') +
 
-  big('⛽', 'Chaque dé coûte de l\'essence',
-      'V6 = 6 dés = 6 points d\'essence par coup. À sec, tu es obligé de ralentir jusqu\'à l\'arrêt avant de refaire le plein.') +
+  step('3', 'Choisis ton chemin',
+    'Touche une case verte : le chemin s\'affiche. Retouche la même case pour valider.') +
 
-  big('💥', 'Sortir de piste = retour au checkpoint',
-      'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>. Les coups déjà joués restent comptés : tout ce que tu avais gagné depuis est perdu.') +
+  // ---------- L'INERTIE ----------
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">L\'inertie</div>' +
 
-  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:18px 0 9px;font-weight:800">Pour aller plus loin</div>' +
+  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
+    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Une F1 lancée ne tourne pas sur place</div>' +
+    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
+      'La <b style="color:var(--txt)">jauge d\'inertie</b> indique combien de cases tu dois encore faire <b style="color:var(--txt)">tout droit</b> avant de pouvoir tourner.<br><br>' +
+      '• Elle descend de 1 à chaque case en ligne droite<br>' +
+      '• À <b style="color:var(--ok)">zéro</b>, tu peux braquer<br>' +
+      '• Dès que tu tournes, elle remonte au niveau de ton rapport' +
+    '</div>' +
+    '<div style="background:rgba(255,93,93,.1);border-left:3px solid var(--crash);border-radius:5px;padding:8px 10px;margin-top:11px;font-size:12px;color:var(--txt)">' +
+      '⚠️ Vite = lourd. En V6 il faut 6 cases droites entre deux virages. En V1, une seule.' +
+    '</div>' +
+  '</div>' +
 
-  details('📊 Tableau des rapports',
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 9px;font-weight:800">En savoir plus</div>' +
+
+  details('⛽ L\'essence',
+    'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
+    'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
+    'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.') +
+
+  details('🎲 Détail des dés',
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
       '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
-        '<th style="padding:6px">RAPPORT</th><th style="padding:6px">CASES</th><th style="padding:6px">DÉS</th><th style="padding:6px">INERTIE</th>' +
+        '<th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th>' +
       '</tr>' + rows +
     '</table>' +
-    '<div style="margin-top:7px">Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
+    '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
 
-  details('🎯 L\'inertie en détail',
-    '<b>Le piège à connaître :</b> la jauge ne se remet jamais à zéro entre deux lancers. Si tu termines un déplacement avec 4 d\'inertie, tu commences le suivant avec 4 — donc 4 cases tout droit avant de pouvoir tourner.<br><br>' +
-    'Regarde-la avant de choisir ton rapport : monter en V6 juste avant un virage serré, c\'est le mur assuré.') +
+  details('💥 Sortie de piste',
+    'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>.<br><br>' +
+    'Les coups déjà joués restent comptés et l\'essence n\'est pas rendue : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
 
-  details('🔄 La relance',
-    'Une fois par coup, tu peux relancer les dés si le résultat ne te plaît pas. En contrepartie, la boîte est sous tension : au coup suivant tu ne pourras pas monter de rapport.') +
+  details('🔄 Recommencer la course',
+    'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
+    'Pendant le <b>tour de chauffe</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
 
-  details('🏁 Points et classement',
-    'Le classement du circuit se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte. Ces points s\'ajoutent à ton total Arena Sport.<br><br>' +
-    'À égalité de coups, le plus de cases restantes sur la dernière ligne départage.') +
+  details('🔄 La relance des dés',
+    'Une fois par coup, tu peux relancer les dés si le résultat ne te plaît pas.<br><br>' +
+    'En contrepartie la boîte est sous tension : au coup suivant, impossible de monter de rapport.') +
 
   details('👻 Les fantômes',
-    'Deux voitures translucides peuvent rouler avec toi :<br><br>' +
-    '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : elle te montre la ligne à suivre.<br>' +
-    '<b style="color:#4ac7ff">👤 Bleu</b> — ton propre meilleur tour, pour voir où tu gagnes ou perds du temps.<br><br>' +
-    'Les deux boutons en haut de l\'écran de course permettent de les <b>afficher ou masquer à tout moment</b>, indépendamment. Ton choix est mémorisé pour les parties suivantes.') +
+    '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : la ligne à suivre.<br>' +
+    '<b style="color:#4ac7ff">👤 Bleu</b> — ton propre meilleur tour.<br><br>' +
+    'Les deux boutons en haut de l\'écran permettent de les afficher ou masquer à tout moment, indépendamment.') +
 
-  details('📍 Secteurs et tour de chauffe',
-    'Aux checkpoints, ton temps s\'affiche en <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, en <b style="color:var(--ok)">vert</b> si tu bats ton record perso.<br><br>' +
-    'Si l\'organisateur a prévu un tour de chauffe, il ne compte pas au score : sers-t\'en pour repérer le tracé.');
+  details('🏁 Points et classement',
+    'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
+    'À égalité de coups, le plus de cases restantes départage.') +
+
+  details('📍 Checkpoints et tour de chauffe',
+    'Les checkpoints (Checkpoint 1, Checkpoint 2…) sont numérotés dans l\'ordre du circuit et donnent ton temps de passage : <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, <b style="color:var(--ok)">vert</b> si tu bats ton record.<br><br>' +
+    'Un tour de chauffe, s\'il est prévu, ne compte pas au score : sers-t\'en pour repérer le tracé.');
 }
+
+/* ================================================================
+   TUTO ANIMÉ — 4 étapes rejouées en boucle sur une piste miniature
+   ================================================================ */
+const TUTO = {
+  step: 0,
+  t: 0,
+  raf: null,
+  steps: [
+    { titre: 'Avancer',
+      txt: 'Le rapport donne le nombre de dés. Leur somme = le nombre de cases parcourues. Ici <b>V2 : 2 dés → 3 cases</b>.' },
+    { titre: 'Choisir sa trajectoire',
+      txt: 'Un premier appui montre le chemin : les <b style="color:#ff9f43">points orange ↻</b> marquent les virages, la <b style="color:var(--ok)">flèche verte</b> ta direction de sortie. Un second appui valide.' },
+    { titre: 'L\'inertie',
+      txt: 'Après un virage la jauge se recharge. Tant qu\'elle n\'est pas à <b>zéro</b>, impossible de tourner : il faut avancer tout droit.' },
+    { titre: 'Vite = lourd',
+      txt: 'En <b>V6</b> il faut 6 cases droites entre deux virages : la voiture ne peut plus se rabattre et sort de la piste. <b>Ralentir avant le virage</b> est souvent plus rapide.' }
+  ]
+};
+
+function drawTuto() {
+  const cv = document.getElementById('tuto-cv');
+  if (!cv) return;
+  const w = cv.clientWidth || 300;
+  const hh = Math.round(w / 1.6);
+  cv.width = w; cv.height = hh;
+  const c = cv.getContext('2d');
+  const S = hh / 7;                       // taille d'un hexagone
+  const oy = hh / 2;
+
+  c.clearRect(0, 0, w, hh);
+  c.fillStyle = '#2d5016'; c.fillRect(0, 0, w, hh);
+
+  // Piste : un couloir droit qui tourne au milieu
+  const cells = [];
+  const N = Math.ceil(w / (S * 1.6)) + 2;
+  for (let i = 0; i < N; i++) {
+    for (let k = -1; k <= 1; k++) cells.push({ i: i, k: k });
+  }
+  const px = (i, k) => ({ x: S * 1.6 * i + S, y: oy + k * S * 1.5 });
+
+  cells.forEach(cell => {
+    const p = px(cell.i, cell.k);
+    c.beginPath();
+    for (let a = 0; a < 6; a++) {
+      const ang = Math.PI / 3 * a - Math.PI / 6;
+      const hx = p.x + S * 0.95 * Math.cos(ang), hy = p.y + S * 0.95 * Math.sin(ang);
+      a === 0 ? c.moveTo(hx, hy) : c.lineTo(hx, hy);
+    }
+    c.closePath();
+    c.fillStyle = '#3a3f47'; c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 1; c.stroke();
+  });
+
+  const st = TUTO.step;
+  const t = TUTO.t;                        // 0 → 1 en boucle
+
+  // Trajectoire illustrée selon l'étape
+  let route;
+  if (st === 0)      route = [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0}];
+  else if (st === 1) route = [{i:1,k:0},{i:2,k:0},{i:3,k:-1},{i:4,k:-1}];
+  else if (st === 2) route = [{i:1,k:0},{i:2,k:-1},{i:3,k:-1},{i:4,k:-1},{i:5,k:-1}];
+  else               route = [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0},{i:5,k:1}];
+
+  const turnAt = (st === 1) ? 2 : (st === 2 ? 1 : (st === 3 ? 4 : -1));
+
+  // Ligne de trajectoire
+  c.strokeStyle = 'rgba(247,201,72,.9)';
+  c.lineWidth = Math.max(2, S * 0.2);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  c.beginPath();
+  route.forEach((cell, i) => {
+    const p = px(cell.i, cell.k);
+    i === 0 ? c.moveTo(p.x, p.y) : c.lineTo(p.x, p.y);
+  });
+  c.stroke();
+
+  // Marqueur de virage
+  if (turnAt >= 0 && route[turnAt]) {
+    const p = px(route[turnAt].i, route[turnAt].k);
+    c.beginPath(); c.arc(p.x, p.y, S * 0.34, 0, Math.PI * 2);
+    c.fillStyle = '#ff9f43'; c.fill();
+    c.strokeStyle = '#14161a'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#14161a'; c.font = 'bold ' + Math.round(S * 0.42) + 'px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('↻', p.x, p.y);
+  }
+
+  // Étape 4 : la voiture sort de la piste
+  if (st === 3) {
+    const p = px(6, 2);
+    c.fillStyle = 'rgba(255,93,93,.35)';
+    c.beginPath(); c.arc(p.x, p.y, S * 0.9, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ff5d5d'; c.font = 'bold ' + Math.round(S * 0.7) + 'px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('💥', p.x, p.y);
+  }
+
+  // Voiture animée le long de la trajectoire
+  const fpos = t * (route.length - 1);
+  const i0 = Math.min(route.length - 2, Math.floor(fpos));
+  const fr = fpos - i0;
+  const a = px(route[i0].i, route[i0].k), bb = px(route[i0 + 1].i, route[i0 + 1].k);
+  const carX = a.x + (bb.x - a.x) * fr, carY = a.y + (bb.y - a.y) * fr;
+  const ang = Math.atan2(bb.y - a.y, bb.x - a.x);
+
+  c.save();
+  c.translate(carX, carY);
+  c.rotate(ang);
+  c.fillStyle = '#f7c948';
+  c.fillRect(-S * 0.42, -S * 0.24, S * 0.84, S * 0.48);
+  c.strokeStyle = '#14161a'; c.lineWidth = 1.5;
+  c.strokeRect(-S * 0.42, -S * 0.24, S * 0.84, S * 0.48);
+  c.fillStyle = '#14161a';
+  c.fillRect(-S * 0.30, -S * 0.34, S * 0.16, S * 0.1);
+  c.fillRect(-S * 0.30, S * 0.24, S * 0.16, S * 0.1);
+  c.fillRect(S * 0.16, -S * 0.34, S * 0.16, S * 0.1);
+  c.fillRect(S * 0.16, S * 0.24, S * 0.16, S * 0.1);
+  c.restore();
+
+  // Jauge d'inertie miniature (étapes 3 et 4)
+  if (st >= 2) {
+    const cap = (st === 2) ? 2 : 6;
+    const used = Math.round(cap * (1 - t));
+    c.fillStyle = 'rgba(12,14,18,.85)';
+    c.fillRect(8, 8, S * 4.2, S * 0.95);
+    c.fillStyle = '#fff'; c.font = 'bold ' + Math.round(S * 0.34) + 'px sans-serif';
+    c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.fillText('INERTIE', 14, 8 + S * 0.47);
+    for (let i = 0; i < cap; i++) {
+      c.fillStyle = (i < used) ? '#ff5d5d' : '#2b2f36';
+      c.fillRect(14 + S * 1.5 + i * (S * 0.42), 8 + S * 0.3, S * 0.32, S * 0.35);
+    }
+  }
+}
+
+function tutoLoop() {
+  TUTO.t += 0.012;
+  if (TUTO.t > 1) TUTO.t = 0;
+  drawTuto();
+  TUTO.raf = requestAnimationFrame(tutoLoop);
+}
+
+function setTutoStep(n) {
+  TUTO.step = (n + TUTO.steps.length) % TUTO.steps.length;
+  TUTO.t = 0;
+  const s = TUTO.steps[TUTO.step];
+  document.getElementById('tuto-step').textContent = (TUTO.step + 1) + '/' + TUTO.steps.length;
+  document.getElementById('tuto-txt').innerHTML = '<b>' + s.titre + '</b> — ' + s.txt;
+  drawTuto();
+}
+
+function startTuto() {
+  setTutoStep(TUTO.step);
+  if (!TUTO.raf) tutoLoop();
+}
+
+function stopTuto() {
+  if (TUTO.raf) { cancelAnimationFrame(TUTO.raf); TUTO.raf = null; }
+}
+
+document.getElementById('tuto-prev').onclick = () => setTutoStep(TUTO.step - 1);
+document.getElementById('tuto-next').onclick = () => setTutoStep(TUTO.step + 1);
 
 function openRules() {
   const body = document.getElementById('rules-body');
@@ -2680,10 +2920,12 @@ function openRules() {
     body.dataset.filled = '1';
   }
   document.getElementById('rules-modal').style.display = 'flex';
+  startTuto();
 }
 
 function closeRules() {
   document.getElementById('rules-modal').style.display = 'none';
+  stopTuto();
 }
 
 document.getElementById('rules-close').onclick = closeRules;
@@ -2728,6 +2970,65 @@ document.getElementById('gh-own').onclick = () => {
   refreshGhostButtons();
   drawRace();
   toast(showGhostOwn() ? '👤 Ton fantôme affiché' : '👤 Ton fantôme masqué');
+};
+
+// Recommencer la course depuis le départ.
+// Pendant le tour de chauffe : gratuit (la chauffe ne compte pas).
+// En course : consomme un essai, comme un abandon.
+document.getElementById('btn-restart').onclick = async () => {
+  if (R.animating || R.phase === 'done') return;
+
+  const enChauffe = !!R.isWarmup;
+
+  if (enChauffe) {
+    if (!confirm('Recommencer le tour de chauffe ?\n\nGratuit : la chauffe ne compte pas.')) return;
+    startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode);
+    toast('🔄 Tour de chauffe relancé');
+    return;
+  }
+
+  const restants = R.attemptsLeft;
+  if (!R.testMode && restants <= 1) {
+    if (!confirm('⚠️ C\'est ton DERNIER essai.\n\nRecommencer le consommera et tu ne pourras plus jouer ce circuit. Continuer ?')) return;
+  } else if (!confirm('Recommencer depuis le départ ?\n\nCela consomme un essai. Il t\'en restera ' +
+                      Math.max(0, restants - 1) + '.')) {
+    return;
+  }
+
+  // Mode test : pas d'envoi serveur, on redémarre simplement
+  if (R.testMode) {
+    startRace(R.circuit, R.pseudo, R.attemptsLeft, true);
+    toast('🔄 Course relancée (mode test)');
+    return;
+  }
+
+  const btn = document.getElementById('btn-restart');
+  btn.disabled = true;
+  btn.textContent = 'Abandon en cours…';
+
+  let left = Math.max(0, restants - 1);
+  try {
+    const res = await api('/api/formula/crash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ circuitId: R.circuit.id, pseudo: R.pseudo })
+    });
+    left = res.attemptsLeft;
+  } catch (e) {
+    // Serveur injoignable : on décompte quand même localement
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔄 Recommencer la course';
+
+  if (left <= 0) {
+    toast('🚫 Plus d\'essais disponibles');
+    setTimeout(backToMenu, 1200);
+    return;
+  }
+
+  startRace(R.circuit, R.pseudo, left, false);
+  toast('🔄 Course relancée · ' + left + ' essai(s) restant(s)');
 };
 
 document.getElementById('roll').onclick = rollDiceAnim;
@@ -2961,6 +3262,12 @@ function finalizeMove(r) {
     R.trail = [];
     R.phase = 'gear';
 
+    // La trace du fantôme doit refléter la position APRÈS réapparition,
+    // sinon le fantôme enregistré montre un saut depuis le point de crash.
+    if (R.turnPositions.length) {
+      R.turnPositions[R.turnPositions.length - 1] = { q: R.q, r: R.r, dir: R.dir };
+    }
+
     say(cp.index >= 0
       ? ('💥 CRASH — retour au checkpoint ' + (cp.index + 1) + ', départ arrêté')
       : '💥 CRASH — retour à la ligne de départ, départ arrêté', 'crash');
@@ -3018,7 +3325,7 @@ function finalizeMove(r) {
    ================================================================ */
 function showCpToast(index, time) {
   const el = document.getElementById('cp-toast');
-  let html = '📍 CP' + (index + 1) + ' : ' + time + ' coups';
+  let html = '📍 Checkpoint ' + (index + 1) + ' : ' + time + ' coups';
 
   const wb = R.worldBest;
   const wbT = (wb && wb.cpTimes) ? wb.cpTimes[index] : undefined;
@@ -3934,6 +4241,7 @@ function newCircuit() {
   E.carDir = 0;
   E.editingId = null;
   E.published = false;
+  E.ghost = null;
   E.undoStack = [];
 
   document.getElementById('c-name').value = '';
@@ -3944,6 +4252,8 @@ function newCircuit() {
   document.getElementById('c-warmup').value = 0;
   document.getElementById('c-mult').value = 10;
   document.getElementById('c-fuel').value = 0;
+  document.getElementById('c-fuel-on').checked = true;
+  toggleFuelFields();
   document.getElementById('btn-delete').style.display = 'none';
   document.getElementById('scores-panel').style.display = 'none';
   updateTestLinkBtn();
@@ -3996,6 +4306,7 @@ async function loadForEdit(id) {
     E.carDir = c.start.dir || 0;
     E.editingId = c.id;
     E.published = !!c.published;
+    E.ghost = c.ghost || null;   // fantôme de référence, pour le mode test
     E.undoStack = [];
 
     document.getElementById('c-name').value = c.name;
@@ -4004,6 +4315,8 @@ async function loadForEdit(id) {
     document.getElementById('c-warmup').value = c.warmup || 0;
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
     document.getElementById('c-fuel').value = c.fuelCapacity || 0;
+    document.getElementById('c-fuel-on').checked = (c.fuelEnabled !== false);
+    toggleFuelFields();
     document.getElementById('btn-delete').style.display = 'block';
     updateTestLinkBtn();
 
@@ -4107,6 +4420,11 @@ function updateFuelHint() {
   hint.textContent = 'Auto = ' + auto + ' pts · utilisé : ' + used +
     ' → ~' + Math.floor(used / 6) + ' lancers en V6 ou ~' + Math.floor(used / 3) + ' en V3';
 }
+function toggleFuelFields() {
+  const on = document.getElementById('c-fuel-on').checked;
+  document.getElementById('fuel-fields').style.display = on ? 'block' : 'none';
+}
+document.getElementById('c-fuel-on').onchange = toggleFuelFields;
 document.getElementById('c-fuel').oninput = updateFuelHint;
 document.getElementById('c-laps').addEventListener('input', updateFuelHint);
 
@@ -4368,35 +4686,34 @@ function centerOnCircuit() {
 
 // Bouton Générer
 document.getElementById('btn-generate').onclick = () => {
-  const trackW = parseInt(document.getElementById('c-width').value) || 3;
+  const trackW   = parseInt(document.getElementById('c-width').value) || 3;
   const numTurns = parseInt(document.getElementById('c-turns').value) || 6;
+  const targetLen = Math.max(60, Math.min(600, parseInt(document.getElementById('c-length').value) || 220));
 
   let grid = emptyGrid();
-  let startQ = 0, startR = 0, startDir = 0;
+  let bestLen = 0;
   let success = false;
+  let lenBias = 1;   // correction d'échelle apprise au fil des tentatives
 
   for (let attempt = 0; attempt < 25 && !success; attempt++) {
     grid = emptyGrid();
 
-    // Points de contrôle selon une forme aléatoire
     const ctrl = generateControlPoints(numTurns);
 
     // Spline Catmull-Rom
     const path = [];
     const steps = 20;
-
     for (let i = 0; i < ctrl.length; i++) {
       const p0 = ctrl[(i - 1 + ctrl.length) % ctrl.length];
       const p1 = ctrl[i];
       const p2 = ctrl[(i + 1) % ctrl.length];
       const p3 = ctrl[(i + 2) % ctrl.length];
-
-      for (let s = 0; s < steps; s++) {
-        path.push(catmullRom(p0, p1, p2, p3, s / steps));
+      for (let sIdx = 0; sIdx < steps; sIdx++) {
+        path.push(catmullRom(p0, p1, p2, p3, sIdx / steps));
       }
     }
 
-    // 2 passes de lissage
+    // Lissage
     let smoothed = path;
     for (let pass = 0; pass < 2; pass++) {
       const next = [];
@@ -4412,122 +4729,157 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = next;
     }
 
-    // Rasterisation
+    // LONGUEUR DEMANDÉE : on mesure la ligne médiane puis on met le tracé à l'échelle
+    const lenOf = (pts) => {
+      let L = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        L += hexDistF(a.q, a.r, b.q, b.r);
+      }
+      return L;
+    };
+    const rawLen = lenOf(smoothed);
+    if (rawLen > 1) {
+      let cq = 0, cr = 0;
+      for (const p of smoothed) { cq += p.q; cr += p.r; }
+      cq /= smoothed.length; cr /= smoothed.length;
+
+      let k = (targetLen * lenBias) / rawLen;
+      // On borne l'échelle pour rester dans la grille
+      const maxR = Math.min(EW, EH) * 0.46;
+      let far = 0;
+      for (const p of smoothed) far = Math.max(far, Math.hypot(p.q - cq, p.r - cr));
+      if (far * k > maxR) k = maxR / far;
+
+      smoothed = smoothed.map(p => ({
+        q: cq + (p.q - cq) * k,
+        r: cr + (p.r - cr) * k
+      }));
+      // Recentrage sur la grille
+      let mnQ = Infinity, mxQ = -Infinity, mnR = Infinity, mxR = -Infinity;
+      for (const p of smoothed) {
+        mnQ = Math.min(mnQ, p.q); mxQ = Math.max(mxQ, p.q);
+        mnR = Math.min(mnR, p.r); mxR = Math.max(mxR, p.r);
+      }
+      const dq = EW / 2 - (mnQ + mxQ) / 2;
+      const dr = EH / 2 - (mnR + mxR) / 2;
+      smoothed = smoothed.map(p => ({ q: p.q + dq, r: p.r + dr }));
+    }
+
+    // Rasterisation de la piste
     for (const p of smoothed) {
-      const pq = Math.round(p.q);
-      const pr = Math.round(p.r);
-
-      for (let dq = -trackW; dq <= trackW; dq++) {
-        for (let dr = -trackW; dr <= trackW; dr++) {
-          const nq = pq + dq;
-          const nr = pr + dr;
-
+      const c = cubeRound(p.q, p.r);
+      for (let ddq = -trackW; ddq <= trackW; ddq++) {
+        for (let ddr = -trackW; ddr <= trackW; ddr++) {
+          const nq = c.q + ddq, nr = c.r + ddr;
           if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) {
-            const dist = Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr);
-            if (dist <= trackW + 1) {
-              grid[nr][nq] = '.';
-            }
+            const dist = Math.abs(ddq) + Math.abs(ddr) + Math.abs(ddq + ddr);
+            if (dist <= trackW + 1) grid[nr][nq] = '.';
           }
         }
       }
     }
 
-    // Ligne F perpendiculaire — cubeRound pour coïncider avec la rasterisation
-    const s0 = smoothed[0];
-    const s1 = smoothed[1];
-    const perp = perpInPixel(s0.q, s0.r, s1.q, s1.r);
-    const s0c = cubeRound(s0.q, s0.r);
-    let fPainted = 0;
-    for (let w = -trackW - 1; w <= trackW + 1; w++) {
-      const offAx = visualToAxial(perp.nx * w, perp.ny * w);
-      const fc = cubeRound(s0.q + offAx.q, s0.r + offAx.r);
-      if (fc.q >= 0 && fc.q < EW && fc.r >= 0 && fc.r < EH && grid[fc.r][fc.q] === '.') {
-        grid[fc.r][fc.q] = 'F';
-        fPainted++;
-      }
-    }
-    if (fPainted === 0) continue; // ligne F non tracée → circuit raté, on retente
+    // Longueur réellement obtenue = cases de piste / largeur du ruban
+    let cellCount = 0;
+    for (let rr = 0; rr < EH; rr++) for (let qq = 0; qq < EW; qq++) if (grid[rr][qq] !== '#') cellCount++;
+    bestLen = Math.round(cellCount / (trackW * 2 + 1));
 
-    // Checkpoints
-    for (let c = 1; c <= 3; c++) {
-      const idx = Math.floor(smoothed.length * c / 4);
-      const cp = smoothed[idx];
-      const cpn = smoothed[(idx + 1) % smoothed.length];
-      const cpPerp = perpInPixel(cp.q, cp.r, cpn.q, cpn.r);
-      for (let w = -trackW - 1; w <= trackW + 1; w++) {
-        const offAx = visualToAxial(cpPerp.nx * w, cpPerp.ny * w);
-        const cc = cubeRound(cp.q + offAx.q, cp.r + offAx.r);
-        if (cc.q >= 0 && cc.q < EW && cc.r >= 0 && cc.r < EH && grid[cc.r][cc.q] === '.') {
-          grid[cc.r][cc.q] = 'C';
-        }
-      }
-    }
+    // Le tracé doit former une BOUCLE FERMÉE d'un seul tenant...
+    if (!isClosedLoop(grid)) continue;
 
-    // Départ : reculer le long de la spline, puis ANCRER sur une vraie case de piste
-    const setback = Math.max(6, Math.floor(smoothed.length * 0.08));
-    const backIdx = (smoothed.length - setback + smoothed.length) % smoothed.length;
-    const sp = smoothed[backIdx];
-    const spNext = smoothed[(backIdx + 1) % smoothed.length];
-    let sc = cubeRound(sp.q, sp.r);
-    // Si la case tombe sur un mur ou sur F, chercher la case de piste '.' la plus proche
-    if (!grid[sc.r] || grid[sc.r][sc.q] !== '.') {
-      let found = null, bestD = 99;
-      for (let dr = -3; dr <= 3 && !found; dr++) {
-        for (let dq = -3; dq <= 3; dq++) {
-          const nq = sc.q + dq, nr = sc.r + dr;
-          if (grid[nr] && grid[nr][nq] === '.') {
-            const d = Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr);
-            if (d < bestD) { bestD = d; found = { q: nq, r: nr }; }
-          }
-        }
-      }
-      if (found) sc = found;
-    }
-    startQ = sc.q;
-    startR = sc.r;
-    if (!grid[startR] || grid[startR][startQ] !== '.') continue; // départ invalide → on retente
-
-    // Direction initiale : tangente de la spline au point de départ
-    const ndq = spNext.q - sp.q;
-    const ndr = spNext.r - sp.r;
-    let bd = 0, bdot = -Infinity;
-    for (let d = 0; d < 6; d++) {
-      const dot = HEX_DIRS[d].q * ndq + HEX_DIRS[d].r * ndr;
-      if (dot > bdot) { bdot = dot; bd = d; }
-    }
-    startDir = bd;
-
-    // Validation
-    if (isSolvable(grid, startQ, startR, startDir)) {
+    // ...et coller à la longueur demandée (±18 %). Sinon on corrige l'échelle et on retente :
+    // la relation entre l'échelle de la spline et la longueur finale n'est pas linéaire.
+    const ratio = bestLen / targetLen;
+    if (ratio >= 0.82 && ratio <= 1.18) {
       success = true;
+    } else if (attempt < 22) {
+      // On ajuste la consigne interne pour la tentative suivante
+      lenBias *= (ratio > 0 ? (1 / ratio) : 1);
+      lenBias = Math.max(0.4, Math.min(4, lenBias));
+    } else {
+      success = true;   // on accepte le meilleur essai plutôt que l'ovale de secours
     }
   }
 
-  // Ovale de secours
   if (!success) {
     grid = emptyGrid();
-    const ov = generateOvalFallback(grid, trackW);
-    startQ = ov.q;
-    startR = ov.r;
-    startDir = ov.dir;
-    toast('⚠️ Ovale de secours');
+    generateOvalFallback(grid, trackW);
+    toast('⚠️ Ovale de secours — retente ou change les réglages');
   }
 
   E.grid = grid;
-  E.carPos = { q: startQ, r: startR };
-  E.carDir = startDir;
+  E.carPos = null;      // le placement est laissé à l'admin
+  E.carDir = 0;
   E.undoStack = [];
 
-  document.getElementById('car-rotate').classList.add('on');
-
-  // Centrer sur le circuit
+  document.getElementById('car-rotate').classList.remove('on');
   centerOnCircuit();
   if (typeof updateFuelHint === 'function') updateFuelHint();
 
-  toast(success
-    ? ('🏁 ' + (trackW * 2 + 1) + ' cases de large · ' + numTurns + ' virages')
-    : ('⚠️ Aucun circuit valide trouvé — ovale de secours (' + (trackW * 2 + 1) + ' cases)'));
+  let cells = 0;
+  for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') cells++;
+
+  if (success) {
+    toast('🏁 Tour ~' + bestLen + ' cases · ' + (trackW * 2 + 1) + ' de large — place 🏁 📍 🏎️');
+  }
 };
+
+// Distance hexagonale en valeurs continues (pour mesurer une ligne médiane)
+function hexDistF(aq, ar, bq, br) {
+  const dq = aq - bq, dr = ar - br;
+  return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
+}
+
+// Vérifie que la piste forme une boucle fermée d'un seul tenant
+function isClosedLoop(grid) {
+  let startCell = null, total = 0;
+  for (let r = 0; r < EH && !startCell; r++) {
+    for (let q = 0; q < EW; q++) {
+      if (grid[r][q] !== '#') { startCell = [q, r]; break; }
+    }
+  }
+  if (!startCell) return false;
+
+  for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') total++;
+  if (total < 40) return false;
+
+  // Toutes les cases doivent être reliées
+  const seen = new Set([startCell[0] + ',' + startCell[1]]);
+  const stack = [startCell];
+  while (stack.length) {
+    const [cq, cr] = stack.pop();
+    for (const d of HEX_DIRS) {
+      const nq = cq + d.q, nr = cr + d.r;
+      if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+      if (grid[nr][nq] === '#') continue;
+      const k = nq + ',' + nr;
+      if (seen.has(k)) continue;
+      seen.add(k); stack.push([nq, nr]);
+    }
+  }
+  if (seen.size !== total) return false;
+
+  // Une boucle a un TROU au milieu : le fond ne doit pas être d'un seul tenant
+  const bg = new Set();
+  const bgStack = [[0, 0]];
+  if (grid[0][0] !== '#') return true;
+  bg.add('0,0');
+  while (bgStack.length) {
+    const [cq, cr] = bgStack.pop();
+    for (const d of HEX_DIRS) {
+      const nq = cq + d.q, nr = cr + d.r;
+      if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+      if (grid[nr][nq] !== '#') continue;
+      const k = nq + ',' + nr;
+      if (bg.has(k)) continue;
+      bg.add(k); bgStack.push([nq, nr]);
+    }
+  }
+  let wallTotal = 0;
+  for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] === '#') wallTotal++;
+  return bg.size < wallTotal;   // il reste des murs isolés = le trou central
+}
 
 /* ================================================================
    IMPORT IMAGE
@@ -4621,60 +4973,138 @@ document.getElementById('btn-import-cancel').onclick = () => {
   importImg = null;
 };
 
+let importSize = 85;
+let importWidth = 1;
+
+document.getElementById('size-slider').oninput = (e) => {
+  importSize = parseInt(e.target.value);
+  document.getElementById('size-val').textContent = importSize + ' %';
+};
+document.getElementById('width-slider').oninput = (e) => {
+  importWidth = parseInt(e.target.value);
+  document.getElementById('width-val').textContent = '+' + importWidth;
+};
+
 document.getElementById('btn-import-confirm').onclick = () => {
   if (!importImg) return;
 
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = EW;
-  tempCanvas.height = EH;
-  const tctx = tempCanvas.getContext('2d');
+  // 1) On lit l'image à sa résolution native
+  const src = document.createElement('canvas');
+  src.width = importImg.width;
+  src.height = importImg.height;
+  const sctx = src.getContext('2d');
+  sctx.drawImage(importImg, 0, 0);
+  const px = sctx.getImageData(0, 0, src.width, src.height).data;
 
+  // 2) En espace visuel, une grille hexagonale forme un PARALLÉLOGRAMME (les lignes
+  //    se décalent vers la droite). On ne garde que le plus grand rectangle qui y tient,
+  //    sinon l'image déborde de la zone utilisable et le tracé sort déformé.
+  const minX = SQRT3 * (EH - 1) / 2;          // bord gauche atteignable par TOUTES les lignes
+  const maxX = SQRT3 * (EW - 1);              // bord droit atteignable par toutes les lignes
+  const minY = 0;
+  const maxY = 1.5 * (EH - 1);
+  const spanX = Math.max(10, maxX - minX), spanY = Math.max(10, maxY - minY);
+
+  // 3) L'image est placée au centre, à l'échelle demandée, sans déformation
+  const scale = importSize / 100;
   const imgRatio = importImg.width / importImg.height;
-  const gridRatio = EW / EH;
-
+  const boxRatio = spanX / spanY;
   let drawW, drawH;
-  let offsetX = 0, offsetY = 0;
-
-  if (imgRatio > gridRatio) {
-    drawW = EW;
-    drawH = EW / imgRatio;
-    offsetY = (EH - drawH) / 2;
-  } else {
-    drawH = EH;
-    drawW = EH * imgRatio;
-    offsetX = (EW - drawW) / 2;
-  }
-
-  tctx.fillStyle = '#fff';
-  tctx.fillRect(0, 0, EW, EH);
-  tctx.drawImage(importImg, offsetX, offsetY, drawW, drawH);
-
-  const imgData = tctx.getImageData(0, 0, EW, EH).data;
+  if (imgRatio > boxRatio) { drawW = spanX * scale; drawH = drawW / imgRatio; }
+  else { drawH = spanY * scale; drawW = drawH * imgRatio; }
+  const ox = minX + (spanX - drawW) / 2;
+  const oy = minY + (spanY - drawH) / 2;
 
   pushUndo();
 
+  // 4) Pour CHAQUE hexagone, on échantillonne l'image à sa vraie position visuelle
+  const g = Array.from({ length: EH }, () => Array(EW).fill('#'));
   for (let r = 0; r < EH; r++) {
     for (let q = 0; q < EW; q++) {
-      const idx = (r * EW + q) * 4;
-      const brightness = (imgData[idx] + imgData[idx + 1] + imgData[idx + 2]) / 3;
-
-      E.grid[r][q] = importInvert
-        ? (brightness > importThreshold ? '.' : '#')
-        : (brightness < importThreshold ? '.' : '#');
+      const p = axialToPixel(q, r, 1);
+      const u = (p.x - ox) / drawW;
+      const v = (p.y - oy) / drawH;
+      if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+      const ix = Math.min(src.width - 1, Math.floor(u * src.width));
+      const iy = Math.min(src.height - 1, Math.floor(v * src.height));
+      const i = (iy * src.width + ix) * 4;
+      const bright = (px[i] + px[i + 1] + px[i + 2]) / 3;
+      const isTrack = importInvert ? (bright > importThreshold) : (bright < importThreshold);
+      if (isTrack) g[r][q] = '.';
     }
   }
 
+  // 5) Élargissement de la piste (les traits fins d'un plan sont sinon injouables)
+  for (let pass = 0; pass < importWidth; pass++) {
+    const cp = g.map(row => row.slice());
+    for (let r = 0; r < EH; r++) {
+      for (let q = 0; q < EW; q++) {
+        if (cp[r][q] !== '.') continue;
+        for (const d of HEX_DIRS) {
+          const nq = q + d.q, nr = r + d.r;
+          if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) g[nr][nq] = '.';
+        }
+      }
+    }
+  }
+
+  // 6) Nettoyage du bruit : on ne garde que le plus grand morceau connecté
+  const comp = largestComponent(g);
+  for (let r = 0; r < EH; r++) {
+    for (let q = 0; q < EW; q++) {
+      if (g[r][q] === '.' && !comp.has(q + ',' + r)) g[r][q] = '#';
+    }
+  }
+
+  E.grid = g;
   E.carPos = null;
   E.carDir = 0;
 
+  // 7) Aucun placement automatique : l'admin pose lui-même 🏁 arrivée, 📍 checkpoints et 🏎️ départ
   document.getElementById('car-rotate').classList.remove('on');
   document.getElementById('import-modal').classList.remove('on');
   importImg = null;
 
-  resetView();
+  centerOnCircuit();
   drawEditor();
-  toast('✅ Circuit importé !');
+  if (typeof updateFuelHint === 'function') updateFuelHint();
+
+  const cells = comp.size;
+  toast(cells < 60
+    ? ('⚠️ Seulement ' + cells + ' cases — élargis la piste ou la taille')
+    : ('✅ Importé (' + cells + ' cases) — place 🏁 arrivée, 📍 checkpoints et 🏎️ départ'));
 };
+
+// Plus grand ensemble de cases de piste reliées entre elles
+function largestComponent(g) {
+  const seen = new Set();
+  let best = new Set();
+  for (let r = 0; r < EH; r++) {
+    for (let q = 0; q < EW; q++) {
+      if (g[r][q] !== '.' ) continue;
+      const k0 = q + ',' + r;
+      if (seen.has(k0)) continue;
+      const comp = new Set([k0]);
+      const stack = [[q, r]];
+      seen.add(k0);
+      while (stack.length) {
+        const [cq, cr] = stack.pop();
+        for (const d of HEX_DIRS) {
+          const nq = cq + d.q, nr = cr + d.r;
+          if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+          if (g[nr][nq] !== '.') continue;
+          const k = nq + ',' + nr;
+          if (seen.has(k)) continue;
+          seen.add(k); comp.add(k); stack.push([nq, nr]);
+        }
+      }
+      if (comp.size > best.size) best = comp;
+    }
+  }
+  return best;
+}
+
+
 
 /* ================================================================
    ÉDITEUR — OUTILS & UNDO
@@ -4735,7 +5165,10 @@ document.getElementById('btn-test-mode').onclick = () => {
   const name = document.getElementById('c-name').value.trim() || 'Circuit Test';
 
   startRace({
-    id: 'test_circuit',
+    // Identifiant réel si le circuit est enregistré : sinon les fantômes perso
+    // de tous les circuits testés se mélangeraient sous la même clé.
+    id: E.editingId || 'test_circuit',
+    ghost: E.ghost || null,
     name: name,
     w: EW,
     h: EH,
@@ -4748,7 +5181,8 @@ document.getElementById('btn-test-mode').onclick = () => {
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
     warmup: parseInt(document.getElementById('c-warmup').value) || 0,
-    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0
+    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
+    fuelEnabled: document.getElementById('c-fuel-on').checked
   }, 'TesteurAdmin', 99, true);
 };
 
@@ -5065,6 +5499,7 @@ async function saveCircuit(publish) {
     warmup: parseInt(document.getElementById('c-warmup').value) || 0,
     pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
     fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
+    fuelEnabled: document.getElementById('c-fuel-on').checked,
     published: (publish !== undefined) ? publish : E.published
   };
 
