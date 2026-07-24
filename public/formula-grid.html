@@ -1059,9 +1059,7 @@ header.top {
     <div id="hgrid"></div>
   </div>
   <button id="roll">🎲 LANCER LE DÉ</button>
-  <button id="reroll" class="btn" style="display:none;background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.3);color:var(--crash)">
-    🎲 Relancer (stresse la voiture)
-  </button>
+  
   <button id="alt-path" class="btn" style="display:none;background:rgba(247,201,72,.12);border:1px solid rgba(247,201,72,.4);color:var(--line)">
     ↻ Autre trajectoire vers cette case
   </button>
@@ -1739,9 +1737,6 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
   R.trail = [];
   R.fullTrail = [];
 
-  // Stress / relance
-  R.rerolled = false;
-  R.stressed = false;
 
   // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
   R.fuelEnabled = circuit.fuelEnabled !== false;
@@ -1782,6 +1777,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode) {
 
   // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
   R.inertia = 0;
+  R.cells = 0;   // cases parcourues depuis le départ
 
   // Point de reprise en cas de crash : la ligne de départ tant qu'aucun checkpoint n'est franchi
   R.lastCP = {
@@ -2039,8 +2035,6 @@ function renderGears() {
       reach = (g === R.gear - 1);
     } else if (R.gear === 0) {
       reach = (g === 1);
-    } else if (R.stressed) {
-      reach = (g <= R.gear && g >= R.gear - 1);
     } else {
       reach = Math.abs(g - R.gear) <= 1;
     }
@@ -2087,16 +2081,6 @@ function renderGears() {
       gb.appendChild(tag);
     }
     tag.textContent = '⛽ PANNE SÈCHE — décélération forcée jusqu\'à l\'arrêt';
-  } else if (R.stressed && R.phase === 'gear') {
-    if (!tag) {
-      tag = document.createElement('div');
-      tag.id = 'stress-tag';
-      tag.style.cssText =
-        'margin-top:8px;font-size:11px;color:var(--crash);' +
-        'font-weight:700;text-align:center';
-      gb.appendChild(tag);
-    }
-    tag.textContent = '⚠️ Boîte sous tension : montée bloquée';
   } else if (tag) {
     tag.remove();
   }
@@ -2163,10 +2147,6 @@ const RADIO_LINES = {
   lastLap: [
     'Dernier tour ! Tout donner maintenant.',
     'C\'est le dernier, lâche les chevaux.'
-  ],
-  stressed: [
-    'La boîte a pris un coup, montée bloquée ce tour.',
-    'Attention, boîte sous tension. On assure.'
   ],
   highGear: [
     'Gros rapport engagé, attention au prochain virage.',
@@ -2454,11 +2434,6 @@ function syncDash() {
     ap.style.display = (R.phase === 'pick' && n > 1 && !R.animating) ? 'block' : 'none';
   }
 
-  const rb = document.getElementById('reroll');
-  if (rb) {
-    rb.style.display =
-      (R.phase === 'pick' && !R.rerolled && !R.animating) ? 'block' : 'none';
-  }
 }
 
 /* ================================================================
@@ -2732,9 +2707,7 @@ function buildRulesHTML() {
     'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
     'Pendant le <b>tour de chauffe</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
 
-  details('🔄 La relance des dés',
-    'Une fois par coup, tu peux relancer les dés si le résultat ne te plaît pas.<br><br>' +
-    'En contrepartie la boîte est sous tension : au coup suivant, impossible de monter de rapport.') +
+
 
   details('👻 Les fantômes',
     '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : la ligne à suivre.<br>' +
@@ -2758,16 +2731,37 @@ const TUTO = {
   t: 0,
   raf: null,
   steps: [
-    { titre: 'Avancer',
-      txt: 'Le rapport donne le nombre de dés. Leur somme = le nombre de cases parcourues. Ici <b>V2 : 2 dés → 3 cases</b>.' },
-    { titre: 'Choisir sa trajectoire',
-      txt: 'Un premier appui montre le chemin : les <b style="color:#ff9f43">points orange ↻</b> marquent les virages, la <b style="color:var(--ok)">flèche verte</b> ta direction de sortie. Un second appui valide.' },
+    { titre: 'Choisis ta vitesse',
+      txt: 'Un cran à la fois, jamais de saut. La <b>V2</b> lancera 2 dés.',
+      mode: 'gears' },
+    { titre: 'Lance les dés',
+      txt: '2 dés lancés, on additionne : <b>1 + 2 = 3</b>. C\'est ta distance.',
+      mode: 'dice' },
+    { titre: 'Avance',
+      txt: 'La voiture parcourt les <b>3 cases</b> du total.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0}] },
+    { titre: 'Choisis ta trajectoire',
+      txt: '1er appui = le chemin s\'affiche (<b style="color:#ff9f43">↻</b> = virage, <b style="color:var(--ok)">flèche</b> = sortie). 2e appui = tu pars.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:-1},{i:4,k:-1}], arrow: true },
     { titre: 'L\'inertie',
-      txt: 'Après un virage la jauge se recharge. Tant qu\'elle n\'est pas à <b>zéro</b>, impossible de tourner : il faut avancer tout droit.' },
+      txt: 'Après un virage la jauge se remplit. Tant qu\'elle n\'est pas <b>vide</b>, tu roules tout droit.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:-1},{i:3,k:-1},{i:4,k:-1},{i:5,k:-1}], gauge: 2 },
     { titre: 'Vite = lourd',
-      txt: 'En <b>V6</b> il faut 6 cases droites entre deux virages : la voiture ne peut plus se rabattre et sort de la piste. <b>Ralentir avant le virage</b> est souvent plus rapide.' }
+      txt: 'En <b>V6</b> la jauge monte à 6 : impossible de tourner avant 6 cases droites. Ralentis <b>avant</b> le virage.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0},{i:5,k:0}], gauge: 6, crash: true }
   ]
 };
+
+// Détecte TOUS les changements de direction d'une trajectoire
+function tutoTurns(route) {
+  const turns = [];
+  for (let i = 1; i < route.length - 1; i++) {
+    const d1 = { i: route[i].i - route[i-1].i, k: route[i].k - route[i-1].k };
+    const d2 = { i: route[i+1].i - route[i].i, k: route[i+1].k - route[i].k };
+    if (d1.i !== d2.i || d1.k !== d2.k) turns.push(i);
+  }
+  return turns;
+}
 
 function drawTuto() {
   const cv = document.getElementById('tuto-cv');
@@ -2776,47 +2770,109 @@ function drawTuto() {
   const hh = Math.round(w / 1.6);
   cv.width = w; cv.height = hh;
   const c = cv.getContext('2d');
-  const S = hh / 7;                       // taille d'un hexagone
-  const oy = hh / 2;
+  const st = TUTO.steps[TUTO.step];
+  const t = TUTO.t;
 
   c.clearRect(0, 0, w, hh);
+  c.fillStyle = '#14161a'; c.fillRect(0, 0, w, hh);
+
+  // ---------- ÉTAPE 1 : la boîte de vitesses ----------
+  if (st.mode === 'gears') {
+    const sel = 2;
+    const bw = w / 8, bh = hh * 0.42, y = hh / 2 - bh / 2;
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.font = 'bold ' + Math.round(hh * 0.075) + 'px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('BOÎTE SÉQUENTIELLE', w / 2, hh * 0.14);
+
+    for (let g = 1; g <= 6; g++) {
+      const x = w / 2 + (g - 3.5) * (bw + 5);
+      const on = (g === sel);
+      // clignotement sur le rapport choisi
+      const pulse = on ? (0.6 + 0.4 * Math.sin(t * Math.PI * 4)) : 1;
+      c.globalAlpha = on ? 1 : (Math.abs(g - sel) <= 1 ? 0.85 : 0.3);
+      c.fillStyle = on ? '#f7c948' : '#22262e';
+      c.strokeStyle = on ? '#f7c948' : '#2b2f36';
+      c.lineWidth = on ? 3 * pulse : 1.5;
+      c.beginPath(); c.roundRect ? c.roundRect(x - bw/2, y, bw, bh, 6) : c.rect(x - bw/2, y, bw, bh);
+      c.fill(); c.stroke();
+      c.fillStyle = on ? '#14161a' : '#e8e4da';
+      c.font = 'bold ' + Math.round(bh * 0.38) + 'px ui-monospace, monospace';
+      c.fillText(String(g), x, y + bh * 0.38);
+      c.font = Math.round(bh * 0.16) + 'px sans-serif';
+      c.fillStyle = on ? '#14161a' : 'rgba(232,228,218,.6)';
+      c.fillText(DICE[g][0] + '-' + DICE[g][1], x, y + bh * 0.72);
+      c.globalAlpha = 1;
+    }
+    const px2 = w / 2 + (sel - 3.5) * (bw + 5);
+    c.fillStyle = '#39d98a'; c.font = 'bold ' + Math.round(hh * 0.08) + 'px sans-serif';
+    c.fillText('▲ ' + DICE_POOLS[sel].length + ' dés', px2, y + bh + hh * 0.11);
+    return;
+  }
+
+  // ---------- ÉTAPE 2 : le lancer de dés ----------
+  if (st.mode === 'dice') {
+    const pool = DICE_POOLS[2];
+    const rolling = t < 0.62;
+    const finals = [1, 2];
+    const size = hh * 0.3;
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.font = 'bold ' + Math.round(hh * 0.075) + 'px sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('V2 · 2 DÉS', w / 2, hh * 0.16);
+
+    let sum = 0;
+    pool.forEach((faces, i) => {
+      const x = w / 2 + (i - (pool.length - 1) / 2) * (size + 12);
+      const y = hh * 0.46;
+      const val = rolling
+        ? faces[Math.floor((t * 40 + i * 3)) % faces.length]
+        : finals[i];
+      sum += val;
+      const wob = rolling ? Math.sin(t * 50 + i) * size * 0.06 : 0;
+      c.save(); c.translate(x, y + wob);
+      c.fillStyle = '#1a1d23';
+      c.strokeStyle = rolling ? '#f7c948' : '#39d98a';
+      c.lineWidth = 3;
+      c.beginPath(); c.roundRect ? c.roundRect(-size/2, -size/2, size, size, 8) : c.rect(-size/2, -size/2, size, size);
+      c.fill(); c.stroke();
+      c.fillStyle = rolling ? '#f7c948' : '#39d98a';
+      c.font = 'bold ' + Math.round(size * 0.55) + 'px ui-monospace, monospace';
+      c.fillText(String(val), 0, 0);
+      c.restore();
+    });
+
+    c.fillStyle = rolling ? 'rgba(255,255,255,.45)' : '#f7c948';
+    c.font = 'bold ' + Math.round(hh * 0.11) + 'px ui-monospace, monospace';
+    c.fillText(rolling ? 'Σ …' : ('Σ ' + sum + ' cases'), w / 2, hh * 0.83);
+    return;
+  }
+
+  // ---------- ÉTAPES SUIVANTES : la piste ----------
+  const S = hh / 7;
+  const oy = hh / 2;
   c.fillStyle = '#2d5016'; c.fillRect(0, 0, w, hh);
 
-  // Piste : un couloir droit qui tourne au milieu
-  const cells = [];
+  const px = (i, k) => ({ x: S * 1.6 * i + S, y: oy + k * S * 1.5 });
   const N = Math.ceil(w / (S * 1.6)) + 2;
   for (let i = 0; i < N; i++) {
-    for (let k = -1; k <= 1; k++) cells.push({ i: i, k: k });
-  }
-  const px = (i, k) => ({ x: S * 1.6 * i + S, y: oy + k * S * 1.5 });
-
-  cells.forEach(cell => {
-    const p = px(cell.i, cell.k);
-    c.beginPath();
-    for (let a = 0; a < 6; a++) {
-      const ang = Math.PI / 3 * a - Math.PI / 6;
-      const hx = p.x + S * 0.95 * Math.cos(ang), hy = p.y + S * 0.95 * Math.sin(ang);
-      a === 0 ? c.moveTo(hx, hy) : c.lineTo(hx, hy);
+    for (let k = -1; k <= 1; k++) {
+      const p = px(i, k);
+      c.beginPath();
+      for (let a = 0; a < 6; a++) {
+        const ang = Math.PI / 3 * a - Math.PI / 6;
+        const hx = p.x + S * 0.95 * Math.cos(ang), hy = p.y + S * 0.95 * Math.sin(ang);
+        a === 0 ? c.moveTo(hx, hy) : c.lineTo(hx, hy);
+      }
+      c.closePath();
+      c.fillStyle = '#3a3f47'; c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 1; c.stroke();
     }
-    c.closePath();
-    c.fillStyle = '#3a3f47'; c.fill();
-    c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 1; c.stroke();
-  });
+  }
 
-  const st = TUTO.step;
-  const t = TUTO.t;                        // 0 → 1 en boucle
+  const route = st.route;
+  const turns = tutoTurns(route);
 
-  // Trajectoire illustrée selon l'étape
-  let route;
-  if (st === 0)      route = [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0}];
-  else if (st === 1) route = [{i:1,k:0},{i:2,k:0},{i:3,k:-1},{i:4,k:-1}];
-  else if (st === 2) route = [{i:1,k:0},{i:2,k:-1},{i:3,k:-1},{i:4,k:-1},{i:5,k:-1}];
-  else               route = [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0},{i:5,k:1}];
-
-  const turnAt = (st === 1) ? 2 : (st === 2 ? 1 : (st === 3 ? 4 : -1));
-
-  // Ligne de trajectoire
-  c.strokeStyle = 'rgba(247,201,72,.9)';
+  // Trajectoire
+  c.strokeStyle = st.crash ? 'rgba(255,93,93,.9)' : 'rgba(247,201,72,.9)';
   c.lineWidth = Math.max(2, S * 0.2);
   c.lineJoin = 'round'; c.lineCap = 'round';
   c.beginPath();
@@ -2824,40 +2880,68 @@ function drawTuto() {
     const p = px(cell.i, cell.k);
     i === 0 ? c.moveTo(p.x, p.y) : c.lineTo(p.x, p.y);
   });
+  if (st.crash) {
+    const last = route[route.length - 1];
+    const pl = px(last.i + 1.4, last.k);
+    c.lineTo(pl.x, pl.y);
+  }
   c.stroke();
 
-  // Marqueur de virage
-  if (turnAt >= 0 && route[turnAt]) {
-    const p = px(route[turnAt].i, route[turnAt].k);
+  // TOUS les virages sont marqués (et aucun si le virage est impossible)
+  turns.forEach(idx => {
+    const p = px(route[idx].i, route[idx].k);
     c.beginPath(); c.arc(p.x, p.y, S * 0.34, 0, Math.PI * 2);
     c.fillStyle = '#ff9f43'; c.fill();
     c.strokeStyle = '#14161a'; c.lineWidth = 2; c.stroke();
     c.fillStyle = '#14161a'; c.font = 'bold ' + Math.round(S * 0.42) + 'px sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('↻', p.x, p.y);
+  });
+
+  // Flèche de sortie
+  if (st.arrow) {
+    const last = route[route.length - 1];
+    const prev = route[route.length - 2];
+    const a = px(prev.i, prev.k), bq = px(last.i, last.k);
+    const ang = Math.atan2(bq.y - a.y, bq.x - a.x);
+    c.save(); c.translate(bq.x, bq.y); c.rotate(ang);
+    c.fillStyle = '#39d98a';
+    c.beginPath();
+    c.moveTo(S * 0.85, 0); c.lineTo(S * 0.42, -S * 0.3); c.lineTo(S * 0.42, S * 0.3);
+    c.closePath(); c.fill();
+    c.strokeStyle = '#14161a'; c.lineWidth = 1.5; c.stroke();
+    c.restore();
   }
 
-  // Étape 4 : la voiture sort de la piste
-  if (st === 3) {
-    const p = px(6, 2);
+  // Position de la voiture
+  const endI = st.crash ? route.length - 1 + 1.4 : route.length - 1;
+  const fpos = t * endI;
+  let carX, carY, ang;
+  if (fpos <= route.length - 1) {
+    const i0 = Math.min(route.length - 2, Math.floor(fpos));
+    const fr = fpos - i0;
+    const a = px(route[i0].i, route[i0].k), bq = px(route[i0 + 1].i, route[i0 + 1].k);
+    carX = a.x + (bq.x - a.x) * fr; carY = a.y + (bq.y - a.y) * fr;
+    ang = Math.atan2(bq.y - a.y, bq.x - a.x);
+  } else {
+    const last = route[route.length - 1];
+    const a = px(last.i, last.k), bq = px(last.i + 1.4, last.k);
+    const fr = (fpos - (route.length - 1)) / 1.4;
+    carX = a.x + (bq.x - a.x) * fr; carY = a.y + (bq.y - a.y) * fr;
+    ang = 0;
+  }
+
+  // Impact en fin de course pour l'étape crash
+  if (st.crash && t > 0.86) {
     c.fillStyle = 'rgba(255,93,93,.35)';
-    c.beginPath(); c.arc(p.x, p.y, S * 0.9, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#ff5d5d'; c.font = 'bold ' + Math.round(S * 0.7) + 'px sans-serif';
+    c.beginPath(); c.arc(carX, carY, S * 0.95, 0, Math.PI * 2); c.fill();
+    c.font = 'bold ' + Math.round(S * 0.8) + 'px sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('💥', p.x, p.y);
+    c.fillText('💥', carX, carY);
   }
-
-  // Voiture animée le long de la trajectoire
-  const fpos = t * (route.length - 1);
-  const i0 = Math.min(route.length - 2, Math.floor(fpos));
-  const fr = fpos - i0;
-  const a = px(route[i0].i, route[i0].k), bb = px(route[i0 + 1].i, route[i0 + 1].k);
-  const carX = a.x + (bb.x - a.x) * fr, carY = a.y + (bb.y - a.y) * fr;
-  const ang = Math.atan2(bb.y - a.y, bb.x - a.x);
 
   c.save();
-  c.translate(carX, carY);
-  c.rotate(ang);
+  c.translate(carX, carY); c.rotate(ang);
   c.fillStyle = '#f7c948';
   c.fillRect(-S * 0.42, -S * 0.24, S * 0.84, S * 0.48);
   c.strokeStyle = '#14161a'; c.lineWidth = 1.5;
@@ -2869,13 +2953,13 @@ function drawTuto() {
   c.fillRect(S * 0.16, S * 0.24, S * 0.16, S * 0.1);
   c.restore();
 
-  // Jauge d'inertie miniature (étapes 3 et 4)
-  if (st >= 2) {
-    const cap = (st === 2) ? 2 : 6;
-    const used = Math.round(cap * (1 - t));
+  // Jauge d'inertie
+  if (st.gauge) {
+    const cap = st.gauge;
+    const used = st.crash ? cap : Math.round(cap * (1 - t));
     c.fillStyle = 'rgba(12,14,18,.85)';
-    c.fillRect(8, 8, S * 4.2, S * 0.95);
-    c.fillStyle = '#fff'; c.font = 'bold ' + Math.round(S * 0.34) + 'px sans-serif';
+    c.fillRect(8, 8, S * 1.5 + cap * (S * 0.42) + 14, S * 0.95);
+    c.fillStyle = '#fff'; c.font = 'bold ' + Math.round(S * 0.32) + 'px sans-serif';
     c.textAlign = 'left'; c.textBaseline = 'middle';
     c.fillText('INERTIE', 14, 8 + S * 0.47);
     for (let i = 0; i < cap; i++) {
@@ -2886,7 +2970,7 @@ function drawTuto() {
 }
 
 function tutoLoop() {
-  TUTO.t += 0.012;
+  TUTO.t += 0.010;
   if (TUTO.t > 1) TUTO.t = 0;
   drawTuto();
   TUTO.raf = requestAnimationFrame(tutoLoop);
@@ -3044,22 +3128,7 @@ document.getElementById('alt-path').onclick = () => {
   drawRace();
 };
 
-document.getElementById('reroll').onclick = () => {
-  if (R.phase !== 'pick') return;
-  if (R.rerolled) return;
-  if (R.animating) return;
 
-  R.rerolled = true;
-  say('🎲 Relance du dé...');
-
-  const ov = document.getElementById('dice-anim-overlay');
-  ov.classList.add('on');
-
-  setTimeout(() => {
-    ov.classList.remove('on');
-    processRollResult(executeDiceRoll(R.gear));
-  }, 1000);
-};
 
 /* ================================================================
    COURSE — ANIMATION DE DÉPLACEMENT
@@ -3159,6 +3228,7 @@ function finalizeMove(r) {
 
   // Trace par coup (pour le fantôme du prochain essai)
   R.turnPositions.push({ q: R.q, r: R.r, dir: R.dir });
+  R.cells += (r.path ? r.path.length : 0);
 
   // Gestion leftFinishZone
   const currentCell = R.grid[R.r] ? R.grid[R.r][R.q] : '#';
@@ -3179,7 +3249,7 @@ function finalizeMove(r) {
         hitThisMove.add(cp.index);
 
         R.cpTimes[cp.index] = R.turn;
-        showCpToast(cp.index, R.turn);
+        showCpToast(cp.index, R.turn, r.left);
 
         // Point de reprise en cas de crash : position, cap et progression à cet instant
         R.lastCP = {
@@ -3203,6 +3273,7 @@ function finalizeMove(r) {
       R.isWarmup = false;
       R.lapCount = 0;
       R.turn = 0;
+      R.cells = 0;
       R.fullTrail = [];
       R.cpTimes = [];
       document.getElementById('warmup-badge').style.display = 'none';
@@ -3210,8 +3281,6 @@ function finalizeMove(r) {
     } else {
       say('🔥 Chauffe ' + R.warmupDone + '/' + R.warmupLaps, 'warmup');
     }
-
-    R.rerolled = false;
     R.pendingGear = R.gear;
     R.rolled = null;
     R.budget = null;
@@ -3249,8 +3318,6 @@ function finalizeMove(r) {
     R.gear = 0;
     R.pendingGear = 1;
     R.inertia = 0;
-    R.stressed = false;
-    R.rerolled = false;
     R.currentKmh = 0;
 
     R.rolled = null;
@@ -3282,8 +3349,6 @@ function finalizeMove(r) {
   }
 
   // Mouvement normal
-  R.stressed = R.rerolled;
-  if (R.stressed) radio('stressed');
 
   // Panne sèche : si on vient de retomber au rapport 0, le plein est fait → on repart plein
   if (R.outOfFuel && R.gear === 0) {
@@ -3299,8 +3364,6 @@ function finalizeMove(r) {
   } else {
     say('Trajectoire validée.');
   }
-
-  R.rerolled = false;
   R.pendingGear = R.outOfFuel ? Math.max(0, R.gear - 1) : R.gear;
   R.rolled = null;
   R.budget = null;
@@ -3323,9 +3386,13 @@ function finalizeMove(r) {
 /* ================================================================
    COURSE — CHECKPOINT TOAST
    ================================================================ */
-function showCpToast(index, time) {
+function showCpToast(index, time, left) {
   const el = document.getElementById('cp-toast');
-  let html = '📍 Checkpoint ' + (index + 1) + ' : ' + time + ' coups';
+  const lapTxt = 'Tour ' + Math.min(R.lapCount + 1, R.targetLaps) + '/' + R.targetLaps;
+  let html = '📍 Checkpoint ' + (index + 1) +
+    '<div style="font-size:12px;margin-top:3px;color:var(--txt)">' +
+      lapTxt + ' · ' + time + ' coups · ' + (R.cells || 0) + ' cases' +
+    '</div>';
 
   const wb = R.worldBest;
   const wbT = (wb && wb.cpTimes) ? wb.cpTimes[index] : undefined;
