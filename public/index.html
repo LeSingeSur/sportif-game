@@ -2279,6 +2279,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
   <div class="done-ico">🏅</div>
   <div class="done-title">TERMINÉ !</div>
   <p class="done-sub">Tu as joué tous les défis disponibles.<br>Reviens bientôt pour de nouveaux sportifs !</p>
+  <a href="formula-grid.html" id="fg-play-btn-2" style="display:none;align-items:center;justify-content:flex-start;gap:10px;margin-top:16px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;text-decoration:none;font-weight:900;font-style:italic;letter-spacing:1px;font-size:14px;width:100%;max-width:320px"></a>
   <button class="btn btn-s" id="btn-done-lb" style="margin-top:16px">🏆 Voir le classement</button>
 </section>
 
@@ -2619,7 +2620,7 @@ async function loadAthlete(){
       res = await fetch('/api/athlete?pseudo='+encodeURIComponent(GAME.pseudo));
     }
     const data=await res.json();
-    if(!PREVIEW_MODE && data.done){show('sd');return}
+    if(!PREVIEW_MODE && data.done){show('sd');refreshFormulaPlayBtn();return}
     // Toujours cacher toutes les zones avant de dispatcher
     hideAllZones();
     document.getElementById('std-ans-area').style.display='none';
@@ -7778,14 +7779,16 @@ function confetti(){
 function shake(id){const el=document.getElementById(id);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),400)}
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function refreshFormulaPlayBtn(){
-  const btn=document.getElementById('fg-play-btn');
-  if(!btn) return;
+  // Le bouton existe sur plusieurs écrans (menu connecté, écran "terminé") :
+  // on met à jour toutes ses instances en une fois.
+  const btns=['fg-play-btn','fg-play-btn-2'].map(id=>document.getElementById(id)).filter(Boolean);
+  if(!btns.length) return;
   // Le bouton ne s'affiche QUE si le joueur est connecté — le score doit
   // toujours être rattaché à un compte, comme pour les autres mini-jeux.
-  if(!GAME.pseudo){ btn.style.display='none'; return; }
+  if(!GAME.pseudo){ btns.forEach(b=>b.style.display='none'); return; }
 
   fetch('/api/formula/circuits').then(r=>r.json()).then(list=>{
-    if(!list||!list.length){ btn.style.display='none'; return; }
+    if(!list||!list.length){ btns.forEach(b=>b.style.display='none'); return; }
 
     const c=list[list.length-1];
 
@@ -7796,7 +7799,7 @@ function refreshFormulaPlayBtn(){
       else if(attemptsLeft>0) sub+=' · '+attemptsLeft+' essai'+(attemptsLeft>1?'s':'')+' restant'+(attemptsLeft>1?'s':'');
       else sub+=' · essais épuisés';
       const done=(attemptsLeft===0);
-      btn.innerHTML=
+      const html=
         '<div style="font-size:26px">🏁</div>'+
         '<div style="flex:1;text-align:left;line-height:1.25">'+
           '<div style="font-size:14px;font-weight:900;font-style:italic">FORMULA·GRID</div>'+
@@ -7806,15 +7809,18 @@ function refreshFormulaPlayBtn(){
         '</div>'+
         '<div style="font-size:11px;font-weight:900;background:rgba(20,22,26,.22);padding:4px 9px;border-radius:99px">'+
           (done?'VOIR':'JOUER')+' ›</div>';
-      btn.style.display='flex';
-      btn.style.opacity=done?'0.75':'1';
-      if(!done){
-        btn.style.animation='fgPulse 2.4s ease-in-out infinite';
-        if(!document.getElementById('fg-pulse-style')){
-          const st=document.createElement('style'); st.id='fg-pulse-style';
-          st.textContent='@keyframes fgPulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.45)}50%{box-shadow:0 0 0 8px rgba(247,201,72,0)}}';
-          document.head.appendChild(st);
+      btns.forEach(btn=>{
+        btn.innerHTML=html;
+        btn.style.display='flex';
+        btn.style.opacity=done?'0.75':'1';
+        if(!done){
+          btn.style.animation='fgPulse 2.4s ease-in-out infinite';
         }
+      });
+      if(!done && !document.getElementById('fg-pulse-style')){
+        const st=document.createElement('style'); st.id='fg-pulse-style';
+        st.textContent='@keyframes fgPulse{0%,100%{box-shadow:0 0 0 0 rgba(247,201,72,.45)}50%{box-shadow:0 0 0 8px rgba(247,201,72,0)}}';
+        document.head.appendChild(st);
       }
     }
 
