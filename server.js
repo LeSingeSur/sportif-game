@@ -106,12 +106,15 @@ function loadFromFile() {
       globalScores = d.globalScores || [];
       musicConfig  = d.musicConfig  || { url: '', title: '' };
       welcomeImage = d.welcomeImage || { url: '' };
+      teams        = d.teams        || [];
+      accounts     = d.accounts     || {};
       console.log(` ${athletes.length} sportif(s) chargé(s) depuis fichier`);
+      console.log(` ${teams.length} équipe(s), ${Object.keys(accounts).length} compte(s) chargé(s) depuis fichier`);
     }
   } catch(e) { console.error('Erreur lecture fichier:', e.message); }
 }
 function saveToFile() {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage }, null, 2)); }
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage, teams, accounts }, null, 2)); }
   catch(e) { console.error('Erreur écriture fichier:', e.message); }
 }
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -992,6 +995,37 @@ app.get('/api/scores/formula-grid', (req, res) => {
   res.json({ athlete: { emoji: '🏁', answer: 'Formula·Grid', type: 'formula' }, scores: list });
 });
 
+app.get('/api/scores/teams', async (req, res) => {
+  const minPlayers=parseInt(req.query.min)||1;
+  if(db){
+    try{
+      // Recharger comptes ET scores depuis MongoDB
+      const [freshAccs, freshScores]=await Promise.all([
+        db.collection('accounts').find({}).toArray(),
+        db.collection('scores').find({}).toArray()
+      ]);
+      freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+      freshScores.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
+    }catch(e){ console.error('teams reload error:',e.message); }
+  }
+  rebuildGlobalScores();
+  // globalScores = [{pseudo, score}] — déjà calculé
+  // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
+  const teamData={};
+  for(const gs of globalScores){
+    const acc=accounts[gs.pseudo.toLowerCase()];
+    if(!acc||!acc.teamId) continue;
+    if(!teamData[acc.teamId]) teamData[acc.teamId]=[];
+    teamData[acc.teamId].push(gs.score);
+  }
+  const result=Object.entries(teamData).map(([teamId,scores])=>{
+    const t=teams.find(t=>t.id===teamId)||{name:'Équipe',emoji:'👥',color:'#6366f1',id:teamId};
+    const avg=scores.length>=minPlayers?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:scores.length,avg,qualified:scores.length>=minPlayers};
+  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  res.json({teams:result,minPlayers});
+});
+
 app.get('/api/scores/:athleteId', (req, res) => {
   const id = parseInt(req.params.athleteId);
   if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
@@ -1779,7 +1813,7 @@ async function loadTeams(){
 }
 
 async function saveTeam(team){
-  if(!db) return;
+  if(!db){ saveToFile(); return; }
   try{ await db.collection('teams').updateOne({id:team.id},{$set:team},{upsert:true}); }
   catch(e){ console.error('saveTeam:', e.message); }
 }
@@ -1806,6 +1840,7 @@ app.delete('/api/admin/teams/:id', async (req, res) => {
   if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
   teams=teams.filter(t=>t.id!==req.params.id);
   if(db) await db.collection('teams').deleteOne({id:req.params.id});
+  else saveToFile();
   res.json({ok:true});
 });
 
@@ -1871,36 +1906,6 @@ app.get('/api/debug/teams', (req, res) => {
   });
 });
 
-app.get('/api/scores/teams', async (req, res) => {
-  const minPlayers=parseInt(req.query.min)||1;
-  if(db){
-    try{
-      // Recharger comptes ET scores depuis MongoDB
-      const [freshAccs, freshScores]=await Promise.all([
-        db.collection('accounts').find({}).toArray(),
-        db.collection('scores').find({}).toArray()
-      ]);
-      freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
-      freshScores.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
-    }catch(e){ console.error('teams reload error:',e.message); }
-  }
-  rebuildGlobalScores();
-  // globalScores = [{pseudo, score}] — déjà calculé
-  // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
-  const teamData={};
-  for(const gs of globalScores){
-    const acc=accounts[gs.pseudo.toLowerCase()];
-    if(!acc||!acc.teamId) continue;
-    if(!teamData[acc.teamId]) teamData[acc.teamId]=[];
-    teamData[acc.teamId].push(gs.score);
-  }
-  const result=Object.entries(teamData).map(([teamId,scores])=>{
-    const t=teams.find(t=>t.id===teamId)||{name:'Équipe',emoji:'👥',color:'#6366f1',id:teamId};
-    const avg=scores.length>=minPlayers?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
-    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:scores.length,avg,qualified:scores.length>=minPlayers};
-  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
-  res.json({teams:result,minPlayers});
-});
 
 
 // ── MODIFIER UN SCORE ─────────────────────────────────────────────────────
@@ -1955,7 +1960,7 @@ async function loadAccounts(){
 }
 
 async function saveAccount(account){
-  if(!db){ console.log('saveAccount: db non connecté'); return; }
+  if(!db){ saveToFile(); return; }
   try{
     const col=db.collection('accounts');
     await col.updateOne({pseudo:account.pseudo},{$set:account},{upsert:true});
