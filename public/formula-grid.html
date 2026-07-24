@@ -981,8 +981,9 @@ header.top {
     <span class="eyebrow">Contre-la-montre</span>
   </header>
   <div class="card field">
-    <label>Ton pseudo</label>
-    <input type="text" id="pseudo-in" placeholder="Ex : Christophe" maxlength="24">
+    <label>Ton pseudo <span style="font-weight:400;color:var(--mute)">— celui de ton compte Arena Sport</span></label>
+    <input type="text" id="pseudo-in" placeholder="Ton pseudo Arena Sport" maxlength="24">
+    <div id="pseudo-locked-hint" style="display:none;font-size:11px;color:var(--mute);margin-top:4px">🔒 Connecté via Arena Sport · <a href="index.html" style="color:inherit">changer de compte</a></div>
   </div>
   <div class="eyebrow" style="margin-top:4px">Circuits disponibles</div>
   <div id="circuit-list">
@@ -1534,7 +1535,15 @@ let grassPattern = null;
    MENU
    ================================================================ */
 const pseudoIn = document.getElementById('pseudo-in');
-pseudoIn.value = localStorage.getItem('fg_pseudo') || '';
+pseudoIn.value = localStorage.getItem('arena_pseudo') || localStorage.getItem('fg_pseudo') || '';
+// Connecté via Arena Sport (login PIN) : le pseudo est celui du compte, non modifiable —
+// c'est ce qui garantit que les points Formula·Grid s'additionnent au classement général.
+if (localStorage.getItem('arena_pseudo')) {
+  pseudoIn.readOnly = true;
+  pseudoIn.style.opacity = '.7';
+  const hint = document.getElementById('pseudo-locked-hint');
+  if (hint) hint.style.display = 'block';
+}
 pseudoIn.addEventListener('input', () => {
   localStorage.setItem('fg_pseudo', pseudoIn.value);
 });
@@ -1583,6 +1592,16 @@ async function openCircuit(id) {
     toast('Entre ton pseudo');
     return;
   }
+
+  try {
+    // Compte Arena obligatoire : sans lui, les points ne rejoindraient jamais le classement général
+    const chk = await api('/api/account/check?pseudo=' + encodeURIComponent(pseudo));
+    if (!chk.exists) {
+      toast('⚠️ Crée d\'abord ton compte sur Arena Sport avec ce pseudo — tes points rejoindront le classement général');
+      setTimeout(() => { if (confirm('Aller sur Arena Sport pour créer ton compte "' + pseudo + '" ?')) location.href = 'index.html'; }, 600);
+      return;
+    }
+  } catch(e) { /* serveur injoignable : on laisse la suite gérer */ }
 
   try {
     const [circuit, board] = await Promise.all([
