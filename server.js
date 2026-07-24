@@ -170,7 +170,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -400,9 +400,11 @@ app.get('/api/preview', (req, res) => {
       name:t.name||'Thème', color:t.color||'#888888',
       question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
-    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
-      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
-    }));
+    base.trivQuestions = Array.from({length:6},(_,sec)=>{
+      const raw = athlete.trivQuestions||[];
+      const q = raw.find(x=>x&&parseInt(x.sectionIdx)===sec)||raw[sec]||{};
+      return { question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:sec, theme:q.theme||'' };
+    });
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
@@ -464,7 +466,7 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'nagesync') {
     base.couloirs = (athlete.couloirs||[]).map(c=>({label:c.label||''}));
-    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:parseInt(s.correct)||0}));
+    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct!==undefined?s.correct:0}));
     base.maxScore = 100;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
@@ -708,6 +710,7 @@ app.get('/api/athlete', (req, res) => {
       : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
+    base.imageIndication = athlete.imageIndication||'';
   } else if (athlete.type === 'buzz') {
     base.clues             = athlete.clues;
     base.maxScore          = 100;
@@ -766,6 +769,7 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
+    base.biatAnnounceTime  = athlete.biatAnnounceTime || 45;
     base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length;
     base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.biatOrderQuestion = athlete.biatOrderQuestion || '';
@@ -799,6 +803,7 @@ app.get('/api/athlete', (req, res) => {
       nbRequired:q.nbRequired||1
     }));
     base.escaladeTheme = athlete.escaladeTheme||'';
+    base.escaladeTol = athlete.escaladeTol||1;
     base.maxScore = 200;
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
@@ -825,14 +830,17 @@ app.get('/api/athlete', (req, res) => {
       name:t.name||'Thème', color:t.color||'#888888',
       question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
-    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
-      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
-    }));
+    base.trivQuestions = Array.from({length:6},(_,sec)=>{
+      const raw = athlete.trivQuestions||[];
+      const q = raw.find(x=>x&&parseInt(x.sectionIdx)===sec)||raw[sec]||{};
+      return { question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:sec, theme:q.theme||'' };
+    });
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
       scrambled:(w.scrambled||'').toUpperCase().trim(),
-      answer:(w.answer||'').toUpperCase().trim()
+      answer:(w.answer||'').toUpperCase().trim(),
+      indice:w.indice||''
     }));
     base.meliTimer = athlete.meliTimer||60;
     base.maxScore = 100;
@@ -1142,6 +1150,7 @@ app.post('/api/formula/circuit', async (req, res) => {
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
     warmup: Math.max(0, Math.min(5, parseInt(req.body.warmup)||0)),
+    freePractice: !!req.body.freePractice,
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
@@ -1173,11 +1182,33 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const top = runs.filter(r => !r.crashed && Number.isFinite(r.moves))
     .sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
     .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
+  // Meilleur tour : durée mini entre deux passages de ligne, sur tous les runs
+  const bestLapOf = (rs) => {
+    let best = null;
+    for (const r of rs) {
+      const lm = Array.isArray(r.lapMoves) ? r.lapMoves : [];
+      for (let i = 0; i < lm.length; i++) {
+        const d = lm[i] - (i ? lm[i-1] : 0);
+        if (Number.isFinite(d) && d > 0 && (best === null || d < best.lap)) best = { lap: d, pseudo: r.pseudo };
+      }
+    }
+    return best;
+  };
+  // Mes meilleurs splits (min case par case sur tous mes runs)
+  const myBestCp = [];
+  for (const r of mine) {
+    (r.cpTimes || []).forEach((v, i) => {
+      if (Number.isFinite(v) && (myBestCp[i] == null || v < myBestCp[i])) myBestCp[i] = v;
+    });
+  }
   res.json({
     top,
     attemptsUsed: mine.length,
     attemptsLeft: Math.max(0, c.attempts - mine.length),
     best: bestRun(mine),
+    myBestCp,
+    myBestLap: bestLapOf(mine),
+    worldBestLap: bestLapOf(runs),
     // Meilleur temps TOUS JOUEURS confondus + ses splits (pour le delta en course)
     worldBest: (() => {
       const wb = bestRun(runs);
@@ -1188,7 +1219,7 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
 });
 
 app.post('/api/formula/run', async (req, res) => {
-  const { circuitId, pseudo, moves, left, laps, cpTimes } = req.body;
+  const { circuitId, pseudo, moves, left, laps, cpTimes, lapMoves } = req.body;
   const c = circuits.find(x => x.id === circuitId);
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
@@ -1201,7 +1232,8 @@ app.post('/api/formula/run', async (req, res) => {
 
   const run = {
     pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps,
-    cpTimes: Array.isArray(cpTimes) ? cpTimes.slice(0, 50) : [],
+    cpTimes: Array.isArray(cpTimes) ? cpTimes.filter(Number.isFinite).slice(0, 50) : [],
+    lapMoves: Array.isArray(lapMoves) ? lapMoves.filter(Number.isFinite).slice(0, 30) : [],
     date: new Date().toISOString()
   };
   circuitRuns[circuitId].push(run);
@@ -1437,13 +1469,13 @@ app.post('/api/admin/athlete', (req, res) => {
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':type==='trappe'?'La Trappe':type==='maillonfaible'?'Maillon Faible':type==='haltero'?'Haltéro-Quiz':type==='assaut'?"L'Escrime":type==='tirarlarc'?"Tir à l'Arc":type==='nagesync'?'Natation':type==='biathlon'?(req.body.biatTheme||'Biathlon').trim():type==='melimelo'?'Méli-Mélo':type==='apol'?'À prendre ou à laisser':type==='trivpursuit'?'Trivial Pursuit':'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
   // Ajouter toutes les variantes séparées par ; comme aliases
   answerParts.slice(1).forEach(a => autoAliases.push(a.toLowerCase()));
-  const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const manualAliases = (typeof aliases === 'string' ? aliases : Array.isArray(aliases) ? aliases.join(',') : '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
   const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10));
