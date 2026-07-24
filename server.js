@@ -1357,7 +1357,7 @@ app.get('/api/formula/admin/runs/:circuitId', (req, res) => {
   const c = circuits.find(x => x.id === req.params.circuitId);
   res.json({
     circuit: c ? { id: c.id, name: c.name, laps: c.laps, attempts: c.attempts, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 } : null,
-    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date })),
+    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date, laps: r.laps||0, cpTimes: r.cpTimes||[], lapMoves: r.lapMoves||[] })),
     ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0 }))
   });
 });
