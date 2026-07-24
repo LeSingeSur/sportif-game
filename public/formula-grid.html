@@ -4482,13 +4482,27 @@ async function loadScores() {
         ? '<span style="color:var(--crash)">💥 abandon</span>'
         : (run.moves + ' coups · +' + run.left + (rank ? ' · 🏆 ' + pts + ' pts (rang ' + rank + ')' : ''));
 
+      // Détail des temps enregistrés : date, splits checkpoints, temps par tour
+      const when = run.date ? new Date(run.date).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+      let detail = '';
+      if (!run.crashed) {
+        if (run.cpTimes && run.cpTimes.length) detail += '📍 CP : ' + run.cpTimes.join(' · ');
+        if (run.lapMoves && run.lapMoves.length > 0) {
+          const durs = run.lapMoves.map((m, i) => m - (i ? run.lapMoves[i-1] : 0));
+          detail += (detail ? '<br>' : '') + '🔁 Tours : ' + durs.join(' · ') +
+            (durs.length > 1 ? ' <b style="color:var(--gold,#f7c948)">(meilleur ' + Math.min(...durs) + ')</b>' : '');
+        }
+      }
+
       row.innerHTML =
         '<div style="display:flex;align-items:center;gap:6px">' +
           '<b style="flex:1">' + esc(run.pseudo) + '</b>' +
+          (when ? '<span style="color:var(--mute);font-size:10px">' + when + '</span>' : '') +
           '<button class="btn" data-act="edit" style="padding:4px 8px;font-size:11px">✏️</button>' +
           '<button class="btn danger" data-act="del" style="padding:4px 8px;font-size:11px">🗑️</button>' +
         '</div>' +
-        '<div style="color:var(--mute);margin-top:3px">' + tag + '</div>';
+        '<div style="color:var(--mute);margin-top:3px">' + tag + '</div>' +
+        (detail ? '<div style="color:var(--mute);margin-top:3px;font-size:11px">' + detail + '</div>' : '');
 
       row.querySelector('[data-act="edit"]').onclick = async () => {
         const nm = prompt('Nombre de coups pour ' + run.pseudo + ' :', run.moves || '');
