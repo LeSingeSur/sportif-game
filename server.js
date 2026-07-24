@@ -135,6 +135,7 @@ async function connectFormula() {
       circuitRuns = {};
       runsArr.forEach(r => { circuitRuns[r.circuitId] = r.runs || []; });
       console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis MongoDB`);
+      rebuildGlobalScores(); // le général doit inclure les points Formula·Grid dès le démarrage
       return;
     } catch(e) { console.error('Formula·Grid Mongo erreur:', e.message); }
   }
@@ -147,6 +148,7 @@ function loadFormulaFromFile() {
       circuits    = d.circuits    || [];
       circuitRuns = d.circuitRuns || {};
       console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis fichier`);
+      rebuildGlobalScores(); // le général doit inclure les points Formula·Grid dès le démarrage
     }
   } catch(e) { console.error('Erreur lecture formula.json:', e.message); }
 }
@@ -1258,6 +1260,8 @@ app.post('/api/formula/run', async (req, res) => {
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
   if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
+  // Les points Formula·Grid rejoignent le classement général : le pseudo doit être un compte Arena
+  if (!accounts[cleanPseudo.toLowerCase()]) return res.status(403).json({ error: 'Crée d\'abord ton compte Arena Sport avec ce pseudo — tes points rejoindront le classement général', noAccount: true });
   if (!Number.isFinite(moves) || moves < 1) return res.status(400).json({ error: 'Résultat invalide' });
 
   circuitRuns[circuitId] = circuitRuns[circuitId] || [];
@@ -1298,6 +1302,7 @@ app.post('/api/formula/crash', async (req, res) => {
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
   if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
+  if (!accounts[cleanPseudo.toLowerCase()]) return res.status(403).json({ error: 'Compte Arena requis', noAccount: true });
 
   circuitRuns[circuitId] = circuitRuns[circuitId] || [];
   const already = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
