@@ -1987,7 +1987,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
   //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
   // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
-  const reload = gear || 1;  // inertie au niveau du rapport : V1=1, V6=6
+  const reload = INERTIA[gear] != null ? INERTIA[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
   const startInertia = Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
@@ -2411,7 +2411,7 @@ function updateInertiaGauge() {
   if (!val || !cells || !txt) return;
 
   const g = (R.phase === 'gear') ? R.pendingGear : R.gear;
-  const reload = g || 1;   // inertie = rapport : V1=1 ... V6=6
+  const reload = INERTIA[g] != null ? INERTIA[g] : Math.max(0, (g||1) - 1);   // V1=0 … V6=5
   const cur = Math.max(0, R.inertia || 0);    // état actuel de la jauge
 
   if (!g) {
@@ -2435,9 +2435,11 @@ function updateInertiaGauge() {
   }
 
   if (cur > 0) {
-    txt.textContent = cur + ' case(s) tout droit avant de pouvoir braquer · un virage rechargera à ' + reload + '.';
-  } else {
+    txt.textContent = cur + ' case(s) tout droit avant de pouvoir braquer' + (reload > 0 ? ' · un virage rechargera à ' + reload + '.' : '.');
+  } else if (reload > 0) {
     txt.textContent = 'Braquage autorisé · chaque virage rechargera la jauge à ' + reload + ' (rapport ' + g + ').';
+  } else {
+    txt.textContent = 'Rapport ' + g + ' : braquage libre à chaque case.';
   }
 }
 
@@ -2722,10 +2724,10 @@ function buildRulesHTML() {
       'La <b style="color:var(--txt)">jauge d\'inertie</b> indique combien de cases tu dois encore faire <b style="color:var(--txt)">tout droit</b> avant de pouvoir tourner.<br><br>' +
       '• Elle descend de 1 à chaque case en ligne droite<br>' +
       '• À <b style="color:var(--ok)">zéro</b>, tu peux braquer<br>' +
-      '• Dès que tu tournes, elle remonte au niveau de ton rapport' +
+      '• Dès que tu tournes, elle remonte à <b style="color:var(--txt)">rapport − 1</b>' +
     '</div>' +
     '<div style="background:rgba(255,93,93,.1);border-left:3px solid var(--crash);border-radius:5px;padding:8px 10px;margin-top:11px;font-size:12px;color:var(--txt)">' +
-      '⚠️ Vite = lourd. En V6 il faut 6 cases droites entre deux virages. En V1, une seule.' +
+      '⚠️ Vite = lourd. En V6 il faut 5 cases droites entre deux virages. En V1, braquage libre à chaque case.' +
     '</div>' +
   '</div>' +
 
