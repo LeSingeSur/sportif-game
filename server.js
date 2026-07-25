@@ -175,7 +175,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, diceSeed: c.diceSeed || ('legacy' + c.id), pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, countsInGlobal: c.countsInGlobal !== false };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -204,6 +204,7 @@ function formulaGridPointsByPseudo() {
   const totals = {};
   for (const c of circuits) {
     if (!c.published) continue; // circuits brouillon/test : classement local uniquement, aucun impact global
+    if (c.countsInGlobal === false) continue; // circuit hors classement (choix admin) : classement du circuit seul
     const ranked = circuitRanking(c.id);
     const N = ranked.length;
     const mult = Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10;
@@ -1190,12 +1191,22 @@ app.post('/api/formula/circuit', async (req, res) => {
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
+    countsInGlobal: req.body.countsInGlobal !== false, // false = hors classement général
     published: !!published,
+    // POOL DE DÉS COMMUN : graine du circuit. Tous les joueurs affrontent les mêmes
+    // tirages. Conservée d'une réédition à l'autre (sinon les temps déjà posés
+    // deviendraient incomparables) ; régénérable à la demande via regenDiceSeed.
+    diceSeed: (req.body.regenDiceSeed || existingIdx < 0 || !circuits[existingIdx].diceSeed)
+      ? ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10))
+      : circuits[existingIdx].diceSeed,
     // Le fantôme de référence survit à une réédition du circuit
     ghost: existingIdx>=0 ? circuits[existingIdx].ghost : undefined,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
   if (existingIdx >= 0) circuits[existingIdx] = data; else circuits.push(data);
+  // Basculer "hors classement" doit se répercuter immédiatement sur le général
+  rebuildGlobalScores();
+  saveData();
   try { await saveCircuits(); res.json({ success: true, id: circuitId }); }
   catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1241,6 +1252,9 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
     top,
     attemptsUsed: mine.length,
     attemptsLeft: Math.max(0, c.attempts - mine.length),
+    diceSeed: c.diceSeed || ('legacy' + c.id),
+    attemptNo: mine.length + 1,   // grille de dés de l'essai à venir
+    countsInGlobal: c.countsInGlobal !== false,
     best: bestRun(mine),
     myBestCp,
     myBestLap: bestLapOf(mine),
@@ -1283,7 +1297,10 @@ app.post('/api/formula/run', async (req, res) => {
     const ranked = circuitRanking(circuitId);
     const N = ranked.length;
     const myRank = ranked.findIndex(r => norm(r.pseudo) === norm(cleanPseudo)) + 1;
-    const points = (N - myRank + 1) * (Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10);
+    const countsInGlobal = c.countsInGlobal !== false;
+    const points = countsInGlobal
+      ? (N - myRank + 1) * (Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10)
+      : 0;
 
     rebuildGlobalScores(); // recalcule aussi le classement général avec les points à jour de TOUS les joueurs
     saveData();
@@ -1291,7 +1308,7 @@ app.post('/api/formula/run', async (req, res) => {
     // Top 10 pour affichage immédiat côté client
     const top = ranked.slice(0, 10).map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
 
-    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, top });
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, countsInGlobal, top });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1313,7 +1330,9 @@ app.post('/api/formula/crash', async (req, res) => {
   try {
     await saveCircuitRuns(circuitId);
     const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
-    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length) });
+    // attemptNo : l'essai suivant a sa PROPRE grille de dés — sans ça, un joueur
+    // pourrait relancer et rejouer des tirages qu'il connaît déjà.
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), attemptNo: mine.length + 1 });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
