@@ -2446,7 +2446,7 @@ function updateInertiaGauge() {
 function syncDash() {
   const lapEl = document.getElementById('v-lap');
   if (R.isWarmup) {
-    lapEl.textContent = '☕';
+    lapEl.textContent = '🔧';
   } else {
     lapEl.textContent = Math.min(R.lapCount + 1, R.targetLaps) + '/' + R.targetLaps;
   }
@@ -2471,7 +2471,7 @@ function syncDash() {
     // Masqué à l'arrivée et pendant les animations
     rs.style.display = (R.phase === 'done' || R.animating) ? 'none' : 'block';
     rs.textContent = R.isWarmup
-      ? '🔄 Recommencer la chauffe (gratuit)'
+      ? '🔄 Repartir du départ (gratuit pendant les essais)'
       : '🔄 Recommencer la course (−1 essai)';
   }
 
@@ -2752,7 +2752,7 @@ function buildRulesHTML() {
 
   details('🔄 Recommencer la course',
     'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
-    'Pendant le <b>tour de chauffe</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
+    'Pendant les <b>essais libres</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
 
 
 
@@ -2765,9 +2765,9 @@ function buildRulesHTML() {
     'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
     'À égalité de coups, le plus de cases restantes départage.') +
 
-  details('📍 Checkpoints et tour de chauffe',
+  details('📍 Checkpoints et essais libres',
     'Les checkpoints (Checkpoint 1, Checkpoint 2…) sont numérotés dans l\'ordre du circuit et donnent ton temps de passage : <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, <b style="color:var(--ok)">vert</b> si tu bats ton record.<br><br>' +
-    'Un tour de chauffe, s\'il est prévu, ne compte pas au score : sers-t\'en pour repérer le tracé.');
+    'Les essais libres, s\'ils sont prévus, ne comptent pas au score : roule autant que tu veux pour repérer le tracé, puis clique 🏁 FIN DES ESSAIS pour lancer la course.');
 }
 
 /* ================================================================
@@ -3587,9 +3587,8 @@ async function finishRace(r) {
 
     (res.top || []).forEach((t, i) => {
       const mine = t.pseudo.toLowerCase() === R.pseudo.toLowerCase();
-      html += '<div class="row2' + (mine ? ' me' : '') + '">' +
-        '<span>' + (i + 1) + '. ' + esc(t.pseudo) + '</span>' +
-        '<span>' + t.moves + ' coups</span></div>';
+      html += '<div class="row2' + (mine ? ' me' : '') + '"><span>' + (i + 1) + '. ' + esc(t.pseudo) + '</span>' +
+        '<span>' + t.moves + (t.left ? '+' + t.left : '') + ' coups' + (t.left ? ' <span style="color:var(--mute);font-size:10px">(' + t.left + ' case' + (t.left>1?'s':'') + ' bonus)</span>' : '') + '</span></div>';
     });
 
     document.getElementById('flb').innerHTML = html;

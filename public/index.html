@@ -7764,7 +7764,7 @@ async function showTab(tabId,list){
         let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
           '<div style="font-size:22px">🏁</div>'+
           '<div style="flex:1"><div style="font-weight:900;font-style:italic">'+esc(c.name||'Circuit')+'</div>'+
-          '<div style="font-size:11px;color:var(--mute)">'+lapTxt+' · '+attTxt+(lb&&lb.best?' · ton meilleur : '+lb.best.moves+' coups':'')+(c.laps>1&&lb&&lb.worldBestLap?' · 🏆 tour : '+lb.worldBestLap.lap+' ('+esc(lb.worldBestLap.pseudo)+')':'')+'</div></div>'+
+          '<div style="font-size:11px;color:var(--mute)">'+lapTxt+' · '+attTxt+(lb&&lb.best?' · ton meilleur : '+lb.best.moves+(lb.best.left?'+'+lb.best.left:'')+' coups':'')+(c.laps>1&&lb&&lb.worldBestLap?' · 🏆 tour : '+lb.worldBestLap.lap+' ('+esc(lb.worldBestLap.pseudo)+')':'')+'</div></div>'+
           '<a href="formula-grid.html" style="font-size:11px;font-weight:900;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;padding:5px 10px;border-radius:99px;text-decoration:none">'+(attLeft===0?'VOIR':'JOUER')+' ›</a></div>';
         const top=(lb&&lb.top)||[];
         if(top.length){
@@ -7773,7 +7773,7 @@ async function showTab(tabId,list){
             html+='<div style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px">'+
               '<span style="min-width:24px">'+ico+'</span>'+
               '<span style="flex:1">'+esc(e.pseudo)+'</span>'+
-              '<span style="font-family:var(--fh)">'+e.moves+' <span style="font-size:10px;color:var(--mute)">coups</span></span></div>';
+              '<span style="font-family:var(--fh)">'+e.moves+(e.left?'+'+e.left:'')+' <span style="font-size:10px;color:var(--mute)">coups</span></span></div>';
           });
         } else html+='<div style="font-size:12px;color:var(--mute);text-align:center;padding:4px">Aucun temps validé encore. 🚀</div>';
         wrap.innerHTML=html;
