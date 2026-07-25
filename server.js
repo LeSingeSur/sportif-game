@@ -1215,9 +1215,9 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const runs = circuitRuns[req.params.id] || [];
   const pseudo = (req.query.pseudo || '').trim();
   const mine = pseudo ? runs.filter(r => norm(r.pseudo) === norm(pseudo)) : [];
-  const top = runs.filter(r => !r.crashed && Number.isFinite(r.moves))
-    .sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
-    .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
+  // Un seul résultat par joueur : son meilleur essai (même logique que le classement des points)
+  const top = circuitRanking(req.params.id).slice(0, 10)
+    .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left || 0 }));
   // Meilleur tour : durée mini entre deux passages de ligne, sur tous les runs
   const bestLapOf = (rs) => {
     let best = null;
