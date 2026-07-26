@@ -175,7 +175,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, diceSeed: c.diceSeed || ('legacy' + c.id), pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, countsInGlobal: c.countsInGlobal !== false };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, diceSeed: c.diceSeed || ('legacy' + c.id), pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, countsInGlobal: c.countsInGlobal !== false, dailyRequired: !!c.dailyRequired };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -233,11 +233,48 @@ function hasPlayed(pseudo, athleteId) {
 function publishedAthletes() {
   return athletes.filter(a => a.published !== false);
 }
+// Circuits marqués "jeu du jour" que ce joueur n'a pas encore courus
+// Points rapportés par chaque place d'un circuit : le 1er marque N × multiplicateur,
+// le dernier 1 × multiplicateur. 0 si le circuit est hors classement général.
+function circuitPointsFor(circuit, rankIndex, totalRanked) {
+  if (!circuit || circuit.countsInGlobal === false) return 0;
+  const mult = Number.isFinite(circuit.pointsMultiplier) ? circuit.pointsMultiplier : 10;
+  return (totalRanked - rankIndex) * mult;
+}
+
+// Circuits "jeu du jour" encore proposés à ce joueur.
+// Ils restent affichés TANT QU'IL RESTE DES ESSAIS : un joueur qui a déjà bouclé
+// un tour peut continuer à améliorer son temps jusqu'à épuisement de ses chances.
+function pendingCircuitsFor(pseudo) {
+  return circuits
+    .filter(c => c.published && c.dailyRequired)
+    .map(c => {
+      const mine = (circuitRuns[c.id] || []).filter(r => norm(r.pseudo) === norm(pseudo));
+      const done = mine.filter(r => !r.crashed);
+      const best = done.length ? done.reduce((a, b) => (b.moves < a.moves ? b : a)) : null;
+      return {
+        id: c.id, name: c.name, laps: c.laps, attempts: c.attempts,
+        attemptsLeft: Math.max(0, c.attempts - mine.length),
+        alreadyPlayed: done.length > 0,
+        bestMoves: best ? best.moves : null
+      };
+    })
+    .filter(c => c.attemptsLeft > 0);
+}
+
+// Circuits du jour JAMAIS bouclés : ce sont eux qui empêchent de clore la journée.
+function unplayedRequiredCircuits(pseudo) {
+  return circuits
+    .filter(c => c.published && c.dailyRequired)
+    .filter(c => !(circuitRuns[c.id] || []).some(r => norm(r.pseudo) === norm(pseudo) && !r.crashed));
+}
+
 function nextAthleteFor(pseudo) {
   return publishedAthletes().find(a => !hasPlayed(pseudo, a.id)) || null;
 }
 function hasFinishedAll(pseudo) {
   const pub = publishedAthletes();
+  if (unplayedRequiredCircuits(pseudo).length) return false;   // circuit du jour jamais bouclé
   return pub.length > 0 && pub.every(a => hasPlayed(pseudo, a.id));
 }
 function rebuildGlobalScores() {
@@ -705,7 +742,8 @@ app.get('/api/athlete', (req, res) => {
   const pseudo = (req.query.pseudo || '').trim();
   if (!pseudo) return res.status(400).json({ error: 'Pseudo requis' });
   const athlete = nextAthleteFor(pseudo);
-  if (!athlete) return res.json({ done: true });
+  // Journée terminée seulement si les circuits "jeu du jour" ont été courus
+  if (!athlete) return res.json({ done: true, pendingCircuits: pendingCircuitsFor(pseudo) });
 
   const gridSize = athlete.gridSize || 10;
   const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text' };
@@ -1021,10 +1059,18 @@ app.get('/api/scores/teams', async (req, res) => {
     if(!teamData[acc.teamId]) teamData[acc.teamId]=[];
     teamData[acc.teamId].push(gs.score);
   }
+  const TOP_N = 3;   // seuls les 3 meilleurs joueurs de l'équipe comptent
   const result=Object.entries(teamData).map(([teamId,scores])=>{
     const t=teams.find(t=>t.id===teamId)||{name:'Équipe',emoji:'👥',color:'#6366f1',id:teamId};
-    const avg=scores.length>=minPlayers?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
-    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:scores.length,avg,qualified:scores.length>=minPlayers};
+    // Moyenne du TOP 3 : une grosse équipe n'est plus pénalisée par ses joueurs
+    // occasionnels, et une petite équipe n'est plus avantagée par son faible effectif.
+    const best=[...scores].sort((a,b)=>b-a).slice(0,TOP_N);
+    const avg=scores.length>=minPlayers
+      ? Math.round(best.reduce((a,b)=>a+b,0)/best.length)
+      : null;
+    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,
+      playerCount:scores.length,countedPlayers:best.length,topN:TOP_N,
+      avg,qualified:scores.length>=minPlayers};
   }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
   res.json({teams:result,minPlayers});
 });
@@ -1192,6 +1238,7 @@ app.post('/api/formula/circuit', async (req, res) => {
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
     countsInGlobal: req.body.countsInGlobal !== false, // false = hors classement général
+    dailyRequired: !!req.body.dailyRequired,           // true = à faire dans les jeux du jour
     published: !!published,
     // POOL DE DÉS COMMUN : graine du circuit. Tous les joueurs affrontent les mêmes
     // tirages. Conservée d'une réédition à l'autre (sinon les temps déjà posés
@@ -1227,8 +1274,10 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const pseudo = (req.query.pseudo || '').trim();
   const mine = pseudo ? runs.filter(r => norm(r.pseudo) === norm(pseudo)) : [];
   // Un seul résultat par joueur : son meilleur essai (même logique que le classement des points)
-  const top = circuitRanking(req.params.id).slice(0, 10)
-    .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left || 0 }));
+  const rankedAll = circuitRanking(req.params.id);
+  const top = rankedAll.slice(0, 10)
+    .map((r, i) => ({ pseudo: r.pseudo, moves: r.moves, left: r.left || 0,
+                      points: circuitPointsFor(c, i, rankedAll.length) }));
   // Meilleur tour : durée mini entre deux passages de ligne, sur tous les runs
   const bestLapOf = (rs) => {
     let best = null;
@@ -1306,7 +1355,10 @@ app.post('/api/formula/run', async (req, res) => {
     saveData();
 
     // Top 10 pour affichage immédiat côté client
-    const top = ranked.slice(0, 10).map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
+    const top = ranked.slice(0, 10).map((r, i) => ({
+      pseudo: r.pseudo, moves: r.moves, left: r.left,
+      points: circuitPointsFor(c, i, ranked.length)
+    }));
 
     res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, countsInGlobal, top });
   } catch(e) { res.status(500).json({ error: e.message }); }
