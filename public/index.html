@@ -2284,7 +2284,8 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 <section class="scr" id="sd">
   <div class="done-ico">🏅</div>
   <div class="done-title">TERMINÉ !</div>
-  <p class="done-sub">Tu as joué tous les défis disponibles.<br>Reviens bientôt pour de nouveaux sportifs !</p>
+  <p class="done-sub" id="done-sub-txt">Tu as joué tous les défis disponibles.<br>Reviens bientôt pour de nouveaux sportifs !</p>
+  <div id="done-pending" style="display:none;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;border-radius:14px;padding:14px;margin-top:14px;text-align:left"></div>
   <button class="btn btn-s" id="btn-done-lb" style="margin-top:16px">🏆 Voir le classement</button>
 </section>
 
@@ -2623,7 +2624,38 @@ async function loadAthlete(){
       res = await fetch('/api/athlete?pseudo='+encodeURIComponent(GAME.pseudo));
     }
     const data=await res.json();
-    if(!PREVIEW_MODE && data.done){show('sd');return}
+    if(!PREVIEW_MODE && data.done){
+      // Circuits Formula·Grid marqués "jeu du jour" et pas encore courus
+      const pend=data.pendingCircuits||[];
+      const box=document.getElementById('done-pending');
+      const sub=document.getElementById('done-sub-txt');
+      if(box){
+        if(pend.length){
+          if(sub) sub.innerHTML=pend.every(c=>c.alreadyPlayed)
+            ? 'Tu as tout joué !<br>Il te reste des essais pour grimper au classement.'
+            : 'Tu as joué tous les défis…<br>mais il te reste le jeu du jour !';
+          const tousJoues=pend.every(c=>c.alreadyPlayed);
+          box.innerHTML='<div style="font-weight:900;font-style:italic;margin-bottom:6px">'+
+            (tousJoues?'⭐ TU PEUX ENCORE AMÉLIORER TON TEMPS':'⭐ ENCORE UN JEU AUJOURD\'HUI')+'</div>'+
+            pend.map(c=>{
+              const left=(c.attemptsLeft!=null?c.attemptsLeft:c.attempts);
+              const etat=c.alreadyPlayed
+                ? 'ton meilleur : '+c.bestMoves+' coups · '+left+' essai'+(left>1?'s':'')+' restant'+(left>1?'s':'')
+                : c.laps+' tour'+(c.laps>1?'s':'')+' · '+left+' essai'+(left>1?'s':'');
+              return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">'+
+                '<span style="font-size:20px">'+(c.alreadyPlayed?'🔁':'🏁')+'</span>'+
+                '<span style="flex:1"><b>'+esc(c.name)+'</b><br><span style="font-size:11px;opacity:.75">'+etat+'</span></span>'+
+                '<a href="formula-grid.html" style="background:#14161a;color:#f7c948;font-weight:900;font-size:11px;padding:6px 12px;border-radius:99px;text-decoration:none">'+
+                (c.alreadyPlayed?'REJOUER':'JOUER')+' ›</a></div>';
+            }).join('');
+          box.style.display='block';
+        } else {
+          if(sub) sub.innerHTML='Tu as joué tous les défis disponibles.<br>Reviens bientôt pour de nouveaux sportifs !';
+          box.style.display='none';
+        }
+      }
+      show('sd');return;
+    }
     // Toujours cacher toutes les zones avant de dispatcher
     hideAllZones();
     document.getElementById('std-ans-area').style.display='none';
@@ -2732,6 +2764,11 @@ const ALL_ZONES=['img-zone','clue','buzz-zone','sportus-zone','prix-zone','trapp
 function hideAllZones(){
   ALL_ZONES.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const vcz=document.getElementById('var-correct-zone');if(vcz)vcz.style.display='none';
+  // Panneau de solution PARTAGÉ par l'écran de victoire (L'Alpe, Natation…).
+  // Sans ce nettoyage central, les réponses du défi précédent réapparaissaient
+  // à la fin du défi suivant.
+  const sol=document.getElementById('ns-solution');
+  if(sol){sol.style.display='none';sol.innerHTML='';}
   varStopTimer();
 }
 
@@ -5583,6 +5620,11 @@ async function grimpeShowFound(){
   if(!el)return;
   const found=GP.found||[];
   const total=GP.totalAnswers||10;
+  // Le fetch ci-dessous peut se terminer APRÈS que le joueur soit passé au défi
+  // suivant : sans ce garde-fou, la réponse tardive réécrivait les réponses de
+  // l'Alpe dans le panneau partagé, qui réapparaissaient à la fin du défi d'après.
+  const forAthlete=GAME.athleteId;
+  const stillCurrent=()=>GAME.athleteId===forAthlete;
   el.style.display='block';
   el.innerHTML='<div style="font-family:var(--fh);font-size:11px;color:var(--mute);letter-spacing:1px;margin-bottom:8px">🎯 RÉPONSES ('+found.length+'/'+total+')</div><div style="font-size:11px;color:var(--mute)">Chargement…</div>';
 
@@ -5599,6 +5641,7 @@ async function grimpeShowFound(){
       html+=`<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:${isFound?'rgba(212,255,0,.15)':'rgba(255,60,60,.15)'};color:${isFound?'var(--neon)':'var(--red)'}">${a}</span>`;
     });
     html+='</div>';
+    if(!stillCurrent())return;   // défi déjà changé : on n'écrit plus
     el.innerHTML=html;
   }catch(e){
     // Fallback — just show found
@@ -5607,6 +5650,7 @@ async function grimpeShowFound(){
     found.forEach(r=>{html+=`<span style="font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(212,255,0,.15);color:var(--neon)">${r}</span>`;});
     html+='</div>';
     if(total-found.length>0)html+=`<div style="font-size:11px;color:var(--mute);margin-top:4px">${total-found.length} réponse(s) non trouvée(s)</div>`;
+    if(!stillCurrent())return;   // défi déjà changé : on n'écrit plus
     el.innerHTML=html;
   }
 }
@@ -7738,8 +7782,8 @@ async function showTab(tabId,list){
         div.innerHTML=`<div style="font-family:var(--fh);font-size:18px;color:var(--mute);min-width:20px">${i+1}.</div>
           <div style="font-size:20px">${t.emoji}</div>
           <div style="flex:1"><div style="font-weight:700;color:${t.color}">${t.name}</div>
-          <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)</div></div>
-          ${t.qualified?`<div style="font-family:var(--fh);font-size:20px;color:${t.color}">${t.avg} <span style="font-size:11px;font-family:var(--ff);color:var(--mute)">moy.</span></div>`:'<div style="font-size:11px;color:var(--mute)">—</div>'}`;
+          <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)${t.countedPlayers&&t.playerCount>t.countedPlayers?` · top ${t.countedPlayers} retenus`:''}</div></div>
+          ${t.qualified?`<div style="font-family:var(--fh);font-size:20px;color:${t.color}">${t.avg} <span style="font-size:11px;font-family:var(--ff);color:var(--mute)">moy. top ${t.topN||3}</span></div>`:'<div style="font-size:11px;color:var(--mute)">—</div>'}`;
         list.appendChild(div);
       });
       return;
@@ -7758,7 +7802,7 @@ async function showTab(tabId,list){
         }catch(e){}
         const wrap=document.createElement('div');
         wrap.style.cssText='background:var(--c2);border-radius:12px;padding:12px;margin-bottom:10px';
-        const lapTxt=c.laps+' tour'+(c.laps>1?'s':'')+(c.countsInGlobal===false?' · 🎈 hors classement':'');
+        const lapTxt=c.laps+' tour'+(c.laps>1?'s':'')+(c.countsInGlobal===false?' · 🎈 hors classement':'')+(c.dailyRequired?' · ⭐ jeu du jour':'');
         const attLeft=lb&&typeof lb.attemptsLeft==='number'?lb.attemptsLeft:null;
         const attTxt=attLeft===null?(c.attempts+' essai'+(c.attempts>1?'s':'')):(attLeft>0?attLeft+' essai'+(attLeft>1?'s':'')+' restant'+(attLeft>1?'s':''):'essais épuisés');
         let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
@@ -7768,12 +7812,13 @@ async function showTab(tabId,list){
           '<a href="formula-grid.html" style="font-size:11px;font-weight:900;background:linear-gradient(135deg,#f7c948,#e0a92e);color:#14161a;padding:5px 10px;border-radius:99px;text-decoration:none">'+(attLeft===0?'VOIR':'JOUER')+' ›</a></div>';
         const top=(lb&&lb.top)||[];
         if(top.length){
-          top.slice(0,5).forEach((e,i)=>{
+          top.slice(0,10).forEach((e,i)=>{
             const ico=['🥇','🥈','🥉'][i]||(i+1)+'.';
             html+='<div style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px">'+
               '<span style="min-width:24px">'+ico+'</span>'+
               '<span style="flex:1">'+esc(e.pseudo)+'</span>'+
-              '<span style="font-family:var(--fh)">'+e.moves+(e.left?'+'+e.left:'')+' <span style="font-size:10px;color:var(--mute)">coups</span></span></div>';
+              '<span style="font-family:var(--fh)">'+e.moves+(e.left?'+'+e.left:'')+' <span style="font-size:10px;color:var(--mute)">coups</span>'+
+              (e.points?' <span style="font-size:10px;color:#f7c948">'+e.points+' pts</span>':'')+'</span></div>';
           });
         } else html+='<div style="font-size:12px;color:var(--mute);text-align:center;padding:4px">Aucun temps validé encore. 🚀</div>';
         wrap.innerHTML=html;
@@ -10935,7 +10980,7 @@ function badShowTactic(){
   document.querySelector('#bad-tactic [onclick*="smash"] span:last-child').textContent=
     '×2 chrono ('+smashTime+'s) · +30 ou −10';
   document.querySelector('#bad-tactic [onclick*="degage"] span:last-child').textContent=
-    '×1.5 chrono ('+degageTime+'s) · +20 · 1 mauvaise réponse enlevée';
+    '×1.5 chrono ('+degageTime+'s) · +15 · 1 mauvaise réponse enlevée';
   document.querySelector('#bad-tactic [onclick*="drive"] span:last-child').textContent=
     'Normal ('+base+'s) · +20 · 0 si faux';
   document.getElementById('bad-fb').textContent='';
@@ -11913,8 +11958,11 @@ function trivSubmit(){
   const c=TRIV.cases[targetPos];
   const isCam=c.type==='cam';
   const tol=TRIV._pendingTol!=null?TRIV._pendingTol:1;
-  const correctAnswer=TRIV._pendingAnswer||'';
-  const correct=levenshtein(normStr(val),normStr(correctAnswer))<=tol;
+  const rawAnswer=TRIV._pendingAnswer||'';
+  // Plusieurs réponses acceptées, séparées par ";" — la 1re est celle qu'on affiche
+  const variants=rawAnswer.split(';').map(a=>a.trim()).filter(Boolean);
+  const correctAnswer=variants[0]||rawAnswer;
+  const correct=variants.some(v=>levenshtein(normStr(val),normStr(v))<=tol);
   const fb=document.getElementById('triv-fb');
   const color=isCam?c.color:(TRIV.cases[c.themeIdx*2]?.color||'#b48fff');
 

@@ -1217,6 +1217,13 @@ header.top {
           </label>
         </div>
         <div class="field">
+          <label>Jeux du jour</label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
+            <input type="checkbox" id="c-daily" style="width:18px;height:18px;accent-color:#f7c948">
+            <span style="font-size:12px;color:var(--mute)">⭐ À faire dans les jeux du jour Arena</span>
+          </label>
+        </div>
+        <div class="field">
           <label>Grille de dés</label>
           <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
             <input type="checkbox" id="c-regen-dice" style="width:18px;height:18px;accent-color:#f7c948">
@@ -1711,6 +1718,8 @@ async function openCircuit(id) {
     circuit.attemptNo = board.attemptNo || 1;
     // Circuit hors classement général : annoncé clairement avant de jouer
     if (board.countsInGlobal !== undefined) circuit.countsInGlobal = board.countsInGlobal;
+    // Classement du circuit : affiché aux checkpoints et à l'arrivée
+    circuit.top = board.top || [];
 
     startRace(circuit, pseudo, board.attemptsLeft, false);
   } catch (e) {
@@ -1818,6 +1827,10 @@ function buildCheckpoints() {
   return out;
 }
 
+// Circuits dont le joueur a déjà cliqué "FIN DES ESSAIS" : les essais libres sont
+// clos pour toute la session — ils ne doivent pas revenir avant chaque nouvel essai.
+const PRACTICE_DONE = new Set();
+
 function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // Identifiants
   R.circuit = circuit;
@@ -1843,12 +1856,17 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.targetLaps = circuit.laps;
 
   // Essais libres (ex tours de chauffe) : activés par l'admin, terminés par le joueur
-  R.freePractice = !skipPractice && !!(circuit.freePractice || (circuit.warmup||0) > 0);
+  R.freePractice = !skipPractice
+    && !PRACTICE_DONE.has(circuit.id)
+    && !!(circuit.freePractice || (circuit.warmup||0) > 0);
   R.warmupDone = 0;
   R.isWarmup = R.freePractice;
 
   // Temps de passage de chaque tour complet (nb de coups cumulés à la fin du tour N)
   R.lapMoves = [];
+
+  // Classement du circuit, pour l'afficher pendant et après la course
+  R.board = circuit.top || [];
 
   // Pool de dés commun (cf. dieValue) : mêmes tirages pour tous sur cet essai
   R.diceSeed = circuit.diceSeed || null;
@@ -2064,6 +2082,7 @@ document.getElementById('center-btn').onclick = centerOnCar;
 // Essais libres : le joueur décide quand lancer la vraie course
 document.getElementById('btn-end-practice').onclick = () => {
   if (!R.isWarmup) return;
+  PRACTICE_DONE.add(R.circuit.id);   // clos pour de bon sur ce circuit
   toast('🏁 Fin des essais — départ de la course !');
   startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode, true);
 };
@@ -3647,6 +3666,36 @@ function finalizeMove(r) {
   drawRace();
 }
 
+// Tableau de classement du circuit (arrivée + mode test). `me` surligne le joueur,
+// et si le joueur n'est pas dans le top affiché, on ajoute sa ligne à part.
+function renderCircuitBoard(top, pseudo, myRank, myTotal, limit) {
+  const list = (top || []).slice(0, limit || 10);
+  if (!list.length) return '<div style="color:var(--mute);padding:6px">Aucun temps enregistré — tu es le premier !</div>';
+  const me = (pseudo || '').toLowerCase();
+  let html = '<div class="eyebrow" style="margin-bottom:6px">Classement du circuit</div>';
+  let inList = false;
+  list.forEach((t, i) => {
+    const mine = (t.pseudo || '').toLowerCase() === me;
+    if (mine) inList = true;
+    const medal = ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
+    // Points rapportés par la place au classement général
+    const pts = (t.points != null && t.points > 0)
+      ? ' <span style="color:var(--gold,#f7c948)">' + t.points + ' pts</span>' : '';
+    html += '<div class="row2' + (mine ? ' me' : '') + '">' +
+      '<span>' + medal + ' ' + esc(t.pseudo) + '</span>' +
+      '<span>' + t.moves + (t.left ? '+' + t.left : '') + pts + '</span></div>';
+  });
+  if (!inList && myRank) {
+    html += '<div class="row2 me" style="border-top:1px solid #2c3038;margin-top:4px;padding-top:5px">' +
+      '<span>' + myRank + '. ' + esc(pseudo) + '</span>' +
+      '<span>' + (myTotal ? 'sur ' + myTotal : '') + '</span></div>';
+  }
+  const anyPts = (list || []).some(t => t.points != null && t.points > 0);
+  html += '<div style="font-size:10px;color:var(--mute);margin-top:5px">coups (+ cases bonus au départage)' +
+    (anyPts ? ' · pts au classement général' : ' · 🎈 circuit hors classement') + '</div>';
+  return html;
+}
+
 /* ================================================================
    COURSE — CHECKPOINT TOAST
    ================================================================ */
@@ -3683,6 +3732,14 @@ function showCpToast(index, time, left) {
 
   if (wbT !== undefined && time >= wbT) {
     html += '<div class="cp-diff" style="opacity:.75">Record : ' + wbT + ' (' + esc(wb.pseudo) + ')</div>';
+  }
+
+  // Rappel de qui il faut battre sur ce circuit
+  if (R.board && R.board.length) {
+    html += '<div style="margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:var(--mute)">' +
+      R.board.slice(0, 3).map((t, i) =>
+        (['🥇', '🥈', '🥉'][i]) + ' ' + esc(t.pseudo) + ' ' + t.moves + (t.left ? '+' + t.left : '')
+      ).join(' · ') + '</div>';
   }
 
   el.innerHTML = html;
@@ -3778,7 +3835,8 @@ async function finishRace(r) {
   // Mode test : pas d'envoi serveur
   if (R.testMode) {
     document.getElementById('flb').innerHTML =
-      '<div style="color:var(--ok);padding:8px">✅ Mode test — non enregistré</div>';
+      '<div style="color:var(--ok);padding:6px">✅ Mode test — non enregistré</div>' +
+      renderCircuitBoard(R.board, R.pseudo, 0, 0, 10);
 
     const rb = document.getElementById('btn-retry');
     rb.disabled = false;
@@ -3807,16 +3865,9 @@ async function finishRace(r) {
 
     R.attemptsLeft = res.attemptsLeft;
 
-    // Leaderboard
-    let html = '<div class="eyebrow" style="margin-bottom:6px">Classement</div>';
-
-    (res.top || []).forEach((t, i) => {
-      const mine = t.pseudo.toLowerCase() === R.pseudo.toLowerCase();
-      html += '<div class="row2' + (mine ? ' me' : '') + '"><span>' + (i + 1) + '. ' + esc(t.pseudo) + '</span>' +
-        '<span>' + t.moves + (t.left ? '+' + t.left : '') + ' coups' + (t.left ? ' <span style="color:var(--mute);font-size:10px">(' + t.left + ' case' + (t.left>1?'s':'') + ' bonus)</span>' : '') + '</span></div>';
-    });
-
-    document.getElementById('flb').innerHTML = html;
+    // Classement : top 10 du circuit
+    document.getElementById('flb').innerHTML =
+      renderCircuitBoard(res.top, R.pseudo, res.rank, res.totalPlayers, 10);
     document.getElementById('fsub').textContent +=
       (res.countsInGlobal === false)
         ? ' · Rang ' + res.rank + ' · 🎈 hors classement général'
@@ -4268,6 +4319,44 @@ function drawRace() {
         cctx.lineWidth = 1.5;
         cctx.stroke();
         cctx.restore();
+
+        // INERTIE À VENIR : les cases où la voiture sera OBLIGÉE d'aller tout droit
+        // après ce coup. Elles sont projetées depuis la case d'arrivée, dans le cap
+        // final, pour anticiper le prochain virage avant de valider.
+        const lock = res.inertiaEnd || 0;
+        if (lock > 0 && !res.crash) {
+          const d = HEX_DIRS[last.dir];
+          let pq = last.q, pr = last.r;
+          for (let i = 1; i <= lock; i++) {
+            pq += d.q; pr += d.r;
+            const p = axialToPixel(pq, pr, hexSize);
+            const onTrack = R.grid[pr] && R.grid[pr][pq] && R.grid[pr][pq] !== '#';
+            const fade = 0.55 - (i - 1) * 0.10;
+            // chevron orienté dans le cap final
+            cctx.save();
+            cctx.translate(p.x, p.y);
+            cctx.rotate(Math.PI / 3 * (last.dir - 1));
+            cctx.strokeStyle = onTrack
+              ? 'rgba(247,201,72,' + Math.max(0.18, fade) + ')'
+              : 'rgba(255,93,93,0.8)';   // l'inertie mène hors piste : danger
+            cctx.lineWidth = Math.max(2, hexSize * 0.14);
+            cctx.lineCap = 'round';
+            cctx.lineJoin = 'round';
+            cctx.beginPath();
+            cctx.moveTo(-hexSize * 0.22, -hexSize * 0.26);
+            cctx.lineTo(hexSize * 0.16, 0);
+            cctx.lineTo(-hexSize * 0.22, hexSize * 0.26);
+            cctx.stroke();
+            cctx.restore();
+          }
+          // rappel chiffré sur la dernière case verrouillée
+          const endP = axialToPixel(pq, pr, hexSize);
+          cctx.fillStyle = 'rgba(247,201,72,0.95)';
+          cctx.font = 'bold ' + Math.max(9, hexSize * 0.34) + 'px sans-serif';
+          cctx.textAlign = 'center';
+          cctx.textBaseline = 'middle';
+          cctx.fillText('🔒' + lock, endP.x, endP.y + hexSize * 0.55);
+        }
       }
     }
 
@@ -4593,6 +4682,7 @@ function newCircuit() {
   const _rgd = document.getElementById('c-regen-dice'); if (_rgd) _rgd.checked = false;
   E.diceSeed = null;   // la grille naîtra au premier enregistrement
   const _ccg = document.getElementById('c-counts-global'); if (_ccg) _ccg.checked = true;
+  const _cdl = document.getElementById('c-daily'); if (_cdl) _cdl.checked = false;
   document.getElementById('c-mult').value = 10;
   document.getElementById('c-fuel').value = 0;
   document.getElementById('c-fuel-on').checked = true;
@@ -4654,6 +4744,8 @@ async function loadForEdit(id) {
     E.diceSeed = c.diceSeed || null;   // grille de dés, pour l'écran admin
     const _ccg2 = document.getElementById('c-counts-global');
     if (_ccg2) _ccg2.checked = (c.countsInGlobal !== false);
+    const _cdl2 = document.getElementById('c-daily');
+    if (_cdl2) _cdl2.checked = !!c.dailyRequired;
     E.undoStack = [];
 
     document.getElementById('c-name').value = c.name;
@@ -5797,6 +5889,7 @@ document.getElementById('btn-test-mode').onclick = () => {
     freePractice: document.getElementById('c-warmup').checked,
     regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
+    dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
     fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
     fuelEnabled: document.getElementById('c-fuel-on').checked
   }, 'TesteurAdmin', 99, true);
@@ -6115,6 +6208,7 @@ async function saveCircuit(publish) {
     freePractice: document.getElementById('c-warmup').checked,
     regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
+    dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
     pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
     fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
     fuelEnabled: document.getElementById('c-fuel-on').checked,
