@@ -621,6 +621,17 @@ header.top {
 
 #dice-anim-overlay.on { display: flex; }
 
+/* Dé présent dans le jeu commun mais NON engagé à ce rapport : visible en retrait,
+   pour que le joueur voie d'un coup d'œil quels dés sa vitesse lui fait gagner. */
+.dice-cube.inactif {
+  opacity: .30;
+  border-color: #3a3f4a;
+  color: #6b7280;
+  box-shadow: none;
+  transform: scale(.78);
+  animation: none;
+}
+
 .dice-cube {
   width: 52px;
   height: 52px;
@@ -1384,28 +1395,31 @@ function rotHex(d, k) {
 const SQRT3 = 1.73205080757;
 
 // Plages de dés par vitesse (index 0 = V0 arrêt)
-const DICE = [
-  [0, 0],     // V0 : arrêt
-  [1, 2],     // V1
-  [2, 4],     // V2
-  [4, 8],     // V3
-  [7, 12],    // V4
-  [11, 20],   // V5
-  [21, 30]    // V6
+/* DÉS IMBRIQUÉS — un seul jeu de 6 dés ; le rapport g utilise les g PREMIERS.
+   Chaque rapport ajoute un dé dont les faces montent d'un cran. Conséquence
+   directe : monter un rapport ne peut JAMAIS faire reculer, puisque le dé ajouté
+   est toujours positif — contrairement aux anciens pools indépendants, où monter
+   pouvait donner autant, voire moins.
+   Écarts réguliers entre rapports : +2, +3, +4, +5, +6 cases. */
+const DICE_SET = [
+  [1, 2],      // dé 1  → V1 : 1-2   (moy 1,5)
+  [1, 2, 3],   // dé 2  → V2 : 2-5   (moy 3,5)
+  [2, 3, 4],   // dé 3  → V3 : 4-9   (moy 6,5)
+  [3, 4, 5],   // dé 4  → V4 : 7-14  (moy 10,5)
+  [4, 5, 6],   // dé 5  → V5 : 11-20 (moy 15,5)
+  [5, 6, 7]    // dé 6  → V6 : 16-27 (moy 21,5)
 ];
 
-// Pools de dés asymétriques (courbe de Gauss → lisse les extrêmes, réduit le hasard)
-// Chaque pool respecte exactement les bornes min/max de DICE ci-dessus.
-// Le NOMBRE de dés = le rapport engagé = la consommation d'essence du tour.
-const DICE_POOLS = [
-  [],                                              // V0 : aucun dé
-  [[1, 2]],                                         // V1 : 1 dé  (1-2)
-  [[1, 2], [1, 2]],                                 // V2 : 2 dés (2-4)
-  [[1, 2], [1, 2, 3], [2, 3]],                      // V3 : 3 dés (4-8)
-  [[2, 3], [1, 2, 3], [2, 3], [2, 3]],              // V4 : 4 dés (7-12)
-  [[2, 3, 4], [2, 3, 4], [2, 3], [2, 3], [3, 4, 6]],// V5 : 5 dés (11-20)
-  [[4, 5], [4, 5], [3, 4], [3, 4], [3, 4], [4, 5, 8]] // V6 : 6 dés (21-30)
-];
+// Le pool d'un rapport = les g premiers dés du jeu commun.
+const DICE_POOLS = [[]];
+for (let g = 1; g <= 6; g++) DICE_POOLS.push(DICE_SET.slice(0, g));
+
+// Bornes min/max de chaque rapport, DÉRIVÉES des dés (jamais saisies à la main,
+// pour qu'affichage et moteur ne puissent pas diverger).
+const DICE = DICE_POOLS.map(pool => [
+  pool.reduce((s, d) => s + Math.min(...d), 0),
+  pool.reduce((s, d) => s + Math.max(...d), 0)
+]);
 
 /* ----------------------------------------------------------------
    POOL DE DÉS COMMUN
@@ -1438,8 +1452,11 @@ function diceHash(str) {
 // Fonction PURE : c'est elle qui définit la grille commune, et c'est elle que
 // l'écran admin interroge pour afficher les tirages sans jouer.
 function gridDieValue(seed, attemptNo, faces, gear, dieIndex, moveNo) {
-  const key = seed + '|a' + (attemptNo || 1) + '|m' + moveNo +
-              '|g' + gear + '|d' + dieIndex;
+  // Ni attemptNo ni gear n'entrent dans la clé :
+  //  - même grille à chaque essai (séance de qualifications) ;
+  //  - le dé n°i garde LA MÊME valeur quel que soit le rapport engagé, sans quoi
+  //    l'imbrication n'aurait aucun sens (V5 doit valoir exactement V4 + le 5e dé).
+  const key = seed + '|m' + moveNo + '|d' + dieIndex;
   return faces[diceHash(key) % faces.length];
 }
 
@@ -2197,7 +2214,10 @@ function renderGears() {
     } else if (R.gear === 0) {
       reach = (g === 1);
     } else {
-      reach = Math.abs(g - R.gear) <= 1;
+      // Freinage plus vif que l'accélération : -2 rapports en descente, +1 seulement
+      // en montée. C'est la dissymétrie d'une vraie voiture (on freine bien plus fort
+      // qu'on n'accélère) et ça permet le freinage tardif avant un virage.
+      reach = (g - R.gear <= 1) && (R.gear - g <= 2);
     }
 
     let cls = 'gear';
@@ -2654,8 +2674,11 @@ function rollDiceAnim() {
   const titleEl = document.getElementById('dice-title');
   const pool = DICE_POOLS[R.gear] || [];
 
-  // Un cube visible PAR DÉ du pool (V5 → 5 cubes qui tournent en même temps)
-  titleEl.textContent = pool.length + (pool.length > 1 ? ' DÉS' : ' DÉ') + ' · RAPPORT ' + R.gear;
+  // On affiche TOUJOURS les 6 dés du jeu commun ; seuls les `pool.length` premiers
+  // sont engagés à ce rapport. Le joueur voit ainsi concrètement ce que chaque
+  // rapport lui ajoute, au lieu de deviner une plage abstraite.
+  const nActifs = pool.length;
+  titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR 6';
 
   // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
@@ -2663,14 +2686,14 @@ function rollDiceAnim() {
     if (R.isWarmup || !R.diceSeed) {
       fairEl.textContent = '🎲 Essais libres · tirages aléatoires';
     } else {
-      fairEl.textContent = '⚖️ Tirages identiques pour tous les joueurs · essai n°' + (R.attemptNo || 1);
+      fairEl.textContent = '⚖️ Tirages identiques pour tous les joueurs et à chaque essai';
     }
     fairEl.style.display = 'block';
   }
   row.innerHTML = '';
-  const cubes = pool.map(() => {
+  const cubes = DICE_SET.map((faces, i) => {
     const c = document.createElement('div');
-    c.className = 'dice-cube';
+    c.className = 'dice-cube' + (i < nActifs ? '' : ' inactif');
     c.textContent = '?';
     row.appendChild(c);
     return c;
@@ -2683,10 +2706,10 @@ function rollDiceAnim() {
     // chaque dé tourne sur ses PROPRES faces
     let running = 0;
     cubes.forEach((c, i) => {
-      const faces = pool[i];
+      const faces = DICE_SET[i];
       const v = faces[Math.floor(Math.random() * faces.length)];
       c.textContent = v;
-      running += v;
+      if (i < nActifs) running += v;   // les dés en retrait ne comptent pas
     });
     sumEl.textContent = 'Σ ' + running;
     counter++;
@@ -2698,10 +2721,14 @@ function rollDiceAnim() {
       const moveNo = R.turn + 1;
       let total = 0;
       cubes.forEach((c, i) => {
-        const v = dieValue(pool[i], R.gear, i, moveNo);
+        // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
+        // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
+        const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
         c.textContent = v;
-        c.style.borderColor = 'var(--ok)';
-        total += v;
+        if (i < nActifs) {
+          c.style.borderColor = 'var(--ok)';
+          total += v;
+        }
       });
       sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + total + ' cases</span>';
 
@@ -2891,7 +2918,7 @@ function buildRulesHTML() {
   details('⚖️ Des dés identiques pour tous',
     'Les dés ne sont pas tirés au hasard pendant la course : ils sont <b>les mêmes pour tous les joueurs</b>. Au 3e coup en V4, tout le monde obtient le même résultat que toi.<br><br>' +
     'Le classement ne récompense donc que tes <b>décisions</b> : quel rapport engager, quand braquer, quelle trajectoire prendre. Personne ne gagne parce qu\'il a eu de la chance.<br><br>' +
-    'Changer de rapport pioche ailleurs dans la grille : impossible de \"pêcher\" un bon tirage. Chaque essai a sa propre grille, donc rejouer reste un nouveau défi.<br><br>' +
+    'Changer de rapport pioche ailleurs dans la grille : impossible de \"pêcher\" un bon tirage. La grille est la <b>même à chaque essai</b> : tes essais suivants servent à mieux exploiter les mêmes dés.<br><br>' +
     'Pendant les <b>essais libres</b>, les dés redeviennent aléatoires : sinon tu repérerais la grille de la course avant de la jouer.') +
 
   details('🏁 Points et classement',
@@ -3216,19 +3243,10 @@ function renderDiceGrid(seed) {
 
   // Rappel du fonctionnement
   html += '<div style="background:rgba(74,199,255,.08);border-left:3px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--txt)">' +
-    'Ces tirages sont <b>identiques pour tous les joueurs</b>. Chaque essai a sa propre grille. ' +
+    'Ces tirages sont <b>identiques pour tous les joueurs</b> et <b>les mêmes à chaque essai</b>. ' +
     'Les essais libres, eux, restent aléatoires.<br>' +
     '<span style="color:var(--mute);font-size:11px">Graine : <code>' + esc(seed) + '</code></span></div>';
 
-  // Sélecteur d'essai
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
-    '<span style="font-size:11px;letter-spacing:1px;color:var(--mute)">ESSAI</span>';
-  for (let a = 1; a <= 5; a++) {
-    const on = a === DG_ATTEMPT;
-    html += '<button class="btn dg-att" data-a="' + a + '" style="padding:5px 11px;font-size:12px' +
-      (on ? ';background:var(--line);color:#14161a;font-weight:900' : '') + '">n°' + a + '</button>';
-  }
-  html += '</div>';
 
   // Tableau coups × rapports
   html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
@@ -3283,10 +3301,6 @@ function renderDiceGrid(seed) {
 
   body.innerHTML = html;
 
-  // Boutons d'essai
-  body.querySelectorAll('.dg-att').forEach(b => {
-    b.onclick = () => { DG_ATTEMPT = parseInt(b.dataset.a); renderDiceGrid(seed); };
-  });
 }
 
 document.getElementById('dice-grid-close').onclick = () => {
@@ -4324,6 +4338,16 @@ function drawRace() {
         // après ce coup. Elles sont projetées depuis la case d'arrivée, dans le cap
         // final, pour anticiper le prochain virage avant de valider.
         const lock = res.inertiaEnd || 0;
+        // Aucune contrainte à venir (typiquement au rapport 1, où la jauge reste à 0) :
+        // on l'indique explicitement, sinon l'absence de flèche ressemble à un bug.
+        if (lock === 0 && !res.crash) {
+          const pOk = axialToPixel(last.q, last.r, hexSize);
+          cctx.fillStyle = 'rgba(57,217,138,0.9)';
+          cctx.font = 'bold ' + Math.max(9, hexSize * 0.32) + 'px sans-serif';
+          cctx.textAlign = 'center';
+          cctx.textBaseline = 'middle';
+          cctx.fillText('🔓', pOk.x, pOk.y + hexSize * 0.55);
+        }
         if (lock > 0 && !res.crash) {
           const d = HEX_DIRS[last.dir];
           let pq = last.q, pr = last.r;
@@ -4982,6 +5006,56 @@ function generateOvalFallback(grid, trackW) {
 }
 
 // 6 stratégies de forme
+// Met de l'ordre dans les points de contrôle produits par les 6 familles de formes.
+// Elles tirent des rayons très variables (30 à 70 % d'écart) et un décalage angulaire
+// aléatoire, ce qui donnait des silhouettes bosselées, avec des virages collés et des
+// pointes — pas des circuits. On garde le caractère de chaque famille mais on :
+//   1) trie par angle → plus aucun tracé qui se croise ;
+//   2) impose un écart angulaire minimal → plus de virages agglutinés ;
+//   3) ramène les rayons dans une bande raisonnable → plus de pointes.
+function tidyControlPoints(ctrl) {
+  const n = ctrl.length;
+  if (n < 3) return ctrl;
+
+  let cq = 0, cr = 0;
+  for (const p of ctrl) { cq += p.q; cr += p.r; }
+  cq /= n; cr /= n;
+
+  // Passage en polaire autour du centre de gravité
+  const polar = ctrl.map(p => {
+    const v = axialToPixel(p.q - cq, p.r - cr, 1);
+    return { a: Math.atan2(v.y, v.x), r: Math.hypot(v.x, v.y) };
+  }).sort((x, y) => x.a - y.a);
+
+  // Rayons ramenés dans une bande autour de la moyenne
+  const mean = polar.reduce((s, p) => s + p.r, 0) / n;
+  const lo = mean * 0.68, hi = mean * 1.38;
+  for (const p of polar) p.r = Math.max(lo, Math.min(hi, p.r));
+
+  // Écart angulaire minimal : on repousse les angles trop serrés vers une
+  // répartition régulière, sans effacer complètement l'irrégularité voulue.
+  const step = (Math.PI * 2) / n;
+  const minGap = step * 0.62;
+  for (let pass = 0; pass < 8; pass++) {
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      let gap = polar[j].a - polar[i].a;
+      if (j === 0) gap += Math.PI * 2;
+      if (gap < minGap) {
+        const push = (minGap - gap) / 2;
+        polar[i].a -= push;
+        polar[j].a += push;
+      }
+    }
+    polar.sort((x, y) => x.a - y.a);
+  }
+
+  return polar.map(p => {
+    const ax = visualToAxial(p.r * Math.cos(p.a), p.r * Math.sin(p.a));
+    return cubeRound(cq + ax.q, cr + ax.r);
+  });
+}
+
 function generateControlPoints(numTurns) {
   const shapeType = Math.floor(Math.random() * 6);
   const cx = EW / 2 + (Math.random() - 0.5) * EW * 0.1;
@@ -5084,7 +5158,7 @@ function generateControlPoints(numTurns) {
     }
   }
 
-  return ctrl;
+  return tidyControlPoints(ctrl);
 }
 
 // Centrer la vue sur le circuit généré
@@ -5214,6 +5288,29 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = smoothed.map(p => ({ q: p.q + dq, r: p.r + dr }));
     }
 
+    // ÉCART MINIMAL DU TRACÉ AVEC LUI-MÊME.
+    // Si deux portions éloignées le long du tour se retrouvent proches dans l'espace,
+    // les coups de pinceau fusionnent : la piste devient un grand champ ouvert au
+    // lieu de deux couloirs distincts. On rejette ces formes.
+    {
+      const need = trackW + 2;          // couloirs séparés par au moins 2 cases d'herbe
+      const N2 = smoothed.length;
+      const minArc = Math.max(8, Math.round(N2 * 0.06));
+      let tooClose = false;
+      for (let i = 0; i < N2 && !tooClose; i++) {
+        for (let j = i + minArc; j < N2; j++) {
+          if (Math.min(j - i, N2 - (j - i)) < minArc) continue;
+          if (hexDistF(smoothed[i].q, smoothed[i].r, smoothed[j].q, smoothed[j].r) < need) {
+            tooClose = true; break;
+          }
+        }
+      }
+      if (tooClose) {
+        lenBias = Math.min(4, lenBias * 1.06);   // un peu plus grand = plus d'air
+        continue;
+      }
+    }
+
     // DENSIFICATION avant rasterisation.
     // La spline est échantillonnée à pas de paramètre constant : dans les portions
     // rapides (peu de virages, tracé agrandi), deux points consécutifs peuvent être
@@ -5232,15 +5329,20 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = dense;
     }
 
-    // Rasterisation de la piste
+    // Rasterisation de la piste À LA LARGEUR DEMANDÉE.
+    // L'ancienne version comparait une distance déjà doublée à (trackW + 1) : les
+    // largeurs 3 et 4 donnaient le même ruban (5 cases), 5 et 6 aussi (7 cases).
+    // On mesure ici la distance hexagonale RÉELLE au tracé, en continu, ce qui
+    // permet des largeurs paires et une progression fidèle au réglage.
+    const halfW = Math.max(1, trackW / 2);
+    const reach = Math.ceil(halfW) + 1;
     for (const p of smoothed) {
       const c = cubeRound(p.q, p.r);
-      for (let ddq = -trackW; ddq <= trackW; ddq++) {
-        for (let ddr = -trackW; ddr <= trackW; ddr++) {
+      for (let ddq = -reach; ddq <= reach; ddq++) {
+        for (let ddr = -reach; ddr <= reach; ddr++) {
           const nq = c.q + ddq, nr = c.r + ddr;
           if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) {
-            const dist = Math.abs(ddq) + Math.abs(ddr) + Math.abs(ddq + ddr);
-            if (dist <= trackW + 1) grid[nr][nq] = '.';
+            if (hexDistF(nq, nr, p.q, p.r) <= halfW) grid[nr][nq] = '.';
           }
         }
       }
@@ -5249,7 +5351,8 @@ document.getElementById('btn-generate').onclick = () => {
     // Longueur réellement obtenue = cases de piste / largeur du ruban
     let cellCount = 0;
     for (let rr = 0; rr < EH; rr++) for (let qq = 0; qq < EW; qq++) if (grid[rr][qq] !== '#') cellCount++;
-    bestLen = Math.round(cellCount / (trackW * 2 + 1));
+    // Longueur du tour = cases de piste / largeur du ruban (largeur réelle, pas 2W+1)
+    bestLen = Math.round(cellCount / Math.max(1, trackW));
 
     // Le tracé doit former une BOUCLE FERMÉE d'un seul tenant.
     // Échec typique : avec peu de virages, l'intérieur se remplit et le circuit devient
@@ -5321,8 +5424,14 @@ document.getElementById('btn-generate').onclick = () => {
       else if (grid[r][q] === 'C') nbC++;
     }
     if (nbF > 0 && startPos) {
-      toast('🏁 Tour ~' + bestLen + ' cases · ' + nbF + ' de large · arrivée + ' +
-            countCheckpointLines(grid) + ' checkpoint(s) + départ posés');
+      // Certaines combinaisons sont géométriquement impossibles (beaucoup de virages
+      // sur un tour très court) : on le dit plutôt que de laisser croire à un bug.
+      const ecart = Math.round((bestLen / targetLen - 1) * 100);
+      const note = Math.abs(ecart) > 20
+        ? ' ⚠️ ' + (ecart > 0 ? '+' : '') + ecart + '% vs demandé (trop de virages pour ce tour ?)'
+        : '';
+      toast('🏁 Tour ~' + bestLen + ' cases · ' + trackW + ' de large · arrivée + ' +
+            countCheckpointLines(grid) + ' checkpoint(s) + départ posés' + note);
     } else {
       toast('🏁 Tour ~' + bestLen + ' cases — place 🏁 📍 🏎️ à la main');
     }
