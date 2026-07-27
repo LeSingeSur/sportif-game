@@ -265,6 +265,8 @@ header.top {
   display: block;
   width: 100%;
   aspect-ratio: 1.12;
+  /* Plafonne la piste pour que la boîte de vitesses et le bouton LANCER
+     restent visibles sans scroller, même sur petit téléphone. */
   max-height: 46vh;
   margin: 0 auto;
   border-radius: 8px;
@@ -619,15 +621,6 @@ header.top {
 
 #dice-anim-overlay.on { display: flex; }
 
-.dice-cube.inactif {
-  opacity: .30;
-  border-color: #3a3f4a;
-  color: #6b7280;
-  box-shadow: none;
-  transform: scale(.78);
-  animation: none;
-}
-
 .dice-cube {
   width: 52px;
   height: 52px;
@@ -643,11 +636,6 @@ header.top {
   color: var(--line);
   box-shadow: 0 0 18px rgba(247, 201, 72, 0.35);
   animation: diceShake 0.1s infinite alternate;
-}
-
-.dice-cube.drs-picked {
-  font-size: 14px;
-  color: #b464ff;
 }
 
 @keyframes diceShake {
@@ -1155,7 +1143,6 @@ header.top {
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
       <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
       <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
-      <div class="tool" data-tool="drs">⚡<span class="tname">DRS</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
@@ -1227,13 +1214,6 @@ header.top {
           <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
             <input type="checkbox" id="c-counts-global" checked style="width:18px;height:18px;accent-color:#f7c948">
             <span style="font-size:12px;color:var(--mute)">🏆 Les points comptent au classement général Arena</span>
-          </label>
-        </div>
-        <div class="field">
-          <label>Jeux du jour</label>
-          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
-            <input type="checkbox" id="c-daily" style="width:18px;height:18px;accent-color:#f7c948">
-            <span style="font-size:12px;color:var(--mute)">⭐ À faire dans les jeux du jour Arena</span>
           </label>
         </div>
         <div class="field">
@@ -1379,38 +1359,61 @@ header.top {
    CONSTANTES FONDAMENTALES
    ================================================================ */
 
+// 6 directions hexagonales (axial, pointy-top)
 const HEX_DIRS = [
-  { q: 1, r: -1 },
-  { q: 1, r: 0 },
-  { q: 0, r: 1 },
-  { q: -1, r: 1 },
-  { q: -1, r: 0 },
-  { q: 0, r: -1 }
+  { q: 1, r: -1 },   // 0 : ENE
+  { q: 1, r: 0 },    // 1 : E
+  { q: 0, r: 1 },    // 2 : SE
+  { q: -1, r: 1 },   // 3 : OSO
+  { q: -1, r: 0 },   // 4 : O
+  { q: 0, r: -1 }    // 5 : NO
 ];
 
+// Rotation de direction hexagonale
 function rotHex(d, k) {
   return (d + k + 6) % 6;
 }
 
 const SQRT3 = 1.73205080757;
 
-const DICE_SET = [
-  [1, 2],
-  [1, 2, 3],
-  [2, 3, 4],
-  [3, 4, 5],
-  [4, 5, 6],
-  [5, 6, 7]
+// Plages de dés par vitesse (index 0 = V0 arrêt)
+const DICE = [
+  [0, 0],     // V0 : arrêt
+  [1, 2],     // V1
+  [2, 4],     // V2
+  [4, 8],     // V3
+  [7, 12],    // V4
+  [11, 20],   // V5
+  [21, 30]    // V6
 ];
 
-const DICE_POOLS = [[]];
-for (let g = 1; g <= 6; g++) DICE_POOLS.push(DICE_SET.slice(0, g));
+// Pools de dés asymétriques (courbe de Gauss → lisse les extrêmes, réduit le hasard)
+// Chaque pool respecte exactement les bornes min/max de DICE ci-dessus.
+// Le NOMBRE de dés = le rapport engagé = la consommation d'essence du tour.
+const DICE_POOLS = [
+  [],                                              // V0 : aucun dé
+  [[1, 2]],                                         // V1 : 1 dé  (1-2)
+  [[1, 2], [1, 2]],                                 // V2 : 2 dés (2-4)
+  [[1, 2], [1, 2, 3], [2, 3]],                      // V3 : 3 dés (4-8)
+  [[2, 3], [1, 2, 3], [2, 3], [2, 3]],              // V4 : 4 dés (7-12)
+  [[2, 3, 4], [2, 3, 4], [2, 3], [2, 3], [3, 4, 6]],// V5 : 5 dés (11-20)
+  [[4, 5], [4, 5], [3, 4], [3, 4], [3, 4], [4, 5, 8]] // V6 : 6 dés (21-30)
+];
 
-const DICE = DICE_POOLS.map(pool => [
-  pool.reduce((s, d) => s + Math.min(...d), 0),
-  pool.reduce((s, d) => s + Math.max(...d), 0)
-]);
-
+/* ----------------------------------------------------------------
+   POOL DE DÉS COMMUN
+   Tous les joueurs affrontent EXACTEMENT les mêmes tirages : la valeur d'un dé
+   ne dépend que de (graine du circuit, n° d'essai, n° de coup, rapport engagé,
+   index du dé) — jamais du hasard local. Deux joueurs qui prennent le même
+   rapport au même coup obtiennent le même chiffre ; changer de rapport pioche
+   ailleurs dans la grille, donc impossible de "pêcher" un bon tirage en
+   décalant la séquence. Chaque n° d'essai a sa propre grille : rejouer reste
+   un vrai nouveau défi.
+   Les ESSAIS LIBRES restent en hasard pur, sinon on repérerait la grille de la
+   course avant de la jouer.
+   ---------------------------------------------------------------- */
+// Hash 32 bits déterministe (FNV-1a + avalanche) : même résultat sur tous les
+// navigateurs, sans dépendre d'un Math.random local.
 function diceHash(str) {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
@@ -1423,11 +1426,17 @@ function diceHash(str) {
   return h >>> 0;
 }
 
+// Valeur définitive d'un dé. moveNo = n° du coup en cours (1 = premier coup).
+// Valeur d'un dé dans la grille, indépendamment de toute course en cours.
+// Fonction PURE : c'est elle qui définit la grille commune, et c'est elle que
+// l'écran admin interroge pour afficher les tirages sans jouer.
 function gridDieValue(seed, attemptNo, faces, gear, dieIndex, moveNo) {
-  const key = seed + '|m' + moveNo + '|d' + dieIndex;
+  const key = seed + '|a' + (attemptNo || 1) + '|m' + moveNo +
+              '|g' + gear + '|d' + dieIndex;
   return faces[diceHash(key) % faces.length];
 }
 
+// Somme d'un coup complet dans la grille (tous les dés du rapport).
 function gridRoll(seed, attemptNo, gear, moveNo) {
   const pool = DICE_POOLS[gear] || [];
   let sum = 0;
@@ -1435,18 +1444,27 @@ function gridRoll(seed, attemptNo, gear, moveNo) {
   return sum;
 }
 
+// Valeur définitive d'un dé. moveNo = n° du coup en cours (1 = premier coup).
 function dieValue(faces, gear, dieIndex, moveNo) {
-  if (R.isWarmup || !R.diceSeed) {
+  if (R.isWarmup || !R.diceSeed) {            // essais libres : hasard pur
     return faces[Math.floor(Math.random() * faces.length)];
   }
   return gridDieValue(R.diceSeed, R.attemptNo, faces, gear, dieIndex, moveNo);
 }
 
+// Inertie : cases droites obligatoires AU DÉBUT du mouvement (= rapport - 1).
+// Plus le rapport est haut, plus la voiture est "engagée" et ne peut pas esquiver.
 const INERTIA = [0, 0, 1, 2, 3, 4, 5];
+
+
+// Vitesse affichée par rapport (km/h)
 const GEAR_KMH = [0, 50, 100, 160, 220, 290, 350];
 
+// Dimensions de la grille éditeur
 const EW = 180;
 const EH = 180;
+
+// Limites de zoom
 const ZOOM_MIN = 0.15;
 const ZOOM_MAX = 5.0;
 const ED_MIN = 2;
@@ -1456,18 +1474,22 @@ const ED_MAX = 80;
    UTILITAIRES
    ================================================================ */
 
+// Appel API avec gestion d'erreur
 async function api(path, opts) {
   const res = await fetch(path, opts);
   let data = null;
   try {
     data = await res.json();
-  } catch (e) {}
+  } catch (e) {
+    // réponse non-JSON
+  }
   if (!res.ok) {
     throw new Error((data && data.error) || 'HTTP ' + res.status);
   }
   return data;
 }
 
+// Notification temporaire
 function toast(t) {
   const el = document.getElementById('toast');
   el.textContent = t;
@@ -1478,33 +1500,51 @@ function toast(t) {
   }, 2200);
 }
 
+// Navigation entre écrans
 function show(id) {
   document.querySelectorAll('.scr').forEach(s => {
     s.classList.toggle('on', s.id === id);
   });
 }
 
+// Retour au menu
 function backToMenu() {
   document.getElementById('finish').classList.remove('on');
   show('scr-menu');
   loadCircuitList();
 }
 
+// Échappement HTML
 function esc(s) {
   return (s || '').replace(/[&<>"']/g, c => {
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
     return map[c];
   });
 }
 
+// Conversion axial → pixel (pointy-top)
 function axialToPixel(q, r, size) {
-  return { x: size * SQRT3 * (q + r / 2), y: size * 1.5 * r };
+  return {
+    x: size * SQRT3 * (q + r / 2),
+    y: size * 1.5 * r
+  };
 }
 
+// Conversion visuel → axial (pour la génération)
 function visualToAxial(vx, vy) {
-  return { q: vx / SQRT3 - vy / 3, r: vy * 2 / 3 };
+  return {
+    q: vx / SQRT3 - vy / 3,
+    r: vy * 2 / 3
+  };
 }
 
+// Arrondi cubique pour hexagones
 function cubeRound(q, r) {
   const s = -q - r;
   let rq = Math.round(q);
@@ -1518,21 +1558,29 @@ function cubeRound(q, r) {
   return { q: rq, r: rr };
 }
 
+// Étendue pixel d'une grille hexagonale
 function hexGridExtent(w, h) {
-  return { w: SQRT3 * (w + h / 2), h: 1.5 * h + 0.5 };
+  return {
+    w: SQRT3 * (w + h / 2),
+    h: 1.5 * h + 0.5
+  };
 }
 
+// Perpendiculaire en espace pixel (pour lignes arrivée / checkpoint correctes)
 function perpInPixel(q0, r0, q1, r1) {
   const p0 = axialToPixel(q0, r0, 1);
   const p1 = axialToPixel(q1, r1, 1);
   const dx = p1.x - p0.x;
   const dy = p1.y - p0.y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  return { nx: -dy / len, ny: dx / len };
+  return {
+    nx: -dy / len,
+    ny: dx / len
+  };
 }
 
 /* ================================================================
-   HERBE TEXTURÉE
+   HERBE TEXTURÉE (offscreen, générée 1 fois)
    ================================================================ */
 let grassPattern = null;
 
@@ -1542,19 +1590,26 @@ let grassPattern = null;
   gc.height = 256;
   const g = gc.getContext('2d');
 
+  // Base verte
   g.fillStyle = '#2d5016';
   g.fillRect(0, 0, 256, 256);
 
+  // Bandes de tonte alternées
   for (let y = 0; y < 256; y += 16) {
-    g.fillStyle = (y % 32 === 0) ? 'rgba(58, 107, 30, 0.25)' : 'rgba(35, 70, 18, 0.25)';
+    g.fillStyle = (y % 32 === 0)
+      ? 'rgba(58, 107, 30, 0.25)'
+      : 'rgba(35, 70, 18, 0.25)';
     g.fillRect(0, y, 256, 16);
   }
 
+  // Taches naturelles
   for (let i = 0; i < 250; i++) {
     const x = Math.random() * 256;
     const y = Math.random() * 256;
     const s = 1 + Math.random() * 2.5;
-    g.fillStyle = (Math.random() > 0.5) ? 'rgba(50, 95, 25, 0.3)' : 'rgba(30, 60, 15, 0.3)';
+    g.fillStyle = (Math.random() > 0.5)
+      ? 'rgba(50, 95, 25, 0.3)'
+      : 'rgba(30, 60, 15, 0.3)';
     g.beginPath();
     g.ellipse(x, y, s, s * 0.6, Math.random() * Math.PI, 0, Math.PI * 2);
     g.fill();
@@ -1568,6 +1623,8 @@ let grassPattern = null;
    ================================================================ */
 const pseudoIn = document.getElementById('pseudo-in');
 pseudoIn.value = localStorage.getItem('arena_pseudo') || localStorage.getItem('fg_pseudo') || '';
+// Connecté via Arena Sport (login PIN) : le pseudo est celui du compte, non modifiable —
+// c'est ce qui garantit que les points Formula·Grid s'additionnent au classement général.
 if (localStorage.getItem('arena_pseudo')) {
   pseudoIn.readOnly = true;
   pseudoIn.style.opacity = '.7';
@@ -1584,11 +1641,14 @@ async function loadCircuitList() {
 
   try {
     const circuits = await api('/api/formula/circuits');
+
     if (!circuits.length) {
       list.innerHTML = '<div class="empty-state">Aucun circuit publié.</div>';
       return;
     }
+
     list.innerHTML = '';
+
     circuits.forEach(c => {
       const el = document.createElement('div');
       el.className = 'circuit-card';
@@ -1616,16 +1676,20 @@ async function loadCircuitList() {
 
 async function openCircuit(id) {
   const pseudo = pseudoIn.value.trim();
-  if (!pseudo) { toast('Entre ton pseudo'); return; }
+  if (!pseudo) {
+    toast('Entre ton pseudo');
+    return;
+  }
 
   try {
+    // Compte Arena obligatoire : sans lui, les points ne rejoindraient jamais le classement général
     const chk = await api('/api/account/check?pseudo=' + encodeURIComponent(pseudo));
     if (!chk.exists) {
       toast('⚠️ Crée d\'abord ton compte sur Arena Sport avec ce pseudo — tes points rejoindront le classement général');
       setTimeout(() => { if (confirm('Aller sur Arena Sport pour créer ton compte "' + pseudo + '" ?')) location.href = 'index.html'; }, 600);
       return;
     }
-  } catch(e) {}
+  } catch(e) { /* serveur injoignable : on laisse la suite gérer */ }
 
   try {
     const [circuit, board] = await Promise.all([
@@ -1633,14 +1697,20 @@ async function openCircuit(id) {
       api('/api/formula/leaderboard/' + id + '?pseudo=' + encodeURIComponent(pseudo))
     ]);
 
-    if (board.attemptsLeft <= 0) { toast('Plus d\'essais'); return; }
+    if (board.attemptsLeft <= 0) {
+      toast('Plus d\'essais');
+      return;
+    }
 
+    // Meilleur temps tous joueurs (pour le delta en course)
     circuit.worldBest = board.worldBest || null;
+    // Mes meilleurs splits enregistrés côté serveur (fusionnés avec le localStorage)
     circuit.myBestCp = board.myBestCp || null;
+    // Pool de dés commun : graine du circuit + n° de l'essai qui va être joué
     circuit.diceSeed = board.diceSeed || circuit.diceSeed || null;
     circuit.attemptNo = board.attemptNo || 1;
+    // Circuit hors classement général : annoncé clairement avant de jouer
     if (board.countsInGlobal !== undefined) circuit.countsInGlobal = board.countsInGlobal;
-    circuit.top = board.top || [];
 
     startRace(circuit, pseudo, board.attemptsLeft, false);
   } catch (e) {
@@ -1653,6 +1723,10 @@ async function openCircuit(id) {
    ================================================================ */
 const R = {};
 
+// Capacité d'essence : proportionnelle à la taille du circuit (nb de cases piste),
+// calibrée pour ~1.4 tour à plein régime avant la panne — force à gérer sur 3-4 tours.
+// Capacité d'essence : valeur fixée par l'admin, ou calcul automatique si 0/absent.
+// L'auto est proportionnel à la taille du circuit et au nombre de tours.
 function fuelCapacityFor(circuit) {
   const manual = parseInt(circuit.fuelCapacity) || 0;
   if (manual > 0) return manual;
@@ -1665,12 +1739,15 @@ function autoFuelCapacity(circuit) {
     for (const ch of row) if (ch !== '#') trackCells++;
   }
   const laps = circuit.laps || 1;
+  // Une course "à fond" consommerait environ trackCells/6 dés par tour (V6 = 6 cases/dé).
   const perLap = Math.max(12, Math.round(trackCells / 6));
   return Math.max(20, Math.round(perLap * laps * 0.6));
 }
 
 document.getElementById('back-menu').onclick = backToMenu;
 
+// Regroupe les cases 'C' contiguës en lignes de checkpoint, puis les ordonne
+// selon la distance parcourue depuis le départ en suivant la piste.
 function buildCheckpoints() {
   const seen = new Set();
   const groups = [];
@@ -1681,6 +1758,7 @@ function buildCheckpoints() {
       const key = q + ',' + r;
       if (seen.has(key)) continue;
 
+      // flood fill sur les cases 'C' voisines → une seule ligne de checkpoint
       const cells = [];
       const stack = [[q, r]];
       seen.add(key);
@@ -1703,6 +1781,7 @@ function buildCheckpoints() {
 
   if (!groups.length) return [];
 
+  // Distance depuis le départ en suivant la piste (BFS sur les cases roulables)
   const dist = new Map();
   const q0 = [[R.q, R.r, 0]];
   dist.set(R.q + ',' + R.r, 0);
@@ -1719,6 +1798,7 @@ function buildCheckpoints() {
     }
   }
 
+  // Chaque groupe prend la distance de sa case la plus proche du départ
   groups.forEach(g => {
     let best = Infinity;
     for (const c of g.cells) {
@@ -1730,6 +1810,7 @@ function buildCheckpoints() {
 
   groups.sort((a, b) => a.dist - b.dist);
 
+  // Une entrée par CASE, mais toutes les cases d'une même ligne partagent le même numéro
   const out = [];
   groups.forEach((g, i) => {
     g.cells.forEach(c => out.push({ q: c.q, r: c.r, index: i }));
@@ -1737,54 +1818,62 @@ function buildCheckpoints() {
   return out;
 }
 
-const PRACTICE_DONE = new Set();
-
 function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
+  // Identifiants
   R.circuit = circuit;
   R.pseudo = pseudo;
   R.attemptsLeft = attemptsLeft;
   R.testMode = !!testMode;
 
+  // Grille
   R.W = circuit.w;
   R.H = circuit.h;
   R.grid = circuit.rows.map(r => r.split(''));
 
+  // Position voiture (sur la ligne F)
   R.q = circuit.start.x;
   R.r = circuit.start.y;
   R.dir = circuit.start.dir || 0;
 
+  // État course
   R.gear = 0;
   R.pendingGear = 1;
   R.turn = 0;
   R.lapCount = 0;
   R.targetLaps = circuit.laps;
 
-  R.freePractice = !skipPractice && !PRACTICE_DONE.has(circuit.id) && !!(circuit.freePractice || (circuit.warmup||0) > 0);
+  // Essais libres (ex tours de chauffe) : activés par l'admin, terminés par le joueur
+  R.freePractice = !skipPractice && !!(circuit.freePractice || (circuit.warmup||0) > 0);
   R.warmupDone = 0;
   R.isWarmup = R.freePractice;
 
+  // Temps de passage de chaque tour complet (nb de coups cumulés à la fin du tour N)
   R.lapMoves = [];
-  R.board = circuit.top || [];
 
+  // Pool de dés commun (cf. dieValue) : mêmes tirages pour tous sur cet essai
   R.diceSeed = circuit.diceSeed || null;
   R.attemptNo = circuit.attemptNo || 1;
 
+  // Dé & budget
   R.rolled = null;
   R.budget = null;
   R.results = null;
   R.ends = null;
   R.phase = 'gear';
 
+  // Trails (traces de pneus)
   R.trail = [];
   R.fullTrail = [];
-  R.crossedDrs = false;
 
+
+  // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
   R.fuelEnabled = circuit.fuelEnabled !== false;
   R.fuelMax = R.fuelEnabled ? fuelCapacityFor(circuit) : Infinity;
   R.fuel = R.fuelMax;
-  R.outOfFuel = false;
-  R.refueling = false;
+  R.outOfFuel = false;   // true = décélération forcée en cours (roule sans consommer)
+  R.refueling = false;   // true pendant la phase d'arrêt progressif
 
+  // Caméra
   R.panOffsetX = 0;
   R.panOffsetY = 0;
   R.isPanning = false;
@@ -1792,44 +1881,64 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.zoomLevel = 1;
   R.userPanned = false;
 
+  // Checkpoints
   R.checkpoints = [];
   R.cpTimes = [];
   R.bestCpTimes = [];
 
+  // Immersion : fantôme perso + meilleur temps mondial + trace par coup
+  // Deux fantômes indépendants, chacun affichable ou non par le joueur
   R.ghostRef = (circuit.ghost && circuit.ghost.turns && circuit.ghost.turns.length) ? circuit.ghost : null;
   R.ghostOwn = loadGhost(circuit.id);
-  R.ghost = R.ghostRef || R.ghostOwn;
+  R.ghost = R.ghostRef || R.ghostOwn;   // référence pour le delta chrono
   R.worldBest = circuit.worldBest || null;
   R.turnPositions = [{ q: circuit.start.x, r: circuit.start.y, dir: circuit.start.dir || 0 }];
   R.lightsDone = false;
 
+  // Effets visuels
   R.shakeAmount = 0;
   R.speedLines = [];
   R.currentKmh = 0;
 
+  // Finish zone tracking
   R.leftFinishZone = false;
-  R.inertia = 0;
-  R.cells = 0;
 
-  R.lastCP = { q: R.q, r: R.r, dir: R.dir, lapCount: 0, leftFinishZone: false, cpTimes: [], index: -1 };
+  // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
+  R.inertia = 0;
+  R.cells = 0;   // cases parcourues depuis le départ
+
+  // Point de reprise en cas de crash : la ligne de départ tant qu'aucun checkpoint n'est franchi
+  R.lastCP = {
+    q: R.q, r: R.r, dir: R.dir,
+    lapCount: 0, leftFinishZone: false,
+    cpTimes: [], index: -1
+  };
   R.animating = false;
   R.animPath = [];
   R.animIdx = 0;
   R.animT = 0;
   R.animResult = null;
 
+  // Identifier les checkpoints : on REGROUPE les cases 'C' contiguës en une seule ligne,
+  // puis on les numérote dans l'ORDRE OÙ ON LES RENCONTRE sur le circuit (pas l'ordre de la grille).
   R.checkpoints = buildCheckpoints();
 
-  R.bestCpTimes = JSON.parse(localStorage.getItem('fg_bestcp_' + circuit.id) || '[]');
+  // Meilleurs splits : localStorage + serveur (min des deux)
+  R.bestCpTimes = JSON.parse(
+    localStorage.getItem('fg_bestcp_' + circuit.id) || '[]'
+  );
   if (Array.isArray(circuit.myBestCp)) {
     circuit.myBestCp.forEach((v, i) => {
       if (v != null && (R.bestCpTimes[i] == null || v < R.bestCpTimes[i])) R.bestCpTimes[i] = v;
     });
   }
 
+  // UI
   document.getElementById('finish').classList.remove('on');
-  document.getElementById('warmup-badge').style.display = R.isWarmup ? 'block' : 'none';
-  document.getElementById('btn-end-practice').style.display = R.isWarmup ? 'block' : 'none';
+  document.getElementById('warmup-badge').style.display =
+    R.isWarmup ? 'block' : 'none';
+  document.getElementById('btn-end-practice').style.display =
+    R.isWarmup ? 'block' : 'none';
 
   if (R.isWarmup) {
     say('🔧 Essais libres — roule autant que tu veux, puis clique 🏁 FIN DES ESSAIS', 'warmup');
@@ -1844,6 +1953,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   show('scr-race');
   setupRaceControls();
 
+  // Premier rendu + centrage, puis feux de départ
   requestAnimationFrame(() => {
     drawRace();
     centerOnCar();
@@ -1857,15 +1967,21 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
 }
 
 /* ================================================================
-   COURSE — CONTRÔLES
+   COURSE — CONTRÔLES (pan + pinch-zoom)
    ================================================================ */
 function setupRaceControls() {
   const cv = document.getElementById('cv');
 
+  // Pan (souris + tactile 1 doigt)
   cv.onpointerdown = (e) => {
     if (e.target !== cv) return;
     R.isPanning = true;
-    R.panStart = { x: e.clientX, y: e.clientY, offX: R.panOffsetX, offY: R.panOffsetY };
+    R.panStart = {
+      x: e.clientX,
+      y: e.clientY,
+      offX: R.panOffsetX,
+      offY: R.panOffsetY
+    };
     cv.setPointerCapture(e.pointerId);
     document.getElementById('pan-hint').style.opacity = '0';
   };
@@ -1890,10 +2006,14 @@ function setupRaceControls() {
     R.panStart = null;
   };
 
+  // Pinch-to-zoom (tactile 2 doigts)
   cv.ontouchstart = (e) => {
     if (e.touches.length === 2) {
       e.preventDefault();
-      R._p0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      R._p0 = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
       R._z0 = R.zoomLevel;
     }
   };
@@ -1901,8 +2021,14 @@ function setupRaceControls() {
   cv.ontouchmove = (e) => {
     if (e.touches.length === 2 && R._p0) {
       e.preventDefault();
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      R.zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, R._z0 * (d / R._p0)));
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      R.zoomLevel = Math.max(
+        ZOOM_MIN,
+        Math.min(ZOOM_MAX, R._z0 * (d / R._p0))
+      );
       R.userPanned = true;
       updateZoomIndicator();
       drawRace();
@@ -1916,6 +2042,7 @@ function setupRaceControls() {
   };
 }
 
+// Centrer la vue sur la voiture
 function centerOnCar() {
   R.panOffsetX = 0;
   R.panOffsetY = 0;
@@ -1926,15 +2053,17 @@ function centerOnCar() {
   toast('🎯 Centré');
 }
 
+// Mettre à jour l'indicateur de zoom
 function updateZoomIndicator() {
-  document.getElementById('zoom-indicator').textContent = '×' + R.zoomLevel.toFixed(1);
+  document.getElementById('zoom-indicator').textContent =
+    '×' + R.zoomLevel.toFixed(1);
 }
 
 document.getElementById('center-btn').onclick = centerOnCar;
 
+// Essais libres : le joueur décide quand lancer la vraie course
 document.getElementById('btn-end-practice').onclick = () => {
   if (!R.isWarmup) return;
-  PRACTICE_DONE.add(R.circuit.id);
   toast('🏁 Fin des essais — départ de la course !');
   startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode, true);
 };
@@ -1948,7 +2077,14 @@ function onTrackR(q, r) {
 }
 
 function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
-  const reload = INERTIA[gear] != null ? INERTIA[gear] : Math.max(0, (gear||1) - 1);
+  // JAUGE D'INERTIE (décompte à purger) :
+  // - Après chaque coup de volant, la jauge est chargée à (vitesse - 1).
+  // - Chaque case franchie EN LIGNE DROITE la fait baisser de 1.
+  // - Tout pivot est STRICTEMENT INTERDIT tant que la jauge est > 0.
+  // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
+  //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
+  // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
+  const reload = INERTIA[gear] != null ? INERTIA[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
   const startInertia = Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
@@ -1967,6 +2103,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       return;
     }
 
+    // Tout droit toujours possible ; pivots seulement si la jauge est purgée
     const opts = [{ d: dir, turn: false }];
     if (inertia === 0) {
       opts.push({ d: rotHex(dir, -1), turn: true });
@@ -1986,6 +2123,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       path.push({ q: nq, r: nr, dir: o.d, turn: o.turn });
 
       const nb = b - 1;
+      // Virage → recharge la jauge ; ligne droite → la purge de 1
       const nInertia = o.turn ? reload : Math.max(0, inertia - 1);
       const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
 
@@ -2035,11 +2173,12 @@ function renderGears() {
     let reach = false;
 
     if (R.outOfFuel) {
+      // Panne sèche : descente forcée d'exactement 1 rapport (jamais monter ni rester)
       reach = (g === R.gear - 1);
     } else if (R.gear === 0) {
       reach = (g === 1);
     } else {
-      reach = (g - R.gear <= 1) && (R.gear - g <= 2);
+      reach = Math.abs(g - R.gear) <= 1;
     }
 
     let cls = 'gear';
@@ -2065,10 +2204,12 @@ function renderGears() {
     hg.appendChild(el);
   });
 
+  // En panne sèche : forcer la sélection sur le rapport descendant
   if (R.outOfFuel && R.phase === 'gear') {
     R.pendingGear = Math.max(0, R.gear - 1);
   }
 
+  // Tag stress / panne
   const gb = document.getElementById('gearbox');
   let tag = document.getElementById('stress-tag');
 
@@ -2076,7 +2217,9 @@ function renderGears() {
     if (!tag) {
       tag = document.createElement('div');
       tag.id = 'stress-tag';
-      tag.style.cssText = 'margin-top:8px;font-size:11px;color:var(--crash);font-weight:700;text-align:center';
+      tag.style.cssText =
+        'margin-top:8px;font-size:11px;color:var(--crash);' +
+        'font-weight:700;text-align:center';
       gb.appendChild(tag);
     }
     tag.textContent = '⛽ PANNE SÈCHE — décélération forcée jusqu\'à l\'arrêt';
@@ -2112,19 +2255,54 @@ function say(t, cls) {
 }
 
 /* ================================================================
+   IMMERSION — FEUX DE DÉPART
+   ================================================================ */
+/* ================================================================
    IMMERSION — RADIO INGÉNIEUR
    ================================================================ */
 const RADIO_LINES = {
-  fuelLow: ['Attention essence, il faut lever le pied.', 'On surveille la conso, reste propre.', 'Le réservoir descend vite, gère tes rapports.'],
-  fuelCritical: ['Essence critique ! Passe en mode économie.', 'On est très juste en carburant, lève le pied MAINTENANT.'],
-  outOfFuel: ['Panne sèche ! Rétrograde jusqu\'à l\'arrêt.', 'Plus rien dans le réservoir, ramène-la doucement.'],
-  refuel: ['Plein terminé, tu peux repartir. Vas-y !', 'Réservoir plein. On repart de zéro, attaque.'],
-  purple: ['Secteur violet ! Magnifique.', 'Meilleur secteur de tous, continue comme ça !'],
-  personalBest: ['Bon secteur, tu bats ton record.', 'C\'est mieux que ton meilleur passage, on progresse.'],
-  lastLap: ['Dernier tour ! Tout donner maintenant.', 'C\'est le dernier, lâche les chevaux.'],
-  highGear: ['Gros rapport engagé, attention au prochain virage.', 'À cette vitesse, il te faut de la place pour tourner.'],
-  crash: ['Sortie de piste ! On repart du checkpoint, à l\'arrêt.', 'Tu as tapé. Retour au dernier point de passage.', 'Aïe. On relance depuis le checkpoint, tout doux.'],
-  finish: ['Drapeau à damier ! Beau boulot.', 'C\'est fini, excellente course !']
+  fuelLow: [
+    'Attention essence, il faut lever le pied.',
+    'On surveille la conso, reste propre.',
+    'Le réservoir descend vite, gère tes rapports.'
+  ],
+  fuelCritical: [
+    'Essence critique ! Passe en mode économie.',
+    'On est très juste en carburant, lève le pied MAINTENANT.'
+  ],
+  outOfFuel: [
+    'Panne sèche ! Rétrograde jusqu\'à l\'arrêt.',
+    'Plus rien dans le réservoir, ramène-la doucement.'
+  ],
+  refuel: [
+    'Plein terminé, tu peux repartir. Vas-y !',
+    'Réservoir plein. On repart de zéro, attaque.'
+  ],
+  purple: [
+    'Secteur violet ! Magnifique.',
+    'Meilleur secteur de tous, continue comme ça !'
+  ],
+  personalBest: [
+    'Bon secteur, tu bats ton record.',
+    'C\'est mieux que ton meilleur passage, on progresse.'
+  ],
+  lastLap: [
+    'Dernier tour ! Tout donner maintenant.',
+    'C\'est le dernier, lâche les chevaux.'
+  ],
+  highGear: [
+    'Gros rapport engagé, attention au prochain virage.',
+    'À cette vitesse, il te faut de la place pour tourner.'
+  ],
+  crash: [
+    'Sortie de piste ! On repart du checkpoint, à l\'arrêt.',
+    'Tu as tapé. Retour au dernier point de passage.',
+    'Aïe. On relance depuis le checkpoint, tout doux.'
+  ],
+  finish: [
+    'Drapeau à damier ! Beau boulot.',
+    'C\'est fini, excellente course !'
+  ]
 };
 
 function radio(kind, custom) {
@@ -2161,7 +2339,8 @@ function runStartLights(done) {
   const lights = [];
   for (let i = 0; i < 5; i++) {
     const l = document.createElement('div');
-    l.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#2b2f36;border:2px solid #14161a;transition:background .12s,box-shadow .12s';
+    l.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#2b2f36;' +
+      'border:2px solid #14161a;transition:background .12s,box-shadow .12s';
     row.appendChild(l);
     lights.push(l);
   }
@@ -2178,6 +2357,7 @@ function runStartLights(done) {
       i++;
       setTimeout(step, 620);
     } else {
+      // Suspense avant extinction
       setTimeout(() => {
         lights.forEach(l => { l.style.background = '#2b2f36'; l.style.boxShadow = 'none'; });
         msg.textContent = '🟢 GO !';
@@ -2213,9 +2393,11 @@ function showLapFlag(text, sub) {
 /* ================================================================
    IMMERSION — FANTÔME (meilleur run perso, position par coup)
    ================================================================ */
+// Préférences d'affichage des fantômes (mémorisées d'une partie à l'autre)
 function showGhostRef() { return localStorage.getItem('fg_hide_ghost_ref') !== '1'; }
 function showGhostOwn() { return localStorage.getItem('fg_hide_ghost_own') !== '1'; }
 
+// Dessine un fantôme à sa position au coup courant
 function drawGhost(ghost, enabled, color, hexSize) {
   if (!enabled || !ghost || !ghost.turns || !ghost.turns.length) return;
   const gi = Math.min(R.turn, ghost.turns.length - 1);
@@ -2256,7 +2438,7 @@ function saveGhostIfBetter(circuitId, turns, moves) {
     const prev = loadGhost(circuitId);
     if (prev && prev.moves <= moves) return;
     localStorage.setItem(ghostKey(circuitId), JSON.stringify({ moves: moves, turns: turns }));
-  } catch (e) {}
+  } catch (e) { /* quota */ }
 }
 
 /* ================================================================
@@ -2266,6 +2448,7 @@ function updateDeltaHud() {
   const el = document.getElementById('delta-hud');
   if (!el) return;
 
+  // Référence : meilleur temps mondial aux checkpoints, sinon fantôme perso
   const wb = R.worldBest;
   let ref = null, label = '';
 
@@ -2295,6 +2478,7 @@ function updateFuelGauge() {
   const bar = document.getElementById('fuel-bar');
   if (!el || !bar) return;
 
+  // Essence désactivée par l'organisateur : réservoir infini
   if (!R.fuelEnabled) {
     el.textContent = '∞ ILLIMITÉE';
     el.style.color = 'var(--mute)';
@@ -2324,8 +2508,8 @@ function updateInertiaGauge() {
   if (!val || !cells || !txt) return;
 
   const g = (R.phase === 'gear') ? R.pendingGear : R.gear;
-  const reload = INERTIA[g] != null ? INERTIA[g] : Math.max(0, (g||1) - 1);
-  const cur = Math.max(0, R.inertia || 0);
+  const reload = INERTIA[g] != null ? INERTIA[g] : Math.max(0, (g||1) - 1);   // V1=0 … V6=5
+  const cur = Math.max(0, R.inertia || 0);    // état actuel de la jauge
 
   if (!g) {
     val.textContent = '—';
@@ -2337,11 +2521,13 @@ function updateInertiaGauge() {
   val.textContent = cur > 0 ? ('🔒 ' + cur) : '✅ 0';
   val.style.color = cur > 0 ? '#ff5d5d' : 'var(--ok)';
 
+  // Une case par point de jauge (échelle = recharge max de ce rapport, min 1)
   const scale = Math.max(reload, cur, 1);
   cells.innerHTML = '';
   for (let i = 0; i < scale; i++) {
     const c = document.createElement('div');
-    c.style.cssText = 'flex:1;height:7px;border-radius:3px;background:' + (i < cur ? '#ff5d5d' : '#2b2f36');
+    c.style.cssText = 'flex:1;height:7px;border-radius:3px;background:' +
+      (i < cur ? '#ff5d5d' : '#2b2f36');
     cells.appendChild(c);
   }
 
@@ -2370,6 +2556,8 @@ function syncDash() {
   updateInertiaGauge();
   updateDeltaHud();
 
+  // Bouton lancer : normalement désactivé au rapport 0, SAUF en panne sèche au rapport 0
+  // où il devient le bouton "faire le plein" (la voiture est arrêtée, 0 case parcourue).
   const rollBtn = document.getElementById('roll');
   const refuelStop = (R.outOfFuel && R.pendingGear === 0);
   rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || (R.pendingGear === 0 && !refuelStop));
@@ -2377,6 +2565,7 @@ function syncDash() {
 
   const rs = document.getElementById('btn-restart');
   if (rs) {
+    // Masqué à l'arrivée et pendant les animations
     rs.style.display = (R.phase === 'done' || R.animating) ? 'none' : 'block';
     rs.textContent = R.isWarmup
       ? '🔄 Repartir du départ (gratuit pendant les essais)'
@@ -2388,6 +2577,7 @@ function syncDash() {
     const n = (R.preview && R.endPaths) ? (R.endPaths.get(R.preview.key) || []).length : 0;
     ap.style.display = (R.phase === 'pick' && n > 1 && !R.animating) ? 'block' : 'none';
   }
+
 }
 
 /* ================================================================
@@ -2402,29 +2592,33 @@ function executeDiceRoll(gear) {
   return sum;
 }
 
-function rollDiceAnim(drsFace) {
+function rollDiceAnim() {
   if (R.phase !== 'gear') return;
   if (R.animating) return;
 
+  // Cas spécial : panne sèche, rapport 0 atteint → faire le plein (pas de dé, la voiture est arrêtée)
   if (R.outOfFuel && R.pendingGear === 0) {
     R.gear = 0;
     R.rolled = 0;
     R.phase = 'pick';
+    // Résultat "sur place" : aucun déplacement, déclenche le plein dans finalizeMove
     applyResult({ path: [], q: R.q, r: R.r, dir: R.dir, crash: false, finish: false, left: 0, lapsGained: 0 });
     return;
   }
 
   if (R.pendingGear === 0) return;
 
-  const onDRS = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs;
-
+  // Anti-spam
   R.phase = 'rolling';
   R.gear = R.pendingGear;
 
+  // Consommation d'essence = nombre de dés = rapport engagé.
+  // Exception : en panne sèche (décélération forcée), la voiture roule sur sa réserve, sans consommer.
   if (!R.outOfFuel && R.fuelEnabled) {
     const before = R.fuel;
     R.fuel = Math.max(0, R.fuel - R.gear);
     if (R.fuel === 0 && R.gear > 0) {
+      // Panne sèche : à partir de maintenant, décélération forcée d'un rapport par tour
       R.outOfFuel = true;
       radio('outOfFuel');
     } else if (R.fuelMax) {
@@ -2441,22 +2635,23 @@ function rollDiceAnim(drsFace) {
   const titleEl = document.getElementById('dice-title');
   const pool = DICE_POOLS[R.gear] || [];
 
-  const nActifs = pool.length;
-  titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR 6';
+  // Un cube visible PAR DÉ du pool (V5 → 5 cubes qui tournent en même temps)
+  titleEl.textContent = pool.length + (pool.length > 1 ? ' DÉS' : ' DÉ') + ' · RAPPORT ' + R.gear;
 
+  // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
   if (fairEl) {
     if (R.isWarmup || !R.diceSeed) {
       fairEl.textContent = '🎲 Essais libres · tirages aléatoires';
     } else {
-      fairEl.textContent = '⚖️ Tirages identiques pour tous les joueurs et à chaque essai';
+      fairEl.textContent = '⚖️ Tirages identiques pour tous les joueurs · essai n°' + (R.attemptNo || 1);
     }
     fairEl.style.display = 'block';
   }
   row.innerHTML = '';
-  const cubes = DICE_SET.map((faces, i) => {
+  const cubes = pool.map(() => {
     const c = document.createElement('div');
-    c.className = 'dice-cube' + (i < nActifs ? '' : ' inactif');
+    c.className = 'dice-cube';
     c.textContent = '?';
     row.appendChild(c);
     return c;
@@ -2466,60 +2661,42 @@ function rollDiceAnim(drsFace) {
 
   let counter = 0;
   const interval = setInterval(() => {
+    // chaque dé tourne sur ses PROPRES faces
     let running = 0;
     cubes.forEach((c, i) => {
-      const faces = DICE_SET[i];
+      const faces = pool[i];
       const v = faces[Math.floor(Math.random() * faces.length)];
       c.textContent = v;
-      if (i < nActifs) running += v;
+      running += v;
     });
     sumEl.textContent = 'Σ ' + running;
     counter++;
 
     if (counter > 10) {
       clearInterval(interval);
+      // Tirage final réel, dé par dé (la somme affichée = somme des faces montrées).
+      // Pool commun : valeurs identiques pour tous les joueurs sur ce coup.
       const moveNo = R.turn + 1;
-      let baseTotal = 0;
-      let drsFaces = [];
-
+      let total = 0;
       cubes.forEach((c, i) => {
-        const isLastDrs = onDRS && (i === nActifs - 1);
-        
-        if (isLastDrs) {
-          c.textContent = 'DRS';
-          c.classList.add('drs-picked');
-          c.style.borderColor = '#b464ff';
-          drsFaces = [...new Set(DICE_SET[i])];
-        } else {
-          const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
-          c.textContent = v;
-          if (i < nActifs) {
-            c.style.borderColor = 'var(--ok)';
-            baseTotal += v;
-          }
-        }
+        const v = dieValue(pool[i], R.gear, i, moveNo);
+        c.textContent = v;
+        c.style.borderColor = 'var(--ok)';
+        total += v;
       });
-
-      if (onDRS) {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + baseTotal + ' + </span><span style="color:#b464ff;font-size:20px">⚡ DRS</span>';
-      } else {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + baseTotal + ' cases</span>';
-      }
+      sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + total + ' cases</span>';
 
       setTimeout(() => {
         ov.classList.remove('on');
         cubes.forEach(c => { c.style.borderColor = ''; });
-        
-        if (onDRS) {
-          processDrsRollResult(baseTotal, drsFaces);
-        } else {
-          processRollResult(baseTotal);
-        }
+        processRollResult(total);
       }, 900);
     }
   }, 120);
 }
 
+// Combien de cases dégagées devant soi dans une direction donnée (max 8)
+// → sert à préférer les trajectoires qui finissent "dans le sens du circuit"
 function openRoadAhead(q, r, dir, limit) {
   limit = limit || 8;
   let n = 0, cq = q, cr = r;
@@ -2532,10 +2709,12 @@ function openRoadAhead(q, r, dir, limit) {
   return n;
 }
 
+// Qualité d'une trajectoire : d'abord ne pas crasher, puis finir face à la piste dégagée
 function scorePath(res) {
   if (res.crash) return -1000;
   let s = openRoadAhead(res.q, res.r, res.dir) * 10;
   if (res.finish) s += 5000;
+  // léger bonus si la jauge d'inertie finit basse (on pourra tourner au coup suivant)
   s -= (res.inertiaEnd || 0);
   return s;
 }
@@ -2543,7 +2722,6 @@ function scorePath(res) {
 function processRollResult(val) {
   R.rolled = val;
   R.budget = val;
-  R.isDrsPick = false;
 
   R.results = getValidPaths(
     R.q, R.r, R.dir,
@@ -2551,29 +2729,8 @@ function processRollResult(val) {
     R.isWarmup ? 0 : R.lapCount, R.targetLaps
   );
 
-  groupAndShowPaths('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider');
-}
-
-function processDrsRollResult(baseTotal, drsFaces) {
-  R.isDrsPick = true;
-  R.results = [];
-  R.rolled = 'DRS';
-
-  drsFaces.forEach(face => {
-    const budget = baseTotal + face;
-    const pathsForFace = getValidPaths(
-      R.q, R.r, R.dir,
-      budget, R.gear,
-      R.isWarmup ? 0 : R.lapCount, R.targetLaps
-    );
-    pathsForFace.forEach(p => p.usedRoll = budget);
-    R.results.push(...pathsForFace);
-  });
-
-  groupAndShowPaths('⚡ DRS : Choisis ta trajectoire parmi toutes les possibilités affichées');
-}
-
-function groupAndShowPaths(defaultMessage) {
+  // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
+  // triées de la meilleure à la moins bonne (sens du circuit d'abord).
   const byCell = new Map();
   for (const r of R.results) {
     const k = r.q + ',' + r.r;
@@ -2585,6 +2742,7 @@ function groupAndShowPaths(defaultMessage) {
   R.ends = new Map();
   for (const [k, list] of byCell.entries()) {
     list.sort((a, b) => scorePath(b) - scorePath(a));
+    // dédoublonne les trajectoires identiques en direction finale ET forme
     const seen = new Set();
     const uniq = [];
     for (const r of list) {
@@ -2597,7 +2755,7 @@ function groupAndShowPaths(defaultMessage) {
     R.ends.set(k, uniq[0]);
   }
 
-  R.preview = null;
+  R.preview = null;   // aucune trajectoire prévisualisée au départ
   R.phase = 'pick';
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
 
@@ -2607,10 +2765,9 @@ function groupAndShowPaths(defaultMessage) {
       R.results[0]
     );
     say('💥 Crash inévitable !', 'crash');
-    if (R.isDrsPick) R.rolled = best.usedRoll;
     setTimeout(() => applyResult(best), 800);
   } else {
-    say(defaultMessage, 'go');
+    say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
   }
 
   syncDash();
@@ -2646,6 +2803,7 @@ function buildRulesHTML() {
     '</details>';
 
   return '' +
+  // ---------- LE BUT ----------
   '<div style="background:var(--panel);border-radius:10px;padding:14px;margin-bottom:18px;text-align:center">' +
     '<div style="font-size:10px;letter-spacing:2px;color:var(--mute);margin-bottom:5px">LE BUT</div>' +
     '<div style="font-size:15px;font-weight:900;font-style:italic;color:var(--line);line-height:1.3">' +
@@ -2653,12 +2811,21 @@ function buildRulesHTML() {
     '<div style="font-size:11.5px;color:var(--mute);margin-top:6px">1 coup = 1 lancer de dés</div>' +
   '</div>' +
 
+  // ---------- COMMENT ON JOUE ----------
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin-bottom:11px;font-weight:800">Comment on joue</div>' +
-  step('1', 'Choisis ta vitesse', 'De 1 à 6, un cran à la fois. Plus le rapport est élevé, plus tu avances loin.') +
-  step('2', 'Lance les dés', 'Le rapport donne le nombre de dés. Leur total = le nombre de cases que tu parcours.') +
-  step('3', 'Choisis ton chemin', 'Touche une case verte : le chemin s\'affiche. Retouche la même case pour valider.') +
 
+  step('1', 'Choisis ta vitesse',
+    'De 1 à 6, un cran à la fois. Plus le rapport est élevé, plus tu avances loin.') +
+
+  step('2', 'Lance les dés',
+    'Le rapport donne le nombre de dés. Leur total = le nombre de cases que tu parcours.') +
+
+  step('3', 'Choisis ton chemin',
+    'Touche une case verte : le chemin s\'affiche. Retouche la même case pour valider.') +
+
+  // ---------- L'INERTIE ----------
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">L\'inertie</div>' +
+
   '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
     '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Une F1 lancée ne tourne pas sur place</div>' +
     '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
@@ -2673,16 +2840,48 @@ function buildRulesHTML() {
   '</div>' +
 
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 9px;font-weight:800">En savoir plus</div>' +
-  details('⛽ L\'essence', 'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
+
+  details('⛽ L\'essence',
+    'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
     'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
     'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.') +
-  details('🎲 Détail des dés', '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left"><th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th></tr>' + rows + '</table><div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
-  details('💥 Sortie de piste', 'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>.<br><br>Les coups déjà joués restent comptés et l\'essence n\'est pas rendue : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
-  details('🔄 Recommencer la course', 'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>Pendant les <b>essais libres</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
-  details('👻 Les fantômes', '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : la ligne à suivre.<br><b style="color:#4ac7ff">👤 Bleu</b> — ton propre meilleur tour.<br><br>Les deux boutons en haut de l\'écran permettent de les afficher ou masquer à tout moment, indépendamment.') +
-  details('⚖️ Des dés identiques pour tous', 'Les dés ne sont pas tirés au hasard pendant la course : ils sont <b>les mêmes pour tous les joueurs</b>. Au 3e coup en V4, tout le monde obtient le même résultat que toi.<br><br>Le classement ne récompense donc que tes <b>décisions</b> : quel rapport engager, quand braquer, quelle trajectoire prendre. Personne ne gagne parce qu\'il a eu de la chance.<br><br>Changer de rapport pioche ailleurs dans la grille : impossible de "pêcher" un bon tirage. La grille est la <b>même à chaque essai</b> : tes essais suivants servent à mieux exploiter les mêmes dés.<br><br>Pendant les <b>essais libres</b>, les dés redeviennent aléatoires : sinon tu repérerais la grille de la course avant de la jouer.') +
-  details('🏁 Points et classement', 'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>À égalité de coups, le plus de cases restantes départage.') +
-  details('📍 Checkpoints et essais libres', 'Les checkpoints (Checkpoint 1, Checkpoint 2…) sont numérotés dans l\'ordre du circuit et donnent ton temps de passage : <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, <b style="color:var(--ok)">vert</b> si tu bats ton record.<br><br>Les essais libres, s\'ils sont prévus, ne comptent pas au score : roule autant que tu veux pour repérer le tracé, puis clique 🏁 FIN DES ESSAIS pour lancer la course.');
+
+  details('🎲 Détail des dés',
+    '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
+        '<th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th>' +
+      '</tr>' + rows +
+    '</table>' +
+    '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
+
+  details('💥 Sortie de piste',
+    'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>.<br><br>' +
+    'Les coups déjà joués restent comptés et l\'essence n\'est pas rendue : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
+
+  details('🔄 Recommencer la course',
+    'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
+    'Pendant les <b>essais libres</b> c\'est gratuit. En course, cela <b>consomme un essai</b> : tu repars à zéro mais il t\'en restera un de moins.') +
+
+
+
+  details('👻 Les fantômes',
+    '<b style="color:#9b8cff">👻 Violet</b> — la trajectoire de référence enregistrée par l\'organisateur : la ligne à suivre.<br>' +
+    '<b style="color:#4ac7ff">👤 Bleu</b> — ton propre meilleur tour.<br><br>' +
+    'Les deux boutons en haut de l\'écran permettent de les afficher ou masquer à tout moment, indépendamment.') +
+
+  details('⚖️ Des dés identiques pour tous',
+    'Les dés ne sont pas tirés au hasard pendant la course : ils sont <b>les mêmes pour tous les joueurs</b>. Au 3e coup en V4, tout le monde obtient le même résultat que toi.<br><br>' +
+    'Le classement ne récompense donc que tes <b>décisions</b> : quel rapport engager, quand braquer, quelle trajectoire prendre. Personne ne gagne parce qu\'il a eu de la chance.<br><br>' +
+    'Changer de rapport pioche ailleurs dans la grille : impossible de \"pêcher\" un bon tirage. Chaque essai a sa propre grille, donc rejouer reste un nouveau défi.<br><br>' +
+    'Pendant les <b>essais libres</b>, les dés redeviennent aléatoires : sinon tu repérerais la grille de la course avant de la jouer.') +
+
+  details('🏁 Points et classement',
+    'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
+    'À égalité de coups, le plus de cases restantes départage.') +
+
+  details('📍 Checkpoints et essais libres',
+    'Les checkpoints (Checkpoint 1, Checkpoint 2…) sont numérotés dans l\'ordre du circuit et donnent ton temps de passage : <b style="color:#b14aed">violet</b> si c\'est le meilleur de tous les joueurs, <b style="color:var(--ok)">vert</b> si tu bats ton record.<br><br>' +
+    'Les essais libres, s\'ils sont prévus, ne comptent pas au score : roule autant que tu veux pour repérer le tracé, puis clique 🏁 FIN DES ESSAIS pour lancer la course.');
 }
 
 /* ================================================================
@@ -2693,15 +2892,28 @@ const TUTO = {
   t: 0,
   raf: null,
   steps: [
-    { titre: 'Choisis ta vitesse', txt: 'Un cran à la fois, jamais de saut. La <b>V2</b> lancera 2 dés.', mode: 'gears' },
-    { titre: 'Lance les dés', txt: '2 dés lancés, on additionne : <b>1 + 2 = 3</b>. C\'est ta distance.', mode: 'dice' },
-    { titre: 'Avance', txt: 'La voiture parcourt les <b>3 cases</b> du total.', mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0}] },
-    { titre: 'Choisis ta trajectoire', txt: '1er appui = le chemin s\'affiche (<b style="color:#ff9f43">↻</b> = virage, <b style="color:var(--ok)">flèche</b> = sortie). 2e appui = tu pars.', mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:-1},{i:4,k:-1}], arrow: true },
-    { titre: 'L\'inertie', txt: 'Après un virage la jauge se remplit. Tant qu\'elle n\'est pas <b>vide</b>, tu roules tout droit.', mode: 'track', route: [{i:1,k:0},{i:2,k:-1},{i:3,k:-1},{i:4,k:-1},{i:5,k:-1}], gauge: 2 },
-    { titre: 'Vite = lourd', txt: 'En <b>V6</b> la jauge monte à 6 : impossible de tourner avant 6 cases droites. Ralentis <b>avant</b> le virage.', mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0},{i:5,k:0}], gauge: 6, crash: true }
+    { titre: 'Choisis ta vitesse',
+      txt: 'Un cran à la fois, jamais de saut. La <b>V2</b> lancera 2 dés.',
+      mode: 'gears' },
+    { titre: 'Lance les dés',
+      txt: '2 dés lancés, on additionne : <b>1 + 2 = 3</b>. C\'est ta distance.',
+      mode: 'dice' },
+    { titre: 'Avance',
+      txt: 'La voiture parcourt les <b>3 cases</b> du total.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0}] },
+    { titre: 'Choisis ta trajectoire',
+      txt: '1er appui = le chemin s\'affiche (<b style="color:#ff9f43">↻</b> = virage, <b style="color:var(--ok)">flèche</b> = sortie). 2e appui = tu pars.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:-1},{i:4,k:-1}], arrow: true },
+    { titre: 'L\'inertie',
+      txt: 'Après un virage la jauge se remplit. Tant qu\'elle n\'est pas <b>vide</b>, tu roules tout droit.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:-1},{i:3,k:-1},{i:4,k:-1},{i:5,k:-1}], gauge: 2 },
+    { titre: 'Vite = lourd',
+      txt: 'En <b>V6</b> la jauge monte à 6 : impossible de tourner avant 6 cases droites. Ralentis <b>avant</b> le virage.',
+      mode: 'track', route: [{i:1,k:0},{i:2,k:0},{i:3,k:0},{i:4,k:0},{i:5,k:0}], gauge: 6, crash: true }
   ]
 };
 
+// Détecte TOUS les changements de direction d'une trajectoire
 function tutoTurns(route) {
   const turns = [];
   for (let i = 1; i < route.length - 1; i++) {
@@ -2725,6 +2937,7 @@ function drawTuto() {
   c.clearRect(0, 0, w, hh);
   c.fillStyle = '#14161a'; c.fillRect(0, 0, w, hh);
 
+  // ---------- ÉTAPE 1 : la boîte de vitesses ----------
   if (st.mode === 'gears') {
     const sel = 2;
     const bw = w / 8, bh = hh * 0.42, y = hh / 2 - bh / 2;
@@ -2735,6 +2948,7 @@ function drawTuto() {
     for (let g = 1; g <= 6; g++) {
       const x = w / 2 + (g - 3.5) * (bw + 5);
       const on = (g === sel);
+      // clignotement sur le rapport choisi
       const pulse = on ? (0.6 + 0.4 * Math.sin(t * Math.PI * 4)) : 1;
       c.globalAlpha = on ? 1 : (Math.abs(g - sel) <= 1 ? 0.85 : 0.3);
       c.fillStyle = on ? '#f7c948' : '#22262e';
@@ -2756,6 +2970,7 @@ function drawTuto() {
     return;
   }
 
+  // ---------- ÉTAPE 2 : le lancer de dés ----------
   if (st.mode === 'dice') {
     const pool = DICE_POOLS[2];
     const rolling = t < 0.62;
@@ -2769,7 +2984,9 @@ function drawTuto() {
     pool.forEach((faces, i) => {
       const x = w / 2 + (i - (pool.length - 1) / 2) * (size + 12);
       const y = hh * 0.46;
-      const val = rolling ? faces[Math.floor((t * 40 + i * 3)) % faces.length] : finals[i];
+      const val = rolling
+        ? faces[Math.floor((t * 40 + i * 3)) % faces.length]
+        : finals[i];
       sum += val;
       const wob = rolling ? Math.sin(t * 50 + i) * size * 0.06 : 0;
       c.save(); c.translate(x, y + wob);
@@ -2790,6 +3007,7 @@ function drawTuto() {
     return;
   }
 
+  // ---------- ÉTAPES SUIVANTES : la piste ----------
   const S = hh / 7;
   const oy = hh / 2;
   c.fillStyle = '#2d5016'; c.fillRect(0, 0, w, hh);
@@ -2814,6 +3032,7 @@ function drawTuto() {
   const route = st.route;
   const turns = tutoTurns(route);
 
+  // Trajectoire
   c.strokeStyle = st.crash ? 'rgba(255,93,93,.9)' : 'rgba(247,201,72,.9)';
   c.lineWidth = Math.max(2, S * 0.2);
   c.lineJoin = 'round'; c.lineCap = 'round';
@@ -2829,6 +3048,7 @@ function drawTuto() {
   }
   c.stroke();
 
+  // TOUS les virages sont marqués (et aucun si le virage est impossible)
   turns.forEach(idx => {
     const p = px(route[idx].i, route[idx].k);
     c.beginPath(); c.arc(p.x, p.y, S * 0.34, 0, Math.PI * 2);
@@ -2839,6 +3059,7 @@ function drawTuto() {
     c.fillText('↻', p.x, p.y);
   });
 
+  // Flèche de sortie
   if (st.arrow) {
     const last = route[route.length - 1];
     const prev = route[route.length - 2];
@@ -2853,6 +3074,7 @@ function drawTuto() {
     c.restore();
   }
 
+  // Position de la voiture
   const endI = st.crash ? route.length - 1 + 1.4 : route.length - 1;
   const fpos = t * endI;
   let carX, carY, ang;
@@ -2870,6 +3092,7 @@ function drawTuto() {
     ang = 0;
   }
 
+  // Impact en fin de course pour l'étape crash
   if (st.crash && t > 0.86) {
     c.fillStyle = 'rgba(255,93,93,.35)';
     c.beginPath(); c.arc(carX, carY, S * 0.95, 0, Math.PI * 2); c.fill();
@@ -2891,6 +3114,7 @@ function drawTuto() {
   c.fillRect(S * 0.16, S * 0.24, S * 0.16, S * 0.1);
   c.restore();
 
+  // Jauge d'inertie
   if (st.gauge) {
     const cap = st.gauge;
     const used = st.crash ? cap : Math.round(cap * (1 - t));
@@ -2946,9 +3170,13 @@ function openRules() {
 
 /* ================================================================
    ADMIN — GRILLE DE DÉS
+   Affiche les tirages réellement servis aux joueurs pour ce circuit :
+   pour chaque coup et chaque rapport, le total obtenu. Purement en lecture
+   (gridRoll est la fonction qui sert la course), donc ce que l'admin voit
+   est exactement ce que les joueurs obtiennent.
    ================================================================ */
-let DG_ATTEMPT = 1;
-const DG_MOVES = 20;
+let DG_ATTEMPT = 1;   // n° d'essai affiché
+const DG_MOVES = 20;  // nb de coups affichés
 
 function openDiceGrid() {
   const seed = (E && E.diceSeed) || null;
@@ -2966,11 +3194,24 @@ function renderDiceGrid(seed) {
   }
 
   let html = '';
+
+  // Rappel du fonctionnement
   html += '<div style="background:rgba(74,199,255,.08);border-left:3px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--txt)">' +
-    'Ces tirages sont <b>identiques pour tous les joueurs</b> et <b>les mêmes à chaque essai</b>. ' +
+    'Ces tirages sont <b>identiques pour tous les joueurs</b>. Chaque essai a sa propre grille. ' +
     'Les essais libres, eux, restent aléatoires.<br>' +
     '<span style="color:var(--mute);font-size:11px">Graine : <code>' + esc(seed) + '</code></span></div>';
 
+  // Sélecteur d'essai
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
+    '<span style="font-size:11px;letter-spacing:1px;color:var(--mute)">ESSAI</span>';
+  for (let a = 1; a <= 5; a++) {
+    const on = a === DG_ATTEMPT;
+    html += '<button class="btn dg-att" data-a="' + a + '" style="padding:5px 11px;font-size:12px' +
+      (on ? ';background:var(--line);color:#14161a;font-weight:900' : '') + '">n°' + a + '</button>';
+  }
+  html += '</div>';
+
+  // Tableau coups × rapports
   html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
     '<thead><tr style="color:var(--mute);font-size:10px;letter-spacing:1px">' +
     '<th style="padding:6px 4px;text-align:left">COUP</th>';
@@ -2980,7 +3221,7 @@ function renderDiceGrid(seed) {
   }
   html += '</tr></thead><tbody>';
 
-  const stats = {};
+  const stats = {};   // distribution par rapport, pour le récapitulatif
   for (let g = 1; g <= 6; g++) stats[g] = {};
 
   for (let m = 1; m <= DG_MOVES; m++) {
@@ -2989,6 +3230,7 @@ function renderDiceGrid(seed) {
     for (let g = 1; g <= 6; g++) {
       const v = gridRoll(seed, DG_ATTEMPT, g, m);
       stats[g][v] = (stats[g][v] || 0) + 1;
+      // On met en évidence les extrêmes de la plage du rapport
       const lo = DICE[g][0], hi = DICE[g][1];
       const col = v === hi ? 'color:var(--crash);font-weight:900'
                 : v === lo ? 'color:var(--ok);font-weight:900'
@@ -3003,6 +3245,7 @@ function renderDiceGrid(seed) {
     '<span style="color:var(--ok)">vert</span> = minimum de la plage · ' +
     '<span style="color:var(--crash)">rouge</span> = maximum</div>';
 
+  // Récapitulatif : combien de fois chaque total sort sur ces 20 coups
   html += '<div style="margin-top:18px"><div style="font-size:11px;letter-spacing:1px;color:var(--mute);margin-bottom:8px">' +
     'RÉPARTITION SUR CES ' + DG_MOVES + ' COUPS</div>';
   for (let g = 1; g <= 6; g++) {
@@ -3018,10 +3261,18 @@ function renderDiceGrid(seed) {
       '</div></div>';
   }
   html += '</div>';
+
   body.innerHTML = html;
+
+  // Boutons d'essai
+  body.querySelectorAll('.dg-att').forEach(b => {
+    b.onclick = () => { DG_ATTEMPT = parseInt(b.dataset.a); renderDiceGrid(seed); };
+  });
 }
 
-document.getElementById('dice-grid-close').onclick = () => { document.getElementById('dice-grid-modal').style.display = 'none'; };
+document.getElementById('dice-grid-close').onclick = () => {
+  document.getElementById('dice-grid-modal').style.display = 'none';
+};
 const _bdg = document.getElementById('btn-dice-grid');
 if (_bdg) _bdg.onclick = openDiceGrid;
 
@@ -3038,6 +3289,7 @@ if (_bra) _bra.onclick = openRules;
 const _brr = document.getElementById('btn-rules-race');
 if (_brr) _brr.onclick = openRules;
 
+// Bascules d'affichage des fantômes — actives à tout moment pendant la course
 function refreshGhostButtons() {
   const br = document.getElementById('gh-ref');
   const bo = document.getElementById('gh-own');
@@ -3046,6 +3298,7 @@ function refreshGhostButtons() {
   const hasRef = !!(R.ghostRef && R.ghostRef.turns && R.ghostRef.turns.length);
   const hasOwn = !!(R.ghostOwn && R.ghostOwn.turns && R.ghostOwn.turns.length);
 
+  // Bouton masqué si le fantôme correspondant n'existe pas pour ce circuit
   br.style.display = hasRef ? 'block' : 'none';
   bo.style.display = hasOwn ? 'block' : 'none';
 
@@ -3072,6 +3325,9 @@ document.getElementById('gh-own').onclick = () => {
   toast(showGhostOwn() ? '👤 Ton fantôme affiché' : '👤 Ton fantôme masqué');
 };
 
+// Recommencer la course depuis le départ.
+// Pendant le tour de chauffe : gratuit (la chauffe ne compte pas).
+// En course : consomme un essai, comme un abandon.
 document.getElementById('btn-restart').onclick = async () => {
   if (R.animating || R.phase === 'done') return;
 
@@ -3087,10 +3343,12 @@ document.getElementById('btn-restart').onclick = async () => {
   const restants = R.attemptsLeft;
   if (!R.testMode && restants <= 1) {
     if (!confirm('⚠️ C\'est ton DERNIER essai.\n\nRecommencer le consommera et tu ne pourras plus jouer ce circuit. Continuer ?')) return;
-  } else if (!confirm('Recommencer depuis le départ ?\n\nCela consomme un essai. Il t\'en restera ' + Math.max(0, restants - 1) + '.')) {
+  } else if (!confirm('Recommencer depuis le départ ?\n\nCela consomme un essai. Il t\'en restera ' +
+                      Math.max(0, restants - 1) + '.')) {
     return;
   }
 
+  // Mode test : pas d'envoi serveur, on redémarre simplement
   if (R.testMode) {
     startRace(R.circuit, R.pseudo, R.attemptsLeft, true);
     toast('🔄 Course relancée (mode test)');
@@ -3109,8 +3367,10 @@ document.getElementById('btn-restart').onclick = async () => {
       body: JSON.stringify({ circuitId: R.circuit.id, pseudo: R.pseudo })
     });
     left = res.attemptsLeft;
+    // Nouvelle grille de dés pour le nouvel essai (jamais rejouer des dés connus)
     R.circuit.attemptNo = res.attemptNo || (R.attemptNo || 1) + 1;
   } catch (e) {
+    // Serveur injoignable : on décompte quand même localement
     R.circuit.attemptNo = (R.attemptNo || 1) + 1;
   }
 
@@ -3129,23 +3389,18 @@ document.getElementById('btn-restart').onclick = async () => {
 
 document.getElementById('roll').onclick = rollDiceAnim;
 
+// Faire défiler les trajectoires alternatives menant à la même case d'arrivée
 document.getElementById('alt-path').onclick = () => {
   if (!R.preview) return;
   const list = R.endPaths.get(R.preview.key) || [];
   if (list.length < 2) return;
-  
   R.preview.index = (R.preview.index + 1) % list.length;
-  
-  if (R.isDrsPick && list[R.preview.index].usedRoll) {
-    R.rolled = list[R.preview.index].usedRoll;
-  }
-  
   say('Chemin ' + (R.preview.index + 1) + '/' + list.length +
       ' — retouche la case pour valider', 'go');
-  
-  syncDash();
   drawRace();
 };
+
+
 
 /* ================================================================
    COURSE — ANIMATION DE DÉPLACEMENT
@@ -3206,14 +3461,13 @@ function getAnimCarPos() {
 function finalizeMove(r) {
   R.turn++;
 
-  R.crossedDrs = r.path.some(p => R.grid[p.r] && R.grid[p.r][p.q] === 'D') ||
-    (R.grid[r.r] && R.grid[r.r][r.q] === 'D');
-
+  // Traces de pneus accumulées (tout l'essai)
   for (const p of r.path) {
     R.fullTrail.push({ q: p.q, r: p.r, dir: p.dir });
   }
   R.trail = r.path.map(p => ({ q: p.q, r: p.r, dir: p.dir }));
 
+  // Effets visuels proportionnels à la vitesse
   const speedFactor = R.gear / 6;
   R.shakeAmount = speedFactor * 4;
 
@@ -3227,9 +3481,11 @@ function finalizeMove(r) {
     });
   }
 
+  // Vitesse réelle (affichée dans le speedomètre)
   const maxDice = DICE[R.gear] ? DICE[R.gear][1] : 1;
   R.currentKmh = Math.round(GEAR_KMH[R.gear] * (R.rolled / maxDice));
 
+  // Position + direction
   if (r.path.length) {
     const last = r.path[r.path.length - 1];
     R.q = last.q;
@@ -3237,14 +3493,18 @@ function finalizeMove(r) {
     R.dir = last.dir;
   }
 
+  // PERSISTANCE : la jauge conserve l'état exact de fin de mouvement
   if (r.inertiaEnd !== undefined) R.inertia = r.inertiaEnd;
 
   R.lapCount += r.lapsGained || 0;
+  // Temps du tour complet (course uniquement, pas si le coup se termine en crash)
   if (r.lapsGained && !R.isWarmup && !r.crash) R.lapMoves[R.lapCount - 1] = R.turn;
 
+  // Trace par coup (pour le fantôme du prochain essai)
   R.turnPositions.push({ q: R.q, r: R.r, dir: R.dir });
   R.cells += (r.path ? r.path.length : 0);
 
+  // Gestion leftFinishZone
   const currentCell = R.grid[R.r] ? R.grid[R.r][R.q] : '#';
   if (currentCell === 'F' && r.lapsGained > 0) {
     R.leftFinishZone = false;
@@ -3252,17 +3512,20 @@ function finalizeMove(r) {
     R.leftFinishZone = true;
   }
 
+  // Checkpoints (pas pendant warmup)
   if (!R.isWarmup) {
     const hitThisMove = new Set();
     for (const cp of R.checkpoints) {
       const idx = r.path.findIndex(p => p.q === cp.q && p.r === cp.r);
       if (idx >= 0) {
+        // Une ligne de checkpoint fait plusieurs cases : ne la compter qu'UNE fois
         if (hitThisMove.has(cp.index)) continue;
         hitThisMove.add(cp.index);
 
         R.cpTimes[cp.index] = R.turn;
         showCpToast(cp.index, R.turn, r.left);
 
+        // Point de reprise en cas de crash : position, cap et progression à cet instant
         R.lastCP = {
           q: cp.q,
           r: cp.r,
@@ -3276,6 +3539,7 @@ function finalizeMove(r) {
     }
   }
 
+  // Essais libres : on boucle librement, seule la FIN DES ESSAIS lance la course
   if (r.lapsGained && R.isWarmup) {
     R.warmupDone++;
     R.lapCount = 0;
@@ -3294,11 +3558,15 @@ function finalizeMove(r) {
     return;
   }
 
+  // Arrivée (jamais pendant les essais libres)
   if (r.finish && !R.isWarmup) {
     finishRace(r);
     return;
   }
 
+  // Crash → réapparition au dernier checkpoint franchi (ou au départ), à l'arrêt.
+  // Aucun avantage : toute la distance parcourue depuis le checkpoint est perdue,
+  // les coups déjà dépensés restent comptés, et l'essence n'est pas rendue.
   if (r.crash) {
     const cp = R.lastCP || { q: R.q, r: R.r, dir: R.dir, lapCount: 0, leftFinishZone: false, cpTimes: [], index: -1 };
 
@@ -3309,8 +3577,8 @@ function finalizeMove(r) {
     R.leftFinishZone = cp.leftFinishZone;
     R.cpTimes = (cp.cpTimes || []).slice();
     R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
-    R.crossedDrs = false;
 
+    // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
     R.pendingGear = 1;
     R.inertia = 0;
@@ -3325,6 +3593,8 @@ function finalizeMove(r) {
     R.trail = [];
     R.phase = 'gear';
 
+    // La trace du fantôme doit refléter la position APRÈS réapparition,
+    // sinon le fantôme enregistré montre un saut depuis le point de crash.
     if (R.turnPositions.length) {
       R.turnPositions[R.turnPositions.length - 1] = { q: R.q, r: R.r, dir: R.dir };
     }
@@ -3342,6 +3612,9 @@ function finalizeMove(r) {
     return;
   }
 
+  // Mouvement normal
+
+  // Panne sèche : si on vient de retomber au rapport 0, le plein est fait → on repart plein
   if (R.outOfFuel && R.gear === 0) {
     R.outOfFuel = false;
     R.fuel = R.fuelMax;
@@ -3362,6 +3635,7 @@ function finalizeMove(r) {
   R.ends = null;
   R.phase = 'gear';
 
+  // Auto-center si le joueur n'a pas pan manuellement
   if (!R.userPanned) {
     R.panOffsetX = 0;
     R.panOffsetY = 0;
@@ -3371,41 +3645,6 @@ function finalizeMove(r) {
   syncDash();
   updateSpeedometer();
   drawRace();
-}
-
-function renderCircuitBoard(top, pseudo, myRank, myTotal, limit) {
-  const list = (top || []).slice(0, limit || 10);
-  if (!list.length) return '<div style="color:var(--mute);padding:6px">Aucun temps enregistré — tu es le premier !</div>';
-  const me = (pseudo || '').toLowerCase();
-  let html = '<div class="eyebrow" style="margin-bottom:6px">Classement du circuit</div>';
-  let inList = false;
-  list.forEach((t, i) => {
-    const mine = (t.pseudo || '').toLowerCase() === me;
-    if (mine) inList = true;
-    const medal = ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
-    const pts = (t.points != null && t.points > 0) ? ' <span style="color:var(--gold,#f7c948)">' + t.points + ' pts</span>' : '';
-    const prev = list[i - 1];
-    const tied = prev && prev.moves === t.moves && (prev.left || 0) === (t.left || 0);
-    let detail = '';
-    if (tied) {
-      const parts = [];
-      if (t.attemptIndex != null) parts.push((t.attemptIndex + 1) + 'ᵉ essai');
-      if (t.cells != null) parts.push(t.cells + ' cases parcourues');
-      if (parts.length) detail = ' <span style="font-size:9px;color:var(--mute)">(' + parts.join(' · ') + ')</span>';
-    }
-    html += '<div class="row2' + (mine ? ' me' : '') + '">' +
-      '<span>' + medal + ' ' + esc(t.pseudo) + detail + '</span>' +
-      '<span>' + t.moves + (t.left ? '+' + t.left : '') + pts + '</span></div>';
-  });
-  if (!inList && myRank) {
-    html += '<div class="row2 me" style="border-top:1px solid #2c3038;margin-top:4px;padding-top:5px">' +
-      '<span>' + myRank + '. ' + esc(pseudo) + '</span>' +
-      '<span>' + (myTotal ? 'sur ' + myTotal : '') + '</span></div>';
-  }
-  const anyPts = (list || []).some(t => t.points != null && t.points > 0);
-  html += '<div style="font-size:10px;color:var(--mute);margin-top:5px">coups (+ cases bonus au départage)' +
-    (anyPts ? ' · pts au classement général' : ' · 🎈 circuit hors classement') + '</div>';
-  return html;
 }
 
 /* ================================================================
@@ -3423,6 +3662,7 @@ function showCpToast(index, time, left) {
   const wbT = (wb && wb.cpTimes) ? wb.cpTimes[index] : undefined;
   const myBest = R.bestCpTimes[index];
 
+  // Code couleur F1 : violet = meilleur de tous, vert = record perso, jaune sinon
   let color = 'var(--line)';
   if (wbT !== undefined && time < wbT) {
     color = '#b14aed';
@@ -3445,13 +3685,6 @@ function showCpToast(index, time, left) {
     html += '<div class="cp-diff" style="opacity:.75">Record : ' + wbT + ' (' + esc(wb.pseudo) + ')</div>';
   }
 
-  if (R.board && R.board.length) {
-    html += '<div style="margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:var(--mute)">' +
-      R.board.slice(0, 3).map((t, i) =>
-        (['🥇', '🥈', '🥉'][i]) + ' ' + esc(t.pseudo) + ' ' + t.moves + (t.left ? '+' + t.left : '')
-      ).join(' · ') + '</div>';
-  }
-
   el.innerHTML = html;
   el.style.borderColor = color;
   el.classList.add('on');
@@ -3470,6 +3703,7 @@ async function finishRace(r) {
   R.phase = 'done';
   drawRace();
 
+  // Sauvegarder les meilleurs splits
   for (let i = 0; i < R.cpTimes.length; i++) {
     if (R.cpTimes[i] !== undefined) {
       if (R.bestCpTimes[i] === undefined || R.cpTimes[i] < R.bestCpTimes[i]) {
@@ -3483,7 +3717,9 @@ async function finishRace(r) {
     JSON.stringify(R.bestCpTimes)
   );
 
+  // Fantôme : mémorise ce run s'il est meilleur que le précédent
   if (!R.isWarmup) saveGhostIfBetter(R.circuit.id, R.turnPositions, R.turn);
+  // Meilleur tour (courses multi-tours)
   let bestLapTxt = '';
   if (R.targetLaps > 1 && R.lapMoves.length) {
     const durs = R.lapMoves.map((m, i) => m - (i ? R.lapMoves[i - 1] : 0)).filter(d => Number.isFinite(d) && d > 0);
@@ -3493,16 +3729,22 @@ async function finishRace(r) {
   showLapFlag('ARRIVÉE !', R.turn + ' coups');
   radio('finish');
 
+  // UI
   document.getElementById('fh2').textContent = 'ARRIVÉE !';
-  document.getElementById('fstats').textContent = R.turn + ' coup(s) · +' + r.left + ' cases bonus' + bestLapTxt;
-  document.getElementById('fsub').textContent = 'Score = nombre de coups. Surplus = départage.';
+  document.getElementById('fstats').textContent =
+    R.turn + ' coup(s) · +' + r.left + ' cases bonus' + bestLapTxt;
+  document.getElementById('fsub').textContent =
+    'Score = nombre de coups. Surplus = départage.';
   document.getElementById('flb').innerHTML = '';
   document.getElementById('btn-retry').disabled = true;
   document.getElementById('finish').classList.add('on');
 
+  // Admin : proposer de publier cette trajectoire comme référence pour tous les joueurs
   const pg = document.getElementById('btn-publish-ghost');
   if (pg) {
     const isAdmin = !!(E && E.adminPw);
+    // En mode test l'id est fictif ('test_circuit') : on retombe sur le circuit
+    // réellement en cours d'édition, pour que ça marche AUSSI depuis le mode test.
     let cid = (R.circuit && R.circuit.id) || '';
     if ((!cid || cid === 'test_circuit') && E && E.editingId) cid = E.editingId;
     const realCircuit = cid && cid !== 'test_circuit';
@@ -3533,10 +3775,10 @@ async function finishRace(r) {
     };
   }
 
+  // Mode test : pas d'envoi serveur
   if (R.testMode) {
     document.getElementById('flb').innerHTML =
-      '<div style="color:var(--ok);padding:6px">✅ Mode test — non enregistré</div>' +
-      renderCircuitBoard(R.board, R.pseudo, 0, 0, 10);
+      '<div style="color:var(--ok);padding:8px">✅ Mode test — non enregistré</div>';
 
     const rb = document.getElementById('btn-retry');
     rb.disabled = false;
@@ -3545,6 +3787,7 @@ async function finishRace(r) {
     return;
   }
 
+  // Envoi serveur
   document.getElementById('flb').innerHTML = 'Enregistrement…';
 
   try {
@@ -3558,15 +3801,22 @@ async function finishRace(r) {
         left: r.left,
         laps: R.targetLaps,
         cpTimes: R.cpTimes,
-        lapMoves: R.lapMoves,
-        cells: R.cells
+        lapMoves: R.lapMoves
       })
     });
 
     R.attemptsLeft = res.attemptsLeft;
 
-    document.getElementById('flb').innerHTML =
-      renderCircuitBoard(res.top, R.pseudo, res.rank, res.totalPlayers, 10);
+    // Leaderboard
+    let html = '<div class="eyebrow" style="margin-bottom:6px">Classement</div>';
+
+    (res.top || []).forEach((t, i) => {
+      const mine = t.pseudo.toLowerCase() === R.pseudo.toLowerCase();
+      html += '<div class="row2' + (mine ? ' me' : '') + '"><span>' + (i + 1) + '. ' + esc(t.pseudo) + '</span>' +
+        '<span>' + t.moves + (t.left ? '+' + t.left : '') + ' coups' + (t.left ? ' <span style="color:var(--mute);font-size:10px">(' + t.left + ' case' + (t.left>1?'s':'') + ' bonus)</span>' : '') + '</span></div>';
+    });
+
+    document.getElementById('flb').innerHTML = html;
     document.getElementById('fsub').textContent +=
       (res.countsInGlobal === false)
         ? ' · Rang ' + res.rank + ' · 🎈 hors classement général'
@@ -3584,7 +3834,9 @@ async function finishRace(r) {
     }
 
   } catch (e) {
-    document.getElementById('flb').innerHTML = '<span style="color:var(--crash)">Hors ligne : ' + esc(e.message) + '</span>';
+    document.getElementById('flb').innerHTML =
+      '<span style="color:var(--crash)">Hors ligne : ' + esc(e.message) + '</span>';
+
     const rb = document.getElementById('btn-retry');
     rb.disabled = false;
     rb.textContent = 'Recommencer';
@@ -3603,11 +3855,14 @@ const cctx = cv.getContext('2d');
 const mm = document.getElementById('minimap');
 const mctx = mm.getContext('2d');
 
+// Barrière : trace l'ARÊTE COMPLÈTE (sommet à sommet) partagée avec un mur.
+// Les arêtes de cases voisines se rejoignent exactement → ligne continue le long du circuit.
 function drawKerbEdge(ctx, pt, hexSize, d, q, r) {
+  // Le voisin d est à l'angle (d-1)*60° ; l'arête correspondante joint les 2 sommets à ±30°
   const aMid = (d - 1) * Math.PI / 3;
   const a1 = aMid - Math.PI / 6;
   const a2 = aMid + Math.PI / 6;
-  const inset = 0.95; 
+  const inset = 0.95; // légèrement rentré pour poser la barrière sur la piste
 
   const x1 = pt.x + hexSize * inset * Math.cos(a1);
   const y1 = pt.y + hexSize * inset * Math.sin(a1);
@@ -3618,6 +3873,7 @@ function drawKerbEdge(ctx, pt, hexSize, d, q, r) {
   ctx.lineCap = 'butt';
   ctx.lineWidth = Math.max(1.5, hexSize * 0.16);
 
+  // Damier rouge/blanc réparti sur toute l'arête (3 tronçons)
   const SEG = 3;
   for (let k = 0; k < SEG; k++) {
     const t0 = k / SEG, t1 = (k + 1) / SEG;
@@ -3630,6 +3886,7 @@ function drawKerbEdge(ctx, pt, hexSize, d, q, r) {
   ctx.restore();
 }
 
+// Tracé d'un hexagone
 function hexPath(ctx, x, y, s) {
   ctx.beginPath();
   for (let i = 0; i < 6; i++) {
@@ -3642,16 +3899,19 @@ function hexPath(ctx, x, y, s) {
   ctx.closePath();
 }
 
+// Dessin de la voiture F1
 function drawCar(ctx, hexSize) {
   const sc = hexSize * 0.025;
   ctx.save();
   ctx.scale(sc, sc);
 
+  // Ombre
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
   ctx.ellipse(2, 2, 27, 13, 0, 0, Math.PI * 2);
   ctx.fill();
 
+  // Corps principal
   ctx.fillStyle = '#f7c948';
   ctx.beginPath();
   ctx.moveTo(30, 0);
@@ -3667,23 +3927,28 @@ function drawCar(ctx, hexSize) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  // Aileron avant
   ctx.fillStyle = '#e8e4da';
   ctx.fillRect(20, -13, 8, 26);
   ctx.strokeRect(20, -13, 8, 26);
 
+  // Aileron arrière
   ctx.fillRect(-30, -11, 6, 22);
   ctx.strokeRect(-30, -11, 6, 22);
 
+  // Roues
   ctx.fillStyle = '#14161a';
   ctx.fillRect(12, -15, 7, 5);
   ctx.fillRect(12, 10, 7, 5);
   ctx.fillRect(-18, -15, 7, 5);
   ctx.fillRect(-18, 10, 7, 5);
 
+  // Cockpit
   ctx.beginPath();
   ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
+  // Numéro
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 10px sans-serif';
   ctx.textAlign = 'center';
@@ -3693,10 +3958,12 @@ function drawCar(ctx, hexSize) {
   ctx.restore();
 }
 
+// Viewport de course
 function getRaceViewport() {
-  const MIN_SPAN = 7; 
+  const MIN_SPAN = 7;  // caméra plus serrée sur la voiture
 
   if (R.phase === 'pick' && R.ends && R.ends.size) {
+    // Centrer sur la voiture, avec un span juste assez large pour voir toutes les destinations
     let maxReach = 0;
     for (const k of R.ends.keys()) {
       const [q, r] = k.split(',').map(Number);
@@ -3718,6 +3985,7 @@ function getRaceViewport() {
   };
 }
 
+// Culling : ne calculer que les hexagones visibles
 function getVisibleRange(hexSize, centerOff, canvasSize) {
   const pxLeft = centerOff.x - R.panOffsetX - canvasSize / 2;
   const pxRight = centerOff.x - R.panOffsetX + canvasSize / 2;
@@ -3737,21 +4005,28 @@ function getVisibleRange(hexSize, centerOff, canvasSize) {
   };
 }
 
+// Rendu principal de la course
 function drawRace() {
   const wrap = document.getElementById('trackwrap');
+  // Taille réellement affichée : le max-height CSS peut réduire le canvas
   const rect = cv.getBoundingClientRect();
+  // Buffer aligné sur la taille RÉELLEMENT affichée : sinon les hexagones sont étirés
+  // et les clics tombent à côté verticalement.
   const cw = Math.max(120, Math.round(rect.width || (wrap.clientWidth - 12)));
   const ch = Math.max(100, Math.round(rect.height || cw));
   cv.width = cw;
   cv.height = ch;
-  const size = Math.min(cw, ch);   
+  const size = Math.min(cw, ch);   // échelle de zoom basée sur la plus petite dimension
 
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
   const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
+  // Centrer la caméra sur la VOITURE (position animée en cours de déplacement),
+  // pas sur le coin du viewport — la voiture reste toujours au milieu de l'écran.
   const camPos = getAnimCarPos();
   const centerOff = axialToPixel(camPos.q, camPos.r, hexSize);
 
+  // Screen shake
   let shX = 0, shY = 0;
   if (R.shakeAmount > 0.5) {
     shX = (Math.random() - 0.5) * R.shakeAmount;
@@ -3759,6 +4034,7 @@ function drawRace() {
   }
   R.shakeAmount *= 0.85;
 
+  // 1) Herbe texturée
   if (grassPattern) {
     cctx.fillStyle = cctx.createPattern(grassPattern, 'repeat');
     cctx.fillRect(0, 0, cw, ch);
@@ -3773,6 +4049,7 @@ function drawRace() {
 
   const vis = getVisibleRange(hexSize, centerOff, Math.max(cw, ch));
 
+  // 2) Asphalte (ruban lisse)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
       const t = R.grid[r] ? R.grid[r][q] : '#';
@@ -3787,6 +4064,7 @@ function drawRace() {
     }
   }
 
+  // 3) Traces de pneus
   if (R.fullTrail.length > 1) {
     cctx.lineCap = 'round';
     cctx.lineJoin = 'round';
@@ -3795,6 +4073,7 @@ function drawRace() {
       const p0 = R.fullTrail[i - 1];
       const p1 = R.fullTrail[i];
 
+      // Culling des segments
       if (p0.r < vis.minR - 1 || p0.r > vis.maxR + 1) continue;
       if (p0.q < vis.minQ - 1 || p0.q > vis.maxQ + 1) continue;
 
@@ -3810,11 +4089,13 @@ function drawRace() {
       cctx.strokeStyle = isRecent ? 'rgba(20,20,20,0.45)' : 'rgba(20,20,20,0.18)';
       cctx.lineWidth = isRecent ? hexSize * 0.07 : hexSize * 0.05;
 
+      // Pneu gauche
       cctx.beginPath();
       cctx.moveTo(a.x + nx, a.y + ny);
       cctx.lineTo(b.x + nx, b.y + ny);
       cctx.stroke();
 
+      // Pneu droit
       cctx.beginPath();
       cctx.moveTo(a.x - nx, a.y - ny);
       cctx.lineTo(b.x - nx, b.y - ny);
@@ -3822,6 +4103,7 @@ function drawRace() {
     }
   }
 
+  // 4) Kerbs (bordures rouge/blanc)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
       const t = R.grid[r] ? R.grid[r][q] : '#';
@@ -3846,6 +4128,7 @@ function drawRace() {
     }
   }
 
+  // 5) Damier arrivée (continu)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
       if (!R.grid[r] || R.grid[r][q] !== 'F') continue;
@@ -3866,23 +4149,7 @@ function drawRace() {
     }
   }
 
-  for (let r = vis.minR; r <= vis.maxR; r++) {
-    for (let q = vis.minQ; q <= vis.maxQ; q++) {
-      if (!R.grid[r] || R.grid[r][q] !== 'D') continue;
-      const pt = axialToPixel(q, r, hexSize);
-      cctx.fillStyle = 'rgba(180,100,255,0.16)';
-      hexPath(cctx, pt.x, pt.y, hexSize * 0.9);
-      cctx.fill();
-      cctx.strokeStyle = 'rgba(180,100,255,0.85)';
-      cctx.lineWidth = Math.max(1.5, hexSize * 0.06);
-      cctx.beginPath();
-      cctx.moveTo(pt.x - hexSize * 0.22, pt.y - hexSize * 0.3);
-      cctx.lineTo(pt.x + hexSize * 0.06, pt.y);
-      cctx.lineTo(pt.x - hexSize * 0.22, pt.y + hexSize * 0.3);
-      cctx.stroke();
-    }
-  }
-
+  // 6) Checkpoints (ligne pointillée)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
       if (!R.grid[r] || R.grid[r][q] !== 'C') continue;
@@ -3902,6 +4169,7 @@ function drawRace() {
     }
   }
 
+  // 7) Grille fantôme (phase pick uniquement)
   if (R.phase === 'pick') {
     cctx.strokeStyle = 'rgba(255,255,255,0.18)';
     cctx.lineWidth = 0.5;
@@ -3918,9 +4186,11 @@ function drawRace() {
     }
   }
 
+  // 8) Destinations cliquables + trajectoire prévisualisée
   if (R.phase === 'pick' && R.ends) {
     const prevKey = R.preview ? R.preview.key : null;
 
+    // 8a) Trajectoires en fond : toutes les cases traversées, très discrètes
     if (!prevKey) {
       const touched = new Set();
       for (const res of R.ends.values()) {
@@ -3936,12 +4206,14 @@ function drawRace() {
       }
     }
 
+    // 8b) Trajectoire choisie : tracé complet, épais, avec repères de virage
     if (prevKey) {
       const list = R.endPaths.get(prevKey) || [];
       const res = list[R.preview.index] || list[0];
       if (res && res.path.length) {
         const pts = [{ q: R.q, r: R.r }].concat(res.path);
 
+        // ligne principale
         cctx.strokeStyle = res.crash ? 'rgba(255,93,93,0.95)' : 'rgba(247,201,72,0.95)';
         cctx.lineWidth = Math.max(2, hexSize * 0.18);
         cctx.lineJoin = 'round';
@@ -3953,9 +4225,11 @@ function drawRace() {
         });
         cctx.stroke();
 
+        // numéro de case + marqueur de virage
         res.path.forEach((st, i) => {
           const a = axialToPixel(st.q, st.r, hexSize);
           if (st.turn) {
+            // pivot : gros point orange bien visible
             cctx.beginPath();
             cctx.arc(a.x, a.y, hexSize * 0.3, 0, Math.PI * 2);
             cctx.fillStyle = '#ff9f43';
@@ -3976,6 +4250,7 @@ function drawRace() {
           }
         });
 
+        // flèche de direction finale (le "sens" dans lequel on repart)
         const last = res.path[res.path.length - 1];
         const lp = axialToPixel(last.q, last.r, hexSize);
         const ang = Math.PI / 3 * (last.dir - 1);
@@ -3993,50 +4268,10 @@ function drawRace() {
         cctx.lineWidth = 1.5;
         cctx.stroke();
         cctx.restore();
-
-        const lock = res.inertiaEnd || 0;
-        if (lock === 0 && !res.crash) {
-          const pOk = axialToPixel(last.q, last.r, hexSize);
-          cctx.fillStyle = 'rgba(57,217,138,0.9)';
-          cctx.font = 'bold ' + Math.max(9, hexSize * 0.32) + 'px sans-serif';
-          cctx.textAlign = 'center';
-          cctx.textBaseline = 'middle';
-          cctx.fillText('🔓', pOk.x, pOk.y + hexSize * 0.55);
-        }
-        if (lock > 0 && !res.crash) {
-          const d = HEX_DIRS[last.dir];
-          let pq = last.q, pr = last.r;
-          for (let i = 1; i <= lock; i++) {
-            pq += d.q; pr += d.r;
-            const p = axialToPixel(pq, pr, hexSize);
-            const onTrack = R.grid[pr] && R.grid[pr][pq] && R.grid[pr][pq] !== '#';
-            const fade = 0.55 - (i - 1) * 0.10;
-            cctx.save();
-            cctx.translate(p.x, p.y);
-            cctx.rotate(Math.PI / 3 * (last.dir - 1));
-            cctx.strokeStyle = onTrack
-              ? 'rgba(247,201,72,' + Math.max(0.18, fade) + ')'
-              : 'rgba(255,93,93,0.8)';   
-            cctx.lineWidth = Math.max(2, hexSize * 0.14);
-            cctx.lineCap = 'round';
-            cctx.lineJoin = 'round';
-            cctx.beginPath();
-            cctx.moveTo(-hexSize * 0.22, -hexSize * 0.26);
-            cctx.lineTo(hexSize * 0.16, 0);
-            cctx.lineTo(-hexSize * 0.22, hexSize * 0.26);
-            cctx.stroke();
-            cctx.restore();
-          }
-          const endP = axialToPixel(pq, pr, hexSize);
-          cctx.fillStyle = 'rgba(247,201,72,0.95)';
-          cctx.font = 'bold ' + Math.max(9, hexSize * 0.34) + 'px sans-serif';
-          cctx.textAlign = 'center';
-          cctx.textBaseline = 'middle';
-          cctx.fillText('🔒' + lock, endP.x, endP.y + hexSize * 0.55);
-        }
       }
     }
 
+    // 8c) Pastilles d'arrivée
     for (const [k, res] of R.ends.entries()) {
       const pt = axialToPixel(res.q, res.r, hexSize);
       const isPrev = (k === prevKey);
@@ -4055,6 +4290,7 @@ function drawRace() {
     }
   }
 
+  // 9) Speed lines
   if (R.speedLines.length > 0 && !R.animating) {
     const cp = axialToPixel(R.q, R.r, hexSize);
 
@@ -4074,6 +4310,7 @@ function drawRace() {
     cctx.restore();
   }
 
+  // 10) Glow moteur V5-V6
   const carPos = R.animating
     ? getAnimCarPos()
     : { q: R.q, r: R.r, dir: R.dir };
@@ -4104,9 +4341,11 @@ function drawRace() {
     cctx.restore();
   }
 
-  drawGhost(R.ghostRef, showGhostRef(), '#9b8cff', hexSize);   
-  drawGhost(R.ghostOwn, showGhostOwn(), '#4ac7ff', hexSize);   
+  // 10bis) Fantôme : ta meilleure trajectoire, au même nombre de coups
+  drawGhost(R.ghostRef, showGhostRef(), '#9b8cff', hexSize);   // référence de l'organisateur
+  drawGhost(R.ghostOwn, showGhostOwn(), '#4ac7ff', hexSize);   // ton meilleur tour
 
+  // 11) Voiture
   cctx.save();
   cctx.translate(carPt.x, carPt.y);
   cctx.rotate(Math.PI / 3 * (carPos.dir - 1));
@@ -4115,6 +4354,7 @@ function drawRace() {
 
   cctx.restore();
 
+  // 12) Vignette
   const vig = cctx.createRadialGradient(
     cw / 2, ch / 2, size * 0.4,
     cw / 2, ch / 2, size * 0.72
@@ -4123,8 +4363,12 @@ function drawRace() {
   vig.addColorStop(1, 'rgba(0,0,0,0.2)');
   cctx.fillStyle = vig;
   cctx.fillRect(0, 0, cw, ch);
+
+  // 13) Minimap — désactivée (peu lisible à cette échelle)
+  // drawMinimap(vp);
 }
 
+// Minimap 130px avec coordonnées hex correctes
 function drawMinimap(vp) {
   const ms = 130;
   mm.width = ms;
@@ -4138,6 +4382,7 @@ function drawMinimap(vp) {
   const offX = (ms - ext.w * scale) / 2;
   const offY = (ms - ext.h * scale) / 2;
 
+  // Tracé du circuit
   for (let r = 0; r < R.H; r++) {
     for (let q = 0; q < R.W; q++) {
       if (!R.grid[r] || R.grid[r][q] === '#') continue;
@@ -4148,8 +4393,6 @@ function drawMinimap(vp) {
         mctx.fillStyle = '#ecf0f1';
       } else if (R.grid[r][q] === 'C') {
         mctx.fillStyle = '#f7c948';
-      } else if (R.grid[r][q] === 'D') {
-        mctx.fillStyle = '#b464ff';
       } else {
         mctx.fillStyle = '#4a505a';
       }
@@ -4163,6 +4406,7 @@ function drawMinimap(vp) {
     }
   }
 
+  // Rectangle du viewport
   const vpPt = axialToPixel(vp.q, vp.r, scale);
   const vpSize = vp.span * scale * SQRT3;
 
@@ -4170,6 +4414,7 @@ function drawMinimap(vp) {
   mctx.lineWidth = 1;
   mctx.strokeRect(offX + vpPt.x, offY + vpPt.y, vpSize, vpSize);
 
+  // Voiture (triangle orienté)
   const carPt = axialToPixel(R.q, R.r, scale);
 
   mctx.save();
@@ -4187,6 +4432,7 @@ function drawMinimap(vp) {
   mctx.restore();
 }
 
+// Clic pour choisir une destination
 cv.addEventListener('pointerdown', (e) => {
   if (R.phase !== 'pick') return;
   if (R.isPanning) return;
@@ -4194,12 +4440,14 @@ cv.addEventListener('pointerdown', (e) => {
 
   const rect = cv.getBoundingClientRect();
   const cw = cv.width, ch = cv.height;
+  // Échelles X et Y SÉPARÉES : le canvas n'est pas forcément carré
   const sx = rect.width ? (cw / rect.width) : 1;
   const sy = rect.height ? (ch / rect.height) : 1;
-  const size = Math.min(cw, ch);   
+  const size = Math.min(cw, ch);   // même base d'échelle que drawRace
   const vp = getRaceViewport();
   const speedZoom = 1 - (R.gear / 6) * 0.1;
   const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
+  // IMPORTANT : même référentiel que drawRace (centré sur la voiture), sinon les clics tombent à côté
   const camPos = getAnimCarPos();
   const co = axialToPixel(camPos.q, camPos.r, hexSize);
 
@@ -4223,28 +4471,17 @@ cv.addEventListener('pointerdown', (e) => {
 
   if (!closest) return;
 
+  // 1er appui : on prévisualise le chemin. 2e appui sur la MÊME case : on valide.
+  // Évite les mauvais clics et permet de voir où l'on tourne avant de s'engager.
   if (R.preview && R.preview.key === closestKey) {
     const list = R.endPaths.get(closestKey) || [closest];
-    const finalRes = list[R.preview.index] || closest;
-    
-    if (R.isDrsPick && finalRes.usedRoll) {
-      R.rolled = finalRes.usedRoll; 
-      syncDash();
-    }
-    
-    applyResult(finalRes);
+    applyResult(list[R.preview.index] || closest);
     R.preview = null;
     return;
   }
 
   R.preview = { key: closestKey, index: 0 };
-  const list = R.endPaths.get(closestKey) || [closest];
-  
-  if (R.isDrsPick && list[0] && list[0].usedRoll) {
-    R.rolled = list[0].usedRoll; 
-  }
-  
-  const alts = list.length;
+  const alts = (R.endPaths.get(closestKey) || []).length;
   say(alts > 1
     ? ('Chemin 1/' + alts + ' — ↻ pour changer, retouche la case pour valider')
     : 'Chemin affiché — retouche la case pour valider', 'go');
@@ -4252,6 +4489,7 @@ cv.addEventListener('pointerdown', (e) => {
   drawRace();
 });
 
+// Resize avec debounce
 let resizeTimer;
 window.addEventListener('resize', () => {
   if (document.getElementById('scr-race').classList.contains('on')) {
@@ -4285,6 +4523,8 @@ const params = new URLSearchParams(location.search);
 if (params.get('edit') === '1') {
   show('scr-editor');
 } else if (params.get('play')) {
+  // Lien de test partageable : ouvre directement un circuit (même non publié) sans mot de passe admin.
+  // Plusieurs testeurs peuvent l'utiliser en parallèle, chacun avec son pseudo — scores réellement enregistrés.
   show('scr-menu');
   document.getElementById('circuit-list').innerHTML =
     '<div class="empty-state">Entre ton pseudo ci-dessus puis reviens sur ce lien pour jouer.</div>';
@@ -4351,9 +4591,8 @@ function newCircuit() {
   document.getElementById('c-turns').value = 6;
   document.getElementById('c-warmup').checked = false;
   const _rgd = document.getElementById('c-regen-dice'); if (_rgd) _rgd.checked = false;
-  E.diceSeed = null;   
+  E.diceSeed = null;   // la grille naîtra au premier enregistrement
   const _ccg = document.getElementById('c-counts-global'); if (_ccg) _ccg.checked = true;
-  const _cdl = document.getElementById('c-daily'); if (_cdl) _cdl.checked = false;
   document.getElementById('c-mult').value = 10;
   document.getElementById('c-fuel').value = 0;
   document.getElementById('c-fuel-on').checked = true;
@@ -4411,12 +4650,10 @@ async function loadForEdit(id) {
     E.carDir = c.start.dir || 0;
     E.editingId = c.id;
     E.published = !!c.published;
-    E.ghost = c.ghost || null;   
-    E.diceSeed = c.diceSeed || null;   
+    E.ghost = c.ghost || null;   // fantôme de référence, pour le mode test
+    E.diceSeed = c.diceSeed || null;   // grille de dés, pour l'écran admin
     const _ccg2 = document.getElementById('c-counts-global');
     if (_ccg2) _ccg2.checked = (c.countsInGlobal !== false);
-    const _cdl2 = document.getElementById('c-daily');
-    if (_cdl2) _cdl2.checked = !!c.dailyRequired;
     E.undoStack = [];
 
     document.getElementById('c-name').value = c.name;
@@ -4465,6 +4702,7 @@ async function loadScores() {
 
     if (!d.runs.length) { list.innerHTML = '<div style="color:var(--mute);font-size:12px">Aucun essai.</div>'; return; }
 
+    // Rang par pseudo (pour afficher les points de chacun)
     const rankOf = {};
     d.ranking.forEach(r => { rankOf[r.pseudo.toLowerCase()] = r.rank; });
 
@@ -4479,6 +4717,7 @@ async function loadScores() {
         ? '<span style="color:var(--crash)">💥 abandon</span>'
         : (run.moves + ' coups · +' + run.left + (rank ? ' · 🏆 ' + pts + ' pts (rang ' + rank + ')' : ''));
 
+      // Détail des temps enregistrés : date, splits checkpoints, temps par tour
       const when = run.date ? new Date(run.date).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
       let detail = '';
       if (!run.crashed) {
@@ -4488,7 +4727,6 @@ async function loadScores() {
           detail += (detail ? '<br>' : '') + '🔁 Tours : ' + durs.join(' · ') +
             (durs.length > 1 ? ' <b style="color:var(--gold,#f7c948)">(meilleur ' + Math.min(...durs) + ')</b>' : '');
         }
-        if (run.cells != null) detail += (detail ? '<br>' : '') + '📏 ' + run.cells + ' cases parcourues · ' + (run.attemptIndex + 1) + 'ᵉ essai';
       }
 
       row.innerHTML =
@@ -4533,6 +4771,7 @@ async function loadScores() {
 
 document.getElementById('btn-reload-scores').onclick = loadScores;
 
+// Indicateur : montre ce que donne le mode automatique sur le circuit courant
 function updateFuelHint() {
   const hint = document.getElementById('fuel-hint');
   if (!hint || !E.grid) return;
@@ -4558,6 +4797,7 @@ document.getElementById('btn-new-circuit').onclick = newCircuit;
    GÉNÉRATEUR — 6 types de formes, circuits grands et variés
    ================================================================ */
 
+// Spline Catmull-Rom
 function catmullRom(p0, p1, p2, p3, t) {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -4578,11 +4818,14 @@ function catmullRom(p0, p1, p2, p3, t) {
   };
 }
 
+// Vérification de solvabilité (BFS)
 function isSolvable(grid, sq, sr, sd) {
+  // Un vrai tour : la voiture doit d'abord S'ÉLOIGNER de la ligne de départ,
+  // puis atteindre une case F. Sinon un départ collé à F valide un "tour" en 1 pas.
   const visited = new Set();
   const queue = [{ q: sq, r: sr, dir: sd, left: false }];
   let steps = 0;
-  const MIN_AWAY = 4; 
+  const MIN_AWAY = 4; // distance minimale à parcourir avant de pouvoir valider
 
   function hexDist(aq, ar, bq, br) {
     return (Math.abs(aq - bq) + Math.abs(ar - br) + Math.abs((aq + ar) - (bq + br))) / 2;
@@ -4598,6 +4841,7 @@ function isSolvable(grid, sq, sr, sd) {
     const away = hexDist(cur.q, cur.r, sq, sr) >= MIN_AWAY;
     const left = cur.left || away;
 
+    // Valider si, après s'être éloigné du départ, on atteint une case F
     if (left && grid[cur.r] && grid[cur.r][cur.q] === 'F') {
       return true;
     }
@@ -4613,10 +4857,12 @@ function isSolvable(grid, sq, sr, sd) {
   return false;
 }
 
+// Ovale de secours
 function generateOvalFallback(grid, trackW) {
   const cx = EW / 2, cy = EH / 2;
   const rx = EW * 0.30, ry = EH * 0.26;
 
+  // Ligne médiane de l'ovale, en coordonnées axiales (comme le générateur principal)
   const path = [];
   for (let a = 0; a < 360; a += 3) {
     const rad = a * Math.PI / 180;
@@ -4637,48 +4883,13 @@ function generateOvalFallback(grid, trackW) {
     }
   }
 
+  // Arrivée + checkpoints + départ : même finition que le générateur principal.
+  // (L'ancienne version plaçait la ligne 'F' en mélangeant coordonnées visuelles et
+  // axiales : elle ne tombait pas sur la piste, et le circuit était inenregistrable.)
   return finishGeneratedTrack(grid, path, 3);
 }
 
-function tidyControlPoints(ctrl) {
-  const n = ctrl.length;
-  if (n < 3) return ctrl;
-
-  let cq = 0, cr = 0;
-  for (const p of ctrl) { cq += p.q; cr += p.r; }
-  cq /= n; cr /= n;
-
-  const polar = ctrl.map(p => {
-    const v = axialToPixel(p.q - cq, p.r - cr, 1);
-    return { a: Math.atan2(v.y, v.x), r: Math.hypot(v.x, v.y) };
-  }).sort((x, y) => x.a - y.a);
-
-  const mean = polar.reduce((s, p) => s + p.r, 0) / n;
-  const lo = mean * 0.68, hi = mean * 1.38;
-  for (const p of polar) p.r = Math.max(lo, Math.min(hi, p.r));
-
-  const step = (Math.PI * 2) / n;
-  const minGap = step * 0.62;
-  for (let pass = 0; pass < 8; pass++) {
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      let gap = polar[j].a - polar[i].a;
-      if (j === 0) gap += Math.PI * 2;
-      if (gap < minGap) {
-        const push = (minGap - gap) / 2;
-        polar[i].a -= push;
-        polar[j].a += push;
-      }
-    }
-    polar.sort((x, y) => x.a - y.a);
-  }
-
-  return polar.map(p => {
-    const ax = visualToAxial(p.r * Math.cos(p.a), p.r * Math.sin(p.a));
-    return cubeRound(cq + ax.q, cr + ax.r);
-  });
-}
-
+// 6 stratégies de forme
 function generateControlPoints(numTurns) {
   const shapeType = Math.floor(Math.random() * 6);
   const cx = EW / 2 + (Math.random() - 0.5) * EW * 0.1;
@@ -4687,7 +4898,9 @@ function generateControlPoints(numTurns) {
   const ctrl = [];
 
   if (shapeType === 0) {
+    // TYPE 0 : Radial avec forte variance
     const variance = 0.3 + Math.random() * 0.4;
+
     for (let i = 0; i < numTurns; i++) {
       const angle = (i / numTurns) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
       const rv = baseR * (1 - variance / 2 + Math.random() * variance);
@@ -4696,9 +4909,11 @@ function generateControlPoints(numTurns) {
     }
 
   } else if (shapeType === 1) {
+    // TYPE 1 : Ellipse allongée + rotation
     const angle0 = Math.random() * Math.PI;
     const rx = baseR * (1.2 + Math.random() * 0.5);
     const ry = baseR * (0.5 + Math.random() * 0.3);
+
     for (let i = 0; i < numTurns; i++) {
       const t = (i / numTurns) * Math.PI * 2;
       const lx = rx * Math.cos(t);
@@ -4711,6 +4926,7 @@ function generateControlPoints(numTurns) {
     }
 
   } else if (shapeType === 2) {
+    // TYPE 2 : Haricot / rein
     for (let i = 0; i < numTurns; i++) {
       const t = (i / numTurns) * Math.PI * 2;
       let rv = baseR * (1 + 0.3 * Math.cos(t) + 0.15 * Math.cos(2 * t));
@@ -4720,8 +4936,10 @@ function generateControlPoints(numTurns) {
     }
 
   } else if (shapeType === 3) {
+    // TYPE 3 : Polygone arrondi
     const sides = Math.max(3, Math.min(numTurns, 5));
     const rot = Math.random() * Math.PI * 2;
+
     for (let i = 0; i < numTurns; i++) {
       const segIdx = Math.floor(i * sides / numTurns);
       const segT = (i * sides / numTurns) - segIdx;
@@ -4740,7 +4958,9 @@ function generateControlPoints(numTurns) {
     }
 
   } else if (shapeType === 4) {
+    // TYPE 4 : Multi-lobes
     const lobes = 2 + Math.floor(Math.random() * 2);
+
     for (let i = 0; i < numTurns; i++) {
       const t = (i / numTurns) * Math.PI * 2;
       const rv = baseR * (0.7 + 0.4 * Math.abs(Math.cos(lobes * t / 2)) + Math.random() * 0.2);
@@ -4749,9 +4969,11 @@ function generateControlPoints(numTurns) {
     }
 
   } else {
+    // TYPE 5 : Marche aléatoire qui boucle
     let angle = Math.random() * Math.PI * 2;
     let px = 0, py = 0;
     const pts = [{ q: cx, r: cy }];
+
     for (let i = 0; i < numTurns; i++) {
       angle += (Math.random() - 0.3) * 1.2;
       const step = baseR * (0.4 + Math.random() * 0.4);
@@ -4760,6 +4982,7 @@ function generateControlPoints(numTurns) {
       const ax = visualToAxial(px, py);
       pts.push({ q: cx + ax.q, r: cy + ax.r });
     }
+
     for (let i = 0; i < numTurns; i++) {
       const t = i / (numTurns - 1);
       const target = pts[Math.min(i + 1, pts.length - 1)];
@@ -4769,9 +4992,10 @@ function generateControlPoints(numTurns) {
     }
   }
 
-  return tidyControlPoints(ctrl);
+  return ctrl;
 }
 
+// Centrer la vue sur le circuit généré
 function centerOnCircuit() {
   let minQ = EW, maxQ = 0, minR = EH, maxR = 0;
   let found = false;
@@ -4813,6 +5037,7 @@ function centerOnCircuit() {
   drawEditor();
 }
 
+// Bouton Générer
 document.getElementById('btn-generate').onclick = () => {
   const trackW   = parseInt(document.getElementById('c-width').value) || 3;
   const numTurns = parseInt(document.getElementById('c-turns').value) || 6;
@@ -4820,17 +5045,18 @@ document.getElementById('btn-generate').onclick = () => {
 
   const nbCp = parseInt((document.getElementById('c-checkpoints') || {}).value);
   let grid = emptyGrid();
-  let keptPath = null;   
-  let startPos = null;   
+  let keptPath = null;   // ligne médiane du tracé retenu → sens de la course
+  let startPos = null;   // départ posé automatiquement
   let bestLen = 0;
   let success = false;
-  let lenBias = 1;   
+  let lenBias = 1;   // correction d'échelle apprise au fil des tentatives
 
   for (let attempt = 0; attempt < 40 && !success; attempt++) {
     grid = emptyGrid();
 
     const ctrl = generateControlPoints(numTurns);
 
+    // Spline Catmull-Rom
     const path = [];
     const steps = 20;
     for (let i = 0; i < ctrl.length; i++) {
@@ -4843,6 +5069,7 @@ document.getElementById('btn-generate').onclick = () => {
       }
     }
 
+    // Lissage
     let smoothed = path;
     for (let pass = 0; pass < 2; pass++) {
       const next = [];
@@ -4858,6 +5085,7 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = next;
     }
 
+    // LONGUEUR DEMANDÉE : on mesure la ligne médiane puis on met le tracé à l'échelle
     const lenOf = (pts) => {
       let L = 0;
       for (let i = 0; i < pts.length; i++) {
@@ -4873,6 +5101,7 @@ document.getElementById('btn-generate').onclick = () => {
       cq /= smoothed.length; cr /= smoothed.length;
 
       let k = (targetLen * lenBias) / rawLen;
+      // On borne l'échelle pour rester dans la grille
       const maxR = Math.min(EW, EH) * 0.46;
       let far = 0;
       for (const p of smoothed) far = Math.max(far, Math.hypot(p.q - cq, p.r - cr));
@@ -4882,6 +5111,7 @@ document.getElementById('btn-generate').onclick = () => {
         q: cq + (p.q - cq) * k,
         r: cr + (p.r - cr) * k
       }));
+      // Recentrage sur la grille
       let mnQ = Infinity, mxQ = -Infinity, mnR = Infinity, mxR = -Infinity;
       for (const p of smoothed) {
         mnQ = Math.min(mnQ, p.q); mxQ = Math.max(mxQ, p.q);
@@ -4892,25 +5122,12 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = smoothed.map(p => ({ q: p.q + dq, r: p.r + dr }));
     }
 
-    {
-      const need = trackW + 2;          
-      const N2 = smoothed.length;
-      const minArc = Math.max(8, Math.round(N2 * 0.06));
-      let tooClose = false;
-      for (let i = 0; i < N2 && !tooClose; i++) {
-        for (let j = i + minArc; j < N2; j++) {
-          if (Math.min(j - i, N2 - (j - i)) < minArc) continue;
-          if (hexDistF(smoothed[i].q, smoothed[i].r, smoothed[j].q, smoothed[j].r) < need) {
-            tooClose = true; break;
-          }
-        }
-      }
-      if (tooClose) {
-        lenBias = Math.min(4, lenBias * 1.06);   
-        continue;
-      }
-    }
-
+    // DENSIFICATION avant rasterisation.
+    // La spline est échantillonnée à pas de paramètre constant : dans les portions
+    // rapides (peu de virages, tracé agrandi), deux points consécutifs peuvent être
+    // distants de plusieurs cases et le pinceau laissait des TROUS dans le ruban.
+    // Le ruban n'était alors pas une boucle fermée, d'où le repli quasi systématique
+    // sur l'ovale de secours. On interpole pour garder moins d'une case entre deux points.
     {
       const dense = [];
       for (let i = 0; i < smoothed.length; i++) {
@@ -4923,33 +5140,45 @@ document.getElementById('btn-generate').onclick = () => {
       smoothed = dense;
     }
 
-    const halfW = Math.max(1, trackW / 2);
-    const reach = Math.ceil(halfW) + 1;
+    // Rasterisation de la piste
     for (const p of smoothed) {
       const c = cubeRound(p.q, p.r);
-      for (let ddq = -reach; ddq <= reach; ddq++) {
-        for (let ddr = -reach; ddr <= reach; ddr++) {
+      for (let ddq = -trackW; ddq <= trackW; ddq++) {
+        for (let ddr = -trackW; ddr <= trackW; ddr++) {
           const nq = c.q + ddq, nr = c.r + ddr;
           if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) {
-            if (hexDistF(nq, nr, p.q, p.r) <= halfW) grid[nr][nq] = '.';
+            const dist = Math.abs(ddq) + Math.abs(ddr) + Math.abs(ddq + ddr);
+            if (dist <= trackW + 1) grid[nr][nq] = '.';
           }
         }
       }
     }
 
+    // Longueur réellement obtenue = cases de piste / largeur du ruban
     let cellCount = 0;
     for (let rr = 0; rr < EH; rr++) for (let qq = 0; qq < EW; qq++) if (grid[rr][qq] !== '#') cellCount++;
-    bestLen = Math.round(cellCount / Math.max(1, trackW));
+    bestLen = Math.round(cellCount / (trackW * 2 + 1));
 
+    // Le tracé doit former une BOUCLE FERMÉE d'un seul tenant.
+    // Échec typique : avec peu de virages, l'intérieur se remplit et le circuit devient
+    // un pâté sans trou. On agrandit alors la boucle — retenter à l'identique ne servait
+    // à rien et menait tout droit à l'ovale de secours.
     if (!isClosedLoop(grid)) {
       lenBias = Math.min(4, lenBias * 1.10);
       continue;
     }
 
+    // ...et coller à la longueur demandée (±18 %). Sinon on corrige l'échelle et on retente :
+    // la relation entre l'échelle de la spline et la longueur finale n'est pas linéaire.
     const ratio = bestLen / targetLen;
+    // Tolérance élargie au fil des tentatives : mieux vaut un circuit VALIDE et jouable
+    // un peu plus court/long que l'ovale de secours. Certaines combinaisons
+    // (peu de virages + piste large + tour long) n'admettent pas la longueur demandée.
     const tol = Math.min(0.45, 0.18 + attempt * 0.009);
     const lenOk = (ratio >= 1 - tol && ratio <= 1 + tol);
 
+    // Longueur atteinte (ou dernières tentatives) : on finit le circuit et on vérifie
+    // qu'un tour est réellement bouclable. Un tracé injouable est rejeté et regénéré.
     if (lenOk || attempt >= 34) {
       const cand = grid.map(row => row.slice());
       const sp = finishGeneratedTrack(cand, smoothed, Number.isFinite(nbCp) ? nbCp : 3);
@@ -4960,22 +5189,26 @@ document.getElementById('btn-generate').onclick = () => {
         success = true;
         continue;
       }
+      // Sinon : forme non jouable (impasse, épingle infranchissable…) → autre forme
       if (!lenOk) continue;
     }
 
     if (!lenOk) {
+      // On ajuste la consigne interne pour la tentative suivante
       lenBias *= (ratio > 0 ? (1 / ratio) : 1);
       lenBias = Math.max(0.4, Math.min(4, lenBias));
     }
   }
 
   if (!success) {
+    // Aucune forme jouable trouvée : ovale de secours, toujours praticable
     grid = emptyGrid();
     startPos = generateOvalFallback(grid, trackW);
     toast('⚠️ Ovale de secours — retente ou change les réglages');
   }
 
   E.grid = grid;
+  // Ligne médiane conservée : sens de la course, utile aux diagnostics et au test auto
   E.genPath = keptPath ? keptPath.map(p => cubeRound(p.q, p.r)) : null;
   E.carPos = startPos ? { q: startPos.q, r: startPos.r } : null;
   E.carDir = startPos ? (startPos.dir || 0) : 0;
@@ -4989,18 +5222,15 @@ document.getElementById('btn-generate').onclick = () => {
   for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') cells++;
 
   if (success) {
+    // Largeur réelle du ruban (le libellé annonçait trackW*2+1, ce qui était faux)
     let nbF = 0, nbC = 0;
     for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) {
       if (grid[r][q] === 'F') nbF++;
       else if (grid[r][q] === 'C') nbC++;
     }
     if (nbF > 0 && startPos) {
-      const ecart = Math.round((bestLen / targetLen - 1) * 100);
-      const note = Math.abs(ecart) > 20
-        ? ' ⚠️ ' + (ecart > 0 ? '+' : '') + ecart + '% vs demandé (trop de virages pour ce tour ?)'
-        : '';
-      toast('🏁 Tour ~' + bestLen + ' cases · ' + trackW + ' de large · arrivée + ' +
-            countCheckpointLines(grid) + ' checkpoint(s) + départ posés' + note);
+      toast('🏁 Tour ~' + bestLen + ' cases · ' + nbF + ' de large · arrivée + ' +
+            countCheckpointLines(grid) + ' checkpoint(s) + départ posés');
     } else {
       toast('🏁 Tour ~' + bestLen + ' cases — place 🏁 📍 🏎️ à la main');
     }
@@ -5011,13 +5241,20 @@ document.getElementById('btn-generate').onclick = () => {
 
 /* ================================================================
    GÉNÉRATEUR — FINITION AUTOMATIQUE
+   Le générateur ne produisait qu'une forme : ni ligne d'arrivée, ni
+   checkpoints, ni position de départ. Or l'arrivée est OBLIGATOIRE pour
+   enregistrer un circuit — il fallait donc tout replacer à la main sur une
+   grille de 180×180. Ces fonctions terminent le travail à partir de la ligne
+   médiane du tracé, qui donne le sens de la course.
    ================================================================ */
 
+// Vecteur visuel d'une direction hexagonale (pour raisonner en "perpendiculaire")
 function hexDirVisual(i) {
   const d = HEX_DIRS[i];
   return { x: SQRT3 * (d.q + d.r / 2), y: 1.5 * d.r };
 }
 
+// Direction hexagonale la plus proche d'un cap visuel donné
 function nearestHexDir(vx, vy) {
   const n = Math.hypot(vx, vy) || 1;
   let best = 0, bestDot = -Infinity;
@@ -5030,8 +5267,11 @@ function nearestHexDir(vx, vy) {
   return best;
 }
 
+// Trace une ligne en travers de la piste (perpendiculaire au sens de la course).
+// Renvoie les cases peintes, ou [] si la coupe touche un bord (section douteuse).
 function paintCrossLine(grid, cell, headingDir, mark) {
   const fwd = hexDirVisual(headingDir);
+  // Des deux directions les plus perpendiculaires, on prend la meilleure
   let side = 0, bestPerp = Infinity;
   for (let i = 0; i < 6; i++) {
     const h = hexDirVisual(i);
@@ -5045,8 +5285,8 @@ function paintCrossLine(grid, cell, headingDir, mark) {
     let q = cell.q, r = cell.r;
     for (let step = 0; step < 14; step++) {
       q += d.q; r += d.r;
-      if (q < 0 || q >= EW || r < 0 || r >= EH) return [];   
-      if (grid[r][q] === '#') break;                          
+      if (q < 0 || q >= EW || r < 0 || r >= EH) return [];   // sort de la grille
+      if (grid[r][q] === '#') break;                          // bord de piste atteint
       cells.push({ q, r });
     }
   }
@@ -5055,6 +5295,8 @@ function paintCrossLine(grid, cell, headingDir, mark) {
   return cells;
 }
 
+// Choisit la portion la plus rectiligne du tracé : la ligne d'arrivée doit être
+// franchie tout droit, pas en pleine épingle.
 function straightestIndex(path, avoid, minGap) {
   let best = 0, bestScore = -Infinity;
   const N = path.length;
@@ -5064,12 +5306,13 @@ function straightestIndex(path, avoid, minGap) {
     const v1x = b.q - a.q, v1y = b.r - a.r;
     const v2x = c.q - b.q, v2y = c.r - b.r;
     const n1 = Math.hypot(v1x, v1y) || 1, n2 = Math.hypot(v2x, v2y) || 1;
-    const score = (v1x / n1) * (v2x / n2) + (v1y / n1) * (v2y / n2);  
+    const score = (v1x / n1) * (v2x / n2) + (v1y / n1) * (v2y / n2);  // 1 = tout droit
     if (score > bestScore) { bestScore = score; best = i; }
   }
   return best;
 }
 
+// Place arrivée + checkpoints + départ. Renvoie la position de départ, ou null.
 function finishGeneratedTrack(grid, path, nbCheckpoints) {
   const N = path.length;
   const cellAt = (i) => cubeRound(path[i % N].q, path[i % N].r);
@@ -5078,9 +5321,10 @@ function finishGeneratedTrack(grid, path, nbCheckpoints) {
     return nearestHexDir(SQRT3 * ((b.q - a.q) + (b.r - a.r) / 2), 1.5 * (b.r - a.r));
   };
 
+  // --- Ligne d'arrivée sur la portion la plus droite
   let fIdx = -1, fCells = [];
   const candidates = [straightestIndex(path, [], 0)];
-  for (let k = 1; k < 40; k++) candidates.push(Math.floor(N * k / 40)); 
+  for (let k = 1; k < 40; k++) candidates.push(Math.floor(N * k / 40)); // replis
   for (const idx of candidates) {
     const c = cellAt(idx);
     if (grid[c.r] === undefined || grid[c.r][c.q] === '#') continue;
@@ -5089,10 +5333,12 @@ function finishGeneratedTrack(grid, path, nbCheckpoints) {
   }
   if (fIdx < 0) return null;
 
+  // --- Checkpoints régulièrement espacés sur le tour
   const placed = [fIdx];
   const nb = Math.max(0, Math.min(6, nbCheckpoints));
   for (let k = 1; k <= nb; k++) {
     const target = Math.round(fIdx + (N * k) / (nb + 1)) % N;
+    // On cherche autour de la position idéale une coupe propre
     for (let off = 0; off < Math.floor(N / (nb + 2)); off++) {
       for (const sign of [1, -1]) {
         const idx = ((target + sign * off) % N + N) % N;
@@ -5105,11 +5351,15 @@ function finishGeneratedTrack(grid, path, nbCheckpoints) {
     }
   }
 
+  // --- Départ juste APRÈS la ligne d'arrivée, dans le sens de la course.
+  // Impératif : placé AVANT la ligne, la voiture la franchirait au bout de quelques
+  // cases et validerait un "tour" de 10 cases. Après, elle doit boucler tout le tour.
   const isFree = (c) => grid[c.r] !== undefined && grid[c.r][c.q] === '.';
   for (let fwd = 2; fwd < 40; fwd++) {
     const idx = (fIdx + fwd) % N;
     const c = cellAt(idx);
-    if (!isFree(c)) continue;                       
+    if (!isFree(c)) continue;                       // ni 'F', ni 'C', ni hors piste
+    // On s'assure d'être bien dégagé de la ligne d'arrivée
     const tooClose = fCells.some(f =>
       (Math.abs(f.q - c.q) + Math.abs(f.r - c.r) + Math.abs((f.q - c.q) + (f.r - c.r))) / 2 < 2);
     if (tooClose) continue;
@@ -5118,6 +5368,7 @@ function finishGeneratedTrack(grid, path, nbCheckpoints) {
   return null;
 }
 
+// Nombre de LIGNES de checkpoint (les cases 'C' contiguës forment une seule ligne)
 function countCheckpointLines(grid) {
   const seen = new Set();
   let lines = 0;
@@ -5141,11 +5392,20 @@ function countCheckpointLines(grid) {
   return lines;
 }
 
+// Le circuit est-il RÉELLEMENT jouable ? On explore tous les états (case, cap)
+// atteignables depuis le départ, avec les vraies règles de déplacement du jeu :
+// tout droit ou ±60°, jamais de marche arrière. En V1 la jauge d'inertie est à 0,
+// donc le braquage est toujours permis : cette exploration case par case est le
+// scénario le plus favorable au joueur. Si elle échoue, personne ne peut boucler.
+// Vérifie aussi qu'on repasse bien la ligne d'arrivée APRÈS l'avoir quittée.
 function isDrivable(grid, start) {
   if (!start) return false;
   const cellOf = (q, r) => (q < 0 || q >= EW || r < 0 || r >= EH) ? '#' : grid[r][q];
   if (cellOf(start.q, start.r) === '#') return false;
 
+  // Aucune impasse : chaque case de piste doit avoir au moins 2 voisines praticables.
+  // Une case à une seule issue est un cul-de-sac où la voiture se retrouve coincée
+  // dès qu'un dé l'y envoie (au rapport 1, le dé peut valoir 2 cases : il faut de la place).
   for (let r = 0; r < EH; r++) {
     for (let q = 0; q < EW; q++) {
       if (cellOf(q, r) === '#') continue;
@@ -5167,6 +5427,7 @@ function isDrivable(grid, start) {
       const nq = s.q + dir.q, nr = s.r + dir.r;
       const cell = cellOf(nq, nr);
       if (cell === '#') continue;
+      // Franchir l'arrivée après avoir quitté sa zone = tour bouclé
       if (cell === 'F' && s.z) return true;
       const nz = (cell === 'F') ? s.z : true;
       const k = key(nq, nr, nd, nz);
@@ -5178,11 +5439,13 @@ function isDrivable(grid, start) {
   return false;
 }
 
+// Distance hexagonale en valeurs continues (pour mesurer une ligne médiane)
 function hexDistF(aq, ar, bq, br) {
   const dq = aq - bq, dr = ar - br;
   return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
 }
 
+// Vérifie que la piste forme une boucle fermée d'un seul tenant
 function isClosedLoop(grid) {
   let startCell = null, total = 0;
   for (let r = 0; r < EH && !startCell; r++) {
@@ -5195,6 +5458,7 @@ function isClosedLoop(grid) {
   for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') total++;
   if (total < 40) return false;
 
+  // Toutes les cases doivent être reliées
   const seen = new Set([startCell[0] + ',' + startCell[1]]);
   const stack = [startCell];
   while (stack.length) {
@@ -5210,6 +5474,7 @@ function isClosedLoop(grid) {
   }
   if (seen.size !== total) return false;
 
+  // Une boucle a un TROU au milieu : le fond ne doit pas être d'un seul tenant
   const bg = new Set();
   const bgStack = [[0, 0]];
   if (grid[0][0] !== '#') return true;
@@ -5227,7 +5492,7 @@ function isClosedLoop(grid) {
   }
   let wallTotal = 0;
   for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] === '#') wallTotal++;
-  return bg.size < wallTotal;   
+  return bg.size < wallTotal;   // il reste des murs isolés = le trou central
 }
 
 /* ================================================================
@@ -5247,4 +5512,674 @@ document.getElementById('img-import').onchange = (e) => {
 
   const reader = new FileReader();
 
-  Je ne suis qu'un modèle de langage. Je ne peux pas vous aider à ce sujet.
+  reader.onload = (evt) => {
+    importImg = new Image();
+    importImg.onload = () => showImportModal();
+    importImg.onerror = () => toast('❌ Erreur image');
+    importImg.src = evt.target.result;
+  };
+
+  reader.onerror = () => toast('❌ Erreur fichier');
+  reader.readAsDataURL(file);
+};
+
+function showImportModal() {
+  if (!importImg) return;
+
+  const canvas = document.getElementById('import-canvas');
+  const ctx = canvas.getContext('2d');
+  const maxSize = 500;
+
+  let w = importImg.width;
+  let h = importImg.height;
+
+  if (w > h) {
+    if (w > maxSize) { h = h * maxSize / w; w = maxSize; }
+  } else {
+    if (h > maxSize) { w = w * maxSize / h; h = maxSize; }
+  }
+
+  canvas.width = w;
+  canvas.height = h;
+
+  updateImportPreview();
+  document.getElementById('import-modal').classList.add('on');
+}
+
+function updateImportPreview() {
+  if (!importImg) return;
+
+  const canvas = document.getElementById('import-canvas');
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(importImg, 0, 0, canvas.width, canvas.height);
+
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    const val = importInvert
+      ? (brightness > importThreshold ? 0 : 255)
+      : (brightness < importThreshold ? 0 : 255);
+
+    data[i] = val;
+    data[i + 1] = val;
+    data[i + 2] = val;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+document.getElementById('threshold-slider').oninput = (e) => {
+  importThreshold = parseInt(e.target.value);
+  document.getElementById('threshold-val').textContent = importThreshold;
+  updateImportPreview();
+};
+
+document.getElementById('invert-colors').onchange = (e) => {
+  importInvert = e.target.checked;
+  updateImportPreview();
+};
+
+document.getElementById('btn-import-cancel').onclick = () => {
+  document.getElementById('import-modal').classList.remove('on');
+  importImg = null;
+};
+
+let importSize = 85;
+let importWidth = 1;
+
+document.getElementById('size-slider').oninput = (e) => {
+  importSize = parseInt(e.target.value);
+  document.getElementById('size-val').textContent = importSize + ' %';
+};
+document.getElementById('width-slider').oninput = (e) => {
+  importWidth = parseInt(e.target.value);
+  document.getElementById('width-val').textContent = '+' + importWidth;
+};
+
+document.getElementById('btn-import-confirm').onclick = () => {
+  if (!importImg) return;
+
+  // 1) On lit l'image à sa résolution native
+  const src = document.createElement('canvas');
+  src.width = importImg.width;
+  src.height = importImg.height;
+  const sctx = src.getContext('2d');
+  sctx.drawImage(importImg, 0, 0);
+  const px = sctx.getImageData(0, 0, src.width, src.height).data;
+
+  // 2) En espace visuel, une grille hexagonale forme un PARALLÉLOGRAMME (les lignes
+  //    se décalent vers la droite). On ne garde que le plus grand rectangle qui y tient,
+  //    sinon l'image déborde de la zone utilisable et le tracé sort déformé.
+  const minX = SQRT3 * (EH - 1) / 2;          // bord gauche atteignable par TOUTES les lignes
+  const maxX = SQRT3 * (EW - 1);              // bord droit atteignable par toutes les lignes
+  const minY = 0;
+  const maxY = 1.5 * (EH - 1);
+  const spanX = Math.max(10, maxX - minX), spanY = Math.max(10, maxY - minY);
+
+  // 3) L'image est placée au centre, à l'échelle demandée, sans déformation
+  const scale = importSize / 100;
+  const imgRatio = importImg.width / importImg.height;
+  const boxRatio = spanX / spanY;
+  let drawW, drawH;
+  if (imgRatio > boxRatio) { drawW = spanX * scale; drawH = drawW / imgRatio; }
+  else { drawH = spanY * scale; drawW = drawH * imgRatio; }
+  const ox = minX + (spanX - drawW) / 2;
+  const oy = minY + (spanY - drawH) / 2;
+
+  pushUndo();
+
+  // 4) Pour CHAQUE hexagone, on échantillonne l'image à sa vraie position visuelle
+  const g = Array.from({ length: EH }, () => Array(EW).fill('#'));
+  for (let r = 0; r < EH; r++) {
+    for (let q = 0; q < EW; q++) {
+      const p = axialToPixel(q, r, 1);
+      const u = (p.x - ox) / drawW;
+      const v = (p.y - oy) / drawH;
+      if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+      const ix = Math.min(src.width - 1, Math.floor(u * src.width));
+      const iy = Math.min(src.height - 1, Math.floor(v * src.height));
+      const i = (iy * src.width + ix) * 4;
+      const bright = (px[i] + px[i + 1] + px[i + 2]) / 3;
+      const isTrack = importInvert ? (bright > importThreshold) : (bright < importThreshold);
+      if (isTrack) g[r][q] = '.';
+    }
+  }
+
+  // 5) Élargissement de la piste (les traits fins d'un plan sont sinon injouables)
+  for (let pass = 0; pass < importWidth; pass++) {
+    const cp = g.map(row => row.slice());
+    for (let r = 0; r < EH; r++) {
+      for (let q = 0; q < EW; q++) {
+        if (cp[r][q] !== '.') continue;
+        for (const d of HEX_DIRS) {
+          const nq = q + d.q, nr = r + d.r;
+          if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) g[nr][nq] = '.';
+        }
+      }
+    }
+  }
+
+  // 6) Nettoyage du bruit : on ne garde que le plus grand morceau connecté
+  const comp = largestComponent(g);
+  for (let r = 0; r < EH; r++) {
+    for (let q = 0; q < EW; q++) {
+      if (g[r][q] === '.' && !comp.has(q + ',' + r)) g[r][q] = '#';
+    }
+  }
+
+  E.grid = g;
+  E.carPos = null;
+  E.carDir = 0;
+
+  // 7) Aucun placement automatique : l'admin pose lui-même 🏁 arrivée, 📍 checkpoints et 🏎️ départ
+  document.getElementById('car-rotate').classList.remove('on');
+  document.getElementById('import-modal').classList.remove('on');
+  importImg = null;
+
+  centerOnCircuit();
+  drawEditor();
+  if (typeof updateFuelHint === 'function') updateFuelHint();
+
+  const cells = comp.size;
+  toast(cells < 60
+    ? ('⚠️ Seulement ' + cells + ' cases — élargis la piste ou la taille')
+    : ('✅ Importé (' + cells + ' cases) — place 🏁 arrivée, 📍 checkpoints et 🏎️ départ'));
+};
+
+// Plus grand ensemble de cases de piste reliées entre elles
+function largestComponent(g) {
+  const seen = new Set();
+  let best = new Set();
+  for (let r = 0; r < EH; r++) {
+    for (let q = 0; q < EW; q++) {
+      if (g[r][q] !== '.' ) continue;
+      const k0 = q + ',' + r;
+      if (seen.has(k0)) continue;
+      const comp = new Set([k0]);
+      const stack = [[q, r]];
+      seen.add(k0);
+      while (stack.length) {
+        const [cq, cr] = stack.pop();
+        for (const d of HEX_DIRS) {
+          const nq = cq + d.q, nr = cr + d.r;
+          if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+          if (g[nr][nq] !== '.') continue;
+          const k = nq + ',' + nr;
+          if (seen.has(k)) continue;
+          seen.add(k); comp.add(k); stack.push([nq, nr]);
+        }
+      }
+      if (comp.size > best.size) best = comp;
+    }
+  }
+  return best;
+}
+
+
+
+/* ================================================================
+   ÉDITEUR — OUTILS & UNDO
+   ================================================================ */
+function pushUndo() {
+  E.undoStack.push({
+    grid: E.grid.map(r => [...r]),
+    carPos: E.carPos ? { ...E.carPos } : null,
+    carDir: E.carDir
+  });
+
+  if (E.undoStack.length > 50) {
+    E.undoStack.shift();
+  }
+}
+
+function doUndo() {
+  if (!E.undoStack.length) {
+    toast('Rien à annuler');
+    return;
+  }
+
+  const state = E.undoStack.pop();
+  E.grid = state.grid;
+  E.carPos = state.carPos;
+  E.carDir = state.carDir;
+
+  document.getElementById('car-rotate').classList.toggle('on', !!E.carPos);
+  drawEditor();
+  toast('↩️ Annulé');
+}
+
+document.querySelectorAll('.tool').forEach(t => {
+  t.onclick = () => {
+    if (t.dataset.tool === 'undo') {
+      doUndo();
+      return;
+    }
+
+    document.querySelectorAll('.tool').forEach(x => x.classList.remove('sel'));
+    t.classList.add('sel');
+    E.tool = t.dataset.tool;
+
+    document.getElementById('car-rotate').classList.toggle(
+      'on',
+      E.tool === 'car' && !!E.carPos
+    );
+  };
+});
+
+// Mode test
+document.getElementById('btn-test-mode').onclick = () => {
+  if (!E.carPos) {
+    toast('Place la voiture 🏎️');
+    return;
+  }
+
+  const name = document.getElementById('c-name').value.trim() || 'Circuit Test';
+
+  startRace({
+    // Identifiant réel si le circuit est enregistré : sinon les fantômes perso
+    // de tous les circuits testés se mélangeraient sous la même clé.
+    id: E.editingId || 'test_circuit',
+    ghost: E.ghost || null,
+    name: name,
+    w: EW,
+    h: EH,
+    rows: E.grid.map(r => r.join('')),
+    start: {
+      x: E.carPos.q,
+      y: E.carPos.r,
+      dir: E.carDir
+    },
+    laps: parseInt(document.getElementById('c-laps').value) || 1,
+    attempts: 99,
+    freePractice: document.getElementById('c-warmup').checked,
+    regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
+    countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
+    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
+    fuelEnabled: document.getElementById('c-fuel-on').checked
+  }, 'TesteurAdmin', 99, true);
+};
+
+/* ================================================================
+   ÉDITEUR — RENDU CANVAS
+   ================================================================ */
+const ecv = document.getElementById('ecv');
+const ectx = ecv.getContext('2d');
+
+function fitEcv() {
+  const wrap = document.getElementById('editor-canvas-wrap');
+  ecv.width = wrap.clientWidth;
+  ecv.height = wrap.clientHeight;
+}
+
+function resetView() {
+  fitEcv();
+
+  const ext = hexGridExtent(EW, EH);
+  E.scale = Math.max(ED_MIN, Math.min(ecv.width / ext.w, ecv.height / ext.h) * 1.1);
+  E.offX = (ecv.width - E.scale * ext.w) / 2;
+  E.offY = (ecv.height - E.scale * ext.h) / 2;
+}
+
+function drawEditor() {
+  fitEcv();
+
+  // Herbe
+  if (grassPattern) {
+    ectx.fillStyle = ectx.createPattern(grassPattern, 'repeat');
+    ectx.fillRect(0, 0, ecv.width, ecv.height);
+  } else {
+    ectx.fillStyle = '#2d5016';
+    ectx.fillRect(0, 0, ecv.width, ecv.height);
+  }
+
+  ectx.save();
+  ectx.translate(E.offX, E.offY);
+
+  const hs = E.scale;
+
+  // Culling
+  const vl = -E.offX;
+  const vr = ecv.width - E.offX;
+  const vt = -E.offY;
+  const vb = ecv.height - E.offY;
+
+  const minR = Math.max(0, Math.floor(vt / (hs * 1.5)) - 3);
+  const maxR = Math.min(EH, Math.ceil(vb / (hs * 1.5)) + 3);
+
+  for (let r = minR; r < maxR; r++) {
+    const minQ = Math.max(0, Math.floor(vl / (hs * SQRT3) - r / 2) - 3);
+    const maxQ = Math.min(EW, Math.ceil(vr / (hs * SQRT3) - r / 2) + 3);
+
+    for (let q = minQ; q < maxQ; q++) {
+      const t = E.grid[r][q];
+      if (t === '#') continue;
+
+      const pt = axialToPixel(q, r, hs);
+      const v = ((q * 3 + r * 7) % 6) - 3;
+
+      // Asphalte
+      hexPath(ectx, pt.x, pt.y, hs * 0.98);
+      ectx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
+      ectx.fill();
+
+      // Grille fantôme
+      ectx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ectx.lineWidth = 0.5;
+      ectx.stroke();
+
+      // Damier arrivée
+      if (t === 'F') {
+        const sq = hs * 0.13;
+        const offX = Math.round(pt.x / sq) % 2;
+        const offY = Math.round(pt.y / sq) % 2;
+
+        for (let i = -2; i < 3; i++) {
+          for (let j = -2; j < 3; j++) {
+            ectx.fillStyle = ((i + offX) + (j + offY)) % 2 === 0
+              ? '#ecf0f1'
+              : '#1a1a2e';
+            ectx.fillRect(pt.x + i * sq, pt.y + j * sq, sq, sq);
+          }
+        }
+      }
+
+      // Checkpoint
+      if (t === 'C') {
+        ectx.strokeStyle = 'rgba(247,201,72,0.6)';
+        ectx.lineWidth = Math.max(1, hs * 0.04);
+        ectx.setLineDash([hs * 0.15, hs * 0.1]);
+
+        ectx.beginPath();
+        ectx.moveTo(pt.x - hs * 0.4, pt.y);
+        ectx.lineTo(pt.x + hs * 0.4, pt.y);
+        ectx.stroke();
+
+        ectx.setLineDash([]);
+      }
+
+      // Kerbs
+      for (let d = 0; d < 6; d++) {
+        const nq = q + HEX_DIRS[d].q;
+        const nr = r + HEX_DIRS[d].r;
+
+        const isWall = (
+          nq < 0 || nq >= EW ||
+          nr < 0 || nr >= EH ||
+          E.grid[nr][nq] === '#'
+        );
+
+        if (!isWall) continue;
+
+        drawKerbEdge(ectx, pt, hs, d, q, r);
+      }
+    }
+  }
+
+  // Voiture
+  if (E.carPos) {
+    const pt = axialToPixel(E.carPos.q, E.carPos.r, hs);
+
+    ectx.save();
+    ectx.translate(pt.x, pt.y);
+    ectx.rotate(Math.PI / 3 * (E.carDir - 1));
+    drawCar(ectx, hs);
+    ectx.restore();
+  }
+
+  ectx.restore();
+}
+
+/* ================================================================
+   ÉDITEUR — INTERACTIONS
+   ================================================================ */
+function cellFromEvent(e) {
+  const rect = ecv.getBoundingClientRect();
+  const px = (e.clientX - rect.left) - E.offX;
+  const py = (e.clientY - rect.top) - E.offY;
+  const s = E.scale;
+
+  let closestQ = 0;
+  let closestR = 0;
+  let minDist = Infinity;
+
+  const approxR = Math.round(py / (s * 1.5));
+  const approxQ = Math.round(px / (s * SQRT3) - approxR / 2);
+
+  for (let r = Math.max(0, approxR - 3); r < Math.min(EH, approxR + 3); r++) {
+    for (let q = Math.max(0, approxQ - 3); q < Math.min(EW, approxQ + 3); q++) {
+      const pt = axialToPixel(q, r, s);
+      const d = Math.hypot(pt.x - px, pt.y - py);
+
+      if (d < minDist) {
+        minDist = d;
+        closestQ = q;
+        closestR = r;
+      }
+    }
+  }
+
+  return { q: closestQ, r: closestR };
+}
+
+function paintAt(q, r) {
+  if (q < 0 || q >= EW || r < 0 || r >= EH) return;
+
+  pushUndo();
+
+  if (E.tool === 'piste') {
+    E.grid[r][q] = '.';
+  } else if (E.tool === 'mur') {
+    E.grid[r][q] = '#';
+    if (E.carPos && E.carPos.q === q && E.carPos.r === r) {
+      E.carPos = null;
+    }
+  } else if (E.tool === 'finish') {
+    E.grid[r][q] = 'F';
+  } else if (E.tool === 'checkpoint') {
+    E.grid[r][q] = 'C';
+  } else if (E.tool === 'car') {
+    if (E.grid[r][q] === '#') E.grid[r][q] = '.';
+    E.carPos = { q: q, r: r };
+    document.getElementById('car-rotate').classList.add('on');
+  }
+
+  drawEditor();
+}
+
+// Rotation voiture
+document.getElementById('rotL').onclick = () => {
+  E.carDir = rotHex(E.carDir, -1);
+  drawEditor();
+};
+
+document.getElementById('rotR').onclick = () => {
+  E.carDir = rotHex(E.carDir, 1);
+  drawEditor();
+};
+
+// Pan & draw
+let isPan = false;
+let panSt = null;
+
+ecv.addEventListener('pointerdown', (e) => {
+  ecv.setPointerCapture(e.pointerId);
+
+  if (E.tool === 'pan') {
+    isPan = true;
+    panSt = {
+      x: e.clientX,
+      y: e.clientY,
+      ox: E.offX,
+      oy: E.offY
+    };
+  } else {
+    const c = cellFromEvent(e);
+    paintAt(c.q, c.r);
+  }
+});
+
+ecv.addEventListener('pointermove', (e) => {
+  if (isPan && panSt) {
+    E.offX = panSt.ox + (e.clientX - panSt.x);
+    E.offY = panSt.oy + (e.clientY - panSt.y);
+    drawEditor();
+  } else if (!isPan && e.buttons === 1 && E.tool !== 'pan') {
+    const c = cellFromEvent(e);
+    paintAt(c.q, c.r);
+  }
+});
+
+ecv.addEventListener('pointerup', (e) => {
+  isPan = false;
+  panSt = null;
+  ecv.releasePointerCapture(e.pointerId);
+});
+
+// Zoom molette (centré sur le curseur)
+ecv.addEventListener('wheel', (e) => {
+  e.preventDefault();
+
+  const zoomFactor = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.12);
+
+  const rect = ecv.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const wx = (mx - E.offX) / E.scale;
+  const wy = (my - E.offY) / E.scale;
+
+  E.scale = Math.max(ED_MIN, Math.min(ED_MAX, E.scale * zoomFactor));
+
+  E.offX = mx - wx * E.scale;
+  E.offY = my - wy * E.scale;
+
+  drawEditor();
+}, { passive: false });
+
+// Boutons zoom
+document.getElementById('zin').onclick = () => {
+  E.scale = Math.min(ED_MAX, E.scale * 1.3);
+  drawEditor();
+};
+
+document.getElementById('zout').onclick = () => {
+  E.scale = Math.max(ED_MIN, E.scale * 0.7);
+  drawEditor();
+};
+
+document.getElementById('zreset').onclick = () => {
+  resetView();
+  drawEditor();
+};
+
+/* ================================================================
+   SAUVEGARDE / PUBLICATION / SUPPRESSION
+   ================================================================ */
+async function saveCircuit(publish) {
+  const name = document.getElementById('c-name').value.trim();
+
+  if (!name) {
+    toast('Nom du circuit requis');
+    return;
+  }
+
+  if (!E.carPos) {
+    toast('Place la voiture 🏎️');
+    return;
+  }
+
+  const rows = E.grid.map(r => r.join(''));
+
+  if (!rows.some(r => r.includes('F'))) {
+    toast('Place une ligne d\'arrivée 🏁');
+    return;
+  }
+
+  const body = {
+    password: E.adminPw,
+    id: E.editingId,
+    name: name,
+    w: EW,
+    h: EH,
+    rows: rows,
+    start: {
+      x: E.carPos.q,
+      y: E.carPos.r,
+      dir: E.carDir
+    },
+    laps: parseInt(document.getElementById('c-laps').value) || 1,
+    attempts: parseInt(document.getElementById('c-attempts').value) || 3,
+    freePractice: document.getElementById('c-warmup').checked,
+    regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
+    countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
+    pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
+    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
+    fuelEnabled: document.getElementById('c-fuel-on').checked,
+    published: (publish !== undefined) ? publish : E.published
+  };
+
+  try {
+    const res = await api('/api/formula/circuit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    E.editingId = res.id;
+    E.published = publish;
+
+    document.getElementById('btn-delete').style.display = 'block';
+    document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
+    updateTestLinkBtn();
+
+    toast(publish ? '✅ Circuit publié !' : '📥 Circuit dépublié — invisible pour les joueurs');
+    loadAdminList();
+  } catch (e) {
+    toast('Erreur : ' + e.message);
+  }
+}
+
+document.getElementById('btn-save-draft').onclick = () => {
+  saveCircuit(false);
+};
+
+document.getElementById('btn-unpublish').onclick = () => {
+  if (!confirm('Dépublier ce circuit ?\n\nIl redevient un brouillon : invisible pour les joueurs, mais rien n\'est supprimé (scores, fantôme, réglages conservés).')) return;
+  saveCircuit(false);
+};
+
+document.getElementById('btn-publish').onclick = () => {
+  saveCircuit(true);
+};
+
+document.getElementById('btn-delete').onclick = async () => {
+  if (!E.editingId) return;
+  if (!confirm('Supprimer ce circuit ?')) return;
+
+  try {
+    await api('/api/formula/circuit/' + E.editingId, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: E.adminPw })
+    });
+
+    toast('Circuit supprimé');
+    newCircuit();
+    loadAdminList();
+  } catch (e) {
+    toast('Erreur : ' + e.message);
+  }
+};
+
+/* ================================================================
+   INITIALISATION
+   ================================================================ */
+if (params.get('edit') !== '1') {
+  loadCircuitList();
+}
+</script>
+</body>
+</html>
