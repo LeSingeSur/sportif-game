@@ -621,6 +621,33 @@ header.top {
 
 #dice-anim-overlay.on { display: flex; }
 
+#drs-choice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 9, 11, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 31;
+  flex-direction: column;
+  gap: 14px;
+  backdrop-filter: blur(4px);
+}
+#drs-choice-overlay.on { display: flex; }
+.drs-face-btn {
+  min-width: 78px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 2px solid rgba(180,100,255,.5);
+  color: var(--txt);
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+}
+.drs-face-btn b { display: block; font-size: 22px; color: #b464ff; }
+.drs-face-btn span { display: block; font-size: 10px; color: var(--mute); margin-top: 2px; }
+.drs-face-btn:active { transform: scale(.95); }
+
 /* Dé présent dans le jeu commun mais NON engagé à ce rapport : visible en retrait,
    pour que le joueur voie d'un coup d'œil quels dés sa vitesse lui fait gagner. */
 .dice-cube.inactif {
@@ -647,6 +674,13 @@ header.top {
   color: var(--line);
   box-shadow: 0 0 18px rgba(247, 201, 72, 0.35);
   animation: diceShake 0.1s infinite alternate;
+}
+
+/* Dé dont la face a été choisie par le joueur en zone DRS : le chiffre laisse
+   place au mot "DRS", en plus petit pour tenir dans la case. */
+.dice-cube.drs-picked {
+  font-size: 14px;
+  color: #b464ff;
 }
 
 @keyframes diceShake {
@@ -1110,6 +1144,15 @@ header.top {
   <div id="dice-fair" style="display:none;font-size:10px;color:var(--mute);letter-spacing:.4px;margin-top:6px"></div>
 </div>
 
+<!-- Zone DRS : en démarrant le coup depuis une case DRS, le joueur choisit la
+     face du DERNIER dé de son rapport, au lieu de la subir. Les dés précédents
+     restent ceux de la grille commune — même choix pour tout le monde. -->
+<div id="drs-choice-overlay">
+  <div class="eyebrow" style="color:#b464ff;letter-spacing:3px">⚡ ZONE DRS</div>
+  <div style="font-size:11px;color:var(--mute);max-width:280px;text-align:center">Choisis la face du dernier dé</div>
+  <div id="drs-choices" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:330px"></div>
+</div>
+
 <!-- ============================================================
      ÉCRAN ÉDITEUR
      ============================================================ -->
@@ -1154,6 +1197,7 @@ header.top {
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
       <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
       <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
+      <div class="tool" data-tool="drs">⚡<span class="tname">DRS</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
@@ -1899,6 +1943,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // Trails (traces de pneus)
   R.trail = [];
   R.fullTrail = [];
+  R.crossedDrs = false;   // le coup précédent a-t-il traversé une case DRS ?
 
 
   // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
@@ -2631,7 +2676,7 @@ function executeDiceRoll(gear) {
   return sum;
 }
 
-function rollDiceAnim() {
+function rollDiceAnim(drsFace) {
   if (R.phase !== 'gear') return;
   if (R.animating) return;
 
@@ -2646,6 +2691,20 @@ function rollDiceAnim() {
   }
 
   if (R.pendingGear === 0) return;
+
+  // Zone DRS : si on DÉMARRE ce coup depuis une case DRS, on choisit la face du
+  // dernier dé au lieu de la subir. Les dés précédents restent ceux du pool
+  // commun (mêmes valeurs pour tous les joueurs à ce coup) ; seul le dernier,
+  // celui qui distingue le rapport engagé du précédent, devient un choix.
+  // Zone DRS : compte si on démarre PILE sur une case DRS, OU si le trajet du
+  // coup précédent a traversé une case DRS sans forcément s'y arrêter — sinon,
+  // à haute vitesse, on peut filer à travers toute la zone sans jamais y
+  // atterrir exactement, alors qu'on y est bien passé.
+  const onDRS = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs;
+  if (onDRS && drsFace === undefined) {
+    showDrsChoice();
+    return;   // le clic sur une face rappellera rollDiceAnim(face)
+  }
 
   // Anti-spam
   R.phase = 'rolling';
@@ -2717,20 +2776,24 @@ function rollDiceAnim() {
     if (counter > 10) {
       clearInterval(interval);
       // Tirage final réel, dé par dé (la somme affichée = somme des faces montrées).
-      // Pool commun : valeurs identiques pour tous les joueurs sur ce coup.
+      // Pool commun : valeurs identiques pour tous les joueurs sur ce coup — sauf le
+      // dernier dé si le coup démarre en zone DRS, où le joueur l'a choisi lui-même.
       const moveNo = R.turn + 1;
       let total = 0;
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
-        const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
-        c.textContent = v;
+        const isLastDrs = (drsFace !== undefined) && (i === nActifs - 1);
+        const v = isLastDrs ? drsFace : dieValue(DICE_SET[i], R.gear, i, moveNo);
+        c.textContent = isLastDrs ? 'DRS' : v;
+        if (isLastDrs) c.classList.add('drs-picked');
         if (i < nActifs) {
-          c.style.borderColor = 'var(--ok)';
+          c.style.borderColor = isLastDrs ? '#b464ff' : 'var(--ok)';
           total += v;
         }
       });
-      sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + total + ' cases</span>';
+      sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + total + ' cases</span>' +
+        (drsFace !== undefined ? ' <span style="color:#b464ff;font-size:11px">⚡ DRS</span>' : '');
 
       setTimeout(() => {
         ov.classList.remove('on');
@@ -2739,6 +2802,34 @@ function rollDiceAnim() {
       }, 900);
     }
   }, 120);
+}
+
+// Zone DRS : propose les faces du DERNIER dé du rapport engagé, avec le total
+// que chacune donnerait (les dés précédents sont fixés par la grille commune,
+// donc identiques pour tout le monde à ce coup — seul ce choix change).
+function showDrsChoice() {
+  const nDice = R.pendingGear;
+  const lastFaces = DICE_SET[nDice - 1];
+  const moveNo = R.turn + 1;
+
+  let base = 0;
+  for (let i = 0; i < nDice - 1; i++) base += dieValue(DICE_SET[i], nDice, i, moveNo);
+
+  const box = document.getElementById('drs-choices');
+  box.innerHTML = '';
+  // Faces uniques (certains dés ont des doublons, ex. [4,5,5]) — inutile de
+  // proposer deux fois le même total.
+  [...new Set(lastFaces)].sort((a, b) => a - b).forEach(face => {
+    const btn = document.createElement('button');
+    btn.className = 'drs-face-btn';
+    btn.innerHTML = '<b>' + face + '</b><span>Σ ' + (base + face) + ' cases</span>';
+    btn.onclick = () => {
+      document.getElementById('drs-choice-overlay').classList.remove('on');
+      rollDiceAnim(face);
+    };
+    box.appendChild(btn);
+  });
+  document.getElementById('drs-choice-overlay').classList.add('on');
 }
 
 // Combien de cases dégagées devant soi dans une direction donnée (max 8)
@@ -3494,6 +3585,13 @@ function getAnimCarPos() {
 function finalizeMove(r) {
   R.turn++;
 
+  // Zone DRS : compte si une case du trajet qu'on VIENT de parcourir touche une
+  // case DRS — pas seulement la case d'arrivée. Sinon, à haute vitesse, un coup
+  // peut traverser toute la zone sans jamais s'y arrêter pile, et le bonus ne se
+  // déclenchait jamais alors que la voiture y était bel et bien passée.
+  R.crossedDrs = r.path.some(p => R.grid[p.r] && R.grid[p.r][p.q] === 'D') ||
+    (R.grid[r.r] && R.grid[r.r][r.q] === 'D');
+
   // Traces de pneus accumulées (tout l'essai)
   for (const p of r.path) {
     R.fullTrail.push({ q: p.q, r: p.r, dir: p.dir });
@@ -3610,6 +3708,7 @@ function finalizeMove(r) {
     R.leftFinishZone = cp.leftFinishZone;
     R.cpTimes = (cp.cpTimes || []).slice();
     R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
+    R.crossedDrs = false;   // aucun avantage : on repart sans le bonus du coup raté
 
     // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
@@ -3695,8 +3794,19 @@ function renderCircuitBoard(top, pseudo, myRank, myTotal, limit) {
     // Points rapportés par la place au classement général
     const pts = (t.points != null && t.points > 0)
       ? ' <span style="color:var(--gold,#f7c948)">' + t.points + ' pts</span>' : '';
+    // Départage visible : même coups + même cases bonus qu'un voisin → on précise
+    // ce qui a tranché (essais utilisés, puis distance parcourue).
+    const prev = list[i - 1];
+    const tied = prev && prev.moves === t.moves && (prev.left || 0) === (t.left || 0);
+    let detail = '';
+    if (tied) {
+      const parts = [];
+      if (t.attemptIndex != null) parts.push((t.attemptIndex + 1) + 'ᵉ essai');
+      if (t.cells != null) parts.push(t.cells + ' cases parcourues');
+      if (parts.length) detail = ' <span style="font-size:9px;color:var(--mute)">(' + parts.join(' · ') + ')</span>';
+    }
     html += '<div class="row2' + (mine ? ' me' : '') + '">' +
-      '<span>' + medal + ' ' + esc(t.pseudo) + '</span>' +
+      '<span>' + medal + ' ' + esc(t.pseudo) + detail + '</span>' +
       '<span>' + t.moves + (t.left ? '+' + t.left : '') + pts + '</span></div>';
   });
   if (!inList && myRank) {
@@ -3873,7 +3983,8 @@ async function finishRace(r) {
         left: r.left,
         laps: R.targetLaps,
         cpTimes: R.cpTimes,
-        lapMoves: R.lapMoves
+        lapMoves: R.lapMoves,
+        cells: R.cells
       })
     });
 
@@ -4214,6 +4325,24 @@ function drawRace() {
     }
   }
 
+  // 5bis) Zones DRS (chevrons violets, dans le sens de la piste)
+  for (let r = vis.minR; r <= vis.maxR; r++) {
+    for (let q = vis.minQ; q <= vis.maxQ; q++) {
+      if (!R.grid[r] || R.grid[r][q] !== 'D') continue;
+      const pt = axialToPixel(q, r, hexSize);
+      cctx.fillStyle = 'rgba(180,100,255,0.16)';
+      hexPath(cctx, pt.x, pt.y, hexSize * 0.9);
+      cctx.fill();
+      cctx.strokeStyle = 'rgba(180,100,255,0.85)';
+      cctx.lineWidth = Math.max(1.5, hexSize * 0.06);
+      cctx.beginPath();
+      cctx.moveTo(pt.x - hexSize * 0.22, pt.y - hexSize * 0.3);
+      cctx.lineTo(pt.x + hexSize * 0.06, pt.y);
+      cctx.lineTo(pt.x - hexSize * 0.22, pt.y + hexSize * 0.3);
+      cctx.stroke();
+    }
+  }
+
   // 6) Checkpoints (ligne pointillée)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
@@ -4506,6 +4635,8 @@ function drawMinimap(vp) {
         mctx.fillStyle = '#ecf0f1';
       } else if (R.grid[r][q] === 'C') {
         mctx.fillStyle = '#f7c948';
+      } else if (R.grid[r][q] === 'D') {
+        mctx.fillStyle = '#b464ff';
       } else {
         mctx.fillStyle = '#4a505a';
       }
@@ -4843,6 +4974,7 @@ async function loadScores() {
           detail += (detail ? '<br>' : '') + '🔁 Tours : ' + durs.join(' · ') +
             (durs.length > 1 ? ' <b style="color:var(--gold,#f7c948)">(meilleur ' + Math.min(...durs) + ')</b>' : '');
         }
+        if (run.cells != null) detail += (detail ? '<br>' : '') + '📏 ' + run.cells + ' cases parcourues · ' + (run.attemptIndex + 1) + 'ᵉ essai';
       }
 
       row.innerHTML =
@@ -6088,6 +6220,20 @@ function drawEditor() {
         }
       }
 
+      // Zone DRS
+      if (t === 'D') {
+        ectx.fillStyle = 'rgba(180,100,255,0.22)';
+        hexPath(ectx, pt.x, pt.y, hs * 0.9);
+        ectx.fill();
+        ectx.strokeStyle = 'rgba(180,100,255,0.9)';
+        ectx.lineWidth = Math.max(1, hs * 0.06);
+        ectx.beginPath();
+        ectx.moveTo(pt.x - hs * 0.2, pt.y - hs * 0.28);
+        ectx.lineTo(pt.x + hs * 0.05, pt.y);
+        ectx.lineTo(pt.x - hs * 0.2, pt.y + hs * 0.28);
+        ectx.stroke();
+      }
+
       // Checkpoint
       if (t === 'C') {
         ectx.strokeStyle = 'rgba(247,201,72,0.6)';
@@ -6182,6 +6328,11 @@ function paintAt(q, r) {
     E.grid[r][q] = 'F';
   } else if (E.tool === 'checkpoint') {
     E.grid[r][q] = 'C';
+  } else if (E.tool === 'drs') {
+    // Zone DRS : réservée aux lignes droites — démarrer un coup depuis une case
+    // DRS donne le choix de la face du DERNIER dé du rapport engagé, au lieu de
+    // la subir. Cellule normale pour tout le reste (pathfinding, générateur…).
+    E.grid[r][q] = 'D';
   } else if (E.tool === 'car') {
     if (E.grid[r][q] === '#') E.grid[r][q] = '.';
     E.carPos = { q: q, r: r };
