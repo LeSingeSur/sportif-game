@@ -193,12 +193,30 @@ function bestRun(runs) {
 function circuitRanking(circuitId) {
   const runs = (circuitRuns[circuitId] || []).filter(r => !r.crashed && Number.isFinite(r.moves));
   const bestPerPseudo = {};
+  // Cascade de départage — avec la grille de dés désormais IDENTIQUE pour tous et
+  // à chaque essai, plusieurs joueurs peuvent converger sur le même nombre de
+  // coups exact. On départage sur des critères qui restent du pur pilotage :
+  //   1. coups (déjà géré : moves)
+  //   2. cases bonus restantes à l'arrivée (left) — plus haut = mieux
+  //   3. essais utilisés (attemptIndex) — moins haut = mieux : avoir trouvé la
+  //      bonne trajectoire du premier coup vaut mieux qu'après plusieurs essais,
+  //      ce qui limite aussi l'intérêt de bourriner les essais sur une grille connue
+  //   4. cases parcourues (cells) — la trajectoire la plus courte gagne à coups égaux
+  //   5. date de dépôt — le premier arrivé sur ce score départage en dernier recours
+  const better = (a, b) => {
+    if (a.moves !== b.moves) return a.moves < b.moves;
+    if (a.left !== b.left) return a.left > b.left;
+    const ai = a.attemptIndex ?? 99, bi = b.attemptIndex ?? 99;
+    if (ai !== bi) return ai < bi;
+    const ac = a.cells ?? Infinity, bc = b.cells ?? Infinity;
+    if (ac !== bc) return ac < bc;
+    return a.date < b.date;
+  };
   for (const r of runs) {
     const k = norm(r.pseudo);
-    if (!bestPerPseudo[k] || r.moves < bestPerPseudo[k].moves || (r.moves === bestPerPseudo[k].moves && r.left > bestPerPseudo[k].left))
-      bestPerPseudo[k] = r;
+    if (!bestPerPseudo[k] || better(r, bestPerPseudo[k])) bestPerPseudo[k] = r;
   }
-  return Object.values(bestPerPseudo).sort((a,b) => a.moves - b.moves || b.left - a.left);
+  return Object.values(bestPerPseudo).sort((a, b) => better(a, b) ? -1 : better(b, a) ? 1 : 0);
 }
 function formulaGridPointsByPseudo() {
   const totals = {};
@@ -1277,6 +1295,7 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const rankedAll = circuitRanking(req.params.id);
   const top = rankedAll.slice(0, 10)
     .map((r, i) => ({ pseudo: r.pseudo, moves: r.moves, left: r.left || 0,
+                      attemptIndex: r.attemptIndex, cells: r.cells,
                       points: circuitPointsFor(c, i, rankedAll.length) }));
   // Meilleur tour : durée mini entre deux passages de ligne, sur tous les runs
   const bestLapOf = (rs) => {
@@ -1318,7 +1337,7 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
 });
 
 app.post('/api/formula/run', async (req, res) => {
-  const { circuitId, pseudo, moves, left, laps, cpTimes, lapMoves } = req.body;
+  const { circuitId, pseudo, moves, left, laps, cpTimes, lapMoves, cells } = req.body;
   const c = circuits.find(x => x.id === circuitId);
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
@@ -1335,6 +1354,8 @@ app.post('/api/formula/run', async (req, res) => {
     pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps,
     cpTimes: Array.isArray(cpTimes) ? cpTimes.filter(Number.isFinite).slice(0, 50) : [],
     lapMoves: Array.isArray(lapMoves) ? lapMoves.filter(Number.isFinite).slice(0, 30) : [],
+    cells: Number.isFinite(cells) ? cells : undefined,   // départage : trajectoire la plus courte
+    attemptIndex: already.length,                          // départage : moins d'essais = mieux
     date: new Date().toISOString()
   };
   circuitRuns[circuitId].push(run);
@@ -1357,6 +1378,7 @@ app.post('/api/formula/run', async (req, res) => {
     // Top 10 pour affichage immédiat côté client
     const top = ranked.slice(0, 10).map((r, i) => ({
       pseudo: r.pseudo, moves: r.moves, left: r.left,
+      attemptIndex: r.attemptIndex, cells: r.cells,
       points: circuitPointsFor(c, i, ranked.length)
     }));
 
@@ -1428,8 +1450,8 @@ app.get('/api/formula/admin/runs/:circuitId', (req, res) => {
   const c = circuits.find(x => x.id === req.params.circuitId);
   res.json({
     circuit: c ? { id: c.id, name: c.name, laps: c.laps, attempts: c.attempts, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 } : null,
-    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date, laps: r.laps||0, cpTimes: r.cpTimes||[], lapMoves: r.lapMoves||[] })),
-    ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0 }))
+    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date, laps: r.laps||0, cpTimes: r.cpTimes||[], lapMoves: r.lapMoves||[], cells: r.cells, attemptIndex: r.attemptIndex })),
+    ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0, cells: r.cells, attemptIndex: r.attemptIndex }))
   });
 });
 
