@@ -2872,6 +2872,10 @@ function rollDiceAnim(drsFace) {
       const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && iDrs < 0 && !isV1Choice)
         ? nActifs - 1 : -1;
       let base = 0;
+      // Dé d'appoint : quand deux tirages sont en jeu (V1 pure, réserve), on
+      // affiche un VRAI second dé numéroté juste à côté, plutôt qu'un texte —
+      // les deux valeurs comparées doivent se voir d'un coup d'œil.
+      let extraCube = null, extraValue = null;
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
@@ -2882,15 +2886,34 @@ function rollDiceAnim(drsFace) {
           return;
         }
         if (isV1Choice && i === 0) {
-          c.textContent = '2 jets';
+          const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
+          const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
+          c.textContent = d1;
           c.classList.add('v1-picked');
           c.style.borderColor = '#39d98a';
+          base += d1;
+          extraValue = d2;
+          extraCube = document.createElement('div');
+          extraCube.className = 'dice-cube v1-picked';
+          extraCube.style.borderColor = '#39d98a';
+          extraCube.textContent = d2;
+          c.insertAdjacentElement('afterend', extraCube);
           return;
         }
         if (i === bankIdx) {
-          c.textContent = '📥 tour préc.';
+          const fresh = dieValue(DICE_SET[i], R.gear, i, moveNo);
+          c.textContent = fresh;
           c.classList.add('bank-used');
           c.style.borderColor = '#4aa3ff';
+          // NE PAS ajouter `fresh` à `base` ici : le total exact (réserve OU
+          // frais) est recalculé juste après, dans altTotals — l'ajouter ici
+          // le compterait deux fois.
+          extraValue = R.bankedDie.value;
+          extraCube = document.createElement('div');
+          extraCube.className = 'dice-cube bank-used';
+          extraCube.style.borderColor = '#4aa3ff';
+          extraCube.textContent = extraValue;
+          c.insertAdjacentElement('afterend', extraCube);
           return;
         }
         const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
@@ -2908,8 +2931,8 @@ function rollDiceAnim(drsFace) {
       if (iDrs >= 0) {
         altTotals = [...new Set(DICE_SET[iDrs])].sort((a, b) => a - b).map(f => base + f);
       } else if (isV1Choice) {
-        const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
-        const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
+        // extraValue = d2 (le second tirage), déjà calculé dans la boucle ci-dessus
+        const d1 = dieValue(DICE_SET[0], 1, 0, moveNo), d2 = extraValue;
         altTotals = [...new Set([d1, d2])].sort((a, b) => a - b);
       } else if (bankIdx >= 0) {
         const fresh = dieValue(DICE_SET[bankIdx], R.gear, bankIdx, moveNo);
@@ -3032,12 +3055,14 @@ function processRollResult(val, altTotals) {
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
 
   if (okCount === 0) {
-    const best = R.results.reduce(
-      (m, r) => (r.path.length > m.path.length) ? r : m,
-      R.results[0]
-    );
-    say('💥 Crash inévitable !', 'crash');
-    setTimeout(() => applyResult(best), 800);
+    // Aucune trajectoire ne t'évite le mur — mais tu dois quand même VOIR et
+    // VALIDER laquelle, comme n'importe quel autre coup. Avant, le jeu tranchait
+    // tout seul après 800ms sans jamais montrer le trajet (ni le déport qui en
+    // est souvent la cause en V5/V6) : le joueur avait l'impression que la
+    // voiture "avançait toute seule". Désormais, le même geste 1er appui =
+    // aperçu, 2e appui = valider s'applique — le déport est visible en cyan
+    // avant que tu confirmes.
+    say('💥 Aucune issue ne t\'évite le mur — touche pour voir où, retouche pour valider', 'crash');
   } else {
     say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
   }
