@@ -2809,50 +2809,62 @@ function rollDiceAnim(drsFace) {
 
     if (counter > 10) {
       clearInterval(interval);
-      // Tirage final réel, dé par dé.
-      // Pool commun : valeurs identiques pour tous les joueurs sur ce coup.
-      // En zone DRS, le DERNIER dé engagé n'est pas tiré : il affiche "DRS" et
-      // toutes ses faces seront proposées sous forme de trajectoires distinctes.
+
+      // --- TON BLOC COMMENCE ICI ---
       const moveNo = R.turn + 1;
       const iDrs = onDRS ? nActifs - 1 : -1;
       let base = 0;
+      let v1Alternative = null;
+
       cubes.forEach((c, i) => {
-        // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
-        // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
         if (i === iDrs) {
           c.textContent = 'DRS';
           c.classList.add('drs-picked');
           c.style.borderColor = '#b464ff';
           return;
         }
-        const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
-        c.textContent = v;
-        if (i < nActifs) {
+        
+        // Logique V1 pur (2 dés lancés, on prend l'un ou l'autre)
+        if (R.gear === 1 && i === 0) {
+          const v1_A = dieValue(DICE_SET[0], 1, 0, moveNo);
+          const v1_B = dieValue(DICE_SET[0], 1, 1, moveNo); // Deuxième jet virtuel
+          c.textContent = v1_A + ' | ' + v1_B;
           c.style.borderColor = 'var(--ok)';
-          base += v;
+          base = v1_A;
+          v1Alternative = v1_B;
+        } else {
+          const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
+          c.textContent = v;
+          if (i < nActifs) {
+            c.style.borderColor = 'var(--ok)';
+            base += v;
+          }
         }
       });
 
-      // Totaux possibles : un par face du dé DRS (dédoublonnés)
+      // Gestion du stockage de dé (Vitesse Supérieure)
+      let storedDieValue = null;
+      if (R.gear < 6) {
+        // On stocke automatiquement un jet du dé V+1
+        const nextGear = R.gear + 1;
+        storedDieValue = dieValue(DICE_SET[nextGear - 1], nextGear, nextGear - 1, moveNo);
+      }
+
       const drsTotals = (iDrs >= 0)
         ? [...new Set(DICE_SET[iDrs])].sort((a, b) => a - b).map(f => base + f)
         : null;
 
-      if (drsTotals) {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
-          drsTotals[0] + '–' + drsTotals[drsTotals.length - 1] + ' cases</span>' +
-          ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>';
-      } else {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
-      }
-
       setTimeout(() => {
         ov.classList.remove('on');
         cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked'); });
-        processRollResult(drsTotals ? drsTotals[drsTotals.length - 1] : base, drsTotals);
+        
+        // On passe les totaux au process
+        processRollResult(base, drsTotals, v1Alternative, storedDieValue);
       }, 900);
-    }
-  }, 120);
+      // --- FIN DE TON BLOC ---
+
+    } // Fin du if (counter > 10)
+  }, 120); // Fin du setInterval
 }
 
 // Combien de cases dégagées devant soi dans une direction donnée (max 8)
