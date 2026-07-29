@@ -1092,7 +1092,10 @@ header.top {
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
-    <div id="banked-die-tag" style="display:none;font-size:10px;color:#4aa3ff;margin-top:6px"></div>
+    <div id="banked-die-tag" style="display:none;align-items:center;gap:6px;margin-top:6px">
+      <span style="font-size:9px;color:var(--mute);letter-spacing:.5px">REPRISE</span>
+      <div id="banked-die-mini" style="width:26px;height:26px;border-radius:7px;background:var(--panel);border:2px solid #4aa3ff;color:#4aa3ff;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-weight:900;font-size:13px"></div>
+    </div>
   </div>
   <button id="roll">🎲 LANCER LE DÉ</button>
   
@@ -2345,13 +2348,15 @@ function renderGears() {
     R.pendingGear = Math.max(0, R.gear - 1);
   }
 
-  // Dé "+1" en réserve : indicateur passif, ENTIÈREMENT AUTOMATIQUE (aucun bouton)
+  // Dé de reprise : mini-case passive, ENTIÈREMENT AUTOMATIQUE (aucun bouton,
+  // aucune phrase à lire — juste le chiffre actuellement en reprise).
   const bankTag = document.getElementById('banked-die-tag');
-  if (bankTag) {
+  const bankMini = document.getElementById('banked-die-mini');
+  if (bankTag && bankMini) {
     if (R.bankedDie) {
-      bankTag.style.display = 'block';
-      bankTag.textContent = '📥 ' + R.bankedDie.value + ' (dé du tour précédent) disponible pour V' +
-        R.bankedDie.targetGear + ' — proposé face à un tirage frais si tu montes à ce rapport';
+      bankTag.style.display = 'flex';
+      bankMini.textContent = R.bankedDie.value;
+      bankMini.title = 'Dé de reprise pour V' + R.bankedDie.targetGear;
     } else {
       bankTag.style.display = 'none';
     }
@@ -2853,33 +2858,35 @@ function rollDiceAnim(drsFace) {
       clearInterval(interval);
       // Tirage final réel, dé par dé.
       // Pool commun : valeurs identiques pour tous les joueurs sur ce coup.
-      // En zone DRS, le DERNIER dé engagé n'est pas tiré : il affiche "DRS" et
-      // toutes ses faces seront proposées sous forme de trajectoires distinctes.
+      // En zone DRS, TOUS les dés engagés ne sont pas tirés au hasard : chacun
+      // affiche "DRS", et le produit de toutes leurs faces possibles est
+      // proposé d'un coup sous forme de trajectoires distinctes — beaucoup de
+      // possibilités, mais toujours dans la plage officielle du rapport.
       const moveNo = R.turn + 1;
-      const iDrs = onDRS ? nActifs - 1 : -1;
+      const drsAll = onDRS;
       // V1 PURE (rapport 1, hors zone DRS) : mécanique INDÉPENDANTE du DRS.
       // Le joueur lance le dé de base deux fois et choisit son résultat — un
       // contrôle précis à basse vitesse. Si le coup est aussi en zone DRS, le
       // DRS l'emporte (il offre déjà TOUTES les faces, un choix plus large).
-      const isV1Choice = (R.gear === 1) && iDrs < 0;
-      // Dé "+1" en réserve — INDÉPENDANT du DRS et de la mécanique V1, et
+      const isV1Choice = (R.gear === 1) && !drsAll;
+      // Dé DE REPRISE — INDÉPENDANT du DRS et de la mécanique V1, et
       // ENTIÈREMENT AUTOMATIQUE (aucun bouton). S'applique uniquement au dé qui
       // différencie ce rapport du précédent, et seulement si ni le DRS ni le
       // choix V1 ne sont déjà actifs sur ce même dé (ils offrent déjà un choix
-      // plus large). Comme pour le DRS : les DEUX résultats (réserve du coup
+      // plus large). Comme pour le DRS : les DEUX résultats (reprise du coup
       // précédent, tirage frais de ce coup) sont proposés sous forme de
       // trajectoires distinctes — jamais un calcul silencieux.
-      const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && iDrs < 0 && !isV1Choice)
+      const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !drsAll && !isV1Choice)
         ? nActifs - 1 : -1;
       let base = 0;
-      // Dé d'appoint : quand deux tirages sont en jeu (V1 pure, réserve), on
+      // Dé d'appoint : quand deux tirages sont en jeu (V1 pure, reprise), on
       // affiche un VRAI second dé numéroté juste à côté, plutôt qu'un texte —
       // les deux valeurs comparées doivent se voir d'un coup d'œil.
       let extraCube = null, extraValue = null;
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
-        if (i === iDrs) {
+        if (drsAll && i < nActifs) {
           c.textContent = 'DRS';
           c.classList.add('drs-picked');
           c.style.borderColor = '#b464ff';
@@ -2905,7 +2912,7 @@ function rollDiceAnim(drsFace) {
           c.textContent = fresh;
           c.classList.add('bank-used');
           c.style.borderColor = '#4aa3ff';
-          // NE PAS ajouter `fresh` à `base` ici : le total exact (réserve OU
+          // NE PAS ajouter `fresh` à `base` ici : le total exact (reprise OU
           // frais) est recalculé juste après, dans altTotals — l'ajouter ici
           // le compterait deux fois.
           extraValue = R.bankedDie.value;
@@ -2924,12 +2931,20 @@ function rollDiceAnim(drsFace) {
         }
       });
 
-      // Totaux possibles : DRS (une par face du dernier dé), V1 pure (deux
-      // tirages du dé de base), ou réserve (tirage du coup précédent contre
-      // tirage frais) — jamais deux de ces trois mécaniques à la fois.
+      // Totaux possibles : DRS (produit de toutes les faces de tous les dés
+      // engagés), V1 pure (deux tirages du dé de base), ou reprise (tirage du
+      // coup précédent contre tirage frais) — jamais deux de ces trois
+      // mécaniques à la fois.
       let altTotals = null;
-      if (iDrs >= 0) {
-        altTotals = [...new Set(DICE_SET[iDrs])].sort((a, b) => a - b).map(f => base + f);
+      if (drsAll) {
+        let sums = [0];
+        for (let i = 0; i < nActifs; i++) {
+          const faces = [...new Set(DICE_SET[i])];
+          const next = [];
+          for (const s of sums) for (const f of faces) next.push(s + f);
+          sums = next;
+        }
+        altTotals = [...new Set(sums)].sort((a, b) => a - b);
       } else if (isV1Choice) {
         // extraValue = d2 (le second tirage), déjà calculé dans la boucle ci-dessus
         const d1 = dieValue(DICE_SET[0], 1, 0, moveNo), d2 = extraValue;
@@ -2939,12 +2954,12 @@ function rollDiceAnim(drsFace) {
         const banked = R.bankedDie.value;
         altTotals = [...new Set([banked, fresh])].sort((a, b) => a - b).map(f => base + f);
       }
-      // La réserve est consommée dès qu'on engage le rapport ciblé, qu'elle
+      // La reprise est consommée dès qu'on engage le rapport ciblé, qu'elle
       // ait servi ou non (elle a eu sa chance ce coup-ci) — un nouvel instantané
       // sera repris automatiquement au prochain coup si les conditions le permettent.
       if (bankIdx >= 0) R.bankedDie = null;
 
-      if (iDrs >= 0) {
+      if (drsAll) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>';
@@ -2955,7 +2970,7 @@ function rollDiceAnim(drsFace) {
       } else if (bankIdx >= 0) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
-          ' <span style="color:#4aa3ff;font-size:11px">📥 réserve vs frais · à toi de choisir</span>';
+          ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>';
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
@@ -3180,15 +3195,15 @@ function buildRulesHTML() {
     'Certaines lignes droites sont marquées <b>⚡ DRS</b> par l\'organisateur. Si ton coup démarre sur l\'une d\'elles — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — le <b>dernier dé</b> de ton rapport n\'est pas tiré au hasard : il affiche <b>\"DRS\"</b>, et <b>toutes ses faces possibles</b> te sont proposées d\'un coup sous forme de trajectoires distinctes sur la piste.<br><br>' +
     'Comme toujours, c\'est ta trajectoire choisie qui tranche — jamais un tirage caché.') +
 
-  details('🌀 Déport en virage (V5-V6)',
-    'À V5 et V6, un virage ne se négocie jamais net : la voiture <b>continue de glisser</b> dans son ancien cap avant de se stabiliser — <b>1 case</b> de déport en V5, <b>2 cases</b> en V6. C\'est une conséquence <b>subie</b>, pas un choix, et elle ne consomme aucun coup de dé.<br><br>' +
-    'Ces cases de déport sont dessinées sur l\'aperçu de trajectoire, en <b style="color:#22d3ee">cyan</b> — repérables au premier coup d\'œil, distinctes du jaune de l\'inertie et du violet du DRS.<br><br>' +
-    'Si le déport sort de la piste, ce virage est tout simplement <b>impraticable à ce rapport</b> : il faut freiner avant, comme dans une vraie voiture qui n\'a pas assez ralenti.') +
+  details('🌀 Drift en virage (V5-V6)',
+    'À V5 et V6, un virage ne se négocie jamais net : la voiture <b>continue de glisser</b> dans son ancien cap avant de se stabiliser — <b>1 case</b> de drift en V5, <b>2 cases</b> en V6. C\'est une conséquence <b>subie</b>, pas un choix, et elle ne consomme aucun coup de dé.<br><br>' +
+    'Ces cases de drift sont dessinées sur l\'aperçu de trajectoire, en <b style="color:#22d3ee">cyan</b> — repérables au premier coup d\'œil, distinctes du jaune de l\'inertie et du violet du DRS.<br><br>' +
+    'Si le drift sort de la piste, ce virage est tout simplement <b>impraticable à ce rapport</b> : il faut freiner avant, comme dans une vraie voiture qui n\'a pas assez ralenti.') +
 
-  details('📥 Dé "+1" en réserve',
+  details('📥 Dé de reprise',
     'À chaque coup où tu ne montes PAS de rapport, le jeu retient <b>automatiquement</b> — sans rien à cliquer — la valeur que le rapport supérieur t\'aurait donnée <i>ce coup-là</i>.<br><br>' +
-    'Au coup suivant, si tu engages vraiment ce rapport, ce dé mis de côté est confronté à un <b>tirage frais</b> : les deux résultats te sont proposés comme deux trajectoires distinctes, exactement comme pour le DRS. Ta trajectoire choisie détermine lequel des deux compte.<br><br>' +
-    'La réserve se met à jour à chaque coup — un chiffre <b style="color:#4aa3ff">📥</b> apparaît sur le rapport concerné pour te prévenir qu\'un choix t\'attend si tu montes.') +
+    'Au coup suivant, si tu engages vraiment ce rapport, ce dé de reprise est confronté à un <b>tirage frais</b> : les deux résultats te sont proposés comme deux trajectoires distinctes, exactement comme pour le DRS. Ta trajectoire choisie détermine lequel des deux compte.<br><br>' +
+    'Une petite case <b style="color:#4aa3ff">bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise — elle s\'actualise à chaque coup.') +
 
   details('🏁 Points et classement',
     'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
@@ -4658,7 +4673,7 @@ function drawRace() {
           cctx.font = 'bold ' + Math.max(9, hexSize * 0.32) + 'px sans-serif';
           cctx.textAlign = 'center';
           cctx.textBaseline = 'middle';
-          cctx.fillText('↝ déport ' + driftCells.length, dp.x, dp.y - hexSize * 0.55);
+          cctx.fillText('↝ drift ' + driftCells.length, dp.x, dp.y - hexSize * 0.55);
         }
 
         // flèche de direction finale (le "sens" dans lequel on repart)
