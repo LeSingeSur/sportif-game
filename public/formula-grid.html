@@ -2209,24 +2209,24 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     }
 
     // Tout droit toujours possible ; pivots seulement si la jauge est purgée
-    const opts = [{ d: dir, turn: false }];
+    const opts = [{ d: dir, turn: false, drift: false }];
     if (inertia === 0) {
-      opts.push({ d: rotHex(dir, -1), turn: true });
-      opts.push({ d: rotHex(dir, 1), turn: true });
+      for (const turnDir of [rotHex(dir, -1), rotHex(dir, 1)]) {
+        if (driftN > 0) {
+          // V5/V6 : déport centrifuge OBLIGATOIRE. Pas de virage court possible.
+          opts.push({ d: turnDir, turn: true, drift: true });
+        } else {
+          // V1-V4 : virage normal sans déport
+          opts.push({ d: turnDir, turn: true, drift: false });
+        }
+      }
     }
 
     let anyOpen = false;
 
-    // DÉPORT CENTRIFUGE (V5/V6 uniquement) : en virage à haute vitesse, la
-    // voiture ne pivote pas net — elle continue de glisser dans son ANCIEN cap
-    // avant de se stabiliser sur le nouveau. C'est une conséquence SUBIE, pas
-    // un choix : si ces cases supplémentaires sont hors piste, ce virage est
-    // tout simplement impraticable à ce rapport (même logique qu'une case hors
-    // piste classique — l'option n'est pas explorée). Le déport ne consomme
-    // aucun budget de dé : ce n'est pas une distance voulue par le joueur.
-    const DRIFT = { 5: 1, 6: 2 };
-    const driftN = DRIFT[gear] || 0;
-
+    // DÉPORT CENTRIFUGE (V5/V6 uniquement) : en virage à haute vitesse, le joueur
+    // CHOISIT entre virage court (sans glisse) et virage long (avec glisse dans
+    // l'ancien cap). Les cases de déport sont gratuites (pas de budget consommé).
     for (const o of opts) {
       const dr = HEX_DIRS[o.d];
       let nq = q + dr.q;
@@ -2236,21 +2236,23 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
 
       const seg = [{ q: nq, r: nr, dir: o.d, turn: o.turn }];
 
-      let driftOk = true;
-      if (o.turn && driftN > 0) {
-        const oldDir = HEX_DIRS[dir];   // l'ancien cap, pas le nouveau : la
-                                         // voiture "continue tout droit" avant
-                                         // de vraiment prendre le virage.
+      // Déport centrifuge optionnel
+      if (o.turn && o.drift && driftN > 0) {
+        const oldDir = HEX_DIRS[dir];
+        let driftValid = true;
+        let tq = nq, tr = nr;
         for (let k = 0; k < driftN; k++) {
-          nq += oldDir.q;
-          nr += oldDir.r;
-          if (!onTrackR(nq, nr)) { driftOk = false; break; }
-          seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true });
+          tq += oldDir.q; tr += oldDir.r;
+          if (!onTrackR(tq, tr)) { driftValid = false; break; }
+        }
+        if (!driftValid) continue; // ce virage avec déport est impossible
+        tq = nq; tr = nr;
+        for (let k = 0; k < driftN; k++) {
+          tq += oldDir.q; tr += oldDir.r;
+          seg.push({ q: tq, r: tr, dir: o.d, turn: false, drift: true, driftDir: dir });
         }
       }
-      if (!driftOk) continue;   // le déport sort de la piste : ce virage est
-                                 // impraticable à ce rapport, comme une case
-                                 // hors piste classique.
+
       anyOpen = true;
 
       for (const s of seg) path.push(s);
@@ -2326,9 +2328,12 @@ function renderGears() {
 
     const label = (g === 0) ? 'STOP' : GEAR_KMH[g] + 'km/h';
     const range = (g >= 1 && DICE[g]) ? (DICE[g][0] + '-' + DICE[g][1]) : '';
+    const hasBank = R.bankedDie && R.bankedDie.targetGear === g;
     el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>' +
       (range ? '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' + range + '</i>' : '') +
-      (R.bankedDie && R.bankedDie.targetGear === g ? '<i style="font-style:normal;font-size:8px;color:#4aa3ff">📥' + R.bankedDie.value + '</i>' : '');
+      (hasBank
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;margin-top:3px;width:22px;height:22px;border-radius:5px;background:rgba(74,163,255,.18);border:1px solid rgba(74,163,255,.5);color:#4aa3ff;font-family:ui-monospace,monospace;font-size:11px;font-weight:900">' + R.bankedDie.value + '</span>'
+        : '');
 
     if (reach && R.phase === 'gear') {
       el.onclick = () => {
@@ -2353,14 +2358,14 @@ function renderGears() {
     const canBank = R.phase === 'gear' && !R.outOfFuel && R.gear >= 1 && R.gear < 6 && !R.isWarmup;
     bankBtn.style.display = canBank ? 'block' : 'none';
     bankBtn.textContent = R.bankedDie
-      ? '📥 Remplacer la réserve (dé V' + R.bankedDie.targetGear + ')'
+      ? '📥 Remplacer la réserve (dé V' + R.bankedDie.targetGear + ' = ' + R.bankedDie.value + ')'
       : '📥 Mettre en réserve le dé du rapport supérieur';
   }
   if (bankTag) {
     if (R.bankedDie) {
       bankTag.style.display = 'block';
-      bankTag.textContent = '📥 ' + R.bankedDie.value + ' en réserve pour V' + R.bankedDie.targetGear +
-        ' — confronté à un nouveau dé quand tu engageras ce rapport';
+      bankTag.innerHTML = '📥 <b style="color:#4aa3ff;font-family:ui-monospace,monospace">' + R.bankedDie.value + '</b> en réserve pour <b>V' + R.bankedDie.targetGear + '</b>' +
+        ' — deux trajectoires proposées quand tu l'engageras';
     } else {
       bankTag.style.display = 'none';
     }
@@ -2877,6 +2882,10 @@ function rollDiceAnim(drsFace) {
         ? nActifs - 1 : -1;
       let usedBank = false;
       let base = 0;
+      let baseWithoutLast = 0;
+      let lastDieValue = 0;
+      let bankedValue = null;
+
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
@@ -2893,14 +2902,13 @@ function rollDiceAnim(drsFace) {
           return;
         }
         if (i === bankIdx) {
-          const fresh = dieValue(DICE_SET[i], R.gear, i, moveNo);
-          const banked = R.bankedDie.value;
-          const v = Math.max(fresh, banked);
-          if (banked > fresh) usedBank = true;
+          lastDieValue = dieValue(DICE_SET[i], R.gear, i, moveNo);
+          bankedValue = R.bankedDie.value;
+          const v = Math.max(lastDieValue, bankedValue);
           c.textContent = v;
           c.classList.add('bank-used');
           c.style.borderColor = '#4aa3ff';
-          base += v;
+          // On n'ajoute pas encore — le total dépend du choix du joueur
           return;
         }
         const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
@@ -2908,21 +2916,32 @@ function rollDiceAnim(drsFace) {
         if (i < nActifs) {
           c.style.borderColor = 'var(--ok)';
           base += v;
+          baseWithoutLast += v;
         }
       });
-      // La réserve est consommée dès qu'on engage le rapport ciblé, qu'elle
-      // ait servi ou non (elle a eu sa chance ce coup-ci).
-      if (bankIdx >= 0) R.bankedDie = null;
 
-      // Totaux possibles : DRS (une par face du dernier dé) ou V1 pure (deux
-      // tirages indépendants du dé de base) — jamais les deux à la fois.
+      // Totaux possibles : DRS (faces du dernier dé), V1 pure (2 jets), ou
+      // RÉSERVE (dé frais vs dé stocké) — jamais plusieurs à la fois.
       let altTotals = null;
+      let altTags = null;   // parallèle à altTotals : true = utilise la réserve
+
       if (iDrs >= 0) {
         altTotals = [...new Set(DICE_SET[iDrs])].sort((a, b) => a - b).map(f => base + f);
       } else if (isV1Choice) {
         const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
         const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
         altTotals = [...new Set([d1, d2])].sort((a, b) => a - b);
+      } else if (bankIdx >= 0) {
+        const totalFresh = baseWithoutLast + lastDieValue;
+        const totalBanked = baseWithoutLast + bankedValue;
+        if (totalFresh !== totalBanked) {
+          altTotals = [totalFresh, totalBanked].sort((a, b) => a - b);
+          altTags = altTotals.map(t => t === totalBanked);
+        } else {
+          altTotals = [totalFresh];
+          altTags = [false];
+        }
+        base = Math.max(totalFresh, totalBanked);
       }
 
       if (iDrs >= 0) {
@@ -2934,8 +2953,11 @@ function rollDiceAnim(drsFace) {
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#39d98a;font-size:11px">🎯 V1 · 2 jets, à toi de choisir</span>';
       } else if (bankIdx >= 0) {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>' +
-          ' <span style="color:#4aa3ff;font-size:11px">📥 ' + (usedBank ? 'réserve utilisée !' : 'tirage frais meilleur') + '</span>';
+        const freshTxt = altTotals[0];
+        const bankTxt = altTotals[altTotals.length - 1];
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          freshTxt + (altTotals.length > 1 ? ' ou ' + bankTxt : '') + ' cases</span>' +
+          ' <span style="color:#4aa3ff;font-size:11px">📥 Réserve · choisis ton trajet</span>';
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
@@ -2943,8 +2965,8 @@ function rollDiceAnim(drsFace) {
       setTimeout(() => {
         ov.classList.remove('on');
         cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used'); });
-        processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals);
-        renderGears();   // rafraîchit le bouton/étiquette de réserve (consommée)
+        processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals, altTags);
+        renderGears();
       }, 900);
     }
   }, 120);
@@ -2974,25 +2996,28 @@ function scorePath(res) {
   return s;
 }
 
-function processRollResult(val, altTotals) {
+function processRollResult(val, altTotals, altTags) {
   R.rolled = val;
   R.budget = val;
-  // Zone DRS OU V1 pure : on calcule les trajectoires pour CHAQUE total possible,
-  // puis on les fusionne. Le joueur voit ainsi d'un coup tout ce qu'il pourrait
-  // atteindre, et son choix de trajet fixe implicitement le résultat retenu.
+  // Zone DRS, V1 pure ou RÉSERVE : on calcule les trajectoires pour CHAQUE
+  // total possible, puis on les fusionne. Le joueur voit d'un coup tout ce
+  // qu'il pourrait atteindre, et son choix de trajet fixe implicitement le
+  // résultat retenu (ainsi que l'utilisation de la réserve, le cas échéant).
   R.altTotals = altTotals || null;
 
   if (altTotals && altTotals.length) {
     R.results = [];
-    for (const t of altTotals) {
+    for (let ti = 0; ti < altTotals.length; ti++) {
+      const t = altTotals[ti];
       const rs = getValidPaths(
         R.q, R.r, R.dir,
         t, R.gear,
         R.isWarmup ? 0 : R.lapCount, R.targetLaps
       ) || [];
-      // On mémorise le budget de chaque trajectoire : il sert à recalculer la
-      // vitesse réelle une fois le trajet choisi.
-      for (const r of rs) r.budgetUsed = t;
+      for (const r of rs) {
+        r.budgetUsed = t;
+        r.usedBank = altTags ? altTags[ti] : false;
+      }
       R.results = R.results.concat(rs);
     }
   } else {
@@ -3001,7 +3026,10 @@ function processRollResult(val, altTotals) {
       R.budget, R.gear,
       R.isWarmup ? 0 : R.lapCount, R.targetLaps
     );
-    for (const r of R.results) r.budgetUsed = R.budget;
+    for (const r of R.results) {
+      r.budgetUsed = R.budget;
+      r.usedBank = false;
+    }
   }
 
   // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
@@ -3055,11 +3083,13 @@ function processRollResult(val, altTotals) {
 function buildRulesHTML() {
   let rows = '';
   for (let g = 1; g <= 6; g++) {
+    const driftTxt = (g >= 5) ? (g === 5 ? '1 case' : '2 cases') : '—';
     rows += '<tr>' +
       '<td style="padding:5px 6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
       '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
       '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
       '<td style="padding:5px 6px;text-align:center">' + g + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + driftTxt + '</td>' +
       '</tr>';
   }
 
@@ -3121,10 +3151,19 @@ function buildRulesHTML() {
     'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
     'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.') +
 
+  details('🏎️ Déport centrifuge (V5/V6)',
+    'En V5 et V6, la vitesse est trop élevée pour braquer net. Le <b>déport est obligatoire</b> :<br><br>' +
+    '• Tu ne peux <b>PAS</b> faire un virage court (1 case dans la nouvelle direction).<br>' +
+    '• Le virage <b>oblige</b> la voiture à glisser dans l'ancien cap avant de se stabiliser : ' +
+    '<b>1 case</b> de glisse en V5, <b>2 cases</b> en V6.<br>' +
+    'Ces cases de glisse sont <b>gratuites</b> (pas de budget de dé consommé), mais tu finis plus loin.<br><br>' +
+    'Si la glisse sort de la piste, le virage est <b>totalement impossible</b> à ce rapport. ' +
+    'Ralentis <b>avant</b> le virage si tu veux le prendre serré.') +
+
   details('🎲 Détail des dés',
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
       '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
-        '<th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th>' +
+        '<th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th><th style="padding:5px 6px">DÉPORT</th>' +
       '</tr>' + rows +
     '</table>' +
     '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
@@ -3722,6 +3761,10 @@ function getAnimCarPos() {
    ================================================================ */
 function finalizeMove(r) {
   R.turn++;
+
+  // Consommation de la réserve : seulement si le joueur a CHOISI un chemin
+  // qui l'utilise. Sinon elle reste disponible pour plus tard.
+  if (r.usedBank) R.bankedDie = null;
 
   // Zone DRS : compte si une case du trajet qu'on VIENT de parcourir touche une
   // case DRS — pas seulement la case d'arrivée. Sinon, à haute vitesse, un coup
@@ -4577,6 +4620,21 @@ function drawRace() {
             cctx.textAlign = 'center';
             cctx.textBaseline = 'middle';
             cctx.fillText('↻', a.x, a.y);
+          } else if (st.drift) {
+            // déport centrifuge : chevron orange dans l'ancienne direction
+            cctx.save();
+            cctx.translate(a.x, a.y);
+            cctx.rotate(Math.PI / 3 * ((st.driftDir || st.dir) - 1));
+            cctx.strokeStyle = 'rgba(255, 100, 50, 0.9)';
+            cctx.lineWidth = Math.max(2, hexSize * 0.14);
+            cctx.lineCap = 'round';
+            cctx.lineJoin = 'round';
+            cctx.beginPath();
+            cctx.moveTo(-hexSize * 0.18, -hexSize * 0.22);
+            cctx.lineTo(hexSize * 0.12, 0);
+            cctx.lineTo(-hexSize * 0.18, hexSize * 0.22);
+            cctx.stroke();
+            cctx.restore();
           } else {
             cctx.beginPath();
             cctx.arc(a.x, a.y, hexSize * 0.12, 0, Math.PI * 2);
