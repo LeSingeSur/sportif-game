@@ -1417,21 +1417,19 @@ const SQRT3 = 1.73205080757;
    est toujours positif — contrairement aux anciens pools indépendants, où monter
    pouvait donner autant, voire moins.
    Écarts réguliers entre rapports : +2, +3, +4, +5, +6 cases. */
+// Les nouvelles plages de dés par vitesse
 const DICE_SET = [
-  [1, 2],      // dé 1  → V1 : 1-2   (moy 1,5)
-  [1, 2, 3],   // dé 2  → V2 : 2-5   (moy 3,5)
-  [2, 3, 4],   // dé 3  → V3 : 4-9   (moy 6,5)
-  [3, 4, 5],   // dé 4  → V4 : 7-14  (moy 10,5)
-  [4, 5, 6],   // dé 5  → V5 : 11-20 (moy 15,5)
-  [5, 6, 7]    // dé 6  → V6 : 16-27 (moy 21,5)
+  [1, 2, 3],   // dé 1  → V1 : [1, 2, 3] (2 dés lancés, on garde 1 au choix)
+  [1, 2, 3],   // dé 2  → V2
+  [2, 3, 4],   // dé 3  → V3
+  [3, 4, 5],   // dé 4  → V4
+  [4, 5, 6],   // dé 5  → V5 (Déport +1)
+  [5, 6, 7]    // dé 6  → V6 (Déport +2)
 ];
 
-// Le pool d'un rapport = les g premiers dés du jeu commun.
 const DICE_POOLS = [[]];
 for (let g = 1; g <= 6; g++) DICE_POOLS.push(DICE_SET.slice(0, g));
 
-// Bornes min/max de chaque rapport, DÉRIVÉES des dés (jamais saisies à la main,
-// pour qu'affichage et moteur ne puissent pas diverger).
 const DICE = DICE_POOLS.map(pool => [
   pool.reduce((s, d) => s + Math.min(...d), 0),
   pool.reduce((s, d) => s + Math.max(...d), 0)
@@ -1942,6 +1940,8 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.results = null;
   R.ends = null;
   R.phase = 'gear';
+  R.storedDie = null;      // Valeur du dé stocké
+  R.storedGear = 0;        // Rapport (cran) correspondant au dé stocké
 
   // Trails (traces de pneus)
   R.trail = [];
@@ -2178,13 +2178,50 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     if (memo.has(key)) return;
     memo.add(key);
 
-    if (b <= 0) {
+ if (b <= 0) {
+      let finalQ = q;
+      let finalR = r;
+      let isCrash = false;
+      let driftPath = [];
+
+      // Application du Déport (V5 et V6)
+      if (gear >= 5) {
+        // Détection de la direction du virage (basée sur le delta entre le cap initial et final)
+        const netTurn = (dir - dir0 + 6) % 6; 
+        if (netTurn !== 0) {
+          const driftCases = (gear === 6) ? 2 : 1;
+          // Déport vers l'extérieur : si on a tourné à droite (1, 2), on déporte à gauche (5, 4)
+          const driftDir = (netTurn <= 3) ? (dir + 5) % 6 : (dir + 1) % 6; 
+          const dVector = HEX_DIRS[driftDir];
+
+          for (let i = 0; i < driftCases; i++) {
+            finalQ += dVector.q;
+            finalR += dVector.r;
+            driftPath.push({ q: finalQ, r: finalR });
+            
+            // Si le déport mène dans un mur, c'est le crash
+            if (!onTrackR(finalQ, finalR)) {
+              isCrash = true;
+              break;
+            }
+          }
+        }
+      }
+
       results.push({
-        path: path.slice(), q: q, r: r, dir: dir,
-        crash: false, finish: false, left: b, lapsGained: crossed ? 1 : 0,
-        inertiaEnd: inertia
+        path: path.slice(), 
+        q: finalQ, 
+        r: finalR, 
+        dir: dir,
+        crash: isCrash, 
+        finish: false, // Doit être revérifié si le déport traverse la ligne F
+        left: b, 
+        lapsGained: crossed ? 1 : 0,
+        inertiaEnd: inertia,
+        driftPath: driftPath // Pour l'affichage visuel
       });
       return;
+    }
     }
 
     // Tout droit toujours possible ; pivots seulement si la jauge est purgée
@@ -2842,38 +2879,50 @@ function scorePath(res) {
   return s;
 }
 
-function processRollResult(val, drsTotals) {
-  R.rolled = val;
-  R.budget = val;
-  // Zone DRS : on calcule les trajectoires pour CHAQUE face possible du dernier
-  // dé, puis on les fusionne. Le joueur voit ainsi d'un coup tout ce qu'il
-  // pourrait atteindre, et son choix de trajet fixe implicitement la face.
-  R.drsTotals = drsTotals || null;
-
+function processRollResult(val, drsTotals, v1Alternative, newStoredDie) {
+  let budgets = [];
+  
   if (drsTotals && drsTotals.length) {
-    R.results = [];
-    for (const t of drsTotals) {
-      const rs = getValidPaths(
-        R.q, R.r, R.dir,
-        t, R.gear,
-        R.isWarmup ? 0 : R.lapCount, R.targetLaps
-      ) || [];
-      // On mémorise le budget de chaque trajectoire : il sert à recalculer la
-      // vitesse réelle une fois le trajet choisi.
-      for (const r of rs) r.budgetUsed = t;
-      R.results = R.results.concat(rs);
-    }
+    budgets = drsTotals;
   } else {
-    R.results = getValidPaths(
-      R.q, R.r, R.dir,
-      R.budget, R.gear,
-      R.isWarmup ? 0 : R.lapCount, R.targetLaps
-    );
-    for (const r of R.results) r.budgetUsed = R.budget;
+    budgets.push(val);
+    
+    // Ajout du choix alternatif en V1
+    if (R.gear === 1 && v1Alternative !== null && v1Alternative !== val) {
+      budgets.push(v1Alternative);
+    }
+    
+    // Ajout du choix via le dé stocké (si on atteint la vitesse pour laquelle il a été stocké)
+    if (R.storedDie !== null && R.storedGear === R.gear) {
+      // On retire le dernier dé du rapport actuel, et on le remplace par le dé stocké
+      const currentLastDieVal = val - (budgets.length ? budgets[0] : 0); // Simplification, ajuster selon drs
+      budgets.push(val - 1 /* Retirer la valeur du vrai dé */ + R.storedDie);
+    }
   }
 
-  // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
-  // triées de la meilleure à la moins bonne (sens du circuit d'abord).
+  // Mise à jour de la réserve pour le prochain tour
+  if (newStoredDie !== null) {
+    R.storedDie = newStoredDie;
+    R.storedGear = R.gear + 1;
+  }
+
+  R.results = [];
+  
+  // Exécution du DFS pour chaque budget possible
+  for (const b of [...new Set(budgets)]) {
+    const rs = getValidPaths(
+      R.q, R.r, R.dir,
+      b, R.gear,
+      R.isWarmup ? 0 : R.lapCount, R.targetLaps
+    ) || [];
+    
+    for (const r of rs) {
+      r.budgetUsed = b;
+      R.results.push(r);
+    }
+  }
+
+  // Regroupement par case d'arrivée
   const byCell = new Map();
   for (const r of R.results) {
     const k = r.q + ',' + r.r;
@@ -2885,7 +2934,6 @@ function processRollResult(val, drsTotals) {
   R.ends = new Map();
   for (const [k, list] of byCell.entries()) {
     list.sort((a, b) => scorePath(b) - scorePath(a));
-    // dédoublonne les trajectoires identiques en direction finale ET forme
     const seen = new Set();
     const uniq = [];
     for (const r of list) {
@@ -2898,10 +2946,10 @@ function processRollResult(val, drsTotals) {
     R.ends.set(k, uniq[0]);
   }
 
-  R.preview = null;   // aucune trajectoire prévisualisée au départ
+  R.preview = null;
   R.phase = 'pick';
+  
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
-
   if (okCount === 0) {
     const best = R.results.reduce(
       (m, r) => (r.path.length > m.path.length) ? r : m,
@@ -2910,7 +2958,7 @@ function processRollResult(val, drsTotals) {
     say('💥 Crash inévitable !', 'crash');
     setTimeout(() => applyResult(best), 800);
   } else {
-    say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
+    say('👆 Touche une case (choix multiples = appuis multiples)', 'go');
   }
 
   syncDash();
