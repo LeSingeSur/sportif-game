@@ -4487,7 +4487,29 @@ function drawRace() {
           if (i === 0) cctx.moveTo(a.x, a.y); else cctx.lineTo(a.x, a.y);
         });
         cctx.stroke();
-
+if (res.driftPath && res.driftPath.length > 0) {
+          cctx.strokeStyle = 'rgba(255, 93, 93, 0.9)'; // Rouge pour la force centrifuge
+          cctx.lineWidth = Math.max(2, hexSize * 0.12);
+          cctx.setLineDash([hexSize * 0.2, hexSize * 0.1]);
+          
+          cctx.beginPath();
+          const pathEnd = res.path[res.path.length - 1];
+          let startDriftP = axialToPixel(pathEnd.q, pathEnd.r, hexSize);
+          cctx.moveTo(startDriftP.x, startDriftP.y);
+          
+          res.driftPath.forEach(dp => {
+            let nextP = axialToPixel(dp.q, dp.r, hexSize);
+            cctx.lineTo(nextP.x, nextP.y);
+          });
+          
+          cctx.stroke();
+          cctx.setLineDash([]);
+        }
+        // ==========================================================
+        
+        const last = (res.driftPath && res.driftPath.length) 
+                     ? res.driftPath[res.driftPath.length - 1] 
+                     : res.path[res.path.length - 1];
         // numéro de case + marqueur de virage
         res.path.forEach((st, i) => {
           const a = axialToPixel(st.q, st.r, hexSize);
