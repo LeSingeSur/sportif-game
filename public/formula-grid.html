@@ -1136,11 +1136,11 @@ header.top {
   <div id="dice-fair" style="display:none;font-size:10px;color:var(--mute);letter-spacing:.4px;margin-top:6px"></div>
 </div>
 
-<!-- Zone DRS : le dernier dé du rapport engagé n'est pas tiré au hasard. Toutes
-     ses faces possibles sont calculées d'un coup et fusionnées dans les
-     trajectoires proposées sur la piste — le joueur choisit son trajet comme
-     d'habitude, et ce choix fixe implicitement la face utilisée. Les dés
-     précédents restent ceux de la grille commune, identiques pour tous. -->
+<!-- Zone DRS : TOUS les dés du rapport engagé ne sont pas tirés au hasard. Toutes
+     leurs faces possibles sont calculées d'un coup (produit cartésien) et
+     fusionnées dans les trajectoires proposées sur la piste — le joueur choisit
+     son trajet comme d'habitude, et ce choix fixe implicitement les faces
+     utilisées. -->
 
 <!-- ============================================================
      ÉCRAN ÉDITEUR
@@ -2820,6 +2820,16 @@ function rollDiceAnim(drsFace) {
   const nActifs = pool.length;
   titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR 6';
 
+  // V1 pure et dé de reprise : connus AVANT le lancer (ni l'un ni l'autre ne
+  // dépend d'un tirage). On les détermine ici pour que le second dé qu'ils
+  // impliquent tourne dès le début, EXACTEMENT comme les autres — sinon il
+  // semblait surgir de nulle part à la révélation, comme s'il n'avait pas été
+  // tiré à l'avance sur la grille commune (alors qu'il l'est bel et bien).
+  const isV1Choice = (R.gear === 1) && !onDRS;
+  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS && !isV1Choice)
+    ? nActifs - 1 : -1;
+  const twinFaces = isV1Choice ? DICE_SET[0] : (bankIdx >= 0 ? DICE_SET[bankIdx] : null);
+
   // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
   if (fairEl) {
@@ -2838,6 +2848,16 @@ function rollDiceAnim(drsFace) {
     row.appendChild(c);
     return c;
   });
+  // Dé supplémentaire (V1 pure ou reprise) : créé et inséré DÈS MAINTENANT,
+  // pour qu'il tourne dans l'animation au même titre que les cinq autres.
+  let extraCube = null;
+  if (twinFaces) {
+    const twinIdx = isV1Choice ? 0 : bankIdx;
+    extraCube = document.createElement('div');
+    extraCube.className = 'dice-cube';
+    extraCube.textContent = '?';
+    cubes[twinIdx].insertAdjacentElement('afterend', extraCube);
+  }
   sumEl.textContent = '';
   ov.classList.add('on');
 
@@ -2851,6 +2871,12 @@ function rollDiceAnim(drsFace) {
       c.textContent = v;
       if (i < nActifs) running += v;   // les dés en retrait ne comptent pas
     });
+    // Le dé supplémentaire tourne lui aussi, sur les faces de son jumeau —
+    // il ne participe pas encore au total affiché pendant le lancer, seul le
+    // résultat final (après choix du joueur) déterminera ce qui compte.
+    if (extraCube) {
+      extraCube.textContent = twinFaces[Math.floor(Math.random() * twinFaces.length)];
+    }
     sumEl.textContent = 'Σ ' + running;
     counter++;
 
@@ -2864,25 +2890,12 @@ function rollDiceAnim(drsFace) {
       // possibilités, mais toujours dans la plage officielle du rapport.
       const moveNo = R.turn + 1;
       const drsAll = onDRS;
-      // V1 PURE (rapport 1, hors zone DRS) : mécanique INDÉPENDANTE du DRS.
-      // Le joueur lance le dé de base deux fois et choisit son résultat — un
-      // contrôle précis à basse vitesse. Si le coup est aussi en zone DRS, le
-      // DRS l'emporte (il offre déjà TOUTES les faces, un choix plus large).
-      const isV1Choice = (R.gear === 1) && !drsAll;
-      // Dé DE REPRISE — INDÉPENDANT du DRS et de la mécanique V1, et
-      // ENTIÈREMENT AUTOMATIQUE (aucun bouton). S'applique uniquement au dé qui
-      // différencie ce rapport du précédent, et seulement si ni le DRS ni le
-      // choix V1 ne sont déjà actifs sur ce même dé (ils offrent déjà un choix
-      // plus large). Comme pour le DRS : les DEUX résultats (reprise du coup
-      // précédent, tirage frais de ce coup) sont proposés sous forme de
-      // trajectoires distinctes — jamais un calcul silencieux.
-      const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !drsAll && !isV1Choice)
-        ? nActifs - 1 : -1;
+      // isV1Choice, bankIdx et extraCube ont déjà été déterminés AVANT le
+      // lancer (voir plus haut) — c'est justement ce qui permet à ce second dé
+      // de tourner dès le début, comme les autres, plutôt que d'apparaître
+      // seulement à la révélation.
       let base = 0;
-      // Dé d'appoint : quand deux tirages sont en jeu (V1 pure, reprise), on
-      // affiche un VRAI second dé numéroté juste à côté, plutôt qu'un texte —
-      // les deux valeurs comparées doivent se voir d'un coup d'œil.
-      let extraCube = null, extraValue = null;
+      let extraValue = null;
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
@@ -2900,11 +2913,11 @@ function rollDiceAnim(drsFace) {
           c.style.borderColor = '#39d98a';
           base += d1;
           extraValue = d2;
-          extraCube = document.createElement('div');
-          extraCube.className = 'dice-cube v1-picked';
-          extraCube.style.borderColor = '#39d98a';
-          extraCube.textContent = d2;
-          c.insertAdjacentElement('afterend', extraCube);
+          if (extraCube) {
+            extraCube.classList.add('v1-picked');
+            extraCube.style.borderColor = '#39d98a';
+            extraCube.textContent = d2;
+          }
           return;
         }
         if (i === bankIdx) {
@@ -2916,11 +2929,11 @@ function rollDiceAnim(drsFace) {
           // frais) est recalculé juste après, dans altTotals — l'ajouter ici
           // le compterait deux fois.
           extraValue = R.bankedDie.value;
-          extraCube = document.createElement('div');
-          extraCube.className = 'dice-cube bank-used';
-          extraCube.style.borderColor = '#4aa3ff';
-          extraCube.textContent = extraValue;
-          c.insertAdjacentElement('afterend', extraCube);
+          if (extraCube) {
+            extraCube.classList.add('bank-used');
+            extraCube.style.borderColor = '#4aa3ff';
+            extraCube.textContent = extraValue;
+          }
           return;
         }
         const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
@@ -3192,7 +3205,7 @@ function buildRulesHTML() {
     'C\'est ce qui fait de la V1 le rapport de précision : en plus d\'un braquage toujours libre, tu as un vrai contrôle sur la distance parcourue.') +
 
   details('⚡ Zone DRS',
-    'Certaines lignes droites sont marquées <b>⚡ DRS</b> par l\'organisateur. Si ton coup démarre sur l\'une d\'elles — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — le <b>dernier dé</b> de ton rapport n\'est pas tiré au hasard : il affiche <b>\"DRS\"</b>, et <b>toutes ses faces possibles</b> te sont proposées d\'un coup sous forme de trajectoires distinctes sur la piste.<br><br>' +
+    'Certaines lignes droites sont marquées <b>⚡ DRS</b> par l\'organisateur. Si ton coup démarre sur l\'une d\'elles — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — <b>tous les dés</b> de ton rapport ne sont pas tirés au hasard : ils affichent tous <b>\"DRS\"</b>, et le produit de <b>toutes leurs faces possibles</b> t\'est proposé d\'un coup sous forme de trajectoires distinctes sur la piste — beaucoup de possibilités, mais toujours dans la plage officielle du rapport.<br><br>' +
     'Comme toujours, c\'est ta trajectoire choisie qui tranche — jamais un tirage caché.') +
 
   details('🌀 Drift en virage (V5-V6)',
@@ -3500,17 +3513,29 @@ function openRules() {
 
 /* ================================================================
    ADMIN — GRILLE DE DÉS
-   Affiche les tirages réellement servis aux joueurs pour ce circuit :
-   pour chaque coup et chaque rapport, le total obtenu. Purement en lecture
-   (gridRoll est la fonction qui sert la course), donc ce que l'admin voit
-   est exactement ce que les joueurs obtiennent.
+   Affiche les tirages ATOMIQUES réellement servis aux joueurs pour ce
+   circuit : pour chaque coup, la face de CHAQUE dé (pas la somme d'un
+   rapport). C'est la donnée minimale qui permet de reconstruire n'importe
+   quel total — un gear normal (somme des N premiers dés), le double jet de
+   la V1 (dé1 vs le second jet "v1b"), ou le dé de reprise (même dé, deux
+   coups différents). Purement en lecture (gridDieValue est la fonction qui
+   sert la course), donc ce que l'admin voit est exactement ce que les
+   joueurs obtiennent.
    ================================================================ */
-let DG_ATTEMPT = 1;   // n° d'essai affiché
-const DG_MOVES = 20;  // nb de coups affichés
+const DG_MOVES = 20;      // nb de coups affichés à l'écran
+const DG_EXPORT_MOVES = 40; // nb de coups inclus dans le fichier exporté (marge large)
+
+// Face d'un dé donné à un coup donné — pure, indépendante de tout état de course.
+function gridDieFace(seed, dieIndex, moveNo) {
+  return gridDieValue(seed, 1, DICE_SET[dieIndex], 0, dieIndex, moveNo);
+}
+// Second jet de la V1 (mécanique "2 jets, tu choisis") — même principe, clé distincte.
+function gridV1SecondJet(seed, moveNo) {
+  return gridDieValue(seed, 1, DICE_SET[0], 1, 'v1b', moveNo);
+}
 
 function openDiceGrid() {
   const seed = (E && E.diceSeed) || null;
-  DG_ATTEMPT = 1;
   renderDiceGrid(seed);
   document.getElementById('dice-grid-modal').style.display = 'flex';
 }
@@ -3531,61 +3556,87 @@ function renderDiceGrid(seed) {
     'Les essais libres, eux, restent aléatoires.<br>' +
     '<span style="color:var(--mute);font-size:11px">Graine : <code>' + esc(seed) + '</code></span></div>';
 
+  html += '<button id="dice-grid-export" class="btn" style="width:100%;margin-bottom:14px;background:rgba(74,163,255,.12);border:1px solid rgba(74,163,255,.4);color:#4aa3ff">' +
+    '⬇️ Télécharger la grille complète (JSON, ' + DG_EXPORT_MOVES + ' coups)</button>';
 
-  // Tableau coups × rapports
+  // Tableau coups × dés ATOMIQUES (une colonne par dé, pas par rapport).
+  // Colonne V1 : les deux jets "1/3" (dé1 puis second jet) — c'est la seule
+  // vraie particularité de la V1. Les colonnes +V2..+V6 montrent le dé
+  // INCRÉMENTAL que chaque rapport ajoute au précédent (jamais une somme).
   html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
     '<thead><tr style="color:var(--mute);font-size:10px;letter-spacing:1px">' +
-    '<th style="padding:6px 4px;text-align:left">COUP</th>';
-  for (let g = 1; g <= 6; g++) {
-    html += '<th style="padding:6px 4px;text-align:center">V' + g + '<br>' +
-      '<span style="font-weight:400;opacity:.6">' + DICE[g][0] + '-' + DICE[g][1] + '</span></th>';
+    '<th style="padding:6px 4px;text-align:left">COUP</th>' +
+    '<th style="padding:6px 4px;text-align:center">V1<br><span style="font-weight:400;opacity:.6">2 jets</span></th>';
+  for (let g = 2; g <= 6; g++) {
+    html += '<th style="padding:6px 4px;text-align:center">+V' + g + '<br>' +
+      '<span style="font-weight:400;opacity:.6">dé ' + g + '</span></th>';
   }
   html += '</tr></thead><tbody>';
-
-  const stats = {};   // distribution par rapport, pour le récapitulatif
-  for (let g = 1; g <= 6; g++) stats[g] = {};
 
   for (let m = 1; m <= DG_MOVES; m++) {
     html += '<tr style="border-top:1px solid #23262c">' +
       '<td style="padding:5px 4px;color:var(--mute);font-family:ui-monospace,monospace">' + m + '</td>';
-    for (let g = 1; g <= 6; g++) {
-      const v = gridRoll(seed, DG_ATTEMPT, g, m);
-      stats[g][v] = (stats[g][v] || 0) + 1;
-      // On met en évidence les extrêmes de la plage du rapport
-      const lo = DICE[g][0], hi = DICE[g][1];
-      const col = v === hi ? 'color:var(--crash);font-weight:900'
-                : v === lo ? 'color:var(--ok);font-weight:900'
-                : 'color:var(--txt)';
-      html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;' + col + '">' + v + '</td>';
+    const d1 = gridDieFace(seed, 0, m);
+    const v1b = gridV1SecondJet(seed, m);
+    html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;color:#39d98a">' +
+      d1 + '<span style="color:var(--mute)">/</span>' + v1b + '</td>';
+    for (let g = 2; g <= 6; g++) {
+      const face = gridDieFace(seed, g - 1, m);   // dé n° g (indice g-1), la face BRUTE, pas une somme
+      html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;color:var(--txt)">' + face + '</td>';
     }
     html += '</tr>';
   }
   html += '</tbody></table></div>';
 
   html += '<div style="font-size:11px;color:var(--mute);margin-top:8px">' +
-    '<span style="color:var(--ok)">vert</span> = minimum de la plage · ' +
-    '<span style="color:var(--crash)">rouge</span> = maximum</div>';
-
-  // Récapitulatif : combien de fois chaque total sort sur ces 20 coups
-  html += '<div style="margin-top:18px"><div style="font-size:11px;letter-spacing:1px;color:var(--mute);margin-bottom:8px">' +
-    'RÉPARTITION SUR CES ' + DG_MOVES + ' COUPS</div>';
-  for (let g = 1; g <= 6; g++) {
-    const keys = Object.keys(stats[g]).map(Number).sort((a, b) => a - b);
-    const moy = keys.reduce((s, k) => s + k * stats[g][k], 0) / DG_MOVES;
-    html += '<div style="background:var(--panel);border-radius:8px;padding:8px 10px;margin-bottom:6px">' +
-      '<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">' +
-      '<b style="min-width:26px">V' + g + '</b>' +
-      '<span style="font-size:11px;color:var(--mute)">moyenne ' + moy.toFixed(1) + '</span>' +
-      '<span style="flex:1"></span>' +
-      keys.map(k => '<span style="font-family:ui-monospace,monospace;font-size:11px">' + k +
-        '<span style="color:var(--mute)">×' + stats[g][k] + '</span></span>').join(' · ') +
-      '</div></div>';
-  }
-  html += '</div>';
+    'Chaque case = la face BRUTE de ce dé à ce coup (jamais une somme). ' +
+    'Le total d\'un rapport V<i>n</i> = dé1 + dé2 + … + dé<i>n</i>. ' +
+    'La colonne V1 montre les deux jets dont un seul compte, selon ta trajectoire.</div>';
 
   body.innerHTML = html;
 
+  const exportBtn = document.getElementById('dice-grid-export');
+  if (exportBtn) exportBtn.onclick = () => downloadDiceGrid(seed);
 }
+
+// Export fichier : toutes les faces atomiques + les jeux de faces possibles par
+// dé (utile pour reconstituer soi-même DRS, V1, reprise ou n'importe quel total).
+function downloadDiceGrid(seed) {
+  const moves = [];
+  for (let m = 1; m <= DG_EXPORT_MOVES; m++) {
+    moves.push({
+      coup: m,
+      v1_die: gridDieFace(seed, 0, m),
+      v1_second_jet: gridV1SecondJet(seed, m),
+      die2: gridDieFace(seed, 1, m),
+      die3: gridDieFace(seed, 2, m),
+      die4: gridDieFace(seed, 3, m),
+      die5: gridDieFace(seed, 4, m),
+      die6: gridDieFace(seed, 5, m)
+    });
+  }
+  const payload = {
+    circuit: (E && E.name) || null,
+    seed: seed,
+    note: 'Total du rapport Vn au coup m = die1+die2+...+dieN de cette ligne (die1 = v1_die). ' +
+      'v1_second_jet = second jet de la mécanique V1 (2 jets, le joueur choisit). ' +
+      'Dé de reprise au rapport n : compare la valeur "dieN" du coup où le rapport n-1 était engagé ' +
+      'à la valeur "dieN" du coup où le rapport n est réellement engagé — le plus grand des deux compte.',
+    dice_faces_per_index: DICE_SET,   // les faces POSSIBLES de chaque dé (utile pour le DRS : produit cartésien)
+    dice_range_per_gear: DICE.slice(1),
+    moves: moves
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'grille-des-' + (payload.circuit ? payload.circuit.replace(/[^a-z0-9]+/gi, '-') : seed) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 
 document.getElementById('dice-grid-close').onclick = () => {
   document.getElementById('dice-grid-modal').style.display = 'none';
