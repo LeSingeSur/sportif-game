@@ -3160,16 +3160,57 @@ function buildRulesHTML() {
       '• Dès que tu tournes, elle remonte à <b style="color:var(--txt)">rapport − 1</b>' +
     '</div>' +
     '<div style="background:rgba(255,93,93,.1);border-left:3px solid var(--crash);border-radius:5px;padding:8px 10px;margin-top:11px;font-size:12px;color:var(--txt)">' +
-      '⚠️ Vite = lourd. En V6 il faut 5 cases droites entre deux virages. En V1, braquage libre à chaque case.' +
+      '⚠️ Vite = lourd. En V6 il faut 5 cases droites entre deux virages. En V1, braquage libre à chaque case.<br>' +
+      'À V5-V6, le virage ne s\'arrête pas net non plus : la voiture <b style="color:#22d3ee">dérape (drift)</b> de 1 à 2 cases de plus — détail ci-dessous.' +
+    '</div>' +
+  '</div>' +
+
+  // ---------- DRIFT ----------
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">🌀 Le drift (V5-V6)</div>' +
+  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
+    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">On ne tourne jamais net à pleine vitesse</div>' +
+    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
+      'En virage, la voiture <b style="color:var(--txt)">continue de glisser</b> dans son ancien cap avant de se stabiliser sur le nouveau — <b style="color:#22d3ee">1 case</b> en V5, <b style="color:#22d3ee">2 cases</b> en V6.<br><br>' +
+      '• C\'est <b style="color:var(--txt)">subi</b>, pas un choix, et ça ne consomme <b style="color:var(--txt)">aucun</b> coup de dé<br>' +
+      '• Dessiné en <b style="color:#22d3ee">cyan</b> sur l\'aperçu de trajectoire — repérable au premier coup d\'œil<br>' +
+      '• Si le drift sort de la piste, ce virage est <b style="color:var(--crash)">impraticable</b> à ce rapport : il faut freiner avant' +
+    '</div>' +
+  '</div>' +
+
+  // ---------- DRS ----------
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">⚡ Zone DRS</div>' +
+  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
+    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Certaines lignes droites boostent tous tes dés</div>' +
+    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
+      'Si ton coup démarre sur une case <b style="color:#b464ff">⚡ DRS</b> — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — <b style="color:var(--txt)">tous les dés</b> de ton rapport affichent <b style="color:#b464ff">\"DRS\"</b> au lieu d\'un chiffre.<br><br>' +
+      '• Le produit de <b style="color:var(--txt)">toutes leurs faces possibles</b> t\'est proposé d\'un coup, en trajectoires distinctes<br>' +
+      '• Beaucoup de possibilités, mais toujours dans la plage officielle du rapport<br>' +
+      '• Comme toujours : ta trajectoire choisie tranche, jamais un tirage caché' +
+    '</div>' +
+  '</div>' +
+
+  // ---------- DÉ DE REPRISE ----------
+  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">📥 Dé de reprise</div>' +
+  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
+    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Rien ne se perd quand tu ne montes pas de rapport</div>' +
+    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
+      'À chaque coup où tu ne montes <b style="color:var(--txt)">pas</b> de rapport, le jeu retient <b style="color:var(--txt)">automatiquement</b> — sans rien à cliquer — la valeur que le rapport supérieur t\'aurait donnée ce coup-là.<br><br>' +
+      '• Au coup suivant, si tu engages vraiment ce rapport, ce dé de reprise est confronté à un <b style="color:var(--txt)">tirage frais</b><br>' +
+      '• Les deux résultats te sont proposés comme deux trajectoires distinctes, comme pour le DRS<br>' +
+      '• Une <b style="color:#4aa3ff">mini-case bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise' +
     '</div>' +
   '</div>' +
 
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 9px;font-weight:800">En savoir plus</div>' +
 
-  details('⛽ L\'essence',
-    'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
-    'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
-    'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.') +
+  // L'essence n'est montrée que si CE circuit l'a activée — inutile d'expliquer
+  // une mécanique que l'organisateur n'utilise pas encore.
+  (typeof R !== 'undefined' && R && R.fuelEnabled ?
+    details('⛽ L\'essence',
+      'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
+      'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
+      'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.')
+    : '') +
 
   details('🎲 Détail des dés',
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
@@ -3203,20 +3244,6 @@ function buildRulesHTML() {
   details('🎯 V1 : deux jets, tu choisis',
     'En <b>rapport 1</b>, et seulement lui, tu ne subis pas un tirage unique : le dé de base est lancé <b>deux fois</b>, et c\'est ta trajectoire choisie sur la piste qui détermine lequel des deux résultats compte.<br><br>' +
     'C\'est ce qui fait de la V1 le rapport de précision : en plus d\'un braquage toujours libre, tu as un vrai contrôle sur la distance parcourue.') +
-
-  details('⚡ Zone DRS',
-    'Certaines lignes droites sont marquées <b>⚡ DRS</b> par l\'organisateur. Si ton coup démarre sur l\'une d\'elles — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — <b>tous les dés</b> de ton rapport ne sont pas tirés au hasard : ils affichent tous <b>\"DRS\"</b>, et le produit de <b>toutes leurs faces possibles</b> t\'est proposé d\'un coup sous forme de trajectoires distinctes sur la piste — beaucoup de possibilités, mais toujours dans la plage officielle du rapport.<br><br>' +
-    'Comme toujours, c\'est ta trajectoire choisie qui tranche — jamais un tirage caché.') +
-
-  details('🌀 Drift en virage (V5-V6)',
-    'À V5 et V6, un virage ne se négocie jamais net : la voiture <b>continue de glisser</b> dans son ancien cap avant de se stabiliser — <b>1 case</b> de drift en V5, <b>2 cases</b> en V6. C\'est une conséquence <b>subie</b>, pas un choix, et elle ne consomme aucun coup de dé.<br><br>' +
-    'Ces cases de drift sont dessinées sur l\'aperçu de trajectoire, en <b style="color:#22d3ee">cyan</b> — repérables au premier coup d\'œil, distinctes du jaune de l\'inertie et du violet du DRS.<br><br>' +
-    'Si le drift sort de la piste, ce virage est tout simplement <b>impraticable à ce rapport</b> : il faut freiner avant, comme dans une vraie voiture qui n\'a pas assez ralenti.') +
-
-  details('📥 Dé de reprise',
-    'À chaque coup où tu ne montes PAS de rapport, le jeu retient <b>automatiquement</b> — sans rien à cliquer — la valeur que le rapport supérieur t\'aurait donnée <i>ce coup-là</i>.<br><br>' +
-    'Au coup suivant, si tu engages vraiment ce rapport, ce dé de reprise est confronté à un <b>tirage frais</b> : les deux résultats te sont proposés comme deux trajectoires distinctes, exactement comme pour le DRS. Ta trajectoire choisie détermine lequel des deux compte.<br><br>' +
-    'Une petite case <b style="color:#4aa3ff">bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise — elle s\'actualise à chaque coup.') +
 
   details('🏁 Points et classement',
     'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
@@ -3503,10 +3530,10 @@ document.getElementById('tuto-next').onclick = () => setTutoStep(TUTO.step + 1);
 
 function openRules() {
   const body = document.getElementById('rules-body');
-  if (body && !body.dataset.filled) {
-    body.innerHTML = buildRulesHTML();
-    body.dataset.filled = '1';
-  }
+  // Pas de cache : les règles dépendent du circuit en cours (l'essence n'est
+  // affichée que si CE circuit l'a activée), donc on reconstruit à chaque
+  // ouverture plutôt que de figer un état obtenu lors du tout premier appui.
+  if (body) body.innerHTML = buildRulesHTML();
   document.getElementById('rules-modal').style.display = 'flex';
   startTuto();
 }
