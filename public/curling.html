@@ -365,7 +365,6 @@
         } else {
           gameState = 'WAITING';
           targetCameraY = 0;
-          // Sécurité anti-bug : masquage forcé du HUD si ce n'est pas notre tour
           document.getElementById('stone-hud').style.display = 'none';
         }
         duelRefreshUI();
@@ -536,7 +535,6 @@
       const waiting = !DUEL.myTurn && gameState !== 'GAME_OVER';
       
       if (waiting) {
-        // Masquage et verrouillage total du HUD de tir en attente
         if (hud) hud.style.display = 'none';
         duelBanner('⏳ Au tour de ' + DUEL.opponent + ' — reviens plus tard');
         document.getElementById('instruction').innerHTML =
@@ -638,7 +636,6 @@
     }
 
     function showHudPanel(panelName) {
-        // En mode Duel, si ce n'est pas notre tour, on bloque l'affichage du HUD
         if (DUEL.on && !DUEL.myTurn && gameState !== 'GAME_OVER') {
             document.getElementById('stone-hud').style.display = 'none';
             return;
@@ -822,7 +819,6 @@
 
     function updateStoneHudPosition() {
         const hud = document.getElementById('stone-hud');
-        // Si c'est un duel et que ce n'est pas notre tour, on force le masquage
         if (DUEL.on && !DUEL.myTurn) {
             hud.style.display = 'none';
             return;
@@ -944,7 +940,9 @@
 
         let baseDecel = 45 / (TIME_STRETCH * TIME_STRETCH); 
         
-        let frictionMod = 1.0 - (0.20 * sweepHeat);
+        // Efficacité de friction modulée : maximale au centre (1.0), réduite sur les côtés (0.7)
+        let frictionEfficiency = (sweepSide === 0) ? 1.0 : 0.7;
+        let frictionMod = 1.0 - (0.20 * sweepHeat * frictionEfficiency);
         let decel = baseDecel * frictionMod * dt;
         let newSpeed = Math.max(0, speed - decel);
 
@@ -956,14 +954,19 @@
         let curlIntensity = 800 / TIME_STRETCH; 
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
         
-        let curlMod = 1.0 - (0.30 * sweepHeat);
-        
-        let asymmetricalPush = 0;
-        if (sweepSide !== 0 && isSweeping) {
-            asymmetricalPush = sweepSide * 18 * sweepHeat; 
+        let curlReduction = 0.30; 
+        if (sweepSide !== 0) {
+            let curlDirection = Math.sign(stone.spin);
+            if (sweepSide === -curlDirection) {
+                curlReduction = 0.50; 
+            } else {
+                curlReduction = 0.10; 
+            }
         }
+        
+        let curlMod = 1.0 - (curlReduction * sweepHeat);
 
-        stone.vx += (nx * curlAccel * curlMod + asymmetricalPush) * dt;
+        stone.vx += (nx * curlAccel * curlMod) * dt;
         stone.vy += (ny * curlAccel * curlMod) * dt;
 
         stone.spin *= 0.999;
@@ -1009,21 +1012,22 @@
 
                         if (velAlongNormal < 0) {
                             playHitSound(); 
-                            let restitution = 0.95; 
+                            // Amélioration newtonienne : restitution ajustée et amortissement d'inertie renforcé
+                            let restitution = 0.90; 
                             let impulseScalar = -(1 + restitution) * velAlongNormal / 2; 
 
                             let tx = -ny;
                             let ty = nx;
                             let velAlongTangent = rvx * tx + rvy * ty;
-                            let tangentImpulse = velAlongTangent * 0.15;
+                            let tangentImpulse = velAlongTangent * 0.12;
 
-                            s1.spin += tangentImpulse * 0.3;
-                            s2.spin -= tangentImpulse * 0.3;
+                            s1.spin += tangentImpulse * 0.25;
+                            s2.spin -= tangentImpulse * 0.25;
 
-                            s1.vx -= (impulseScalar * nx - tangentImpulse * tx * 0.5);
-                            s1.vy -= (impulseScalar * ny - tangentImpulse * ty * 0.5);
-                            s2.vx += (impulseScalar * nx + tangentImpulse * tx * 0.5);
-                            s2.vy += (impulseScalar * ny + tangentImpulse * ty * 0.5);
+                            s1.vx -= (impulseScalar * nx - tangentImpulse * tx * 0.4);
+                            s1.vy -= (impulseScalar * ny - tangentImpulse * ty * 0.4);
+                            s2.vx += (impulseScalar * nx + tangentImpulse * tx * 0.4);
+                            s2.vy += (impulseScalar * ny + tangentImpulse * ty * 0.4);
 
                             s1.isMoving = true;
                             s2.isMoving = true;
@@ -1234,13 +1238,13 @@
             isSweeping = true;
             if (offsetX < -3) {
                 sweepSide = -1; 
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE GAUCHE";
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DIRECTIONNEL GAUCHE";
             } else if (offsetX > 3) {
                 sweepSide = 1;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DROITE";
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DIRECTIONNEL DROITE";
             } else {
                 sweepSide = 0;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE";
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE (Distance Max)";
             }
             document.getElementById('sweepHint').classList.add('active');
         } else {
