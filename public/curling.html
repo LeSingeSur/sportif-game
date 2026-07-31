@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Curling Pro - Édition Physique Avancée</title>
+    <title>Curling Pro - Édition Définitive</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body {
@@ -267,11 +267,9 @@
     const STONE_RADIUS = 16;
     const TIME_STRETCH = 1.4;
 
-    // Gestion Audio Web Audio API
     let audioCtx = null;
     let sweepNode = null;
 
-    /* ── Menu des duels ─────────────────────────────────────────────── */
     async function duelLoadMenu() {
       DUEL.pseudo = duelPseudo();
       const list = document.getElementById('duel-list');
@@ -462,9 +460,6 @@
 
     let gameState = 'CHOICE_ANGLE'; 
 
-    /* ══════════════════════════════════════════════════════════════════
-       MODE DUEL ASYNCHRONE — une pierre par tour, entre deux joueurs
-       ══════════════════════════════════════════════════════════════════ */
     const DUEL = {
       on: false,          
       matchId: null,
@@ -490,7 +485,7 @@
 
     function duelApplyState(st) {
       stones = (st.stones || []).map(s => ({
-        x: s.x, y: s.y, vx: 0, vy: 0, spin: 0, startY: s.y, team: s.team, isMoving: false
+        x: s.x, y: s.y, vx: 0, vy: 0, spin: 1, startY: s.y, team: s.team, isMoving: false
       }));
       stonesPlayedInEnd = st.stonesPlayedInEnd || 0;
       currentTeam  = st.currentTeam || 'RED';
@@ -552,7 +547,6 @@
     let powerAccuracyError = 0;
 
     let isSweeping = false;
-    let sweepHeat = 0;
 
     let cameraY = SHEET_HEIGHT - 700;
     let targetCameraY = cameraY;
@@ -607,7 +601,7 @@
             y: START_Y,
             vx: 0,
             vy: 0,
-            spin: selectedRotation,
+            spin: 1,
             startY: START_Y,
             team: currentTeam,
             isMoving: false
@@ -617,7 +611,6 @@
         gameState = 'CHOICE_ANGLE';
         chosenAngleDeg = 0;
         chosenPower = 5.0;
-        sweepHeat = 0;
 
         document.getElementById('angleRange').value = 0;
         document.getElementById('angleValueDisplay').innerText = '0.0°';
@@ -731,6 +724,7 @@
         if (gameState === 'GAUGE_1' || gameState === 'GAUGE_2') {
             gaugeVal += gaugeSpeed * gaugeDir * (dt * 60);
             
+            // Effet ping-pong (aller-retour infini)
             if (gaugeVal >= 100) {
                 gaugeVal = 100;
                 gaugeDir = -1; 
@@ -888,12 +882,6 @@
     function updateStonePhysics(stone, dt) {
         if (!stone.isMoving) return;
 
-        if (isSweeping && gameState === 'SLIDING') {
-            sweepHeat = Math.min(1.0, sweepHeat + dt * 2.0);
-        } else {
-            sweepHeat = Math.max(0.0, sweepHeat - dt * 3.0);
-        }
-
         let speed = Math.hypot(stone.vx, stone.vy);
 
         if (speed <= (0.5 / TIME_STRETCH)) {
@@ -905,7 +893,11 @@
         }
 
         let baseDecel = 45 / (TIME_STRETCH * TIME_STRETCH); 
-        let frictionMod = 1.0 - (0.25 * sweepHeat);
+        
+        // Physique de balayage instantanée et constante (sans essoufflement)
+        let currentSweepPower = (isSweeping && gameState === 'SLIDING') ? 1.0 : 0.0;
+
+        let frictionMod = 1.0 - (0.20 * currentSweepPower);
         let decel = baseDecel * frictionMod * dt;
         let newSpeed = Math.max(0, speed - decel);
 
@@ -916,7 +908,8 @@
         let ny = stone.vx / (newSpeed + 1);
         let curlIntensity = 800 / TIME_STRETCH; 
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
-        let curlMod = 1.0 - (0.4 * sweepHeat);
+        
+        let curlMod = 1.0 - (0.30 * currentSweepPower);
 
         stone.vx += nx * curlAccel * curlMod * dt;
         stone.vy += ny * curlAccel * curlMod * dt;
@@ -953,7 +946,6 @@
                         let ny = dy / distance;
                         let overlap = minDist - distance;
 
-                        // Correction de position pour éliminer l'interpénétration en groupe
                         let correction = overlap / 2;
                         s1.x -= nx * correction;
                         s1.y -= ny * correction;
@@ -1197,7 +1189,7 @@
     let isMouseDown = false;
     let lastClientY = 0; 
 
-    // --- ÉVÉNEMENTS TACTILES (MOBILE) ---
+    // --- ÉVÉNEMENTS TACTILES (MOBILE) AVEC CAMÉRA LIBRE ---
     canvas.addEventListener('touchstart', (e) => {
         initAudio();
         isMouseDown = true;
@@ -1222,7 +1214,7 @@
         document.getElementById('sweepHint').classList.remove('active');
     });
 
-    // --- ÉVÉNEMENTS SOURIS (PC) ---
+    // --- ÉVÉNEMENTS SOURIS (PC) AVEC CAMÉRA LIBRE ---
     canvas.addEventListener('mousedown', (e) => {
         initAudio();
         isMouseDown = true;
