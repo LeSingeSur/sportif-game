@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Curling Pro - Édition Définitive</title>
+    <title>Curling Pro - Édition Définitive Réaliste</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body {
@@ -746,7 +746,7 @@
         activeStone.isMoving = true;
 
         gameState = 'SLIDING';
-        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ DANS L'AXE DE LA PIERRE !</span>";
+        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ DEVANT OU SUR LES FLANCS DE LA PIERRE !</span>";
     }
 
     function gameLoop(timestamp) {
@@ -955,13 +955,13 @@
         stone.vx += nx * curlAccel * dt;
         stone.vy += ny * curlAccel * dt;
 
-        // Poussée latérale directe et intuitive si tu balayes sur le côté
+        // Effet réaliste et subtil : micro-guidage thermique sur le flanc (dosé à 7 pour plus de finesse)
         if (sweepSide !== 0 && sweepHeat > 0) {
-            let sidePush = sweepSide * 45 * sweepHeat * dt; 
+            let guideForce = sweepSide * 7 * sweepHeat * dt; 
             let perpX = -stone.vy / (speed + 0.1);
             let perpY = stone.vx / (speed + 0.1);
-            stone.vx += perpX * sidePush;
-            stone.vy += perpY * sidePush;
+            stone.vx += perpX * guideForce;
+            stone.vy += perpY * guideForce;
         }
 
         stone.spin *= 0.999;
@@ -1058,9 +1058,8 @@
         let sideOffset = sweepSide * 16; 
         
         let bx = activeStone.x + sideOffset + sweepOffset;
-        let by = activeStone.y - 35;
+        let by = (sweepSide === 0) ? (activeStone.y - 35) : activeStone.y;
 
-        // Vert au centre (sûr), Rouge sur les côtés (directionnel)
         let brushColor = (sweepSide === 0) ? '#10b981' : '#ef4444'; 
 
         ctx.beginPath();
@@ -1230,22 +1229,21 @@
         const touchWorldX = (clientX - rect.left) * scaleX;
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
-        const isInFront = touchWorldY < activeStone.y - 5;
+        const isNearStoneVertical = touchWorldY >= activeStone.y - 35 && touchWorldY <= activeStone.y + 20;
         const laneWidth = STONE_RADIUS * 2.5; 
         const offsetX = touchWorldX - activeStone.x;
 
-        if (isInFront && Math.abs(offsetX) < laneWidth) {
+        if (isNearStoneVertical && Math.abs(offsetX) < laneWidth) {
             isSweeping = true;
-            // Zone centrale sécurisée et élargie (±12 pixels)
-            if (offsetX < -12) {
-                sweepSide = -1; 
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE GAUCHE (Poussée)";
-            } else if (offsetX > 12) {
-                sweepSide = 1;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DROITE (Poussée)";
+            if (offsetX < -10) {
+                sweepSide = -1; // Flanc gauche
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE FLANC GAUCHE";
+            } else if (offsetX > 10) {
+                sweepSide = 1;  // Flanc droit
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE FLANC DROIT";
             } else {
-                sweepSide = 0;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE (Distance Max)";
+                sweepSide = 0;  // Devant (Centre)
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DEVANT (Distance Max)";
             }
             document.getElementById('sweepHint').classList.add('active');
         } else {
