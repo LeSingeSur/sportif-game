@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Curling Pro - Édition Avancée</title>
+    <title>Curling Pro - Édition Physique Avancée</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body {
@@ -53,7 +53,6 @@
         .btn-green { background: #10b981; color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
         .btn-blue { background: #3b82f6; color: white; }
         .btn-red { background: #ef4444; color: white; }
-        .btn-gray { background: #475569; color: white; }
 
         #ui-top {
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
@@ -122,11 +121,7 @@
         }
         #big-gauge-cursor {
             position: absolute; top: 0; width: 6px; height: 100%;
-            background: #facc15; box-shadow: 0 0 12px #facc15; transform: translateX(-50%); z-index: 2;
-        }
-        #big-gauge-marker {
-            position: absolute; top: 0; width: 4px; height: 100%;
-            background: #ef4444; box-shadow: 0 0 8px #ef4444; transform: translateX(-50%); display: none; z-index: 3;
+            background: #facc15; box-shadow: 0 0 12px #facc15; transform: translateX(-50%);
         }
         #big-gauge-center {
             position: absolute; top: 0; left: 50%; width: 2px; height: 100%;
@@ -182,7 +177,7 @@
 
 <div id="menu-overlay">
     <h1>🥌 Curling Pro</h1>
-    <p>Rotation en premier, jauge à accélération progressive et physique thermique !</p>
+    <p>Effets sonores immersifs, physique newtonienne et commandes sur la pierre !</p>
     
     <label class="option-group">
         <input type="checkbox" id="togglePrediction" checked>
@@ -223,45 +218,35 @@
 
 <div id="canvas-wrapper">
     <canvas id="gameCanvas" width="450" height="700"></canvas>
-    <div class="sweep-hint" id="sweepHint">🧹 BALAYAGE ACTIF</div>
+    <div class="sweep-hint" id="sweepHint">🧹 BALAYAGE ACTIF (Dans l'axe)</div>
 </div>
 
 <div id="stone-hud">
-    <div class="hud-title" id="hudTitle">1. Sens de Rotation</div>
+    <div class="hud-title" id="hudTitle">1. Réglage de l'Angle</div>
 
-    <div id="hudRotationGroup" style="display:flex; gap:8px; width:100%;">
-        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(-1)">↺ Anti-horaire</button>
-        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(1)">↻ Horaire</button>
-    </div>
-
-    <div id="hudAngleGroup" class="slider-group" style="display:none;">
+    <div id="hudAngleGroup" class="slider-group">
         <input type="range" id="angleRange" min="-15" max="15" step="0.5" value="0" oninput="onAngleSliderInput(this.value)">
         <div class="slider-labels"><span>-15°</span><span id="angleValueDisplay" style="color:#facc15;">0.0°</span><span>+15°</span></div>
-        <div style="display:flex; gap:6px; width:100%; margin-top:4px;">
-            <button class="btn btn-gray" style="flex:1;" onclick="goToRotation()">⬅ Retour</button>
-            <button class="btn btn-green" style="flex:2;" onclick="validateAngleChoice()">Valider l'Angle</button>
-        </div>
+        <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="validateAngleChoice()">Valider l'Angle</button>
+    </div>
+
+    <div id="hudRotationGroup" style="display:none; gap:8px; width:100%;">
+        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(-1)">↺ Anti-horaire</button>
+        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(1)">↻ Horaire</button>
     </div>
 
     <div id="hudPowerGroup" class="slider-group" style="display:none;">
         <input type="range" id="powerRange" min="1" max="10" step="0.1" value="5.0" oninput="onPowerSliderInput(this.value)">
         <div class="slider-labels"><span>1 (Garde)</span><span id="powerValueDisplay" style="color:#facc15;">5.0</span><span>10 (Take)</span></div>
-        <div style="display:flex; gap:6px; width:100%; margin-top:4px;">
-            <button class="btn btn-gray" style="flex:1;" onclick="goToAngle()">⬅ Retour</button>
-            <button class="btn btn-green" style="flex:2;" onclick="validatePowerChoice()">Valider la Puissance</button>
-        </div>
+        <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="validatePowerChoice()">Valider la Puissance</button>
     </div>
 
     <div id="hudGaugeGroup" style="display:none; flex-direction:column; gap:6px; width:100%;">
         <div id="big-gauge-container">
             <div id="big-gauge-center"></div>
-            <div id="big-gauge-marker"></div>
             <div id="big-gauge-cursor"></div>
         </div>
-        <div style="display:flex; gap:6px; width:100%; margin-top:4px;">
-            <button class="btn btn-gray" id="gaugeBackBtn" style="flex:1;" onclick="goToPower()">⬅ Retour</button>
-            <button class="btn btn-green" id="gaugeActionBtn" style="flex:2;" onclick="stopGaugeAndProceed()">✓ Valider la Jauge</button>
-        </div>
+        <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="stopGaugeAndProceed()">✓ Valider la Jauge</button>
     </div>
 
     <div id="hudEndGroup" style="display:none; width:100%;">
@@ -282,9 +267,11 @@
     const STONE_RADIUS = 16;
     const TIME_STRETCH = 1.4;
 
+    // Gestion Audio Web Audio API
     let audioCtx = null;
     let sweepNode = null;
 
+    /* ── Menu des duels ─────────────────────────────────────────────── */
     async function duelLoadMenu() {
       DUEL.pseudo = duelPseudo();
       const list = document.getElementById('duel-list');
@@ -473,13 +460,16 @@
     let currentTeam = 'RED';
     let stonesPlayedInEnd = 0;
 
-    let gameState = 'CHOICE_ROTATION'; 
+    let gameState = 'CHOICE_ANGLE'; 
 
+    /* ══════════════════════════════════════════════════════════════════
+       MODE DUEL ASYNCHRONE — une pierre par tour, entre deux joueurs
+       ══════════════════════════════════════════════════════════════════ */
     const DUEL = {
-      on: false,
+      on: false,          
       matchId: null,
       pseudo: '',
-      myTeam: null,
+      myTeam: null,       
       opponent: '',
       myTurn: false,
       sending: false
@@ -557,8 +547,7 @@
 
     let gaugeVal = 0; 
     let gaugeDir = 1;
-    let baseGaugeSpeed = 2.0;
-    let gaugeSpeed = 2.0;
+    let gaugeSpeed = 2.2;
     let angleAccuracyError = 0;
     let powerAccuracyError = 0;
 
@@ -625,7 +614,7 @@
         };
         stones.push(activeStone);
 
-        gameState = 'CHOICE_ROTATION';
+        gameState = 'CHOICE_ANGLE';
         chosenAngleDeg = 0;
         chosenPower = 5.0;
         sweepHeat = 0;
@@ -635,56 +624,25 @@
         document.getElementById('powerRange').value = 5.0;
         document.getElementById('powerValueDisplay').innerText = '5.0';
 
-        showHudPanel('rotation');
-        document.getElementById('instruction').innerHTML = `Tour des <span class='highlight'>${currentTeam === 'RED' ? 'ROUGES' : 'JAUNES'}</span>. Choisissez le sens de rotation !`;
+        showHudPanel('angle');
+        document.getElementById('instruction').innerHTML = `Tour des <span class='highlight'>${currentTeam === 'RED' ? 'ROUGES' : 'JAUNES'}</span>. Ajustez l'angle sur la pierre !`;
     }
 
     function showHudPanel(panelName) {
-        document.getElementById('hudRotationGroup').style.display = (panelName === 'rotation') ? 'flex' : 'none';
         document.getElementById('hudAngleGroup').style.display = (panelName === 'angle') ? 'flex' : 'none';
+        document.getElementById('hudRotationGroup').style.display = (panelName === 'rotation') ? 'flex' : 'none';
         document.getElementById('hudPowerGroup').style.display = (panelName === 'power') ? 'flex' : 'none';
         document.getElementById('hudGaugeGroup').style.display = (panelName === 'gauge') ? 'flex' : 'none';
         document.getElementById('hudEndGroup').style.display = (panelName === 'end') ? 'flex' : 'none';
 
         let titles = {
-            'rotation': "1. Sens de Rotation",
-            'angle': "2. Réglage de l'Angle",
+            'angle': "1. Réglage de l'Angle",
+            'rotation': "2. Sens de Rotation",
             'power': "3. Réglage de la Puissance",
             'gauge': gameState === 'GAUGE_1' ? "🎯 JAUGE 1 : PRÉCISION ANGLE" : "⚡ JAUGE 2 : PRÉCISION PUISSANCE",
             'end': "Fin de Tour"
         };
         document.getElementById('hudTitle').innerText = titles[panelName] || '';
-    }
-
-    // Fonctions de navigation arrière
-    function goToRotation() {
-        gameState = 'CHOICE_ROTATION';
-        showHudPanel('rotation');
-        document.getElementById('instruction').innerHTML = `Choisissez le sens de rotation sur la pierre !`;
-    }
-
-    function goToAngle() {
-        gameState = 'CHOICE_ANGLE';
-        showHudPanel('angle');
-        document.getElementById('instruction').innerHTML = `Ajustez l'angle sur la pierre !`;
-    }
-
-    function goToPower() {
-        gameState = 'CHOICE_POWER';
-        showHudPanel('power');
-        document.getElementById('instruction').innerHTML = `Ajustez la puissance sur la pierre !`;
-        // Cache le trait rouge de la jauge si on revient en arrière
-        document.getElementById('big-gauge-marker').style.display = 'none';
-        document.getElementById('gaugeBackBtn').style.display = 'inline-block';
-        document.getElementById('gaugeActionBtn').innerText = '✓ Valider la Jauge';
-    }
-
-    function validateRotationChoice(rot) {
-        selectedRotation = rot;
-        if(activeStone) activeStone.spin = rot;
-        gameState = 'CHOICE_ANGLE';
-        showHudPanel('angle');
-        document.getElementById('instruction').innerHTML = `Ajustez l'angle sur la pierre !`;
     }
 
     function onAngleSliderInput(val) {
@@ -693,6 +651,14 @@
     }
 
     function validateAngleChoice() {
+        gameState = 'CHOICE_ROTATION';
+        showHudPanel('rotation');
+        document.getElementById('instruction').innerHTML = `Choisissez le sens de rotation sur la pierre !`;
+    }
+
+    function validateRotationChoice(rot) {
+        selectedRotation = rot;
+        if(activeStone) activeStone.spin = rot;
         gameState = 'CHOICE_POWER';
         showHudPanel('power');
         document.getElementById('instruction').innerHTML = `Ajustez la puissance sur la pierre !`;
@@ -711,10 +677,7 @@
         gameState = 'GAUGE_1';
         gaugeVal = 0;
         gaugeDir = 1;
-        baseGaugeSpeed = 2.0;
-        gaugeSpeed = baseGaugeSpeed;
-        document.getElementById('big-gauge-marker').style.display = 'none';
-        document.getElementById('gaugeBackBtn').style.display = 'inline-block';
+        gaugeSpeed = 2.2;
         showHudPanel('gauge');
         document.getElementById('instruction').innerHTML = `🎯 Arrêtez la jauge pour valider la <span class='highlight'>Précision de l'Angle</span> !`;
     }
@@ -723,34 +686,21 @@
         gameState = 'GAUGE_2';
         gaugeVal = 0;
         gaugeDir = 1;
-        baseGaugeSpeed = 2.3;
-        gaugeSpeed = baseGaugeSpeed;
-        document.getElementById('big-gauge-marker').style.display = 'none';
-        document.getElementById('gaugeBackBtn').style.display = 'inline-block';
+        gaugeSpeed = 2.5;
         showHudPanel('gauge');
         document.getElementById('instruction').innerHTML = `⚡ Arrêtez la jauge pour valider la <span class='highlight'>Précision de la Puissance</span> !`;
     }
 
     function stopGaugeAndProceed() {
-        // Affiche le trait rouge où le joueur a cliqué
-        let marker = document.getElementById('big-gauge-marker');
-        marker.style.left = gaugeVal + '%';
-        marker.style.display = 'block';
-
-        // Cache le bouton retour et change le texte le temps d'une micro-pause pour voir le trait rouge
-        document.getElementById('gaugeBackBtn').style.display = 'none';
-        document.getElementById('gaugeActionBtn').innerText = 'Validé !';
-
-        setTimeout(() => {
-            if (gameState === 'GAUGE_1') {
-                angleAccuracyError = (gaugeVal - 50) * 0.003; 
-                startGauge2();
-            } else if (gameState === 'GAUGE_2') {
-                powerAccuracyError = (gaugeVal - 50) * 0.03;
-                document.getElementById('stone-hud').style.display = 'none';
-                executeThrow();
-            }
-        }, 500);
+        if (gameState === 'GAUGE_1') {
+            angleAccuracyError = (gaugeVal - 50) * 0.003; 
+            document.getElementById('instruction').innerHTML = `Angle validé ! Préparation de la puissance...`;
+            setTimeout(() => { startGauge2(); }, 400);
+        } else if (gameState === 'GAUGE_2') {
+            powerAccuracyError = (gaugeVal - 50) * 0.03;
+            document.getElementById('stone-hud').style.display = 'none';
+            executeThrow();
+        }
     }
 
     function executeThrow() {
@@ -768,7 +718,7 @@
         activeStone.isMoving = true;
 
         gameState = 'SLIDING';
-        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ DEVANT LA PIERRE POUR L'AIDER À ALLER PLUS LOIN ET DROIT !</span>";
+        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ DANS L'AXE DE LA PIERRE !</span>";
     }
 
     function gameLoop(timestamp) {
@@ -779,16 +729,14 @@
         cameraY += (targetCameraY - cameraY) * (10 * dt);
 
         if (gameState === 'GAUGE_1' || gameState === 'GAUGE_2') {
-            // Accélération de la jauge à chaque passage (plus on attend, plus elle va vite)
-            gaugeSpeed += 0.3 * dt; 
             gaugeVal += gaugeSpeed * gaugeDir * (dt * 60);
             
             if (gaugeVal >= 100) {
                 gaugeVal = 100;
-                gaugeDir = -1;
+                gaugeDir = -1; 
             } else if (gaugeVal <= 0) {
                 gaugeVal = 0;
-                gaugeDir = 1;
+                gaugeDir = 1;  
             }
             
             const cursorElem = document.getElementById('big-gauge-cursor');
@@ -802,7 +750,7 @@
 
         drawSheetBackground();
 
-        if (usePredictionLine && (gameState === 'CHOICE_ROTATION' || gameState === 'CHOICE_ANGLE' || gameState === 'CHOICE_POWER') && activeStone) {
+        if (usePredictionLine && (gameState === 'CHOICE_ANGLE' || gameState === 'CHOICE_ROTATION' || gameState === 'CHOICE_POWER') && activeStone) {
             drawPredictionTrajectory();
             drawThrowerAndHack();
         }
@@ -967,12 +915,11 @@
         let nx = -stone.vy / (newSpeed + 1);
         let ny = stone.vx / (newSpeed + 1);
         let curlIntensity = 800 / TIME_STRETCH; 
-        
-        let thermalCurlFactor = 1.0 - (0.6 * sweepHeat); 
-        let curlAccel = (stone.spin * curlIntensity * thermalCurlFactor) / (newSpeed + (40 / TIME_STRETCH));
+        let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
+        let curlMod = 1.0 - (0.4 * sweepHeat);
 
-        stone.vx += nx * curlAccel * dt;
-        stone.vy += ny * curlAccel * dt;
+        stone.vx += nx * curlAccel * curlMod * dt;
+        stone.vy += ny * curlAccel * curlMod * dt;
 
         stone.spin *= 0.999;
 
@@ -988,47 +935,56 @@
         }
     }
 
+    // --- PHYSIQUE AMÉLIORÉE : COLLISIONS DE GROUPE MULTI-CORPS (Itérative) ---
     function resolveCollisions() {
-        for (let i = 0; i < stones.length; i++) {
-            for (let j = i + 1; j < stones.length; j++) {
-                let s1 = stones[i]; let s2 = stones[j];
-                let dx = s2.x - s1.x; let dy = s2.y - s1.y;
-                let distance = Math.hypot(dx, dy);
+        const iterations = 4;
+        for (let iter = 0; iter < iterations; iter++) {
+            for (let i = 0; i < stones.length; i++) {
+                for (let j = i + 1; j < stones.length; j++) {
+                    let s1 = stones[i]; 
+                    let s2 = stones[j];
+                    let dx = s2.x - s1.x; 
+                    let dy = s2.y - s1.y;
+                    let distance = Math.hypot(dx, dy);
 
-                if (distance < STONE_RADIUS * 2) {
-                    let overlap = (STONE_RADIUS * 2) - distance;
-                    let nx = dx / distance; 
-                    let ny = dy / distance;
+                    let minDist = STONE_RADIUS * 2;
+                    if (distance < minDist && distance > 0) {
+                        let nx = dx / distance; 
+                        let ny = dy / distance;
+                        let overlap = minDist - distance;
 
-                    s1.x -= nx * (overlap / 2);
-                    s1.y -= ny * (overlap / 2);
-                    s2.x += nx * (overlap / 2);
-                    s2.y += ny * (overlap / 2);
+                        // Correction de position pour éliminer l'interpénétration en groupe
+                        let correction = overlap / 2;
+                        s1.x -= nx * correction;
+                        s1.y -= ny * correction;
+                        s2.x += nx * correction;
+                        s2.y += ny * correction;
 
-                    let rvx = s2.vx - s1.vx;
-                    let rvy = s2.vy - s1.vy;
-                    let velAlongNormal = rvx * nx + rvy * ny;
+                        let rvx = s2.vx - s1.vx;
+                        let rvy = s2.vy - s1.vy;
+                        let velAlongNormal = rvx * nx + rvy * ny;
 
-                    if (velAlongNormal < 0) {
-                        playHitSound();
-                        let restitution = 0.95; 
-                        let impulseScalar = -(1 + restitution) * velAlongNormal / 2; 
+                        if (velAlongNormal < 0) {
+                            playHitSound(); 
+                            let restitution = 0.95; 
+                            let impulseScalar = -(1 + restitution) * velAlongNormal / 2; 
 
-                        let tx = -ny;
-                        let ty = nx;
-                        let velAlongTangent = rvx * tx + rvy * ty;
-                        let tangentImpulse = velAlongTangent * 0.15;
+                            let tx = -ny;
+                            let ty = nx;
+                            let velAlongTangent = rvx * tx + rvy * ty;
+                            let tangentImpulse = velAlongTangent * 0.15;
 
-                        s1.spin += tangentImpulse * 0.3;
-                        s2.spin -= tangentImpulse * 0.3;
+                            s1.spin += tangentImpulse * 0.3;
+                            s2.spin -= tangentImpulse * 0.3;
 
-                        s1.vx -= impulseScalar * nx - tangentImpulse * tx * 0.5;
-                        s1.vy -= impulseScalar * ny - tangentImpulse * ty * 0.5;
-                        s2.vx += impulseScalar * nx + tangentImpulse * tx * 0.5;
-                        s2.vy += impulseScalar * ny + tangentImpulse * ty * 0.5;
+                            s1.vx -= (impulseScalar * nx - tangentImpulse * tx * 0.5);
+                            s1.vy -= (impulseScalar * ny - tangentImpulse * ty * 0.5);
+                            s2.vx += (impulseScalar * nx + tangentImpulse * tx * 0.5);
+                            s2.vy += (impulseScalar * ny + tangentImpulse * ty * 0.5);
 
-                        s1.isMoving = true;
-                        s2.isMoving = true;
+                            s1.isMoving = true;
+                            s2.isMoving = true;
+                        }
                     }
                 }
             }
@@ -1226,8 +1182,8 @@
         const touchWorldX = (clientX - rect.left) * scaleX;
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
-        const isInFront = touchWorldY < activeStone.y + 10 && touchWorldY > activeStone.y - 150;
-        const isInLane = Math.abs(touchWorldX - activeStone.x) < SHEET_WIDTH / 2;
+        const isInFront = touchWorldY < activeStone.y - 5;
+        const isInLane = Math.abs(touchWorldX - activeStone.x) < STONE_RADIUS * 1.8;
 
         if (isInFront && isInLane) {
             isSweeping = true;
@@ -1239,8 +1195,9 @@
     }
 
     let isMouseDown = false;
-    let lastClientY = 0;
+    let lastClientY = 0; 
 
+    // --- ÉVÉNEMENTS TACTILES (MOBILE) ---
     canvas.addEventListener('touchstart', (e) => {
         initAudio();
         isMouseDown = true;
@@ -1265,6 +1222,7 @@
         document.getElementById('sweepHint').classList.remove('active');
     });
 
+    // --- ÉVÉNEMENTS SOURIS (PC) ---
     canvas.addEventListener('mousedown', (e) => {
         initAudio();
         isMouseDown = true;
