@@ -106,18 +106,49 @@ function loadFromFile() {
       globalScores = d.globalScores || [];
       musicConfig  = d.musicConfig  || { url: '', title: '' };
       welcomeImage = d.welcomeImage || { url: '' };
-      teams        = d.teams        || [];
-      accounts     = d.accounts     || {};
       console.log(` ${athletes.length} sportif(s) chargé(s) depuis fichier`);
-      console.log(` ${teams.length} équipe(s), ${Object.keys(accounts).length} compte(s) chargé(s) depuis fichier`);
     }
   } catch(e) { console.error('Erreur lecture fichier:', e.message); }
 }
 function saveToFile() {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage, teams, accounts }, null, 2)); }
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify({ athletes, scores, globalScores, musicConfig, welcomeImage }, null, 2)); }
   catch(e) { console.error('Erreur écriture fichier:', e.message); }
 }
 const norm = s => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+// ── CURLING — duels asynchrones tour par tour (stockage isolé) ─────────────
+let colCurling;
+let curlingMatches = [];   // [{id, red, yellow, turn, state, status, createdAt, updatedAt}]
+const CURLING_FILE = path.join(__dirname, 'curling.json');
+
+async function connectCurling() {
+  if (db) {
+    try {
+      colCurling = db.collection('curling_matches');
+      curlingMatches = await colCurling.find({}).toArray();
+      console.log(` ${curlingMatches.length} duel(s) Curling chargé(s) depuis MongoDB`);
+      return;
+    } catch(e) { console.error('Curling Mongo erreur:', e.message); }
+  }
+  try {
+    if (fs.existsSync(CURLING_FILE)) {
+      curlingMatches = JSON.parse(fs.readFileSync(CURLING_FILE, 'utf8')).matches || [];
+      console.log(` ${curlingMatches.length} duel(s) Curling chargé(s) depuis fichier`);
+    }
+  } catch(e) { console.error('Erreur lecture curling.json:', e.message); }
+}
+async function saveCurling() {
+  if (!db || !colCurling) {
+    try { fs.writeFileSync(CURLING_FILE, JSON.stringify({ matches: curlingMatches }, null, 2)); }
+    catch(e) { console.error('Erreur écriture curling.json:', e.message); }
+    return;
+  }
+  try {
+    const ids = curlingMatches.map(m => m.id);
+    for (const m of curlingMatches) await colCurling.updateOne({ id: m.id }, { $set: m }, { upsert: true });
+    await colCurling.deleteMany({ id: { $nin: ids } });
+  } catch(e) { console.error('Erreur saveCurling:', e.message); }
+}
 
 // ── FORMULA·GRID — stockage isolé (ne touche jamais athletes/scores) ───────
 let colCircuits, colCircuitRuns;
@@ -135,7 +166,6 @@ async function connectFormula() {
       circuitRuns = {};
       runsArr.forEach(r => { circuitRuns[r.circuitId] = r.runs || []; });
       console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis MongoDB`);
-      rebuildGlobalScores(); // le général doit inclure les points Formula·Grid dès le démarrage
       return;
     } catch(e) { console.error('Formula·Grid Mongo erreur:', e.message); }
   }
@@ -148,7 +178,6 @@ function loadFormulaFromFile() {
       circuits    = d.circuits    || [];
       circuitRuns = d.circuitRuns || {};
       console.log(` ${circuits.length} circuit(s) Formula·Grid chargé(s) depuis fichier`);
-      rebuildGlobalScores(); // le général doit inclure les points Formula·Grid dès le démarrage
     }
   } catch(e) { console.error('Erreur lecture formula.json:', e.message); }
 }
@@ -175,7 +204,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, freePractice: !!c.freePractice || (c.warmup||0)>0, diceSeed: c.diceSeed || ('legacy' + c.id), pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, countsInGlobal: c.countsInGlobal !== false, dailyRequired: !!c.dailyRequired };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -193,36 +222,17 @@ function bestRun(runs) {
 function circuitRanking(circuitId) {
   const runs = (circuitRuns[circuitId] || []).filter(r => !r.crashed && Number.isFinite(r.moves));
   const bestPerPseudo = {};
-  // Cascade de départage — avec la grille de dés désormais IDENTIQUE pour tous et
-  // à chaque essai, plusieurs joueurs peuvent converger sur le même nombre de
-  // coups exact. On départage sur des critères qui restent du pur pilotage :
-  //   1. coups (déjà géré : moves)
-  //   2. cases bonus restantes à l'arrivée (left) — plus haut = mieux
-  //   3. essais utilisés (attemptIndex) — moins haut = mieux : avoir trouvé la
-  //      bonne trajectoire du premier coup vaut mieux qu'après plusieurs essais,
-  //      ce qui limite aussi l'intérêt de bourriner les essais sur une grille connue
-  //   4. cases parcourues (cells) — la trajectoire la plus courte gagne à coups égaux
-  //   5. date de dépôt — le premier arrivé sur ce score départage en dernier recours
-  const better = (a, b) => {
-    if (a.moves !== b.moves) return a.moves < b.moves;
-    if (a.left !== b.left) return a.left > b.left;
-    const ai = a.attemptIndex ?? 99, bi = b.attemptIndex ?? 99;
-    if (ai !== bi) return ai < bi;
-    const ac = a.cells ?? Infinity, bc = b.cells ?? Infinity;
-    if (ac !== bc) return ac < bc;
-    return a.date < b.date;
-  };
   for (const r of runs) {
     const k = norm(r.pseudo);
-    if (!bestPerPseudo[k] || better(r, bestPerPseudo[k])) bestPerPseudo[k] = r;
+    if (!bestPerPseudo[k] || r.moves < bestPerPseudo[k].moves || (r.moves === bestPerPseudo[k].moves && r.left > bestPerPseudo[k].left))
+      bestPerPseudo[k] = r;
   }
-  return Object.values(bestPerPseudo).sort((a, b) => better(a, b) ? -1 : better(b, a) ? 1 : 0);
+  return Object.values(bestPerPseudo).sort((a,b) => a.moves - b.moves || b.left - a.left);
 }
 function formulaGridPointsByPseudo() {
   const totals = {};
   for (const c of circuits) {
     if (!c.published) continue; // circuits brouillon/test : classement local uniquement, aucun impact global
-    if (c.countsInGlobal === false) continue; // circuit hors classement (choix admin) : classement du circuit seul
     const ranked = circuitRanking(c.id);
     const N = ranked.length;
     const mult = Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10;
@@ -251,48 +261,11 @@ function hasPlayed(pseudo, athleteId) {
 function publishedAthletes() {
   return athletes.filter(a => a.published !== false);
 }
-// Circuits marqués "jeu du jour" que ce joueur n'a pas encore courus
-// Points rapportés par chaque place d'un circuit : le 1er marque N × multiplicateur,
-// le dernier 1 × multiplicateur. 0 si le circuit est hors classement général.
-function circuitPointsFor(circuit, rankIndex, totalRanked) {
-  if (!circuit || circuit.countsInGlobal === false) return 0;
-  const mult = Number.isFinite(circuit.pointsMultiplier) ? circuit.pointsMultiplier : 10;
-  return (totalRanked - rankIndex) * mult;
-}
-
-// Circuits "jeu du jour" encore proposés à ce joueur.
-// Ils restent affichés TANT QU'IL RESTE DES ESSAIS : un joueur qui a déjà bouclé
-// un tour peut continuer à améliorer son temps jusqu'à épuisement de ses chances.
-function pendingCircuitsFor(pseudo) {
-  return circuits
-    .filter(c => c.published && c.dailyRequired)
-    .map(c => {
-      const mine = (circuitRuns[c.id] || []).filter(r => norm(r.pseudo) === norm(pseudo));
-      const done = mine.filter(r => !r.crashed);
-      const best = done.length ? done.reduce((a, b) => (b.moves < a.moves ? b : a)) : null;
-      return {
-        id: c.id, name: c.name, laps: c.laps, attempts: c.attempts,
-        attemptsLeft: Math.max(0, c.attempts - mine.length),
-        alreadyPlayed: done.length > 0,
-        bestMoves: best ? best.moves : null
-      };
-    })
-    .filter(c => c.attemptsLeft > 0);
-}
-
-// Circuits du jour JAMAIS bouclés : ce sont eux qui empêchent de clore la journée.
-function unplayedRequiredCircuits(pseudo) {
-  return circuits
-    .filter(c => c.published && c.dailyRequired)
-    .filter(c => !(circuitRuns[c.id] || []).some(r => norm(r.pseudo) === norm(pseudo) && !r.crashed));
-}
-
 function nextAthleteFor(pseudo) {
   return publishedAthletes().find(a => !hasPlayed(pseudo, a.id)) || null;
 }
 function hasFinishedAll(pseudo) {
   const pub = publishedAthletes();
-  if (unplayedRequiredCircuits(pseudo).length) return false;   // circuit du jour jamais bouclé
   return pub.length > 0 && pub.every(a => hasPlayed(pseudo, a.id));
 }
 function rebuildGlobalScores() {
@@ -448,7 +421,7 @@ app.get('/api/preview', (req, res) => {
     base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'bowling') {
-    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:(parseFloat(q.multiplier)>0?parseFloat(q.multiplier):0)}));
+    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
@@ -461,11 +434,9 @@ app.get('/api/preview', (req, res) => {
       name:t.name||'Thème', color:t.color||'#888888',
       question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
-    base.trivQuestions = Array.from({length:6},(_,sec)=>{
-      const raw = athlete.trivQuestions||[];
-      const q = raw.find(x=>x&&parseInt(x.sectionIdx)===sec)||raw[sec]||{};
-      return { question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:sec, theme:q.theme||'' };
-    });
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
+    }));
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
@@ -476,11 +447,12 @@ app.get('/api/preview', (req, res) => {
     base.meliTimer = athlete.meliTimer||60;
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
+    // IMPORTANT : jamais de réponse envoyée avant que le joueur ait répondu —
+    // sinon n'importe qui peut lire les bonnes réponses via /api/athlete avant de jouer.
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+      question:q.question||'', theme:q.theme||'', tol:parseInt(q.tol)||1
     }));
     base.bonusQ = athlete.bonusQ||'';
-    base.bonusA = athlete.bonusA||'';
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
       {label:'−10 pts',value:-10,type:'add',prob:25},
@@ -527,7 +499,7 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'nagesync') {
     base.couloirs = (athlete.couloirs||[]).map(c=>({label:c.label||''}));
-    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:s.correct!==undefined?s.correct:0}));
+    base.sportifs = (athlete.sportifs||[]).map(s=>({nom:s.nom||'',correct:parseInt(s.correct)||0}));
     base.maxScore = 100;
   } else if (athlete.type === 'maillonfaible') {
     base.mfQuestions = (athlete.mfQuestions||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
@@ -670,8 +642,6 @@ app.post('/api/grimpe-check', (req, res) => {
   }
   const normAns = norm(answer);
   if(!normAns) return res.json({ correct: false, reason: 'empty' });
-  const alreadyFound = (found||[]).map(norm);
-  if(alreadyFound.includes(normAns)) return res.json({ correct: false, reason: 'already' });
   const allGroups = (athlete.grimpeAnswersFull||[]).length
     ? athlete.grimpeAnswersFull
     : (athlete.grimpeAnswers||[]).map(a=>[a]);
@@ -686,7 +656,55 @@ app.post('/api/grimpe-check', (req, res) => {
   };
   const correct = allGroups.some(group => group.some(a => matches(a)));
   const matchedGroup = correct ? allGroups.find(group => group.some(a => matches(a))) : null;
+  // Le doublon se juge sur le GROUPE canonique retrouvé, pas sur la saisie brute :
+  // sinon retaper un morceau ("Pantani") d'une réponse déjà validée ("Marco Pantani")
+  // passerait à travers le filtre exact et compterait comme une nouvelle bonne réponse.
+  const alreadyFound = (found||[]).map(norm);
+  if (correct && alreadyFound.includes(norm(matchedGroup[0]))) {
+    return res.json({ correct: false, reason: 'already' });
+  }
+  if (!correct && alreadyFound.includes(normAns)) {
+    return res.json({ correct: false, reason: 'already' });
+  }
   res.json({ correct, total: (athlete.grimpeAnswers||[]).length, answer: matchedGroup?matchedGroup[0]:null });
+});
+
+// APOL — vérifie une réponse SANS jamais exposer les autres réponses au client
+app.post('/api/apol-check', (req, res) => {
+  const { athleteId, qIdx, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'apol') return res.status(404).json({ error: 'Défi introuvable' });
+  const qs = athlete.apolQuestions || [];
+  const q = qs[qIdx];
+  if (!q) return res.status(400).json({ error: 'Question invalide' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const tol = q.tol != null ? parseInt(q.tol) : 1;
+  const correct = lev(norm(answer), norm(q.answer)) <= tol;
+  res.json({ correct, answer: q.answer || '' });
+});
+
+// APOL — dilemme final (double ou rien) : même principe, jamais exposé avant réponse
+app.post('/api/apol-bonus-check', (req, res) => {
+  const { athleteId, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'apol') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const correct = lev(norm(answer), norm(athlete.bonusA)) <= 1;
+  res.json({ correct, answer: athlete.bonusA || '' });
 });
 
 // EPO — révèle une réponse non encore trouvée
@@ -760,8 +778,7 @@ app.get('/api/athlete', (req, res) => {
   const pseudo = (req.query.pseudo || '').trim();
   if (!pseudo) return res.status(400).json({ error: 'Pseudo requis' });
   const athlete = nextAthleteFor(pseudo);
-  // Journée terminée seulement si les circuits "jeu du jour" ont été courus
-  if (!athlete) return res.json({ done: true, pendingCircuits: pendingCircuitsFor(pseudo) });
+  if (!athlete) return res.json({ done: true });
 
   const gridSize = athlete.gridSize || 10;
   const base = { id: athlete.id, emoji: athlete.emoji, type: athlete.type || 'text' };
@@ -772,7 +789,6 @@ app.get('/api/athlete', (req, res) => {
       : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
-    base.imageIndication = athlete.imageIndication||'';
   } else if (athlete.type === 'buzz') {
     base.clues             = athlete.clues;
     base.maxScore          = 100;
@@ -831,7 +847,6 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
-    base.biatAnnounceTime  = athlete.biatAnnounceTime || 45;
     base.biatSprintAnswers = (athlete.biatSprintAnswers||[]).length;
     base.biatQCM           = (athlete.biatQCM||[]).map(q=>({question:q.question,answer:q.answer,wrong:q.wrong||[]}));
     base.biatOrderQuestion = athlete.biatOrderQuestion || '';
@@ -865,7 +880,6 @@ app.get('/api/athlete', (req, res) => {
       nbRequired:q.nbRequired||1
     }));
     base.escaladeTheme = athlete.escaladeTheme||'';
-    base.escaladeTol = athlete.escaladeTol||1;
     base.maxScore = 200;
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
@@ -879,7 +893,7 @@ app.get('/api/athlete', (req, res) => {
     base.rouletteSeed = athlete.rouletteSeed||0;
     base.maxScore = 100;
   } else if (athlete.type === 'bowling') {
-    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:(parseFloat(q.multiplier)>0?parseFloat(q.multiplier):0)}));
+    base.bowlingQuestions = (athlete.bowlingQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||0,multiplier:q.multiplier||1}));
     base.maxScore = 300;
   } else if (athlete.type === 'badminton') {
     base.badmintonQuestions = (athlete.badmintonQuestions||[]).map(q=>({
@@ -892,26 +906,24 @@ app.get('/api/athlete', (req, res) => {
       name:t.name||'Thème', color:t.color||'#888888',
       question:t.question||'', answer:t.answer||'', tol:parseInt(t.tol)||1
     }));
-    base.trivQuestions = Array.from({length:6},(_,sec)=>{
-      const raw = athlete.trivQuestions||[];
-      const q = raw.find(x=>x&&parseInt(x.sectionIdx)===sec)||raw[sec]||{};
-      return { question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:sec, theme:q.theme||'' };
-    });
+    base.trivQuestions = (athlete.trivQuestions||[]).slice(0,6).map(q=>({
+      question:q.question||'', answer:q.answer||'', tol:parseInt(q.tol)||1, sectionIdx:parseInt(q.sectionIdx)||0, theme:q.theme||''
+    }));
     base.maxScore = 300;
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
       scrambled:(w.scrambled||'').toUpperCase().trim(),
-      answer:(w.answer||'').toUpperCase().trim(),
-      indice:w.indice||''
+      answer:(w.answer||'').toUpperCase().trim()
     }));
     base.meliTimer = athlete.meliTimer||60;
     base.maxScore = 100;
   } else if (athlete.type === 'apol') {
+    // IMPORTANT : jamais de réponse envoyée avant que le joueur ait répondu —
+    // sinon n'importe qui peut lire les bonnes réponses via /api/athlete avant de jouer.
     base.apolQuestions = (athlete.apolQuestions||[]).slice(0,5).map(q=>({
-      question:q.question||'', theme:q.theme||'', answer:q.answer||'', tol:parseInt(q.tol)||1
+      question:q.question||'', theme:q.theme||'', tol:parseInt(q.tol)||1
     }));
     base.bonusQ = athlete.bonusQ||'';
-    base.bonusA = athlete.bonusA||'';
     base.apolBoxItems = [
       {label:'+10 pts',value:10,type:'add',prob:25},
       {label:'−10 pts',value:-10,type:'add',prob:25},
@@ -1052,45 +1064,6 @@ app.get('/api/scores/formula-grid', (req, res) => {
   const totals = formulaGridPointsByPseudo();
   const list = Object.values(totals).sort((a,b) => b.score - a.score).slice(0, 50);
   res.json({ athlete: { emoji: '🏁', answer: 'Formula·Grid', type: 'formula' }, scores: list });
-});
-
-app.get('/api/scores/teams', async (req, res) => {
-  const minPlayers=parseInt(req.query.min)||1;
-  if(db){
-    try{
-      // Recharger comptes ET scores depuis MongoDB
-      const [freshAccs, freshScores]=await Promise.all([
-        db.collection('accounts').find({}).toArray(),
-        db.collection('scores').find({}).toArray()
-      ]);
-      freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
-      freshScores.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
-    }catch(e){ console.error('teams reload error:',e.message); }
-  }
-  rebuildGlobalScores();
-  // globalScores = [{pseudo, score}] — déjà calculé
-  // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
-  const teamData={};
-  for(const gs of globalScores){
-    const acc=accounts[gs.pseudo.toLowerCase()];
-    if(!acc||!acc.teamId) continue;
-    if(!teamData[acc.teamId]) teamData[acc.teamId]=[];
-    teamData[acc.teamId].push(gs.score);
-  }
-  const TOP_N = 3;   // seuls les 3 meilleurs joueurs de l'équipe comptent
-  const result=Object.entries(teamData).map(([teamId,scores])=>{
-    const t=teams.find(t=>t.id===teamId)||{name:'Équipe',emoji:'👥',color:'#6366f1',id:teamId};
-    // Moyenne du TOP 3 : une grosse équipe n'est plus pénalisée par ses joueurs
-    // occasionnels, et une petite équipe n'est plus avantagée par son faible effectif.
-    const best=[...scores].sort((a,b)=>b-a).slice(0,TOP_N);
-    const avg=scores.length>=minPlayers
-      ? Math.round(best.reduce((a,b)=>a+b,0)/best.length)
-      : null;
-    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,
-      playerCount:scores.length,countedPlayers:best.length,topN:TOP_N,
-      avg,qualified:scores.length>=minPlayers};
-  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
-  res.json({teams:result,minPlayers});
 });
 
 app.get('/api/scores/:athleteId', (req, res) => {
@@ -1251,27 +1224,15 @@ app.post('/api/formula/circuit', async (req, res) => {
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
     warmup: Math.max(0, Math.min(5, parseInt(req.body.warmup)||0)),
-    freePractice: !!req.body.freePractice,
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
-    countsInGlobal: req.body.countsInGlobal !== false, // false = hors classement général
-    dailyRequired: !!req.body.dailyRequired,           // true = à faire dans les jeux du jour
     published: !!published,
-    // POOL DE DÉS COMMUN : graine du circuit. Tous les joueurs affrontent les mêmes
-    // tirages. Conservée d'une réédition à l'autre (sinon les temps déjà posés
-    // deviendraient incomparables) ; régénérable à la demande via regenDiceSeed.
-    diceSeed: (req.body.regenDiceSeed || existingIdx < 0 || !circuits[existingIdx].diceSeed)
-      ? ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10))
-      : circuits[existingIdx].diceSeed,
     // Le fantôme de référence survit à une réédition du circuit
     ghost: existingIdx>=0 ? circuits[existingIdx].ghost : undefined,
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
   if (existingIdx >= 0) circuits[existingIdx] = data; else circuits.push(data);
-  // Basculer "hors classement" doit se répercuter immédiatement sur le général
-  rebuildGlobalScores();
-  saveData();
   try { await saveCircuits(); res.json({ success: true, id: circuitId }); }
   catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1291,42 +1252,14 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
   const runs = circuitRuns[req.params.id] || [];
   const pseudo = (req.query.pseudo || '').trim();
   const mine = pseudo ? runs.filter(r => norm(r.pseudo) === norm(pseudo)) : [];
-  // Un seul résultat par joueur : son meilleur essai (même logique que le classement des points)
-  const rankedAll = circuitRanking(req.params.id);
-  const top = rankedAll.slice(0, 10)
-    .map((r, i) => ({ pseudo: r.pseudo, moves: r.moves, left: r.left || 0,
-                      attemptIndex: r.attemptIndex, cells: r.cells,
-                      points: circuitPointsFor(c, i, rankedAll.length) }));
-  // Meilleur tour : durée mini entre deux passages de ligne, sur tous les runs
-  const bestLapOf = (rs) => {
-    let best = null;
-    for (const r of rs) {
-      const lm = Array.isArray(r.lapMoves) ? r.lapMoves : [];
-      for (let i = 0; i < lm.length; i++) {
-        const d = lm[i] - (i ? lm[i-1] : 0);
-        if (Number.isFinite(d) && d > 0 && (best === null || d < best.lap)) best = { lap: d, pseudo: r.pseudo };
-      }
-    }
-    return best;
-  };
-  // Mes meilleurs splits (min case par case sur tous mes runs)
-  const myBestCp = [];
-  for (const r of mine) {
-    (r.cpTimes || []).forEach((v, i) => {
-      if (Number.isFinite(v) && (myBestCp[i] == null || v < myBestCp[i])) myBestCp[i] = v;
-    });
-  }
+  const top = runs.filter(r => !r.crashed && Number.isFinite(r.moves))
+    .sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
+    .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
   res.json({
     top,
     attemptsUsed: mine.length,
     attemptsLeft: Math.max(0, c.attempts - mine.length),
-    diceSeed: c.diceSeed || ('legacy' + c.id),
-    attemptNo: mine.length + 1,   // grille de dés de l'essai à venir
-    countsInGlobal: c.countsInGlobal !== false,
     best: bestRun(mine),
-    myBestCp,
-    myBestLap: bestLapOf(mine),
-    worldBestLap: bestLapOf(runs),
     // Meilleur temps TOUS JOUEURS confondus + ses splits (pour le delta en course)
     worldBest: (() => {
       const wb = bestRun(runs);
@@ -1337,13 +1270,11 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
 });
 
 app.post('/api/formula/run', async (req, res) => {
-  const { circuitId, pseudo, moves, left, laps, cpTimes, lapMoves, cells } = req.body;
+  const { circuitId, pseudo, moves, left, laps, cpTimes } = req.body;
   const c = circuits.find(x => x.id === circuitId);
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
   if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
-  // Les points Formula·Grid rejoignent le classement général : le pseudo doit être un compte Arena
-  if (!accounts[cleanPseudo.toLowerCase()]) return res.status(403).json({ error: 'Crée d\'abord ton compte Arena Sport avec ce pseudo — tes points rejoindront le classement général', noAccount: true });
   if (!Number.isFinite(moves) || moves < 1) return res.status(400).json({ error: 'Résultat invalide' });
 
   circuitRuns[circuitId] = circuitRuns[circuitId] || [];
@@ -1352,10 +1283,7 @@ app.post('/api/formula/run', async (req, res) => {
 
   const run = {
     pseudo: cleanPseudo, moves, left: left||0, laps: laps||c.laps,
-    cpTimes: Array.isArray(cpTimes) ? cpTimes.filter(Number.isFinite).slice(0, 50) : [],
-    lapMoves: Array.isArray(lapMoves) ? lapMoves.filter(Number.isFinite).slice(0, 30) : [],
-    cells: Number.isFinite(cells) ? cells : undefined,   // départage : trajectoire la plus courte
-    attemptIndex: already.length,                          // départage : moins d'essais = mieux
+    cpTimes: Array.isArray(cpTimes) ? cpTimes.slice(0, 50) : [],
     date: new Date().toISOString()
   };
   circuitRuns[circuitId].push(run);
@@ -1367,22 +1295,15 @@ app.post('/api/formula/run', async (req, res) => {
     const ranked = circuitRanking(circuitId);
     const N = ranked.length;
     const myRank = ranked.findIndex(r => norm(r.pseudo) === norm(cleanPseudo)) + 1;
-    const countsInGlobal = c.countsInGlobal !== false;
-    const points = countsInGlobal
-      ? (N - myRank + 1) * (Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10)
-      : 0;
+    const points = (N - myRank + 1) * (Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10);
 
     rebuildGlobalScores(); // recalcule aussi le classement général avec les points à jour de TOUS les joueurs
     saveData();
 
     // Top 10 pour affichage immédiat côté client
-    const top = ranked.slice(0, 10).map((r, i) => ({
-      pseudo: r.pseudo, moves: r.moves, left: r.left,
-      attemptIndex: r.attemptIndex, cells: r.cells,
-      points: circuitPointsFor(c, i, ranked.length)
-    }));
+    const top = ranked.slice(0, 10).map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
 
-    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, countsInGlobal, top });
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), best: bestRun(mine), rank: myRank, totalPlayers: N, points, top });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1393,7 +1314,6 @@ app.post('/api/formula/crash', async (req, res) => {
   if (!c) return res.status(404).json({ error: 'Circuit introuvable' });
   const cleanPseudo = (pseudo||'').trim().slice(0,24);
   if (!cleanPseudo) return res.status(400).json({ error: 'Pseudo requis' });
-  if (!accounts[cleanPseudo.toLowerCase()]) return res.status(403).json({ error: 'Compte Arena requis', noAccount: true });
 
   circuitRuns[circuitId] = circuitRuns[circuitId] || [];
   const already = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
@@ -1404,9 +1324,7 @@ app.post('/api/formula/crash', async (req, res) => {
   try {
     await saveCircuitRuns(circuitId);
     const mine = circuitRuns[circuitId].filter(r => norm(r.pseudo) === norm(cleanPseudo));
-    // attemptNo : l'essai suivant a sa PROPRE grille de dés — sans ça, un joueur
-    // pourrait relancer et rejouer des tirages qu'il connaît déjà.
-    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length), attemptNo: mine.length + 1 });
+    res.json({ success: true, attemptsLeft: Math.max(0, c.attempts - mine.length) });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1441,6 +1359,31 @@ app.delete('/api/formula/ghost', async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Classement interne au jeu : tous les circuits publiés + cumul général.
+// Non verrouillé (le joueur est déjà dans Formula·Grid, il consulte ses adversaires).
+app.get('/api/formula/rankings', (req, res) => {
+  const pub = circuits.filter(c => c.published);
+  const overall = {};
+  const list = pub.map(c => {
+    const mult = Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10;
+    const ranked = circuitRanking(c.id);
+    const N = ranked.length;
+    const top = ranked.map((r, i) => {
+      const pts = (N - i) * mult;
+      const k = norm(r.pseudo);
+      if (!overall[k]) overall[k] = { pseudo: r.pseudo, score: 0, circuits: 0 };
+      overall[k].score += pts;
+      overall[k].circuits++;
+      return { rank: i + 1, pseudo: r.pseudo, moves: r.moves, left: r.left || 0, points: pts };
+    });
+    return { id: c.id, name: c.name, laps: c.laps, players: N, top: top.slice(0, 20) };
+  });
+  res.json({
+    circuits: list,
+    overall: Object.values(overall).sort((a, b) => b.score - a.score).slice(0, 50)
+  });
+});
+
 // ---- ADMIN : gestion des scores Formula (lister / modifier / supprimer) ----
 
 // Liste tous les essais d'un circuit
@@ -1450,8 +1393,8 @@ app.get('/api/formula/admin/runs/:circuitId', (req, res) => {
   const c = circuits.find(x => x.id === req.params.circuitId);
   res.json({
     circuit: c ? { id: c.id, name: c.name, laps: c.laps, attempts: c.attempts, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10 } : null,
-    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date, laps: r.laps||0, cpTimes: r.cpTimes||[], lapMoves: r.lapMoves||[], cells: r.cells, attemptIndex: r.attemptIndex })),
-    ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0, cells: r.cells, attemptIndex: r.attemptIndex }))
+    runs: runs.map((r, i) => ({ index: i, pseudo: r.pseudo, moves: r.moves, left: r.left||0, crashed: !!r.crashed, date: r.date })),
+    ranking: circuitRanking(req.params.circuitId).map((r, i) => ({ rank: i+1, pseudo: r.pseudo, moves: r.moves, left: r.left||0 }))
   });
 });
 
@@ -1601,13 +1544,13 @@ app.post('/api/admin/athlete', (req, res) => {
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':type==='trappe'?'La Trappe':type==='maillonfaible'?'Maillon Faible':type==='haltero'?'Haltéro-Quiz':type==='assaut'?"L'Escrime":type==='tirarlarc'?"Tir à l'Arc":type==='nagesync'?'Natation':type==='biathlon'?(req.body.biatTheme||'Biathlon').trim():type==='melimelo'?'Méli-Mélo':type==='apol'?'À prendre ou à laisser':type==='trivpursuit'?'Trivial Pursuit':'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
   // Ajouter toutes les variantes séparées par ; comme aliases
   answerParts.slice(1).forEach(a => autoAliases.push(a.toLowerCase()));
-  const manualAliases = (typeof aliases === 'string' ? aliases : Array.isArray(aliases) ? aliases.join(',') : '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const manualAliases = (aliases || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   const allAliases    = [...new Set([...autoAliases, ...manualAliases])];
 
   const gs = Math.min(20, Math.max(2, parseInt(gridSize) || 10));
@@ -1911,7 +1854,7 @@ async function loadTeams(){
 }
 
 async function saveTeam(team){
-  if(!db){ saveToFile(); return; }
+  if(!db) return;
   try{ await db.collection('teams').updateOne({id:team.id},{$set:team},{upsert:true}); }
   catch(e){ console.error('saveTeam:', e.message); }
 }
@@ -1938,7 +1881,6 @@ app.delete('/api/admin/teams/:id', async (req, res) => {
   if(password!==ADMIN_PASSWORD) return res.status(401).json({error:'Non autorisé'});
   teams=teams.filter(t=>t.id!==req.params.id);
   if(db) await db.collection('teams').deleteOne({id:req.params.id});
-  else saveToFile();
   res.json({ok:true});
 });
 
@@ -2004,6 +1946,36 @@ app.get('/api/debug/teams', (req, res) => {
   });
 });
 
+app.get('/api/scores/teams', async (req, res) => {
+  const minPlayers=parseInt(req.query.min)||1;
+  if(db){
+    try{
+      // Recharger comptes ET scores depuis MongoDB
+      const [freshAccs, freshScores]=await Promise.all([
+        db.collection('accounts').find({}).toArray(),
+        db.collection('scores').find({}).toArray()
+      ]);
+      freshAccs.forEach(a=>{ accounts[a.pseudo.toLowerCase()]=a; });
+      freshScores.forEach(s=>{ scores[s.athleteId]=s.scores||[]; });
+    }catch(e){ console.error('teams reload error:',e.message); }
+  }
+  rebuildGlobalScores();
+  // globalScores = [{pseudo, score}] — déjà calculé
+  // accounts = {pseudo_lower: {pseudo, teamId}} — en mémoire
+  const teamData={};
+  for(const gs of globalScores){
+    const acc=accounts[gs.pseudo.toLowerCase()];
+    if(!acc||!acc.teamId) continue;
+    if(!teamData[acc.teamId]) teamData[acc.teamId]=[];
+    teamData[acc.teamId].push(gs.score);
+  }
+  const result=Object.entries(teamData).map(([teamId,scores])=>{
+    const t=teams.find(t=>t.id===teamId)||{name:'Équipe',emoji:'👥',color:'#6366f1',id:teamId};
+    const avg=scores.length>=minPlayers?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+    return{id:t.id,name:t.name,emoji:t.emoji,color:t.color,playerCount:scores.length,avg,qualified:scores.length>=minPlayers};
+  }).filter(t=>t.playerCount>0).sort((a,b)=>(b.avg||0)-(a.avg||0));
+  res.json({teams:result,minPlayers});
+});
 
 
 // ── MODIFIER UN SCORE ─────────────────────────────────────────────────────
@@ -2058,7 +2030,7 @@ async function loadAccounts(){
 }
 
 async function saveAccount(account){
-  if(!db){ saveToFile(); return; }
+  if(!db){ console.log('saveAccount: db non connecté'); return; }
   try{
     const col=db.collection('accounts');
     await col.updateOne({pseudo:account.pseudo},{$set:account},{upsert:true});
@@ -2104,8 +2076,128 @@ app.post('/api/account/login', async (req, res) => {
 // Reset compte (admin)
 
 
+// ══════════════════════════════════════════════════════════════════════════
+//  CURLING — duels asynchrones, une pierre par tour
+// ══════════════════════════════════════════════════════════════════════════
+
+function curlingPublic(m, pseudo) {
+  const meRed = norm(m.red) === norm(pseudo||'');
+  return {
+    id: m.id, red: m.red, yellow: m.yellow,
+    myTeam: meRed ? 'RED' : 'YELLOW',
+    opponent: meRed ? m.yellow : m.red,
+    myTurn: m.status === 'playing' && norm(m.turn) === norm(pseudo||''),
+    turn: m.turn, status: m.status, state: m.state,
+    updatedAt: m.updatedAt
+  };
+}
+
+// Défier un joueur
+app.post('/api/curling/challenge', async (req, res) => {
+  const from = (req.body.from||'').trim().slice(0,24);
+  const to   = (req.body.to||'').trim().slice(0,24);
+  const ends = Math.max(1, Math.min(10, parseInt(req.body.ends)||2));
+  if (!from || !to) return res.status(400).json({ error: 'Pseudos requis' });
+  if (norm(from) === norm(to)) return res.status(400).json({ error: 'Impossible de se défier soi-même' });
+
+  const already = curlingMatches.find(m => m.status === 'playing' &&
+    ((norm(m.red)===norm(from) && norm(m.yellow)===norm(to)) ||
+     (norm(m.red)===norm(to) && norm(m.yellow)===norm(from))));
+  if (already) return res.json({ success: true, id: already.id, existing: true });
+
+  const m = {
+    id: 'cur_' + Date.now(),
+    red: from, yellow: to,
+    turn: from,                       // celui qui défie ouvre le jeu
+    status: 'playing',
+    state: {
+      stones: [], stonesPlayedInEnd: 0, currentTeam: 'RED',
+      currentEnd: 1, totalEnds: ends,
+      scoreRed: 0, scoreYellow: 0, endScores: [], redHasHammer: false
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  curlingMatches.push(m);
+  try { await saveCurling(); res.json({ success: true, id: m.id }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Mes duels (à moi de jouer en premier)
+app.get('/api/curling/matches', (req, res) => {
+  const pseudo = (req.query.pseudo||'').trim();
+  if (!pseudo) return res.status(400).json({ error: 'Pseudo requis' });
+  const mine = curlingMatches
+    .filter(m => norm(m.red)===norm(pseudo) || norm(m.yellow)===norm(pseudo))
+    .map(m => curlingPublic(m, pseudo))
+    .sort((a,b) => (b.myTurn?1:0)-(a.myTurn?1:0) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  res.json(mine);
+});
+
+// Adversaires possibles : tous les comptes existants sauf soi
+app.get('/api/curling/players', (req, res) => {
+  const pseudo = (req.query.pseudo||'').trim();
+  const names = new Set();
+  Object.values(accounts||{}).forEach(a => { if (a && a.pseudo && norm(a.pseudo)!==norm(pseudo)) names.add(a.pseudo); });
+  res.json([...names].sort((a,b)=>a.localeCompare(b)).slice(0,200));
+});
+
+// État complet d'un duel
+app.get('/api/curling/match/:id', (req, res) => {
+  const m = curlingMatches.find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: 'Duel introuvable' });
+  res.json(curlingPublic(m, (req.query.pseudo||'').trim()));
+});
+
+// Jouer UNE pierre : le client simule la physique et renvoie l'état résultant
+app.post('/api/curling/throw', async (req, res) => {
+  const { matchId, pseudo, state } = req.body;
+  const m = curlingMatches.find(x => x.id === matchId);
+  if (!m) return res.status(404).json({ error: 'Duel introuvable' });
+  if (m.status !== 'playing') return res.status(403).json({ error: 'Duel terminé' });
+  if (norm(m.turn) !== norm(pseudo||'')) return res.status(403).json({ error: 'Ce n\'est pas ton tour' });
+  if (!state || !Array.isArray(state.stones)) return res.status(400).json({ error: 'État invalide' });
+
+  m.state = {
+    stones: state.stones.slice(0,16).map(s => ({ x:+s.x||0, y:+s.y||0, team: s.team==='RED'?'RED':'YELLOW' })),
+    stonesPlayedInEnd: Math.max(0, Math.min(8, parseInt(state.stonesPlayedInEnd)||0)),
+    currentTeam: state.currentTeam==='RED'?'RED':'YELLOW',
+    currentEnd: Math.max(1, parseInt(state.currentEnd)||1),
+    totalEnds: Math.max(1, Math.min(10, parseInt(state.totalEnds)||2)),
+    scoreRed: Math.max(0, parseInt(state.scoreRed)||0),
+    scoreYellow: Math.max(0, parseInt(state.scoreYellow)||0),
+    endScores: Array.isArray(state.endScores) ? state.endScores.slice(0,10) : [],
+    redHasHammer: !!state.redHasHammer
+  };
+  // La main passe au joueur de l'équipe qui doit lancer ensuite
+  m.turn = (m.state.currentTeam === 'RED') ? m.red : m.yellow;
+  if (state.gameOver) {
+    m.status = 'done';
+    m.winner = m.state.scoreRed > m.state.scoreYellow ? m.red
+             : (m.state.scoreYellow > m.state.scoreRed ? m.yellow : null);
+  }
+  m.updatedAt = new Date().toISOString();
+  try { await saveCurling(); res.json({ success: true, match: curlingPublic(m, pseudo) }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Abandonner
+app.post('/api/curling/forfeit', async (req, res) => {
+  const { matchId, pseudo } = req.body;
+  const m = curlingMatches.find(x => x.id === matchId);
+  if (!m) return res.status(404).json({ error: 'Duel introuvable' });
+  if (norm(m.red)!==norm(pseudo||'') && norm(m.yellow)!==norm(pseudo||''))
+    return res.status(403).json({ error: 'Non autorisé' });
+  m.status = 'done';
+  m.winner = norm(m.red)===norm(pseudo) ? m.yellow : m.red;
+  m.updatedAt = new Date().toISOString();
+  try { await saveCurling(); res.json({ success: true }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 const PORT = process.env.PORT || 3000;
 connectMongo().then(() => {
   connectFormula();
+  connectCurling();
   app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html`));
 });
