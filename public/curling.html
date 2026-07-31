@@ -124,7 +124,6 @@
             background: #facc15; box-shadow: 0 0 12px #facc15; transform: translateX(-50%);
             transition: left 0.05s linear;
         }
-        /* Indicateur fixe rouge/blanc pour marquer l'endroit où on s'est arrêté */
         #big-gauge-marker {
             position: absolute; top: 0; width: 4px; height: 100%;
             background: #ef4444; box-shadow: 0 0 8px #ef4444; transform: translateX(-50%);
@@ -555,6 +554,7 @@
     let powerAccuracyError = 0;
 
     let isSweeping = false;
+    let sweepHeat = 0; // Chaleur progressive de balayage (sans essoufflement)
 
     let cameraY = SHEET_HEIGHT - 700;
     let targetCameraY = cameraY;
@@ -620,6 +620,7 @@
         selectedRotation = 1;
         chosenAngleDeg = 0;
         chosenPower = 5.0;
+        sweepHeat = 0;
 
         document.getElementById('angleRange').value = 0;
         document.getElementById('angleValueDisplay').innerText = '0.0°';
@@ -697,7 +698,6 @@
     }
 
     function stopGaugeAndProceed() {
-        // Affiche l'indicateur fixe (marqueur rouge) à l'endroit exact de l'arrêt
         const marker = document.getElementById('big-gauge-marker');
         marker.style.left = gaugeVal + '%';
         marker.style.display = 'block';
@@ -705,7 +705,7 @@
         if (gameState === 'GAUGE_1') {
             angleAccuracyError = (gaugeVal - 50) * 0.003; 
             document.getElementById('instruction').innerHTML = `Angle validé ! Préparation de la puissance...`;
-            setTimeout(() => { startGauge2(); }, 800); // Petit délai pour voir le marqueur rouge
+            setTimeout(() => { startGauge2(); }, 800);
         } else if (gameState === 'GAUGE_2') {
             powerAccuracyError = (gaugeVal - 50) * 0.03;
             setTimeout(() => {
@@ -900,6 +900,13 @@
     function updateStonePhysics(stone, dt) {
         if (!stone.isMoving) return;
 
+        // Montée rapide de la chaleur de balayage (jusqu'à 1.0 max), redescend si on lève le doigt
+        if (isSweeping && gameState === 'SLIDING') {
+            sweepHeat = Math.min(1.0, sweepHeat + dt * 3.0);
+        } else {
+            sweepHeat = Math.max(0.0, sweepHeat - dt * 4.0);
+        }
+
         let speed = Math.hypot(stone.vx, stone.vy);
 
         if (speed <= (0.5 / TIME_STRETCH)) {
@@ -912,9 +919,7 @@
 
         let baseDecel = 45 / (TIME_STRETCH * TIME_STRETCH); 
         
-        let currentSweepPower = (isSweeping && gameState === 'SLIDING') ? 1.0 : 0.0;
-
-        let frictionMod = 1.0 - (0.20 * currentSweepPower);
+        let frictionMod = 1.0 - (0.20 * sweepHeat);
         let decel = baseDecel * frictionMod * dt;
         let newSpeed = Math.max(0, speed - decel);
 
@@ -926,7 +931,7 @@
         let curlIntensity = 800 / TIME_STRETCH; 
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
         
-        let curlMod = 1.0 - (0.30 * currentSweepPower);
+        let curlMod = 1.0 - (0.30 * sweepHeat);
 
         stone.vx += nx * curlAccel * curlMod * dt;
         stone.vy += ny * curlAccel * curlMod * dt;
