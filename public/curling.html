@@ -940,7 +940,6 @@
 
         let baseDecel = 45 / (TIME_STRETCH * TIME_STRETCH); 
         
-        // Efficacité de friction modulée : maximale au centre (1.0), réduite sur les côtés (0.7)
         let frictionEfficiency = (sweepSide === 0) ? 1.0 : 0.7;
         let frictionMod = 1.0 - (0.20 * sweepHeat * frictionEfficiency);
         let decel = baseDecel * frictionMod * dt;
@@ -954,13 +953,13 @@
         let curlIntensity = 800 / TIME_STRETCH; 
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
         
-        let curlReduction = 0.30; 
+        let curlReduction = 0.25; 
         if (sweepSide !== 0) {
             let curlDirection = Math.sign(stone.spin);
             if (sweepSide === -curlDirection) {
-                curlReduction = 0.50; 
+                curlReduction = 0.35; // Hold Line
             } else {
-                curlReduction = 0.10; 
+                curlReduction = 0.05; // Carve
             }
         }
         
@@ -1012,7 +1011,6 @@
 
                         if (velAlongNormal < 0) {
                             playHitSound(); 
-                            // Amélioration newtonienne : restitution ajustée et amortissement d'inertie renforcé
                             let restitution = 0.90; 
                             let impulseScalar = -(1 + restitution) * velAlongNormal / 2; 
 
@@ -1231,20 +1229,20 @@
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
         const isInFront = touchWorldY < activeStone.y - 5;
-        const laneWidth = STONE_RADIUS * 1.8;
+        const laneWidth = STONE_RADIUS * 2.2; 
         const offsetX = touchWorldX - activeStone.x;
 
         if (isInFront && Math.abs(offsetX) < laneWidth) {
             isSweeping = true;
-            if (offsetX < -3) {
+            if (offsetX < -8) {
                 sweepSide = -1; 
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DIRECTIONNEL GAUCHE";
-            } else if (offsetX > 3) {
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE GAUCHE (Hold)";
+            } else if (offsetX > 8) {
                 sweepSide = 1;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DIRECTIONNEL DROITE";
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DROITE (Hold)";
             } else {
                 sweepSide = 0;  
-                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE (Distance Max)";
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE (Centre)";
             }
             document.getElementById('sweepHint').classList.add('active');
         } else {
