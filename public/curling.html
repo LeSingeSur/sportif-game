@@ -746,7 +746,7 @@
         activeStone.isMoving = true;
 
         gameState = 'SLIDING';
-        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ DEVANT OU SUR LES FLANCS DE LA PIERRE !</span>";
+        document.getElementById('instruction').innerHTML = "<span class='highlight'>🧹 BALAYEZ TRÈS LARGE DEVANT OU SUR LES FLANCS !</span>";
     }
 
     function gameLoop(timestamp) {
@@ -955,7 +955,7 @@
         stone.vx += nx * curlAccel * dt;
         stone.vy += ny * curlAccel * dt;
 
-        // Effet réaliste et subtil : micro-guidage thermique sur le flanc (dosé à 7 pour plus de finesse)
+        // Effet réaliste et subtil : micro-guidage thermique sur le flanc (élargi et dosé à 7)
         if (sweepSide !== 0 && sweepHeat > 0) {
             let guideForce = sweepSide * 7 * sweepHeat * dt; 
             let perpX = -stone.vy / (speed + 0.1);
@@ -1055,10 +1055,10 @@
         ctx.save();
         
         let sweepOffset = Math.sin(Date.now() / 15) * 10; 
-        let sideOffset = sweepSide * 16; 
+        let sideOffset = sweepSide * 20; 
         
         let bx = activeStone.x + sideOffset + sweepOffset;
-        let by = (sweepSide === 0) ? (activeStone.y - 35) : activeStone.y;
+        let by = (sweepSide === 0) ? (activeStone.y - 45) : activeStone.y;
 
         let brushColor = (sweepSide === 0) ? '#10b981' : '#ef4444'; 
 
@@ -1229,16 +1229,17 @@
         const touchWorldX = (clientX - rect.left) * scaleX;
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
-        const isNearStoneVertical = touchWorldY >= activeStone.y - 35 && touchWorldY <= activeStone.y + 20;
-        const laneWidth = STONE_RADIUS * 2.5; 
+        // Zone très élargie devant la pierre (jusqu'à 100 pixels en amont) et tolérante sur les côtés
+        const isNearStoneVertical = touchWorldY >= activeStone.y - 100 && touchWorldY <= activeStone.y + 25;
+        const laneWidth = STONE_RADIUS * 3.5; // Zone latérale plus large et confortable
         const offsetX = touchWorldX - activeStone.x;
 
         if (isNearStoneVertical && Math.abs(offsetX) < laneWidth) {
             isSweeping = true;
-            if (offsetX < -10) {
+            if (offsetX < -12) {
                 sweepSide = -1; // Flanc gauche
                 document.getElementById('sweepHint').textContent = "🧹 BALAYAGE FLANC GAUCHE";
-            } else if (offsetX > 10) {
+            } else if (offsetX > 12) {
                 sweepSide = 1;  // Flanc droit
                 document.getElementById('sweepHint').textContent = "🧹 BALAYAGE FLANC DROIT";
             } else {
