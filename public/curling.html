@@ -122,10 +122,17 @@
         #big-gauge-cursor {
             position: absolute; top: 0; width: 6px; height: 100%;
             background: #facc15; box-shadow: 0 0 12px #facc15; transform: translateX(-50%);
+            transition: left 0.05s linear;
+        }
+        /* Indicateur fixe rouge/blanc pour marquer l'endroit où on s'est arrêté */
+        #big-gauge-marker {
+            position: absolute; top: 0; width: 4px; height: 100%;
+            background: #ef4444; box-shadow: 0 0 8px #ef4444; transform: translateX(-50%);
+            display: none; z-index: 5;
         }
         #big-gauge-center {
             position: absolute; top: 0; left: 50%; width: 2px; height: 100%;
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.4);
         }
 
         .sweep-hint {
@@ -222,17 +229,17 @@
 </div>
 
 <div id="stone-hud">
-    <div class="hud-title" id="hudTitle">1. Réglage de l'Angle</div>
+    <div class="hud-title" id="hudTitle">1. Sens de Rotation</div>
 
-    <div id="hudAngleGroup" class="slider-group">
+    <div id="hudRotationGroup" style="display:flex; gap:8px; width:100%;">
+        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(-1)">↺ Anti-horaire</button>
+        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(1)">↻ Horaire</button>
+    </div>
+
+    <div id="hudAngleGroup" class="slider-group" style="display:none;">
         <input type="range" id="angleRange" min="-15" max="15" step="0.5" value="0" oninput="onAngleSliderInput(this.value)">
         <div class="slider-labels"><span>-15°</span><span id="angleValueDisplay" style="color:#facc15;">0.0°</span><span>+15°</span></div>
         <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="validateAngleChoice()">Valider l'Angle</button>
-    </div>
-
-    <div id="hudRotationGroup" style="display:none; gap:8px; width:100%;">
-        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(-1)">↺ Anti-horaire</button>
-        <button class="btn btn-blue" style="flex:1;" onclick="validateRotationChoice(1)">↻ Horaire</button>
     </div>
 
     <div id="hudPowerGroup" class="slider-group" style="display:none;">
@@ -244,6 +251,7 @@
     <div id="hudGaugeGroup" style="display:none; flex-direction:column; gap:6px; width:100%;">
         <div id="big-gauge-container">
             <div id="big-gauge-center"></div>
+            <div id="big-gauge-marker"></div>
             <div id="big-gauge-cursor"></div>
         </div>
         <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="stopGaugeAndProceed()">✓ Valider la Jauge</button>
@@ -458,7 +466,7 @@
     let currentTeam = 'RED';
     let stonesPlayedInEnd = 0;
 
-    let gameState = 'CHOICE_ANGLE'; 
+    let gameState = 'CHOICE_ROTATION'; 
 
     const DUEL = {
       on: false,          
@@ -608,7 +616,8 @@
         };
         stones.push(activeStone);
 
-        gameState = 'CHOICE_ANGLE';
+        gameState = 'CHOICE_ROTATION'; 
+        selectedRotation = 1;
         chosenAngleDeg = 0;
         chosenPower = 5.0;
 
@@ -616,26 +625,35 @@
         document.getElementById('angleValueDisplay').innerText = '0.0°';
         document.getElementById('powerRange').value = 5.0;
         document.getElementById('powerValueDisplay').innerText = '5.0';
+        document.getElementById('big-gauge-marker').style.display = 'none';
 
-        showHudPanel('angle');
-        document.getElementById('instruction').innerHTML = `Tour des <span class='highlight'>${currentTeam === 'RED' ? 'ROUGES' : 'JAUNES'}</span>. Ajustez l'angle sur la pierre !`;
+        showHudPanel('rotation');
+        document.getElementById('instruction').innerHTML = `Tour des <span class='highlight'>${currentTeam === 'RED' ? 'ROUGES' : 'JAUNES'}</span>. Choisissez le sens de rotation !`;
     }
 
     function showHudPanel(panelName) {
-        document.getElementById('hudAngleGroup').style.display = (panelName === 'angle') ? 'flex' : 'none';
         document.getElementById('hudRotationGroup').style.display = (panelName === 'rotation') ? 'flex' : 'none';
+        document.getElementById('hudAngleGroup').style.display = (panelName === 'angle') ? 'flex' : 'none';
         document.getElementById('hudPowerGroup').style.display = (panelName === 'power') ? 'flex' : 'none';
         document.getElementById('hudGaugeGroup').style.display = (panelName === 'gauge') ? 'flex' : 'none';
         document.getElementById('hudEndGroup').style.display = (panelName === 'end') ? 'flex' : 'none';
 
         let titles = {
-            'angle': "1. Réglage de l'Angle",
-            'rotation': "2. Sens de Rotation",
+            'rotation': "1. Sens de Rotation",
+            'angle': "2. Réglage de l'Angle",
             'power': "3. Réglage de la Puissance",
             'gauge': gameState === 'GAUGE_1' ? "🎯 JAUGE 1 : PRÉCISION ANGLE" : "⚡ JAUGE 2 : PRÉCISION PUISSANCE",
             'end': "Fin de Tour"
         };
         document.getElementById('hudTitle').innerText = titles[panelName] || '';
+    }
+
+    function validateRotationChoice(rot) {
+        selectedRotation = rot;
+        if(activeStone) activeStone.spin = rot;
+        gameState = 'CHOICE_ANGLE';
+        showHudPanel('angle');
+        document.getElementById('instruction').innerHTML = `Ajustez l'angle sur la pierre !`;
     }
 
     function onAngleSliderInput(val) {
@@ -644,14 +662,6 @@
     }
 
     function validateAngleChoice() {
-        gameState = 'CHOICE_ROTATION';
-        showHudPanel('rotation');
-        document.getElementById('instruction').innerHTML = `Choisissez le sens de rotation sur la pierre !`;
-    }
-
-    function validateRotationChoice(rot) {
-        selectedRotation = rot;
-        if(activeStone) activeStone.spin = rot;
         gameState = 'CHOICE_POWER';
         showHudPanel('power');
         document.getElementById('instruction').innerHTML = `Ajustez la puissance sur la pierre !`;
@@ -671,6 +681,7 @@
         gaugeVal = 0;
         gaugeDir = 1;
         gaugeSpeed = 2.2;
+        document.getElementById('big-gauge-marker').style.display = 'none';
         showHudPanel('gauge');
         document.getElementById('instruction').innerHTML = `🎯 Arrêtez la jauge pour valider la <span class='highlight'>Précision de l'Angle</span> !`;
     }
@@ -680,19 +691,27 @@
         gaugeVal = 0;
         gaugeDir = 1;
         gaugeSpeed = 2.5;
+        document.getElementById('big-gauge-marker').style.display = 'none';
         showHudPanel('gauge');
         document.getElementById('instruction').innerHTML = `⚡ Arrêtez la jauge pour valider la <span class='highlight'>Précision de la Puissance</span> !`;
     }
 
     function stopGaugeAndProceed() {
+        // Affiche l'indicateur fixe (marqueur rouge) à l'endroit exact de l'arrêt
+        const marker = document.getElementById('big-gauge-marker');
+        marker.style.left = gaugeVal + '%';
+        marker.style.display = 'block';
+
         if (gameState === 'GAUGE_1') {
             angleAccuracyError = (gaugeVal - 50) * 0.003; 
             document.getElementById('instruction').innerHTML = `Angle validé ! Préparation de la puissance...`;
-            setTimeout(() => { startGauge2(); }, 400);
+            setTimeout(() => { startGauge2(); }, 800); // Petit délai pour voir le marqueur rouge
         } else if (gameState === 'GAUGE_2') {
             powerAccuracyError = (gaugeVal - 50) * 0.03;
-            document.getElementById('stone-hud').style.display = 'none';
-            executeThrow();
+            setTimeout(() => {
+                document.getElementById('stone-hud').style.display = 'none';
+                executeThrow();
+            }, 800);
         }
     }
 
@@ -724,7 +743,6 @@
         if (gameState === 'GAUGE_1' || gameState === 'GAUGE_2') {
             gaugeVal += gaugeSpeed * gaugeDir * (dt * 60);
             
-            // Effet ping-pong (aller-retour infini)
             if (gaugeVal >= 100) {
                 gaugeVal = 100;
                 gaugeDir = -1; 
@@ -744,7 +762,7 @@
 
         drawSheetBackground();
 
-        if (usePredictionLine && (gameState === 'CHOICE_ANGLE' || gameState === 'CHOICE_ROTATION' || gameState === 'CHOICE_POWER') && activeStone) {
+        if (usePredictionLine && (gameState === 'CHOICE_ROTATION' || gameState === 'CHOICE_ANGLE' || gameState === 'CHOICE_POWER') && activeStone) {
             drawPredictionTrajectory();
             drawThrowerAndHack();
         }
@@ -894,7 +912,6 @@
 
         let baseDecel = 45 / (TIME_STRETCH * TIME_STRETCH); 
         
-        // Physique de balayage instantanée et constante (sans essoufflement)
         let currentSweepPower = (isSweeping && gameState === 'SLIDING') ? 1.0 : 0.0;
 
         let frictionMod = 1.0 - (0.20 * currentSweepPower);
@@ -928,7 +945,6 @@
         }
     }
 
-    // --- PHYSIQUE AMÉLIORÉE : COLLISIONS DE GROUPE MULTI-CORPS (Itérative) ---
     function resolveCollisions() {
         const iterations = 4;
         for (let iter = 0; iter < iterations; iter++) {
@@ -1189,7 +1205,6 @@
     let isMouseDown = false;
     let lastClientY = 0; 
 
-    // --- ÉVÉNEMENTS TACTILES (MOBILE) AVEC CAMÉRA LIBRE ---
     canvas.addEventListener('touchstart', (e) => {
         initAudio();
         isMouseDown = true;
@@ -1214,7 +1229,6 @@
         document.getElementById('sweepHint').classList.remove('active');
     });
 
-    // --- ÉVÉNEMENTS SOURIS (PC) AVEC CAMÉRA LIBRE ---
     canvas.addEventListener('mousedown', (e) => {
         initAudio();
         isMouseDown = true;
