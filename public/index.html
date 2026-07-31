@@ -938,7 +938,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Question + input -->
     <div class="bj-theme" id="grimpe-theme" style="margin-top:4px">…</div>
     <div class="ans-row">
-      <input type="text" class="ans-in" id="grimpe-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
+      <input type="text" class="ans-in" id="grimpe-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
       <button class="chk-btn" id="grimpe-chk">✓</button>
     </div>
     <!-- Boutons EPO -->
@@ -1744,7 +1744,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="display:flex;gap:8px">
         <input type="text" id="meli-in" placeholder="Ta réponse…" autocomplete="off" autocorrect="off" spellcheck="false"
           style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(160,80,255,.4);color:var(--txt);font-size:17px;border-radius:var(--r);padding:12px 14px;font-family:var(--fh);letter-spacing:2px;outline:none;text-transform:uppercase"
-          oninput="this.value=this.value.toUpperCase()"
           onkeydown="if(event.key==='Enter')meliSubmit()">
         <button onclick="meliSubmit()" style="width:54px;height:54px;flex-shrink:0;background:linear-gradient(135deg,#6020aa,#9030ee);color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">✓</button>
       </div>
@@ -9362,7 +9361,11 @@ function bowlingSubmit(){
   const q=qs[BOWL.qIdx];
   const fr=BOWL.frames[BOWL.currentFrame];
   const isTenthFrame=BOWL.currentFrame===9;
-  const mult=q.multiplier||1;
+  // Multiplicateur : on transmet la valeur BRUTE. Si elle est absente ou nulle,
+  // bowlingBallScore calcule automatiquement (réponse × 0.05) — le forcer à 1
+  // ici neutralisait complètement ce calcul, rendant les questions à grands
+  // nombres (prix, distances…) quasi impossibles à marquer.
+  const mult = q.multiplier;
 
   // New formula: max(0, 10 - floor(|answer - correct| / multiplier))
   const rawPts=bowlingBallScore(val, q.answer, mult);

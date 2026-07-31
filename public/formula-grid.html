@@ -1721,7 +1721,26 @@ async function loadCircuitList() {
           '<div class="name">' + esc(c.name) + '</div>' +
           '<div class="meta">' + lapsTxt + ' · ' + attTxt + warmTxt + hcTxt + '</div>' +
         '</div>' +
+        '<button class="share-circuit" data-id="' + esc(c.id) + '" title="Copier le lien direct vers ce circuit" ' +
+          'style="background:none;border:none;color:var(--mute);font-size:17px;padding:6px 8px;cursor:pointer">🔗</button>' +
         '<div class="arrow">›</div>';
+
+      // Partage : lien direct vers CE circuit, sans passer par le quiz.
+      // Le format ?play=<id> existe déjà côté chargement de page.
+      const shareBtn = el.querySelector('.share-circuit');
+      if (shareBtn) {
+        shareBtn.onclick = (ev) => {
+          ev.stopPropagation();   // ne pas ouvrir le circuit en même temps
+          const url = location.origin + location.pathname + '?play=' + encodeURIComponent(c.id);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+              .then(() => toast('🔗 Lien copié — il ouvre directement ce circuit'))
+              .catch(() => prompt('Copie le lien :', url));
+          } else {
+            prompt('Copie le lien :', url);
+          }
+        };
+      }
 
       el.onclick = () => openCircuit(c.id);
       list.appendChild(el);
@@ -2028,6 +2047,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // Identifier les checkpoints : on REGROUPE les cases 'C' contiguës en une seule ligne,
   // puis on les numérote dans l'ORDRE OÙ ON LES RENCONTRE sur le circuit (pas l'ordre de la grille).
   R.checkpoints = buildCheckpoints();
+  R._cpPassable = null;   // recalculé pour CE circuit (cf. passableCheckpointIndexes)
 
   // Meilleurs splits : localStorage + serveur (min des deux)
   R.bestCpTimes = JSON.parse(
@@ -2183,6 +2203,72 @@ function onTrackR(q, r) {
   return R.grid[r] && R.grid[r][q] !== '#';
 }
 
+// Les checkpoints qu'il FAUT franchir pour valider un tour. Un groupe posé dans
+// une impasse (aucun chemin n'y entre puis en ressort avec des virages ≤60°,
+// la règle du moteur) est ignoré : l'exiger rendrait le circuit infinissable.
+// Calculé une fois par course et mis en cache sur R.
+function passableCheckpointIndexes() {
+  if (R._cpPassable) return R._cpPassable;
+  const groups = {};
+  for (const cp of (R.checkpoints || [])) {
+    (groups[cp.index] = groups[cp.index] || []).push(cp);
+  }
+  const onT = (q, r) => q >= 0 && q < R.W && r >= 0 && r < R.H && R.grid[r] && R.grid[r][q] !== '#';
+  const passable = [];
+  for (const idx of Object.keys(groups)) {
+    const members = groups[idx];
+    const inGroup = new Set(members.map(c => c.q + ',' + c.r));
+    let ok = false;
+    // On entre depuis l'extérieur, on peut traverser plusieurs cases DU groupe,
+    // puis il faut pouvoir ressortir — chaque pas limité à ±60°.
+    for (const c of members) {
+      for (let dIn = 0; dIn < 6 && !ok; dIn++) {
+        const fq = c.q - HEX_DIRS[dIn].q, fr = c.r - HEX_DIRS[dIn].r;
+        if (!onT(fq, fr) || inGroup.has(fq + ',' + fr)) continue;
+        const seen = new Set([c.q + ',' + c.r + ',' + dIn]);
+        const stack = [[c.q, c.r, dIn]];
+        while (stack.length && !ok) {
+          const [q, r, d] = stack.pop();
+          for (const dOut of [d, (d + 1) % 6, (d + 5) % 6]) {
+            const nq = q + HEX_DIRS[dOut].q, nr = r + HEX_DIRS[dOut].r;
+            if (!onT(nq, nr)) continue;
+            if (!inGroup.has(nq + ',' + nr)) { ok = true; break; }
+            const k = nq + ',' + nr + ',' + dOut;
+            if (!seen.has(k)) { seen.add(k); stack.push([nq, nr, dOut]); }
+          }
+        }
+      }
+      if (ok) break;
+    }
+    if (ok) passable.push(Number(idx));
+  }
+  R._cpPassable = passable;
+  return passable;
+}
+
+// Masque des checkpoints qu'il FAUT franchir pour valider un tour.
+function requiredCheckpointMask() {
+  if (R.isWarmup) return 0;                 // essais libres : aucune contrainte
+  let m = 0;
+  for (const i of passableCheckpointIndexes()) m |= (1 << i);
+  return m;
+}
+
+// Masque des checkpoints DÉJÀ franchis lors des coups précédents.
+function doneCheckpointMask() {
+  let m = 0;
+  for (let i = 0; i < (R.cpTimes || []).length; i++) {
+    if (R.cpTimes[i] !== undefined) m |= (1 << i);
+  }
+  return m;
+}
+
+// Combien de checkpoints restent à franchir (pour l'affichage joueur)
+function checkpointsRemaining() {
+  const required = passableCheckpointIndexes();
+  return required.filter(i => R.cpTimes[i] === undefined).length;
+}
+
 function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // JAUGE D'INERTIE (décompte à purger) :
   // - Après chaque coup de volant, la jauge est chargée à (vitesse - 1).
@@ -2196,8 +2282,24 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   const results = [];
   const memo = new Set();
 
-  function dfs(q, r, dir, b, inertia, crossed, path) {
-    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed;
+  // TOUR VALIDE = TOUS LES CHECKPOINTS FRANCHIS.
+  // Sans ça, un circuit dont le départ touche la ligne d'arrivée se boucle en
+  // 2 coups (sortir de la zone, y revenir) sans jamais faire le tour.
+  // Le suivi se fait CASE PAR CASE pendant le trajet : un coup rapide peut très
+  // bien franchir le dernier checkpoint PUIS la ligne d'arrivée dans le même
+  // lancer (sur Monaco ils sont sur la même ligne droite) — le refuser serait
+  // injuste. Les checkpoints INFRANCHISSABLES (posés dans une impasse) sont
+  // ignorés, sinon le circuit deviendrait infinissable.
+  const cpRequiredMask = requiredCheckpointMask();
+  const cpStartMask = doneCheckpointMask();
+  // Correspondance case -> bit de checkpoint, pour tester pendant le parcours
+  const cpBitAt = {};
+  for (const cp of (R.checkpoints || [])) {
+    cpBitAt[cp.q + ',' + cp.r] = (1 << cp.index);
+  }
+
+  function dfs(q, r, dir, b, inertia, crossed, path, cpMask) {
+    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed + ',' + cpMask;
     if (memo.has(key)) return;
     memo.add(key);
 
@@ -2262,7 +2364,16 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       const nInertia = o.turn ? reload : Math.max(0, inertia - 1);
       const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
 
-      if (cell === 'F' && !crossed && R.leftFinishZone) {
+      // Checkpoints franchis PENDANT ce segment (déport compris) : on met le
+      // masque à jour case par case, avant de tester l'arrivée.
+      let nCpMask = cpMask;
+      for (const s of seg) {
+        const bit = cpBitAt[s.q + ',' + s.r];
+        if (bit) nCpMask |= bit;
+      }
+      const cpAllDone = ((nCpMask & cpRequiredMask) === cpRequiredMask);
+
+      if (cell === 'F' && !crossed && R.leftFinishZone && cpAllDone) {
         const lapNum = lapCount + 1;
         if (lapNum >= targetLaps) {
           results.push({
@@ -2273,13 +2384,13 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
           for (const s of seg) path.pop();
           continue;
         } else {
-          dfs(nq, nr, o.d, nb, nInertia, true, path);
+          dfs(nq, nr, o.d, nb, nInertia, true, path, nCpMask);
           for (const s of seg) path.pop();
           continue;
         }
       }
 
-      dfs(nq, nr, o.d, nb, nInertia, crossed, path);
+      dfs(nq, nr, o.d, nb, nInertia, crossed, path, nCpMask);
       for (const s of seg) path.pop();
     }
 
@@ -2292,7 +2403,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     }
   }
 
-  dfs(q0, r0, dir0, budget, startInertia, false, []);
+  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask);
   return results;
 }
 
@@ -3092,7 +3203,13 @@ function processRollResult(val, altTotals) {
     // avant que tu confirmes.
     say('💥 Aucune issue ne t\'évite le mur — touche pour voir où, retouche pour valider', 'crash');
   } else {
-    say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
+    const cpLeft = checkpointsRemaining();
+    if (cpLeft > 0) {
+      say('👆 Touche une case pour viser · 📍 ' + cpLeft + ' checkpoint' + (cpLeft > 1 ? 's' : '') +
+          ' à franchir avant de pouvoir boucler', 'go');
+    } else {
+      say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
+    }
   }
 
   syncDash();
@@ -3642,10 +3759,20 @@ function downloadDiceGrid(seed) {
       die6: gridDieFace(seed, 5, m)
     });
   }
+  // Fichier AUTONOME : la piste (rows/start) ET les tirages de dés dans le
+  // même JSON. Avant, seuls les tirages étaient exportés — un script externe
+  // devait fusionner ça à la main avec un second export de la piste (récupéré
+  // via l'API), source d'erreurs si les deux ne correspondaient pas au même
+  // circuit. Désormais, un seul fichier suffit.
   const payload = {
     circuit: (E && E.name) || null,
     seed: seed,
-    note: 'Total du rapport Vn au coup m = die1+die2+...+dieN de cette ligne (die1 = v1_die). ' +
+    w: EW, h: EH,
+    rows: (E && E.grid) ? E.grid.map(r => r.join('')) : null,
+    start: (E && E.carPos) ? { x: E.carPos.q, y: E.carPos.r, dir: E.carDir || 0 } : null,
+    note: 'rows/start = la piste, au même format que /api/formula/circuit/<id> ' +
+      '(un caractère par case : "#" mur, "." piste, "F" arrivée, "C" checkpoint, "D" DRS). ' +
+      'Total du rapport Vn au coup m = die1+die2+...+dieN de cette ligne (die1 = v1_die). ' +
       'v1_second_jet = second jet de la mécanique V1 (2 jets, le joueur choisit). ' +
       'Dé de reprise au rapport n : compare la valeur "dieN" du coup où le rapport n-1 était engagé ' +
       'à la valeur "dieN" du coup où le rapport n est réellement engagé — le plus grand des deux compte.',
