@@ -48,6 +48,7 @@
             border: none; border-radius: 10px; font-weight: 700; font-size: 14px;
             cursor: pointer; transition: transform 0.1s, opacity 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px;
+            touch-action: manipulation;
         }
         .btn:active { transform: scale(0.96); }
         .btn-green { background: #10b981; color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
@@ -224,7 +225,7 @@
 
 <div id="canvas-wrapper">
     <canvas id="gameCanvas" width="450" height="700"></canvas>
-    <div class="sweep-hint" id="sweepHint">🧹 BALAYAGE ACTIF (Dans l'axe)</div>
+    <div class="sweep-hint" id="sweepHint">🧹 BALAYAGE ACTIF</div>
 </div>
 
 <div id="stone-hud">
@@ -253,7 +254,7 @@
             <div id="big-gauge-marker"></div>
             <div id="big-gauge-cursor"></div>
         </div>
-        <button class="btn btn-green" style="width:100%; margin-top:4px;" onclick="stopGaugeAndProceed()">✓ Valider la Jauge</button>
+        <button class="btn btn-green" id="btnValidateGauge" style="width:100%; margin-top:4px;">✓ Valider la Jauge</button>
     </div>
 
     <div id="hudEndGroup" style="display:none; width:100%;">
@@ -346,7 +347,6 @@
 
         document.getElementById('duel-overlay').style.display = 'none';
         document.getElementById('menu-overlay').style.display = 'none';
-        document.getElementById('stone-hud').style.display = 'flex';
 
         updateUI();
         if (m.status === 'done') {
@@ -365,6 +365,8 @@
         } else {
           gameState = 'WAITING';
           targetCameraY = 0;
+          // Sécurité anti-bug : masquage forcé du HUD si ce n'est pas notre tour
+          document.getElementById('stone-hud').style.display = 'none';
         }
         duelRefreshUI();
         requestAnimationFrame(gameLoop);
@@ -532,9 +534,10 @@
       if (!DUEL.on) return;
       const hud = document.getElementById('stone-hud');
       const waiting = !DUEL.myTurn && gameState !== 'GAME_OVER';
-      if (hud) hud.style.opacity = waiting ? '0.35' : '1';
-      if (hud) hud.style.pointerEvents = waiting ? 'none' : 'auto';
+      
       if (waiting) {
+        // Masquage et verrouillage total du HUD de tir en attente
+        if (hud) hud.style.display = 'none';
         duelBanner('⏳ Au tour de ' + DUEL.opponent + ' — reviens plus tard');
         document.getElementById('instruction').innerHTML =
           "En attente de <span class='highlight'>" + DUEL.opponent + "</span>";
@@ -554,7 +557,8 @@
     let powerAccuracyError = 0;
 
     let isSweeping = false;
-    let sweepHeat = 0; // Chaleur progressive de balayage (sans essoufflement)
+    let sweepHeat = 0; 
+    let sweepSide = 0; 
 
     let cameraY = SHEET_HEIGHT - 700;
     let targetCameraY = cameraY;
@@ -621,6 +625,7 @@
         chosenAngleDeg = 0;
         chosenPower = 5.0;
         sweepHeat = 0;
+        sweepSide = 0;
 
         document.getElementById('angleRange').value = 0;
         document.getElementById('angleValueDisplay').innerText = '0.0°';
@@ -633,6 +638,12 @@
     }
 
     function showHudPanel(panelName) {
+        // En mode Duel, si ce n'est pas notre tour, on bloque l'affichage du HUD
+        if (DUEL.on && !DUEL.myTurn && gameState !== 'GAME_OVER') {
+            document.getElementById('stone-hud').style.display = 'none';
+            return;
+        }
+
         document.getElementById('hudRotationGroup').style.display = (panelName === 'rotation') ? 'flex' : 'none';
         document.getElementById('hudAngleGroup').style.display = (panelName === 'angle') ? 'flex' : 'none';
         document.getElementById('hudPowerGroup').style.display = (panelName === 'power') ? 'flex' : 'none';
@@ -713,6 +724,14 @@
                 executeThrow();
             }, 800);
         }
+    }
+
+    const gaugeBtn = document.getElementById('btnValidateGauge');
+    if (gaugeBtn) {
+        gaugeBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            stopGaugeAndProceed();
+        });
     }
 
     function executeThrow() {
@@ -803,6 +822,12 @@
 
     function updateStoneHudPosition() {
         const hud = document.getElementById('stone-hud');
+        // Si c'est un duel et que ce n'est pas notre tour, on force le masquage
+        if (DUEL.on && !DUEL.myTurn) {
+            hud.style.display = 'none';
+            return;
+        }
+
         if (activeStone && gameState !== 'SLIDING' && gameState !== 'END_CALCULATED' && gameState !== 'GAME_OVER') {
             const rect = canvas.getBoundingClientRect();
             const scaleX = rect.width / SHEET_WIDTH;
@@ -900,11 +925,11 @@
     function updateStonePhysics(stone, dt) {
         if (!stone.isMoving) return;
 
-        // Montée rapide de la chaleur de balayage (jusqu'à 1.0 max), redescend si on lève le doigt
         if (isSweeping && gameState === 'SLIDING') {
             sweepHeat = Math.min(1.0, sweepHeat + dt * 3.0);
         } else {
             sweepHeat = Math.max(0.0, sweepHeat - dt * 4.0);
+            sweepSide = 0;
         }
 
         let speed = Math.hypot(stone.vx, stone.vy);
@@ -932,9 +957,14 @@
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
         
         let curlMod = 1.0 - (0.30 * sweepHeat);
+        
+        let asymmetricalPush = 0;
+        if (sweepSide !== 0 && isSweeping) {
+            asymmetricalPush = sweepSide * 18 * sweepHeat; 
+        }
 
-        stone.vx += nx * curlAccel * curlMod * dt;
-        stone.vy += ny * curlAccel * curlMod * dt;
+        stone.vx += (nx * curlAccel * curlMod + asymmetricalPush) * dt;
+        stone.vy += (ny * curlAccel * curlMod) * dt;
 
         stone.spin *= 0.999;
 
@@ -1185,6 +1215,7 @@
     function handleSweepingInput(clientX, clientY) {
         if (gameState !== 'SLIDING' || !activeStone) {
             isSweeping = false;
+            sweepSide = 0;
             document.getElementById('sweepHint').classList.remove('active');
             return;
         }
@@ -1196,13 +1227,25 @@
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
         const isInFront = touchWorldY < activeStone.y - 5;
-        const isInLane = Math.abs(touchWorldX - activeStone.x) < STONE_RADIUS * 1.8;
+        const laneWidth = STONE_RADIUS * 1.8;
+        const offsetX = touchWorldX - activeStone.x;
 
-        if (isInFront && isInLane) {
+        if (isInFront && Math.abs(offsetX) < laneWidth) {
             isSweeping = true;
+            if (offsetX < -3) {
+                sweepSide = -1; 
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE GAUCHE";
+            } else if (offsetX > 3) {
+                sweepSide = 1;  
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DROITE";
+            } else {
+                sweepSide = 0;  
+                document.getElementById('sweepHint').textContent = "🧹 BALAYAGE AXE";
+            }
             document.getElementById('sweepHint').classList.add('active');
         } else {
             isSweeping = false;
+            sweepSide = 0;
             document.getElementById('sweepHint').classList.remove('active');
         }
     }
@@ -1231,6 +1274,7 @@
     canvas.addEventListener('touchend', () => {
         isMouseDown = false;
         isSweeping = false;
+        sweepSide = 0;
         document.getElementById('sweepHint').classList.remove('active');
     });
 
@@ -1257,6 +1301,7 @@
     canvas.addEventListener('mouseup', () => {
         isMouseDown = false;
         isSweeping = false;
+        sweepSide = 0;
         document.getElementById('sweepHint').classList.remove('active');
     });
 
