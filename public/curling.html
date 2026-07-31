@@ -953,13 +953,14 @@
         let curlIntensity = 800 / TIME_STRETCH; 
         let curlAccel = (stone.spin * curlIntensity) / (newSpeed + (40 / TIME_STRETCH));
         
-        let curlReduction = 0.25; 
+        // Correction du curl ultra-subtile pour un réalisme maximum
+        let curlReduction = 0.15; // Réduction de base au centre (lisse la glace)
         if (sweepSide !== 0) {
             let curlDirection = Math.sign(stone.spin);
             if (sweepSide === -curlDirection) {
-                curlReduction = 0.35; // Hold Line
+                curlReduction = 0.20; // Hold Line très doux (20% de réduction max)
             } else {
-                curlReduction = 0.05; // Carve
+                curlReduction = 0.05; // Carve (laisse la pierre tourner presque librement)
             }
         }
         
@@ -1229,15 +1230,17 @@
         const touchWorldY = ((clientY - rect.top) * scaleY) + cameraY;
 
         const isInFront = touchWorldY < activeStone.y - 5;
-        const laneWidth = STONE_RADIUS * 2.2; 
+        // Zone totale élargie pour détecter le balayage de diagonale 
+        const laneWidth = STONE_RADIUS * 2.5; 
         const offsetX = touchWorldX - activeStone.x;
 
         if (isInFront && Math.abs(offsetX) < laneWidth) {
             isSweeping = true;
-            if (offsetX < -8) {
+            // Zone centrale géante : entre -12 et +12 pixels
+            if (offsetX < -12) {
                 sweepSide = -1; 
                 document.getElementById('sweepHint').textContent = "🧹 BALAYAGE GAUCHE (Hold)";
-            } else if (offsetX > 8) {
+            } else if (offsetX > 12) {
                 sweepSide = 1;  
                 document.getElementById('sweepHint').textContent = "🧹 BALAYAGE DROITE (Hold)";
             } else {
