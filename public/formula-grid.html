@@ -1163,7 +1163,6 @@ header.top {
         <button id="zin">+</button>
         <button id="zout">−</button>
         <button id="zreset">⟲</button>
-        <button id="zcenter" title="Centrer sur le circuit" style="color:var(--line);font-size:16px">🎯</button>
       </div>
       <div id="car-rotate">
         <button id="rotL">↺</button>
@@ -4992,9 +4991,7 @@ document.getElementById('btn-generate').onclick = () => {
   E.undoStack = [];
 
   document.getElementById('car-rotate').classList.remove('on');
-  // Une frame d'attente : sur mobile, la mesure du canvas juste après un changement
-  // de vue peut être fausse tant que la mise en page n'a pas fini de se stabiliser.
-  requestAnimationFrame(() => centerOnCircuit());
+  centerOnCircuit();
   if (typeof updateFuelHint === 'function') updateFuelHint();
 
   let cells = 0;
@@ -5245,8 +5242,7 @@ document.getElementById('btn-import-confirm').onclick = () => {
   document.getElementById('import-modal').classList.remove('on');
   importImg = null;
 
-  // Idem : on laisse la fenêtre d'import se refermer avant de mesurer le canvas.
-  requestAnimationFrame(() => centerOnCircuit());
+  centerOnCircuit();
   drawEditor();
   if (typeof updateFuelHint === 'function') updateFuelHint();
 
@@ -5638,13 +5634,6 @@ document.getElementById('zout').onclick = () => {
 document.getElementById('zreset').onclick = () => {
   resetView();
   drawEditor();
-};
-
-// Recentrer sur le circuit, à la demande — utile après un import d'image ou une
-// génération sur la grille 180×180 (facile de perdre le tracé de vue dessus).
-document.getElementById('zcenter').onclick = () => {
-  centerOnCircuit();
-  toast('🎯 Centré sur le circuit');
 };
 
 /* ================================================================
