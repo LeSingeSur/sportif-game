@@ -1809,9 +1809,21 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     </div>
     <!-- Règles -->
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
-    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
-      5 questions · 20 pts chacune · À la fin : <strong style="color:var(--txt)">garder</strong> ou <strong style="color:#ffb400">ouvrir une boîte</strong><br>
-      📦 La boîte peut tout changer (+10, −10, +20, −20, ×2, ÷2)
+    <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.6">
+      <div style="color:var(--txt);font-weight:700;margin-bottom:6px">5 questions · 20 pts chacune</div>
+      Après chaque réponse — <strong style="color:#ffb400">avant de savoir si elle est juste</strong> — tu choisis :
+      passer, ou <strong style="color:#ffb400">ouvrir une boîte</strong>.
+      <div style="margin:9px 0 4px;color:var(--txt);font-weight:700">📦 Les 5 boîtes possibles</div>
+      <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px">
+        <div><span style="color:#f39c12">⚡ Double ou Rien</span> — une question bonus : +40 ou −20</div>
+        <div><span style="color:#8e44ad">🙈 Question Voilée</span> — la suivante, 1 mot sur 2 masqué : +30</div>
+        <div><span style="color:#27ae60">🎰 Jackpot</span> — +10, +20, +30… à la suite · une erreur annule tout</div>
+        <div><span style="color:#2980b9">⚖️ Pari</span> — tu paries sur ta propre réponse : +10 ou −10</div>
+        <div><span style="color:#e74c3c">🔮 Prophétie</span> — annonce combien de bonnes réponses tu vas faire : +10/question si exact, sinon −15</div>
+      </div>
+      <div style="margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,180,0,.15)">
+        🏁 À la fin : <strong style="color:#00dc78">garder tes points</strong> ou tenter une dernière boîte.
+      </div>
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
     </div>
     <!-- Questions -->
@@ -1839,15 +1851,16 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div style="text-align:center">
         <div style="font-family:var(--fh);font-size:11px;letter-spacing:3px;color:rgba(255,180,0,.5)">LE GRAND DILEMME</div>
         <div style="font-family:var(--fh);font-size:52px;color:#ffb400;text-shadow:0 0 30px #ffb40099;line-height:1.1;margin:8px 0" id="apol-dilemme-score">0</div>
-        <div style="font-size:12px;color:var(--mute)">pts acquis — garder ou ouvrir une boîte ?</div>
+        <div style="font-size:12px;color:var(--mute)">pts acquis — une dernière boîte, sans risque</div>
       </div>
-      <button id="apol-keep-btn" onclick="apolKeep()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ GARDER MES POINTS</button>
+      <button id="apol-keep-btn" onclick="apolKeep()" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(0,220,120,.4);background:rgba(0,220,120,.08);color:#00dc78;font-family:var(--fh);font-size:14px;cursor:pointer;letter-spacing:1px">✅ M'ARRÊTER LÀ</button>
       <button id="apol-open-btn" style="display:none;width:100%!important;padding:14px;border-radius:12px;border:2px solid rgba(255,180,0,.5);background:rgba(255,180,0,.1);color:#ffb400;font-family:var(--fh);font-size:16px;cursor:pointer;letter-spacing:1px">📦 OUVRIR UNE BOÎTE</button>
       <button id="apol-continue-btn" onclick="apolContinuePasser()" style="display:none;width:100%!important;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-family:var(--fh);font-size:13px;cursor:pointer;letter-spacing:1px">⏭ PROCHAINE QUESTION</button>
       <div style="font-size:10px;color:rgba(255,180,0,.5);letter-spacing:2px;font-family:var(--fh);text-align:center">OU OUVRE UNE BOÎTE</div>
       <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--mute);text-align:center">
-        Chaque boîte cache un bonus (l'un des 6 est absent) :<br>
-        <span style="color:#00dc78">+10 pts</span> · <span style="color:#ff6666">−10 pts</span> · <span style="color:#ffd700">+20 pts</span> · <span style="color:#ff9933">−20 pts</span> · <span style="color:#64c8ff">×2</span> · <span style="color:#b464ff">÷2</span>
+        La boîte finale est <strong style="color:#00dc78">toujours un bonus</strong> :<br>
+        <span style="color:#2980b9">+10</span> · <span style="color:#e74c3c">+20</span> ·
+        <span style="color:#8e44ad">+30</span> · <span style="color:#f39c12">+40</span> pts selon le tirage
       </div>
       
       <div id="apol-box-result" style="text-align:center;font-size:14px;color:var(--mute);min-height:20px"></div>
@@ -11443,7 +11456,7 @@ function apolRevealEffect(item){
     for(let n=1;n<=remaining;n++)
       opts+='<button onclick="apolSetProphetie('+n+','+remaining+')" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e74c3c44;background:#e74c3c18;color:#e74c3c;font-family:var(--fh);font-size:14px;cursor:pointer">'+n+'/'+remaining+'</button>';
     if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#e74c3c;margin-bottom:8px">🔮 PROPHÉTIE — Prédit ta réussite sur les '+remaining+' prochaines questions</div>'+
-      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Exact → +10 pts/Q · Faux → −5 pts/Q</div>'+
+      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Prédiction exacte → +10 pts par question annoncée · Ratée → −15 pts</div>'+
       '<div style="display:flex;gap:8px">'+opts+'</div>';
   }
 }
