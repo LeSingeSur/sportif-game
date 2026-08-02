@@ -204,7 +204,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, diceSeed: c.diceSeed || null };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -1230,6 +1230,12 @@ app.post('/api/formula/circuit', async (req, res) => {
     published: !!published,
     // Le fantôme de référence survit à une réédition du circuit
     ghost: existingIdx>=0 ? circuits[existingIdx].ghost : undefined,
+    // Graine de la grille de dés : créée au PREMIER enregistrement, puis conservée
+    // telle quelle (elle définit les tirages communs à tous les joueurs).
+    // Sans elle, la course retombe en hasard pur et l'écran admin reste vide.
+    diceSeed: (existingIdx>=0 && circuits[existingIdx].diceSeed)
+      ? circuits[existingIdx].diceSeed
+      : (req.body.diceSeed || ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2,10))),
     createdAt: existingIdx>=0 ? circuits[existingIdx].createdAt : new Date()
   };
   if (existingIdx >= 0) circuits[existingIdx] = data; else circuits.push(data);
@@ -1256,6 +1262,7 @@ app.get('/api/formula/leaderboard/:id', (req, res) => {
     .sort((a,b) => a.moves - b.moves || b.left - a.left).slice(0, 10)
     .map(r => ({ pseudo: r.pseudo, moves: r.moves, left: r.left }));
   res.json({
+    diceSeed: (c && c.diceSeed) || null,
     top,
     attemptsUsed: mine.length,
     attemptsLeft: Math.max(0, c.attempts - mine.length),
