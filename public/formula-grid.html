@@ -1092,10 +1092,8 @@ header.top {
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
-    <div id="banked-die-tag" style="display:none;align-items:center;gap:6px;margin-top:6px">
-      <span style="font-size:9px;color:var(--mute);letter-spacing:.5px">REPRISE</span>
-      <div id="banked-die-mini" style="width:26px;height:26px;border-radius:7px;background:var(--panel);border:2px solid #4aa3ff;color:#4aa3ff;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-weight:900;font-size:13px"></div>
-    </div>
+    <button id="btn-bank-die" class="btn" style="display:none;margin-top:6px;font-size:11px;background:rgba(74,163,255,.12);border:1px solid rgba(74,163,255,.4);color:#4aa3ff">📥 Mettre en réserve le dé du rapport supérieur</button>
+    <div id="banked-die-tag" style="display:none;font-size:10px;color:#4aa3ff;margin-top:5px"></div>
   </div>
   <button id="roll">🎲 LANCER LE DÉ</button>
   
@@ -1136,11 +1134,11 @@ header.top {
   <div id="dice-fair" style="display:none;font-size:10px;color:var(--mute);letter-spacing:.4px;margin-top:6px"></div>
 </div>
 
-<!-- Zone DRS : TOUS les dés du rapport engagé ne sont pas tirés au hasard. Toutes
-     leurs faces possibles sont calculées d'un coup (produit cartésien) et
-     fusionnées dans les trajectoires proposées sur la piste — le joueur choisit
-     son trajet comme d'habitude, et ce choix fixe implicitement les faces
-     utilisées. -->
+<!-- Zone DRS : le dernier dé du rapport engagé n'est pas tiré au hasard. Toutes
+     ses faces possibles sont calculées d'un coup et fusionnées dans les
+     trajectoires proposées sur la piste — le joueur choisit son trajet comme
+     d'habitude, et ce choix fixe implicitement la face utilisée. Les dés
+     précédents restent ceux de la grille commune, identiques pour tous. -->
 
 <!-- ============================================================
      ÉCRAN ÉDITEUR
@@ -1721,26 +1719,7 @@ async function loadCircuitList() {
           '<div class="name">' + esc(c.name) + '</div>' +
           '<div class="meta">' + lapsTxt + ' · ' + attTxt + warmTxt + hcTxt + '</div>' +
         '</div>' +
-        '<button class="share-circuit" data-id="' + esc(c.id) + '" title="Copier le lien direct vers ce circuit" ' +
-          'style="background:none;border:none;color:var(--mute);font-size:17px;padding:6px 8px;cursor:pointer">🔗</button>' +
         '<div class="arrow">›</div>';
-
-      // Partage : lien direct vers CE circuit, sans passer par le quiz.
-      // Le format ?play=<id> existe déjà côté chargement de page.
-      const shareBtn = el.querySelector('.share-circuit');
-      if (shareBtn) {
-        shareBtn.onclick = (ev) => {
-          ev.stopPropagation();   // ne pas ouvrir le circuit en même temps
-          const url = location.origin + location.pathname + '?play=' + encodeURIComponent(c.id);
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url)
-              .then(() => toast('🔗 Lien copié — il ouvre directement ce circuit'))
-              .catch(() => prompt('Copie le lien :', url));
-          } else {
-            prompt('Copie le lien :', url);
-          }
-        };
-      }
 
       el.onclick = () => openCircuit(c.id);
       list.appendChild(el);
@@ -2047,7 +2026,6 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // Identifier les checkpoints : on REGROUPE les cases 'C' contiguës en une seule ligne,
   // puis on les numérote dans l'ORDRE OÙ ON LES RENCONTRE sur le circuit (pas l'ordre de la grille).
   R.checkpoints = buildCheckpoints();
-  R._cpPassable = null;   // recalculé pour CE circuit (cf. passableCheckpointIndexes)
 
   // Meilleurs splits : localStorage + serveur (min des deux)
   R.bestCpTimes = JSON.parse(
@@ -2203,72 +2181,6 @@ function onTrackR(q, r) {
   return R.grid[r] && R.grid[r][q] !== '#';
 }
 
-// Les checkpoints qu'il FAUT franchir pour valider un tour. Un groupe posé dans
-// une impasse (aucun chemin n'y entre puis en ressort avec des virages ≤60°,
-// la règle du moteur) est ignoré : l'exiger rendrait le circuit infinissable.
-// Calculé une fois par course et mis en cache sur R.
-function passableCheckpointIndexes() {
-  if (R._cpPassable) return R._cpPassable;
-  const groups = {};
-  for (const cp of (R.checkpoints || [])) {
-    (groups[cp.index] = groups[cp.index] || []).push(cp);
-  }
-  const onT = (q, r) => q >= 0 && q < R.W && r >= 0 && r < R.H && R.grid[r] && R.grid[r][q] !== '#';
-  const passable = [];
-  for (const idx of Object.keys(groups)) {
-    const members = groups[idx];
-    const inGroup = new Set(members.map(c => c.q + ',' + c.r));
-    let ok = false;
-    // On entre depuis l'extérieur, on peut traverser plusieurs cases DU groupe,
-    // puis il faut pouvoir ressortir — chaque pas limité à ±60°.
-    for (const c of members) {
-      for (let dIn = 0; dIn < 6 && !ok; dIn++) {
-        const fq = c.q - HEX_DIRS[dIn].q, fr = c.r - HEX_DIRS[dIn].r;
-        if (!onT(fq, fr) || inGroup.has(fq + ',' + fr)) continue;
-        const seen = new Set([c.q + ',' + c.r + ',' + dIn]);
-        const stack = [[c.q, c.r, dIn]];
-        while (stack.length && !ok) {
-          const [q, r, d] = stack.pop();
-          for (const dOut of [d, (d + 1) % 6, (d + 5) % 6]) {
-            const nq = q + HEX_DIRS[dOut].q, nr = r + HEX_DIRS[dOut].r;
-            if (!onT(nq, nr)) continue;
-            if (!inGroup.has(nq + ',' + nr)) { ok = true; break; }
-            const k = nq + ',' + nr + ',' + dOut;
-            if (!seen.has(k)) { seen.add(k); stack.push([nq, nr, dOut]); }
-          }
-        }
-      }
-      if (ok) break;
-    }
-    if (ok) passable.push(Number(idx));
-  }
-  R._cpPassable = passable;
-  return passable;
-}
-
-// Masque des checkpoints qu'il FAUT franchir pour valider un tour.
-function requiredCheckpointMask() {
-  if (R.isWarmup) return 0;                 // essais libres : aucune contrainte
-  let m = 0;
-  for (const i of passableCheckpointIndexes()) m |= (1 << i);
-  return m;
-}
-
-// Masque des checkpoints DÉJÀ franchis lors des coups précédents.
-function doneCheckpointMask() {
-  let m = 0;
-  for (let i = 0; i < (R.cpTimes || []).length; i++) {
-    if (R.cpTimes[i] !== undefined) m |= (1 << i);
-  }
-  return m;
-}
-
-// Combien de checkpoints restent à franchir (pour l'affichage joueur)
-function checkpointsRemaining() {
-  const required = passableCheckpointIndexes();
-  return required.filter(i => R.cpTimes[i] === undefined).length;
-}
-
 function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // JAUGE D'INERTIE (décompte à purger) :
   // - Après chaque coup de volant, la jauge est chargée à (vitesse - 1).
@@ -2282,24 +2194,8 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   const results = [];
   const memo = new Set();
 
-  // TOUR VALIDE = TOUS LES CHECKPOINTS FRANCHIS.
-  // Sans ça, un circuit dont le départ touche la ligne d'arrivée se boucle en
-  // 2 coups (sortir de la zone, y revenir) sans jamais faire le tour.
-  // Le suivi se fait CASE PAR CASE pendant le trajet : un coup rapide peut très
-  // bien franchir le dernier checkpoint PUIS la ligne d'arrivée dans le même
-  // lancer (sur Monaco ils sont sur la même ligne droite) — le refuser serait
-  // injuste. Les checkpoints INFRANCHISSABLES (posés dans une impasse) sont
-  // ignorés, sinon le circuit deviendrait infinissable.
-  const cpRequiredMask = requiredCheckpointMask();
-  const cpStartMask = doneCheckpointMask();
-  // Correspondance case -> bit de checkpoint, pour tester pendant le parcours
-  const cpBitAt = {};
-  for (const cp of (R.checkpoints || [])) {
-    cpBitAt[cp.q + ',' + cp.r] = (1 << cp.index);
-  }
-
-  function dfs(q, r, dir, b, inertia, crossed, path, cpMask) {
-    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed + ',' + cpMask;
+  function dfs(q, r, dir, b, inertia, crossed, path) {
+    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed;
     if (memo.has(key)) return;
     memo.add(key);
 
@@ -2364,16 +2260,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       const nInertia = o.turn ? reload : Math.max(0, inertia - 1);
       const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
 
-      // Checkpoints franchis PENDANT ce segment (déport compris) : on met le
-      // masque à jour case par case, avant de tester l'arrivée.
-      let nCpMask = cpMask;
-      for (const s of seg) {
-        const bit = cpBitAt[s.q + ',' + s.r];
-        if (bit) nCpMask |= bit;
-      }
-      const cpAllDone = ((nCpMask & cpRequiredMask) === cpRequiredMask);
-
-      if (cell === 'F' && !crossed && R.leftFinishZone && cpAllDone) {
+      if (cell === 'F' && !crossed && R.leftFinishZone) {
         const lapNum = lapCount + 1;
         if (lapNum >= targetLaps) {
           results.push({
@@ -2384,13 +2271,13 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
           for (const s of seg) path.pop();
           continue;
         } else {
-          dfs(nq, nr, o.d, nb, nInertia, true, path, nCpMask);
+          dfs(nq, nr, o.d, nb, nInertia, true, path);
           for (const s of seg) path.pop();
           continue;
         }
       }
 
-      dfs(nq, nr, o.d, nb, nInertia, crossed, path, nCpMask);
+      dfs(nq, nr, o.d, nb, nInertia, crossed, path);
       for (const s of seg) path.pop();
     }
 
@@ -2403,7 +2290,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     }
   }
 
-  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask);
+  dfs(q0, r0, dir0, budget, startInertia, false, []);
   return results;
 }
 
@@ -2459,15 +2346,21 @@ function renderGears() {
     R.pendingGear = Math.max(0, R.gear - 1);
   }
 
-  // Dé de reprise : mini-case passive, ENTIÈREMENT AUTOMATIQUE (aucun bouton,
-  // aucune phrase à lire — juste le chiffre actuellement en reprise).
+  // Dé "+1" en réserve : bouton et indicateur, indépendants du DRS
+  const bankBtn = document.getElementById('btn-bank-die');
   const bankTag = document.getElementById('banked-die-tag');
-  const bankMini = document.getElementById('banked-die-mini');
-  if (bankTag && bankMini) {
+  if (bankBtn) {
+    const canBank = R.phase === 'gear' && !R.outOfFuel && R.gear >= 1 && R.gear < 6 && !R.isWarmup;
+    bankBtn.style.display = canBank ? 'block' : 'none';
+    bankBtn.textContent = R.bankedDie
+      ? '📥 Remplacer la réserve (dé V' + R.bankedDie.targetGear + ')'
+      : '📥 Mettre en réserve le dé du rapport supérieur';
+  }
+  if (bankTag) {
     if (R.bankedDie) {
-      bankTag.style.display = 'flex';
-      bankMini.textContent = R.bankedDie.value;
-      bankMini.title = 'Dé de reprise pour V' + R.bankedDie.targetGear;
+      bankTag.style.display = 'block';
+      bankTag.textContent = '📥 ' + R.bankedDie.value + ' en réserve pour V' + R.bankedDie.targetGear +
+        ' — confronté à un nouveau dé quand tu engageras ce rapport';
     } else {
       bankTag.style.display = 'none';
     }
@@ -2856,23 +2749,21 @@ function executeDiceRoll(gear) {
   return sum;
 }
 
-// Dé "+1" en réserve — INDÉPENDANT du DRS, ENTIÈREMENT AUTOMATIQUE (aucune
-// action du joueur). À chaque coup où il ne monte pas de rapport, le jeu
-// retient discrètement la valeur que le rapport supérieur aurait donnée CE
-// coup-là. Au coup suivant, si le joueur engage vraiment ce rapport, cette
-// valeur mise de côté est confrontée à un tirage frais — les DEUX résultats
-// sont proposés comme deux trajectoires distinctes sur la piste (même
-// principe que le DRS), pas un calcul silencieux : c'est le joueur qui
-// tranche en choisissant sa trajectoire.
-function snapshotNextGearDie() {
-  if (R.gear < 1 || R.gear >= 6 || R.isWarmup) { return; }
+// Dé "+1" en réserve — INDÉPENDANT du DRS. Fige la valeur du dé que le rapport
+// supérieur ajouterait CE coup-ci. Plus tard, quand ce rapport sera vraiment
+// engagé, cette valeur sera confrontée à un tirage frais : le meilleur gagne.
+function bankNextGearDie() {
+  if (R.phase !== 'gear' || R.outOfFuel || R.isWarmup) return;
+  if (R.gear < 1 || R.gear >= 6) return;
   const targetGear = R.gear + 1;
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
-  const moveNo = R.turn;                // le coup qui vient de se conclure
-  if (moveNo < 1) { return; }           // avant le tout premier coup, rien à retenir
+  const moveNo = R.turn + 1;
   const value = dieValue(DICE_SET[dieIndex], targetGear, dieIndex, moveNo);
   R.bankedDie = { value, targetGear };
+  renderGears();
 }
+const _bankBtn = document.getElementById('btn-bank-die');
+if (_bankBtn) _bankBtn.onclick = bankNextGearDie;
 
 function rollDiceAnim(drsFace) {
   if (R.phase !== 'gear') return;
@@ -2931,16 +2822,6 @@ function rollDiceAnim(drsFace) {
   const nActifs = pool.length;
   titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR 6';
 
-  // V1 pure et dé de reprise : connus AVANT le lancer (ni l'un ni l'autre ne
-  // dépend d'un tirage). On les détermine ici pour que le second dé qu'ils
-  // impliquent tourne dès le début, EXACTEMENT comme les autres — sinon il
-  // semblait surgir de nulle part à la révélation, comme s'il n'avait pas été
-  // tiré à l'avance sur la grille commune (alors qu'il l'est bel et bien).
-  const isV1Choice = (R.gear === 1) && !onDRS;
-  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS && !isV1Choice)
-    ? nActifs - 1 : -1;
-  const twinFaces = isV1Choice ? DICE_SET[0] : (bankIdx >= 0 ? DICE_SET[bankIdx] : null);
-
   // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
   if (fairEl) {
@@ -2959,16 +2840,6 @@ function rollDiceAnim(drsFace) {
     row.appendChild(c);
     return c;
   });
-  // Dé supplémentaire (V1 pure ou reprise) : créé et inséré DÈS MAINTENANT,
-  // pour qu'il tourne dans l'animation au même titre que les cinq autres.
-  let extraCube = null;
-  if (twinFaces) {
-    const twinIdx = isV1Choice ? 0 : bankIdx;
-    extraCube = document.createElement('div');
-    extraCube.className = 'dice-cube';
-    extraCube.textContent = '?';
-    cubes[twinIdx].insertAdjacentElement('afterend', extraCube);
-  }
   sumEl.textContent = '';
   ov.classList.add('on');
 
@@ -2982,12 +2853,6 @@ function rollDiceAnim(drsFace) {
       c.textContent = v;
       if (i < nActifs) running += v;   // les dés en retrait ne comptent pas
     });
-    // Le dé supplémentaire tourne lui aussi, sur les faces de son jumeau —
-    // il ne participe pas encore au total affiché pendant le lancer, seul le
-    // résultat final (après choix du joueur) déterminera ce qui compte.
-    if (extraCube) {
-      extraCube.textContent = twinFaces[Math.floor(Math.random() * twinFaces.length)];
-    }
     sumEl.textContent = 'Σ ' + running;
     counter++;
 
@@ -2995,56 +2860,47 @@ function rollDiceAnim(drsFace) {
       clearInterval(interval);
       // Tirage final réel, dé par dé.
       // Pool commun : valeurs identiques pour tous les joueurs sur ce coup.
-      // En zone DRS, TOUS les dés engagés ne sont pas tirés au hasard : chacun
-      // affiche "DRS", et le produit de toutes leurs faces possibles est
-      // proposé d'un coup sous forme de trajectoires distinctes — beaucoup de
-      // possibilités, mais toujours dans la plage officielle du rapport.
+      // En zone DRS, le DERNIER dé engagé n'est pas tiré : il affiche "DRS" et
+      // toutes ses faces seront proposées sous forme de trajectoires distinctes.
       const moveNo = R.turn + 1;
-      const drsAll = onDRS;
-      // isV1Choice, bankIdx et extraCube ont déjà été déterminés AVANT le
-      // lancer (voir plus haut) — c'est justement ce qui permet à ce second dé
-      // de tourner dès le début, comme les autres, plutôt que d'apparaître
-      // seulement à la révélation.
+      const iDrs = onDRS ? nActifs - 1 : -1;
+      // V1 PURE (rapport 1, hors zone DRS) : mécanique INDÉPENDANTE du DRS.
+      // Le joueur lance le dé de base deux fois et choisit son résultat — un
+      // contrôle précis à basse vitesse. Si le coup est aussi en zone DRS, le
+      // DRS l'emporte (il offre déjà TOUTES les faces, un choix plus large).
+      const isV1Choice = (R.gear === 1) && iDrs < 0;
+      // Dé "+1" en réserve — INDÉPENDANT du DRS et de la mécanique V1. S'applique
+      // uniquement au dé qui différencie ce rapport du précédent, et seulement si
+      // ni le DRS ni le choix V1 ne sont déjà actifs sur ce même dé (ils offrent
+      // tous les deux un choix strictement plus large que la simple comparaison).
+      const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && iDrs < 0 && !isV1Choice)
+        ? nActifs - 1 : -1;
+      let usedBank = false;
       let base = 0;
-      let extraValue = null;
       cubes.forEach((c, i) => {
         // Même clé de grille que le moteur : le dé i garde sa valeur quel que soit
         // le rapport engagé — c'est ce qui rend le jeu de dés vraiment commun.
-        if (drsAll && i < nActifs) {
+        if (i === iDrs) {
           c.textContent = 'DRS';
           c.classList.add('drs-picked');
           c.style.borderColor = '#b464ff';
           return;
         }
         if (isV1Choice && i === 0) {
-          const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
-          const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
-          c.textContent = d1;
+          c.textContent = '2 jets';
           c.classList.add('v1-picked');
           c.style.borderColor = '#39d98a';
-          base += d1;
-          extraValue = d2;
-          if (extraCube) {
-            extraCube.classList.add('v1-picked');
-            extraCube.style.borderColor = '#39d98a';
-            extraCube.textContent = d2;
-          }
           return;
         }
         if (i === bankIdx) {
           const fresh = dieValue(DICE_SET[i], R.gear, i, moveNo);
-          c.textContent = fresh;
+          const banked = R.bankedDie.value;
+          const v = Math.max(fresh, banked);
+          if (banked > fresh) usedBank = true;
+          c.textContent = v;
           c.classList.add('bank-used');
           c.style.borderColor = '#4aa3ff';
-          // NE PAS ajouter `fresh` à `base` ici : le total exact (reprise OU
-          // frais) est recalculé juste après, dans altTotals — l'ajouter ici
-          // le compterait deux fois.
-          extraValue = R.bankedDie.value;
-          if (extraCube) {
-            extraCube.classList.add('bank-used');
-            extraCube.style.borderColor = '#4aa3ff';
-            extraCube.textContent = extraValue;
-          }
+          base += v;
           return;
         }
         const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
@@ -3054,36 +2910,22 @@ function rollDiceAnim(drsFace) {
           base += v;
         }
       });
-
-      // Totaux possibles : DRS (produit de toutes les faces de tous les dés
-      // engagés), V1 pure (deux tirages du dé de base), ou reprise (tirage du
-      // coup précédent contre tirage frais) — jamais deux de ces trois
-      // mécaniques à la fois.
-      let altTotals = null;
-      if (drsAll) {
-        let sums = [0];
-        for (let i = 0; i < nActifs; i++) {
-          const faces = [...new Set(DICE_SET[i])];
-          const next = [];
-          for (const s of sums) for (const f of faces) next.push(s + f);
-          sums = next;
-        }
-        altTotals = [...new Set(sums)].sort((a, b) => a - b);
-      } else if (isV1Choice) {
-        // extraValue = d2 (le second tirage), déjà calculé dans la boucle ci-dessus
-        const d1 = dieValue(DICE_SET[0], 1, 0, moveNo), d2 = extraValue;
-        altTotals = [...new Set([d1, d2])].sort((a, b) => a - b);
-      } else if (bankIdx >= 0) {
-        const fresh = dieValue(DICE_SET[bankIdx], R.gear, bankIdx, moveNo);
-        const banked = R.bankedDie.value;
-        altTotals = [...new Set([banked, fresh])].sort((a, b) => a - b).map(f => base + f);
-      }
-      // La reprise est consommée dès qu'on engage le rapport ciblé, qu'elle
-      // ait servi ou non (elle a eu sa chance ce coup-ci) — un nouvel instantané
-      // sera repris automatiquement au prochain coup si les conditions le permettent.
+      // La réserve est consommée dès qu'on engage le rapport ciblé, qu'elle
+      // ait servi ou non (elle a eu sa chance ce coup-ci).
       if (bankIdx >= 0) R.bankedDie = null;
 
-      if (drsAll) {
+      // Totaux possibles : DRS (une par face du dernier dé) ou V1 pure (deux
+      // tirages indépendants du dé de base) — jamais les deux à la fois.
+      let altTotals = null;
+      if (iDrs >= 0) {
+        altTotals = [...new Set(DICE_SET[iDrs])].sort((a, b) => a - b).map(f => base + f);
+      } else if (isV1Choice) {
+        const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
+        const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
+        altTotals = [...new Set([d1, d2])].sort((a, b) => a - b);
+      }
+
+      if (iDrs >= 0) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>';
@@ -3092,9 +2934,8 @@ function rollDiceAnim(drsFace) {
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#39d98a;font-size:11px">🎯 V1 · 2 jets, à toi de choisir</span>';
       } else if (bankIdx >= 0) {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
-          altTotals.join(' ou ') + ' cases</span>' +
-          ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>';
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>' +
+          ' <span style="color:#4aa3ff;font-size:11px">📥 ' + (usedBank ? 'réserve utilisée !' : 'tirage frais meilleur') + '</span>';
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
@@ -3194,22 +3035,14 @@ function processRollResult(val, altTotals) {
   const okCount = [...R.ends.values()].filter(r => !r.crash).length;
 
   if (okCount === 0) {
-    // Aucune trajectoire ne t'évite le mur — mais tu dois quand même VOIR et
-    // VALIDER laquelle, comme n'importe quel autre coup. Avant, le jeu tranchait
-    // tout seul après 800ms sans jamais montrer le trajet (ni le déport qui en
-    // est souvent la cause en V5/V6) : le joueur avait l'impression que la
-    // voiture "avançait toute seule". Désormais, le même geste 1er appui =
-    // aperçu, 2e appui = valider s'applique — le déport est visible en cyan
-    // avant que tu confirmes.
-    say('💥 Aucune issue ne t\'évite le mur — touche pour voir où, retouche pour valider', 'crash');
+    const best = R.results.reduce(
+      (m, r) => (r.path.length > m.path.length) ? r : m,
+      R.results[0]
+    );
+    say('💥 Crash inévitable !', 'crash');
+    setTimeout(() => applyResult(best), 800);
   } else {
-    const cpLeft = checkpointsRemaining();
-    if (cpLeft > 0) {
-      say('👆 Touche une case pour viser · 📍 ' + cpLeft + ' checkpoint' + (cpLeft > 1 ? 's' : '') +
-          ' à franchir avant de pouvoir boucler', 'go');
-    } else {
-      say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
-    }
+    say('👆 Touche une case : 1er appui = aperçu du chemin, 2e appui = valider', 'go');
   }
 
   syncDash();
@@ -3277,57 +3110,16 @@ function buildRulesHTML() {
       '• Dès que tu tournes, elle remonte à <b style="color:var(--txt)">rapport − 1</b>' +
     '</div>' +
     '<div style="background:rgba(255,93,93,.1);border-left:3px solid var(--crash);border-radius:5px;padding:8px 10px;margin-top:11px;font-size:12px;color:var(--txt)">' +
-      '⚠️ Vite = lourd. En V6 il faut 5 cases droites entre deux virages. En V1, braquage libre à chaque case.<br>' +
-      'À V5-V6, le virage ne s\'arrête pas net non plus : la voiture <b style="color:#22d3ee">dérape (drift)</b> de 1 à 2 cases de plus — détail ci-dessous.' +
-    '</div>' +
-  '</div>' +
-
-  // ---------- DRIFT ----------
-  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">🌀 Le drift (V5-V6)</div>' +
-  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
-    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">On ne tourne jamais net à pleine vitesse</div>' +
-    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
-      'En virage, la voiture <b style="color:var(--txt)">continue de glisser</b> dans son ancien cap avant de se stabiliser sur le nouveau — <b style="color:#22d3ee">1 case</b> en V5, <b style="color:#22d3ee">2 cases</b> en V6.<br><br>' +
-      '• C\'est <b style="color:var(--txt)">subi</b>, pas un choix, et ça ne consomme <b style="color:var(--txt)">aucun</b> coup de dé<br>' +
-      '• Dessiné en <b style="color:#22d3ee">cyan</b> sur l\'aperçu de trajectoire — repérable au premier coup d\'œil<br>' +
-      '• Si le drift sort de la piste, ce virage est <b style="color:var(--crash)">impraticable</b> à ce rapport : il faut freiner avant' +
-    '</div>' +
-  '</div>' +
-
-  // ---------- DRS ----------
-  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">⚡ Zone DRS</div>' +
-  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
-    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Certaines lignes droites boostent tous tes dés</div>' +
-    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
-      'Si ton coup démarre sur une case <b style="color:#b464ff">⚡ DRS</b> — ou si le coup précédent l\'a simplement traversée sans s\'y arrêter — <b style="color:var(--txt)">tous les dés</b> de ton rapport affichent <b style="color:#b464ff">\"DRS\"</b> au lieu d\'un chiffre.<br><br>' +
-      '• Le produit de <b style="color:var(--txt)">toutes leurs faces possibles</b> t\'est proposé d\'un coup, en trajectoires distinctes<br>' +
-      '• Beaucoup de possibilités, mais toujours dans la plage officielle du rapport<br>' +
-      '• Comme toujours : ta trajectoire choisie tranche, jamais un tirage caché' +
-    '</div>' +
-  '</div>' +
-
-  // ---------- DÉ DE REPRISE ----------
-  '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 10px;font-weight:800">📥 Dé de reprise</div>' +
-  '<div style="background:var(--panel);border-radius:10px;padding:13px;margin-bottom:16px">' +
-    '<div style="font-weight:800;margin-bottom:6px;font-size:13.5px">Rien ne se perd quand tu ne montes pas de rapport</div>' +
-    '<div style="color:var(--mute);font-size:12.5px;line-height:1.55">' +
-      'À chaque coup où tu ne montes <b style="color:var(--txt)">pas</b> de rapport, le jeu retient <b style="color:var(--txt)">automatiquement</b> — sans rien à cliquer — la valeur que le rapport supérieur t\'aurait donnée ce coup-là.<br><br>' +
-      '• Au coup suivant, si tu engages vraiment ce rapport, ce dé de reprise est confronté à un <b style="color:var(--txt)">tirage frais</b><br>' +
-      '• Les deux résultats te sont proposés comme deux trajectoires distinctes, comme pour le DRS<br>' +
-      '• Une <b style="color:#4aa3ff">mini-case bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise' +
+      '⚠️ Vite = lourd. En V6 il faut 5 cases droites entre deux virages. En V1, braquage libre à chaque case.' +
     '</div>' +
   '</div>' +
 
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 9px;font-weight:800">En savoir plus</div>' +
 
-  // L'essence n'est montrée que si CE circuit l'a activée — inutile d'expliquer
-  // une mécanique que l'organisateur n'utilise pas encore.
-  (typeof R !== 'undefined' && R && R.fuelEnabled ?
-    details('⛽ L\'essence',
-      'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
-      'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
-      'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.')
-    : '') +
+  details('⛽ L\'essence',
+    'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
+    'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
+    'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.') +
 
   details('🎲 Détail des dés',
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
@@ -3357,10 +3149,6 @@ function buildRulesHTML() {
     'Le classement ne récompense donc que tes <b>décisions</b> : quel rapport engager, quand braquer, quelle trajectoire prendre. Personne ne gagne parce qu\'il a eu de la chance.<br><br>' +
     'Changer de rapport pioche ailleurs dans la grille : impossible de \"pêcher\" un bon tirage. La grille est la <b>même à chaque essai</b> : tes essais suivants servent à mieux exploiter les mêmes dés.<br><br>' +
     'Pendant les <b>essais libres</b>, les dés redeviennent aléatoires : sinon tu repérerais la grille de la course avant de la jouer.') +
-
-  details('🎯 V1 : deux jets, tu choisis',
-    'En <b>rapport 1</b>, et seulement lui, tu ne subis pas un tirage unique : le dé de base est lancé <b>deux fois</b>, et c\'est ta trajectoire choisie sur la piste qui détermine lequel des deux résultats compte.<br><br>' +
-    'C\'est ce qui fait de la V1 le rapport de précision : en plus d\'un braquage toujours libre, tu as un vrai contrôle sur la distance parcourue.') +
 
   details('🏁 Points et classement',
     'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
@@ -3647,39 +3435,27 @@ document.getElementById('tuto-next').onclick = () => setTutoStep(TUTO.step + 1);
 
 function openRules() {
   const body = document.getElementById('rules-body');
-  // Pas de cache : les règles dépendent du circuit en cours (l'essence n'est
-  // affichée que si CE circuit l'a activée), donc on reconstruit à chaque
-  // ouverture plutôt que de figer un état obtenu lors du tout premier appui.
-  if (body) body.innerHTML = buildRulesHTML();
+  if (body && !body.dataset.filled) {
+    body.innerHTML = buildRulesHTML();
+    body.dataset.filled = '1';
+  }
   document.getElementById('rules-modal').style.display = 'flex';
   startTuto();
 }
 
 /* ================================================================
    ADMIN — GRILLE DE DÉS
-   Affiche les tirages ATOMIQUES réellement servis aux joueurs pour ce
-   circuit : pour chaque coup, la face de CHAQUE dé (pas la somme d'un
-   rapport). C'est la donnée minimale qui permet de reconstruire n'importe
-   quel total — un gear normal (somme des N premiers dés), le double jet de
-   la V1 (dé1 vs le second jet "v1b"), ou le dé de reprise (même dé, deux
-   coups différents). Purement en lecture (gridDieValue est la fonction qui
-   sert la course), donc ce que l'admin voit est exactement ce que les
-   joueurs obtiennent.
+   Affiche les tirages réellement servis aux joueurs pour ce circuit :
+   pour chaque coup et chaque rapport, le total obtenu. Purement en lecture
+   (gridRoll est la fonction qui sert la course), donc ce que l'admin voit
+   est exactement ce que les joueurs obtiennent.
    ================================================================ */
-const DG_MOVES = 20;      // nb de coups affichés à l'écran
-const DG_EXPORT_MOVES = 40; // nb de coups inclus dans le fichier exporté (marge large)
-
-// Face d'un dé donné à un coup donné — pure, indépendante de tout état de course.
-function gridDieFace(seed, dieIndex, moveNo) {
-  return gridDieValue(seed, 1, DICE_SET[dieIndex], 0, dieIndex, moveNo);
-}
-// Second jet de la V1 (mécanique "2 jets, tu choisis") — même principe, clé distincte.
-function gridV1SecondJet(seed, moveNo) {
-  return gridDieValue(seed, 1, DICE_SET[0], 1, 'v1b', moveNo);
-}
+let DG_ATTEMPT = 1;   // n° d'essai affiché
+const DG_MOVES = 20;  // nb de coups affichés
 
 function openDiceGrid() {
   const seed = (E && E.diceSeed) || null;
+  DG_ATTEMPT = 1;
   renderDiceGrid(seed);
   document.getElementById('dice-grid-modal').style.display = 'flex';
 }
@@ -3700,97 +3476,61 @@ function renderDiceGrid(seed) {
     'Les essais libres, eux, restent aléatoires.<br>' +
     '<span style="color:var(--mute);font-size:11px">Graine : <code>' + esc(seed) + '</code></span></div>';
 
-  html += '<button id="dice-grid-export" class="btn" style="width:100%;margin-bottom:14px;background:rgba(74,163,255,.12);border:1px solid rgba(74,163,255,.4);color:#4aa3ff">' +
-    '⬇️ Télécharger la grille complète (JSON, ' + DG_EXPORT_MOVES + ' coups)</button>';
 
-  // Tableau coups × dés ATOMIQUES (une colonne par dé, pas par rapport).
-  // Colonne V1 : les deux jets "1/3" (dé1 puis second jet) — c'est la seule
-  // vraie particularité de la V1. Les colonnes +V2..+V6 montrent le dé
-  // INCRÉMENTAL que chaque rapport ajoute au précédent (jamais une somme).
+  // Tableau coups × rapports
   html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
     '<thead><tr style="color:var(--mute);font-size:10px;letter-spacing:1px">' +
-    '<th style="padding:6px 4px;text-align:left">COUP</th>' +
-    '<th style="padding:6px 4px;text-align:center">V1<br><span style="font-weight:400;opacity:.6">2 jets</span></th>';
-  for (let g = 2; g <= 6; g++) {
-    html += '<th style="padding:6px 4px;text-align:center">+V' + g + '<br>' +
-      '<span style="font-weight:400;opacity:.6">dé ' + g + '</span></th>';
+    '<th style="padding:6px 4px;text-align:left">COUP</th>';
+  for (let g = 1; g <= 6; g++) {
+    html += '<th style="padding:6px 4px;text-align:center">V' + g + '<br>' +
+      '<span style="font-weight:400;opacity:.6">' + DICE[g][0] + '-' + DICE[g][1] + '</span></th>';
   }
   html += '</tr></thead><tbody>';
+
+  const stats = {};   // distribution par rapport, pour le récapitulatif
+  for (let g = 1; g <= 6; g++) stats[g] = {};
 
   for (let m = 1; m <= DG_MOVES; m++) {
     html += '<tr style="border-top:1px solid #23262c">' +
       '<td style="padding:5px 4px;color:var(--mute);font-family:ui-monospace,monospace">' + m + '</td>';
-    const d1 = gridDieFace(seed, 0, m);
-    const v1b = gridV1SecondJet(seed, m);
-    html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;color:#39d98a">' +
-      d1 + '<span style="color:var(--mute)">/</span>' + v1b + '</td>';
-    for (let g = 2; g <= 6; g++) {
-      const face = gridDieFace(seed, g - 1, m);   // dé n° g (indice g-1), la face BRUTE, pas une somme
-      html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;color:var(--txt)">' + face + '</td>';
+    for (let g = 1; g <= 6; g++) {
+      const v = gridRoll(seed, DG_ATTEMPT, g, m);
+      stats[g][v] = (stats[g][v] || 0) + 1;
+      // On met en évidence les extrêmes de la plage du rapport
+      const lo = DICE[g][0], hi = DICE[g][1];
+      const col = v === hi ? 'color:var(--crash);font-weight:900'
+                : v === lo ? 'color:var(--ok);font-weight:900'
+                : 'color:var(--txt)';
+      html += '<td style="padding:5px 4px;text-align:center;font-family:ui-monospace,monospace;' + col + '">' + v + '</td>';
     }
     html += '</tr>';
   }
   html += '</tbody></table></div>';
 
   html += '<div style="font-size:11px;color:var(--mute);margin-top:8px">' +
-    'Chaque case = la face BRUTE de ce dé à ce coup (jamais une somme). ' +
-    'Le total d\'un rapport V<i>n</i> = dé1 + dé2 + … + dé<i>n</i>. ' +
-    'La colonne V1 montre les deux jets dont un seul compte, selon ta trajectoire.</div>';
+    '<span style="color:var(--ok)">vert</span> = minimum de la plage · ' +
+    '<span style="color:var(--crash)">rouge</span> = maximum</div>';
+
+  // Récapitulatif : combien de fois chaque total sort sur ces 20 coups
+  html += '<div style="margin-top:18px"><div style="font-size:11px;letter-spacing:1px;color:var(--mute);margin-bottom:8px">' +
+    'RÉPARTITION SUR CES ' + DG_MOVES + ' COUPS</div>';
+  for (let g = 1; g <= 6; g++) {
+    const keys = Object.keys(stats[g]).map(Number).sort((a, b) => a - b);
+    const moy = keys.reduce((s, k) => s + k * stats[g][k], 0) / DG_MOVES;
+    html += '<div style="background:var(--panel);border-radius:8px;padding:8px 10px;margin-bottom:6px">' +
+      '<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">' +
+      '<b style="min-width:26px">V' + g + '</b>' +
+      '<span style="font-size:11px;color:var(--mute)">moyenne ' + moy.toFixed(1) + '</span>' +
+      '<span style="flex:1"></span>' +
+      keys.map(k => '<span style="font-family:ui-monospace,monospace;font-size:11px">' + k +
+        '<span style="color:var(--mute)">×' + stats[g][k] + '</span></span>').join(' · ') +
+      '</div></div>';
+  }
+  html += '</div>';
 
   body.innerHTML = html;
 
-  const exportBtn = document.getElementById('dice-grid-export');
-  if (exportBtn) exportBtn.onclick = () => downloadDiceGrid(seed);
 }
-
-// Export fichier : toutes les faces atomiques + les jeux de faces possibles par
-// dé (utile pour reconstituer soi-même DRS, V1, reprise ou n'importe quel total).
-function downloadDiceGrid(seed) {
-  const moves = [];
-  for (let m = 1; m <= DG_EXPORT_MOVES; m++) {
-    moves.push({
-      coup: m,
-      v1_die: gridDieFace(seed, 0, m),
-      v1_second_jet: gridV1SecondJet(seed, m),
-      die2: gridDieFace(seed, 1, m),
-      die3: gridDieFace(seed, 2, m),
-      die4: gridDieFace(seed, 3, m),
-      die5: gridDieFace(seed, 4, m),
-      die6: gridDieFace(seed, 5, m)
-    });
-  }
-  // Fichier AUTONOME : la piste (rows/start) ET les tirages de dés dans le
-  // même JSON. Avant, seuls les tirages étaient exportés — un script externe
-  // devait fusionner ça à la main avec un second export de la piste (récupéré
-  // via l'API), source d'erreurs si les deux ne correspondaient pas au même
-  // circuit. Désormais, un seul fichier suffit.
-  const payload = {
-    circuit: (E && E.name) || null,
-    seed: seed,
-    w: EW, h: EH,
-    rows: (E && E.grid) ? E.grid.map(r => r.join('')) : null,
-    start: (E && E.carPos) ? { x: E.carPos.q, y: E.carPos.r, dir: E.carDir || 0 } : null,
-    note: 'rows/start = la piste, au même format que /api/formula/circuit/<id> ' +
-      '(un caractère par case : "#" mur, "." piste, "F" arrivée, "C" checkpoint, "D" DRS). ' +
-      'Total du rapport Vn au coup m = die1+die2+...+dieN de cette ligne (die1 = v1_die). ' +
-      'v1_second_jet = second jet de la mécanique V1 (2 jets, le joueur choisit). ' +
-      'Dé de reprise au rapport n : compare la valeur "dieN" du coup où le rapport n-1 était engagé ' +
-      'à la valeur "dieN" du coup où le rapport n est réellement engagé — le plus grand des deux compte.',
-    dice_faces_per_index: DICE_SET,   // les faces POSSIBLES de chaque dé (utile pour le DRS : produit cartésien)
-    dice_range_per_gear: DICE.slice(1),
-    moves: moves
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'grille-des-' + (payload.circuit ? payload.circuit.replace(/[^a-z0-9]+/gi, '-') : seed) + '.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
 
 document.getElementById('dice-grid-close').onclick = () => {
   document.getElementById('dice-grid-modal').style.display = 'none';
@@ -3983,11 +3723,6 @@ function getAnimCarPos() {
 function finalizeMove(r) {
   R.turn++;
 
-  // Dé "+1" en réserve : instantané automatique de ce que le rapport supérieur
-  // aurait donné SUR CE COUP QUI VIENT DE SE CONCLURE (R.gear = celui utilisé
-  // pour ce coup, pas encore réassigné pour le suivant).
-  snapshotNextGearDie();
-
   // Zone DRS : compte si une case du trajet qu'on VIENT de parcourir touche une
   // case DRS — pas seulement la case d'arrivée. Sinon, à haute vitesse, un coup
   // peut traverser toute la zone sans jamais s'y arrêter pile, et le bonus ne se
@@ -4115,7 +3850,6 @@ function finalizeMove(r) {
     R.cpTimes = (cp.cpTimes || []).slice();
     R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
     R.crossedDrs = false;   // aucun avantage : on repart sans le bonus du coup raté
-    R.bankedDie = null;     // le coup raté n'ouvre droit à aucun instantané de réserve
 
     // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
@@ -4826,7 +4560,7 @@ function drawRace() {
         });
         cctx.stroke();
 
-        // numéro de case + marqueur de virage + marqueur de déport
+        // numéro de case + marqueur de virage
         res.path.forEach((st, i) => {
           const a = axialToPixel(st.q, st.r, hexSize);
           if (st.turn) {
@@ -4843,23 +4577,6 @@ function drawRace() {
             cctx.textAlign = 'center';
             cctx.textBaseline = 'middle';
             cctx.fillText('↻', a.x, a.y);
-          } else if (st.drift) {
-            // DÉPORT CENTRIFUGE : la voiture glisse ici malgré elle (V5/V6 en
-            // virage) — case bien distincte de l'inertie (jaune) et du DRS
-            // (violet), pour que le joueur voie exactement où il va déraper
-            // avant même de valider sa trajectoire.
-            cctx.beginPath();
-            cctx.arc(a.x, a.y, hexSize * 0.26, 0, Math.PI * 2);
-            cctx.fillStyle = 'rgba(34,211,238,0.85)';
-            cctx.fill();
-            cctx.strokeStyle = '#14161a';
-            cctx.lineWidth = 1.5;
-            cctx.stroke();
-            cctx.fillStyle = '#14161a';
-            cctx.font = 'bold ' + Math.max(8, hexSize * 0.28) + 'px sans-serif';
-            cctx.textAlign = 'center';
-            cctx.textBaseline = 'middle';
-            cctx.fillText('↝', a.x, a.y);
           } else {
             cctx.beginPath();
             cctx.arc(a.x, a.y, hexSize * 0.12, 0, Math.PI * 2);
@@ -4867,19 +4584,6 @@ function drawRace() {
             cctx.fill();
           }
         });
-
-        // Rappel textuel du déport, si ce trajet en comporte un (même principe
-        // que le rappel "🔒N" de l'inertie, juste après la dernière case de dérapage).
-        const driftCells = res.path.filter(st => st.drift);
-        if (driftCells.length) {
-          const dLast = driftCells[driftCells.length - 1];
-          const dp = axialToPixel(dLast.q, dLast.r, hexSize);
-          cctx.fillStyle = 'rgba(34,211,238,0.95)';
-          cctx.font = 'bold ' + Math.max(9, hexSize * 0.32) + 'px sans-serif';
-          cctx.textAlign = 'center';
-          cctx.textBaseline = 'middle';
-          cctx.fillText('↝ drift ' + driftCells.length, dp.x, dp.y - hexSize * 0.55);
-        }
 
         // flèche de direction finale (le "sens" dans lequel on repart)
         const last = res.path[res.path.length - 1];
