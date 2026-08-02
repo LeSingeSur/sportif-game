@@ -1819,7 +1819,14 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       5 questions · 20 pts chacune · Après chaque réponse : <strong style="color:#ffb400">ouvrir une boîte</strong> ou <strong style="color:var(--txt)">passer</strong><br>
-      📦 Boîtes : ⚡ Double ou Rien · 🙈 Question Voilée · 🎰 Jackpot · ⚖️ Pari · 🔮 Prophétie
+      <div style="margin-top:8px;line-height:1.65;font-size:11.5px">
+        <div><span style="color:#f39c12">⚡ Double ou Rien</span> — une question bonus : <strong>+40</strong> si juste, <strong>−20</strong> sinon</div>
+        <div><span style="color:#8e44ad">🙈 Question Voilée</span> — 1 mot sur 2 masqué à la question suivante, mais <strong>+30</strong> au lieu de 20</div>
+        <div><span style="color:#27ae60">🎰 Jackpot</span> — cagnotte qui monte (+10, +20, +30…) à chaque bonne réponse d'affilée · une erreur annule tout et coûte <strong>−10</strong></div>
+        <div><span style="color:#2980b9">⚖️ Pari</span> — parie sur ta propre réponse avant la correction : <strong>+10</strong> si tu vois juste, <strong>−10</strong> sinon</div>
+        <div><span style="color:#e74c3c">🔮 Prophétie</span> — annonce combien de bonnes réponses tu vas enchaîner : <strong>+10 par question</strong> si exact, <strong>−15</strong> si raté</div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;opacity:.75">À la fin, une dernière boîte <strong style="color:#00dc78">sans risque</strong> : +10 à +40 pts selon le tirage.</div>
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
     </div>
     <!-- Questions -->
@@ -11234,7 +11241,7 @@ const APOL={
   data:null, qIdx:0, score:0, done:false, _isFinal:false,
   effect:null, jackpotStreak:0, prophecy:null,
   voileeActive:false, parisActive:false,
-  _pendingAnswer:null, _pendingPari:null, _bonusA:null, _wasVoilee:false,
+  _pendingAnswer:null, _pendingPari:null, _wasVoilee:false,
   boxItems:[
     {id:'double',    label:'Double ou Rien',    emoji:'⚡', color:'#f39c12'},
     {id:'voilee',    label:'Question Voilée',   emoji:'🙈', color:'#8e44ad'},
@@ -11403,7 +11410,10 @@ function apolSpinWheel(item,onDone){
   const ctx=cvs.getContext('2d'), cx=110, cy=110, R=100;
   const slice=Math.PI*2/N;
   const idx=items.findIndex(w=>w.id===item.id);
-  const target=Math.PI*2*6+(idx*slice+slice/2);
+  // La flèche est fixe en haut. Pour amener le secteur idx sous elle, il faut
+  // tourner de l'OPPOSÉ de sa position (sinon la roue s'arrête sur un autre secteur
+  // que l'effet réellement appliqué).
+  const target=Math.PI*2*6+(Math.PI*2-(idx*slice+slice/2));
   function draw(rot){
     ctx.clearRect(0,0,220,220);
     items.forEach((w,i)=>{
@@ -11461,9 +11471,8 @@ function apolRevealEffect(item){
   };
 
   if(item.id==='double'){
-    const bonusQ=APOL.data.bonusQ, bonusA=APOL.data.bonusA;
+    const bonusQ=APOL.data.bonusQ;
     if(!bonusQ){noEffect('pas de question bonus configurée');return;}
-    APOL._bonusA=bonusA||'';
     if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#f39c12;margin-bottom:8px">⚡ DOUBLE OU RIEN — +40 ou −20</div>'+
       '<div style="font-size:15px;font-weight:800;color:var(--txt);background:rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:8px">'+bonusQ+'</div>'+
       '<div style="display:flex;gap:8px"><input type="text" id="apol-bonus-in" placeholder="Ta réponse…" autocomplete="off" style="flex:1;background:rgba(0,0,0,.5);border:2px solid rgba(243,156,18,.4);color:var(--txt);font-size:15px;border-radius:8px;padding:10px;outline:none" onkeydown="if(event.key===\'Enter\')apolSubmitDouble()">'+
@@ -11498,7 +11507,7 @@ function apolRevealEffect(item){
     for(let n=1;n<=remaining;n++)
       opts+='<button onclick="apolSetProphetie('+n+','+remaining+')" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e74c3c44;background:#e74c3c18;color:#e74c3c;font-family:var(--fh);font-size:14px;cursor:pointer">'+n+'/'+remaining+'</button>';
     if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#e74c3c;margin-bottom:8px">🔮 PROPHÉTIE — Prédit ta réussite sur les '+remaining+' prochaines questions</div>'+
-      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Exact → +10 pts/Q · Faux → −5 pts/Q</div>'+
+      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Prédiction exacte → +10 pts par question annoncée · Ratée → −15 pts</div>'+
       '<div style="display:flex;gap:8px">'+opts+'</div>';
   }
 }
@@ -11520,25 +11529,38 @@ function apolSetProphetie(prediction,remaining){
   if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=apolContinuePasser;}
 }
 
-function apolSubmitDouble(){
+async function apolSubmitDouble(){
   const inp=document.getElementById('apol-bonus-in');
   const val=(inp?.value||'').trim(); if(!val)return;
-  const correct=levenshtein(normStr(val),normStr(APOL._bonusA))<=1;
+  if(inp)inp.disabled=true;
+  // Même principe : la réponse bonus n'est plus dans le navigateur, le serveur tranche.
+  let correct=false, revealedAnswer='';
+  try{
+    const r=await fetch('/api/apol-bonus-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:GAME.athleteId,answer:val})});
+    const d=await r.json();
+    correct=!!d.correct; revealedAnswer=d.answer||'';
+  }catch(e){ correct=false; }
   const fb=document.getElementById('apol-bonus-fb');
   if(correct){APOL.score=Math.min(200,APOL.score+40);if(fb){fb.textContent='✅ +40 pts';fb.style.color='#00dc78';}}
-  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+APOL._bonusA+'</strong> · −20 pts';fb.style.color='var(--red)';}}
+  else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+revealedAnswer+'</strong> · −20 pts';fb.style.color='var(--red)';}}
   document.getElementById('apol-score').textContent=APOL.score;
   GAME.score=APOL.score; setScore(APOL.score,false);
-  if(inp)inp.disabled=true;
   setTimeout(apolContinuePasser,1500);
 }
 
-function apolResolveAnswer(effectApplied){
+async function apolResolveAnswer(effectApplied){
   const qs=APOL.data.apolQuestions||[];
   const q=qs[APOL.qIdx];
   const val=APOL._pendingAnswer||'';
-  const tol=q.tol!=null?parseInt(q.tol):1;
-  const correct=levenshtein(normStr(val),normStr(q.answer))<=tol;
+  // La réponse n'est plus transmise au navigateur (sécurité) : c'est le serveur qui tranche.
+  let correct=false, revealedAnswer='';
+  try{
+    const r=await fetch('/api/apol-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:GAME.athleteId,qIdx:APOL.qIdx,answer:val})});
+    const d=await r.json();
+    correct=!!d.correct; revealedAnswer=d.answer||'';
+  }catch(e){ correct=false; }
   const pts=APOL._wasVoilee?30:20;
   let delta=correct?pts:0, bonusMsg='';
 
@@ -11568,7 +11590,7 @@ function apolResolveAnswer(effectApplied){
 
   const res=document.getElementById('apol-box-result');
   const col=correct?'#00dc78':'var(--red)';
-  if(res) res.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.05)">'+(correct?'✅ Bonne réponse !':'❌ Faux ! C\'était <strong>'+q.answer+'</strong>')+' <span style="color:'+col+'">'+(correct?'+'+pts+' pts':'')+bonusMsg+'</span></div>';
+  if(res) res.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.05)">'+(correct?'✅ Bonne réponse !':'❌ Faux ! C\'était <strong>'+revealedAnswer+'</strong>')+' <span style="color:'+col+'">'+(correct?'+'+pts+' pts':'')+bonusMsg+'</span></div>';
 
   APOL.qIdx++;
   const isFinal=(APOL.qIdx>=qs.length);
