@@ -291,15 +291,8 @@ function rebuildGlobalScores() {
       if (entry.date > map[key].lastDate) map[key].lastDate = entry.date;
     }
   }
-  // Formula·Grid : points calculés EN DIRECT (jamais figés), fusionnés dans le même total général
-  const fgTotals = formulaGridPointsByPseudo();
-  for (const entry of Object.values(fgTotals)) {
-    const key = norm(entry.pseudo);
-    if (!map[key]) map[key] = { pseudo: entry.pseudo, totalScore: 0, count: 0, lastDate: entry.date };
-    map[key].totalScore += entry.score;
-    map[key].count++;
-    if (entry.date > map[key].lastDate) map[key].lastDate = entry.date;
-  }
+  // Formula·Grid EXCLU du classement général Arena Sport : son classement
+  // propre reste consultable dans le jeu, mais ne s'ajoute plus au total tous jeux.
   globalScores = Object.values(map)
     .map(e => ({ pseudo: e.pseudo, score: Math.round(e.totalScore), count: e.count, date: e.lastDate }))
     .sort((a, b) => b.score - a.score).slice(0, 200);
@@ -1455,10 +1448,26 @@ app.delete('/api/formula/admin/player', async (req, res) => {
 
 // Diagnostic connexion
 app.get('/api/status', (req, res) => {
+  const persistant = !!db;
   res.json({
+    // ── L'INFO QUI COMPTE : les données survivront-elles au prochain déploiement ? ──
+    stockage: persistant ? 'MongoDB (permanent)' : 'fichier local (ÉPHÉMÈRE)',
+    donneesPerdablesAuDeploiement: !persistant,
+    avertissement: persistant
+      ? null
+      : "MONGODB_URI n'est pas configurée : les scores, comptes et circuits sont écrits dans un fichier local, effacé à CHAQUE redéploiement (push GitHub). Ajoutez la variable d'environnement MONGODB_URI sur Koyeb pour rendre les données permanentes.",
+
     mongodb: db ? 'connecté' : 'non connecté',
     mongoUri: MONGO_URI ? 'définie (' + MONGO_URI.slice(0,20) + '...)' : 'ABSENTE',
-    athletes: athletes.length,
+
+    // Volumétrie actuelle, pour vérifier d'un coup d'œil ce qui est chargé
+    contenu: {
+      defis: athletes.length,
+      circuitsFormula: circuits.length,
+      duelsCurling: curlingMatches.length,
+      comptesJoueurs: Object.keys(accounts||{}).length,
+      scoresGlobaux: globalScores.length
+    },
     uptime: Math.round(process.uptime()) + 's'
   });
 });
