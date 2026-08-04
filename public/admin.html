@@ -368,7 +368,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div style="font-family:var(--fh);font-size:12px;color:var(--neon);letter-spacing:2px;margin-bottom:8px">PARAMÈTRES O2</div>
         <div style="display:flex;gap:8px;margin-bottom:12px">
-          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Base (O2/s)</label><input type="number" id="plongee-o2base" value="6" min="1" max="30" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Base (O2/s)</label><input type="number" id="plongee-o2base" value="8" min="1" max="30" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
           <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par trésor (O2/s)</label><input type="number" id="plongee-o2treasure" value="2" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
           <div style="flex:1"><label style="font-size:11px;color:var(--mute)">Par erreur (O2/s)</label><input type="number" id="plongee-o2error" value="2" min="0" max="10" style="width:100%;background:var(--c1);border:none;color:var(--txt);font-size:14px;border-radius:6px;padding:6px 8px;outline:none;text-align:center"></div>
         </div>
@@ -484,21 +484,12 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div id="apol-q-list-admin" style="display:flex;flex-direction:column;gap:6px"></div>
         <button class="btn btn-s" onclick="apolAdminAddQ()" style="margin-top:6px">➕ Ajouter une question</button>
-        <!-- Question bonus unique pour Double ou Rien -->
-        <div style="background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:10px;padding:10px;margin-top:10px;margin-bottom:8px">
-          <div style="font-size:11px;color:#f39c12;margin-bottom:6px">⚡ Question bonus "Double ou Rien" (unique pour tout le jeu)</div>
-          <input id="apol-bonus-q" placeholder="Question bonus…" oninput="apolBonusQ=this.value;checkReady();"
-            style="width:100%;background:var(--c2);border:none;color:#f39c12;font-size:12px;border-radius:6px;padding:6px 8px;outline:none;margin-bottom:5px">
-          <input id="apol-bonus-a" placeholder="Réponse…" oninput="apolBonusA=this.value;checkReady();"
-            style="width:100%;background:var(--c2);border:none;color:rgba(243,156,18,.7);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
-        </div>
       </div>
 
       <!-- PLATEAU FIELDS -->
       <div id="trivpursuit-fields" style="display:none">
         <div style="background:var(--c2);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--mute);margin-bottom:10px">
-          🎯 6 camemberts (thèmes, +50 pts automatique) · 6 cases-questions (1 entre chaque) · Max 300 pts<br>
-          💡 Réponses multiples acceptées : sépare-les par ; (ex: Zidane;Zinedine Zidane)
+          🎯 6 camemberts (thèmes, +50 pts automatique) · 12 cases-questions (2 entre chaque) · Max 300 pts
         </div>
         <!-- Mini plateau preview -->
         <div style="text-align:center;margin-bottom:12px;background:rgba(0,0,0,.4);border-radius:14px;padding:14px;border:1px solid rgba(180,140,255,.2)">
@@ -511,8 +502,16 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div id="triv-theme-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
         <!-- 12 questions grouped by section -->
+        
+      <!-- Question bonus unique pour Double ou Rien -->
+      <div style="background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="font-size:11px;color:#f39c12;margin-bottom:6px">⚡ Question bonus "Double ou Rien" (unique pour tout le jeu)</div>
+        <input id="apol-bonus-q" placeholder="Question bonus…" oninput="apolBonusQ=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:#f39c12;font-size:12px;border-radius:6px;padding:6px 8px;outline:none;margin-bottom:5px">
+        <input id="apol-bonus-a" placeholder="Réponse…" oninput="apolBonusA=this.value;checkReady();"
+          style="width:100%;background:var(--c2);border:none;color:rgba(243,156,18,.7);font-size:12px;border-radius:6px;padding:6px 8px;outline:none">
+      </div>
       <div style="font-size:11px;color:var(--mute);margin-bottom:6px">❓ CASES-QUESTIONS</div>
-      <div style="font-size:10px;color:var(--mute);margin-bottom:6px;opacity:.85">💡 Plusieurs réponses acceptées : sépare-les par ; (ex: Zidane;Zinedine Zidane)</div>
         <div id="triv-q-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
@@ -678,7 +677,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
         <div class="field">
           <label>Réponses valides (étape 1)</label>
-          <span class="hint">Le joueur doit taper ces noms pendant le sprint de 60s. Une réponse par ligne ; variantes séparées par ; (ex: Federer;Roger Federer) — elles comptent pour une seule réponse.</span>
+          <span class="hint">Le joueur doit taper ces noms pendant le sprint de 60s.</span>
           <textarea id="biat-sprint-bulk" placeholder="Djokovic&#10;Federer;Roger Federer&#10;Nadal;Rafael Nadal" style="min-height:80px;margin-top:6px"></textarea>
           <button class="btn btn-s" id="btn-biat-sprint-bulk" style="margin-top:6px">📋 Importer</button>
           <div style="border-top:1px solid rgba(255,255,255,.07);margin:10px 0"></div>
@@ -1649,16 +1648,13 @@ async function startEdit(id){
     setTimeout(()=>apolAdminRender(),50);
   }
   if(a.type==='trivpursuit'){
-    trivThemes=(a.trivThemes||[]).slice(0,6).map(t=>({name:t.name||'',color:t.color||'#888',question:t.question||'',answer:t.answer||'',tol:t.tol!=null?t.tol:1}));
+    trivThemes=(a.trivThemes||[]).map(t=>({name:t.name||'',color:t.color||'#888',question:t.question||'',answer:t.answer||'',tol:t.tol!=null?t.tol:1}));
     while(trivThemes.length<6) trivThemes.push({name:'',color:TRIV_COLORS[trivThemes.length]||'#888',question:'',answer:'',tol:1});
     window.trivThemes=trivThemes;
-    // Normalise en exactement 6 cases-questions (1 par section), compatible ancien format 12 questions
-    const rawTrivQ=(a.trivQuestions||[]);
-    trivQuestions=Array.from({length:6},(_,sec)=>{
-      const q=rawTrivQ.find(x=>x&&parseInt(x.sectionIdx)===sec)||rawTrivQ[sec]||{};
-      return {question:q.question||'',answer:q.answer||'',tol:q.tol!=null?parseInt(q.tol):1,sectionIdx:sec};
-    });
+    trivQuestions=(a.trivQuestions||[]).map(q=>({question:q.question||'',answer:q.answer||'',tol:q.tol!=null?q.tol:1,sectionIdx:q.sectionIdx||0}));
+    while(trivQuestions.length<6) trivQuestions.push({question:'',answer:'',tol:1,sectionIdx:trivQuestions.length});
     window.trivQuestions=trivQuestions;
+    trivQuestions=[...(a.trivQuestions||[])];
     setTimeout(()=>trivAdminRender(),50);
   }
   if(a.type==='roulette'){
@@ -1682,8 +1678,11 @@ async function startEdit(id){
   if(a.type==='plongee'){
     plongeePaliers=[...(a.plongeePaliers||[])];
     document.getElementById('plongee-o2base').value=a.plongeeO2Base||8;
-    document.getElementById('plongee-o2treasure').value=a.plongeeO2Treasure||1;
+    document.getElementById('plongee-o2treasure').value=a.plongeeO2Treasure||2;
     document.getElementById('plongee-o2error').value=a.plongeeO2Error||2;
+    // La tolérance était enregistrée mais JAMAIS rechargée : elle repassait
+    // silencieusement à 1 à chaque réouverture du défi.
+    const ptEl=document.getElementById('plongee-tol'); if(ptEl) ptEl.value=a.plongeeTol||1;
     setTimeout(()=>renderPlongeePaliers(),50);
   }
   if(a.type==='rvlf'){
@@ -1780,12 +1779,15 @@ async function startEdit(id){
       imgSrc='url'; imgBase64='';
       selectImgSrc('url');
       document.getElementById('img-url-in').value=a.imageUrl||'';
+      previewImage(a.imageUrl||'');
+    }
+    // Doit se recharger dans TOUS les cas (image en fichier OU en URL) — avant,
+    // ces 3 champs restaient vides à la réouverture d'un défi uploadé en fichier,
+    // avec un risque d'écraser la question/réponse/note existantes en sauvegardant.
     imageQuestion=a.imageQuestion||'';imageAnswer=a.imageAnswer||'';imgIndication=a.imageIndication||'';
     const iqEl=document.getElementById('img-question-in');if(iqEl)iqEl.value=imageQuestion;
     const iaEl=document.getElementById('img-answer-in');if(iaEl)iaEl.value=imageAnswer;
     const iiEl=document.getElementById('img-indication-in');if(iiEl)iiEl.value=imgIndication;
-      previewImage(a.imageUrl||'');
-    }
   } else if(a.type==='buzz'){
     buzzClues=a.clues||[];
     selectBuzzSpeed(a.buzzDecrement||2);
@@ -2386,16 +2388,12 @@ function apolAdminRender(){
       <input value="${(q.theme||'').replace(/"/g,'&quot;')}" placeholder="🏷️ Thème visible avant la question (ex: Palmarès, Records…)" oninput="setApolQ(${i},'theme',this.value)"
         style="width:100%;background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);color:#ffb400;font-size:12px;border-radius:6px;padding:6px 9px;outline:none">
       <input value="${(q.question||'').replace(/"/g,'&quot;')}" placeholder="Question…" oninput="setApolQ(${i},'question',this.value)"
-        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
-      <div style="display:flex;gap:6px">
-        <input value="${(q.answer||'').replace(/"/g,'&quot;')}" placeholder="Réponse…" oninput="setApolQ(${i},'answer',this.value)"
-          style="flex:1;background:var(--c2);border:none;color:var(--neon);font-size:13px;border-radius:6px;padding:7px 9px;outline:none">
-        <label style="font-size:10px;color:var(--mute);align-self:center;white-space:nowrap">Tol.</label>
-        <input type="number" value="${q.tol!=null?q.tol:1}" min="0" max="3" oninput="setApolQ(${i},'tol',this.value)"
-          style="width:44px;background:var(--c2);border:none;color:var(--mute);font-size:12px;border-radius:6px;padding:6px;outline:none;text-align:center">
-      </div>`;
-    list.appendChild(d);
+        style="width:100%;background:var(--c2);border:none;color:var(--txt);font-size:13px;border-radius:6px;padding:7px 9px;outline:none"></div>
+      <button onclick="removeTrappeQ(${i})" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
+    `;
+    list.appendChild(item);
   });
+  document.getElementById('trappe-q-count').textContent=trappeQuestions.length+' question'+(trappeQuestions.length>1?'s':'');
 }
 
 function removeTrappeQ(i){
@@ -2976,7 +2974,7 @@ async function loadTeamScores(){
     div.innerHTML=`<div style="font-family:var(--fh);font-size:20px;color:var(--mute);min-width:24px">${i+1}.</div>
       <div style="font-size:22px">${t.emoji}</div>
       <div style="flex:1"><div style="font-weight:700;color:${t.color}">${t.name}</div>
-        <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)${t.countedPlayers&&t.playerCount>t.countedPlayers?` · moyenne sur les ${t.countedPlayers} meilleurs`:''}${!t.qualified?' — pas assez de joueurs':''}</div></div>
+        <div style="font-size:11px;color:var(--mute)">${t.playerCount} joueur(s)${!t.qualified?' — pas assez de joueurs':''}</div></div>
       ${t.qualified?`<div style="font-family:var(--fh);font-size:22px;color:${t.color}">${t.avg}</div>
         <div style="font-size:11px;color:var(--mute)">pts moy.</div>`:'<div style="font-size:12px;color:var(--mute)">—</div>'}`;
     list.appendChild(div);
@@ -3483,7 +3481,7 @@ document.getElementById('btn-save').onclick=async()=>{
   const body={password:adminPw,answer,aliases,emoji:selEmoji,type:currentType,clue,imageUrl,imageBase64,imageQuestion:imageQuestionVal,imageAnswer:imageAnswerVal,imageIndication:imageIndicationVal,gridSize,clues:buzzClues,buzzDecrement,buzzFreezeDuration,question,targetValue,unit,prixTolerance,prixSensibilite:prixSensib,sportusHint1,sportusHint2,sportusHint0:currentType==='sportus'?document.getElementById('sportus-hint0-in').value.trim():'',sportusTimer:currentType==='sportus'?sportusTimerVal:45,revealedLetters,coefficient,trappeQuestion,trappeAnswers,trappeCorrect,trappeTimer,trappeQuestions:currentType==='trappe'?trappeQuestions:[],demineurItems:currentType==='demineur'?demItems:[],demineurTimer:currentType==='demineur'?demTimerVal:60,demineurQuestion,chaseTheme,chaseAnswers,chaseTargetToWin,chasePlayerStart,chaseGrace,chaseSpeed,chaseMalus,scoutIndices,repliqueCitation,repliqueAmorce,repliqueAnswer,repliqueAuthor,repliqueChoices,repliqueAuthorChoices,rqTolerance,rqTime:rqTimeVal,bjTheme,bjTarget,bjAnswers,grimpeTheme,grimpeAnswers,grimpeAnswersFull,grimpeParams,phase1:assautData?.phase1||[],phase2:assautData?.phase2||{},cibles:arcCiblesData,arcTolerances:arcTolData,couloirs:nsSyncData.couloirs||[],sportifs:nsSyncData.sportifs||[],biatTheme,biatAnnounceTime,biatSprintAnswers,biatQCM,biatOrderQuestion,biatOrder,mfQuestions:mfQuestionsData,halteroArache,halteroEpaule,varText:currentType==='var'?(document.getElementById('var-text-in')?.value||'').trim():undefined,varWrong:currentType==='var'?(document.getElementById('var-wrong-in')?.value||'').trim():undefined,varCorrect:currentType==='var'?(document.getElementById('var-correct-in')?.value||'').trim():undefined,varChips:currentType==='var'?varChips.map(c=>c.text):undefined,varTol:currentType==='var'?parseInt(document.getElementById('var-tol-in')?.value||1):undefined,rvlfQuestions:currentType==='rvlf'?rvlfQuestions:undefined,rvlfNoTimer:currentType==='rvlf'?document.getElementById('rvlf-notimer')?.checked:undefined,
   plongeePaliers:currentType==='plongee'?plongeePaliers:undefined,
   plongeeO2Base:currentType==='plongee'?parseInt(document.getElementById('plongee-o2base')?.value||8):undefined,
-  plongeeO2Treasure:currentType==='plongee'?parseInt(document.getElementById('plongee-o2treasure')?.value||1):undefined,
+  plongeeO2Treasure:currentType==='plongee'?parseInt(document.getElementById('plongee-o2treasure')?.value||2):undefined,
   plongeeO2Error:currentType==='plongee'?parseInt(document.getElementById('plongee-o2error')?.value||2):undefined,
   escaladeQuestions:currentType==='escalade'?escaladeQuestions:undefined,
   escaladeTheme:currentType==='escalade'?document.getElementById('escalade-theme')?.value.trim():undefined,
@@ -3929,8 +3927,8 @@ function bowlingAdminRender(){
       <div style="flex:1;display:flex;flex-direction:column;gap:2px">
         <div style="font-size:9px;color:#ffc800;text-align:center">mult ×</div>
         <input value="${q.multiplier||Math.max(1,Math.ceil(Math.abs(q.answer||1)*0.05))}" 
-          title="Auto = réponse × 0.05 (appliqué même si tu ne saisis rien). Modifie pour forcer une autre valeur (ex: 5 pour des années, 10000 pour des prix)."
-          oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)>0?parseFloat(this.value):0;checkReady();"
+          title="Auto = réponse × 0.05. Modifie pour override (ex: 5 pour années, 10000 pour prix)"
+          oninput="bowlingQuestions[${i}].multiplier=parseFloat(this.value)||0;checkReady();"
           style="width:100%;background:var(--c2);border:1px solid rgba(255,200,0,.3);color:#ffc800;font-size:12px;border-radius:4px;padding:5px 6px;outline:none;text-align:center">
       </div>
       <button onclick="bowlingQuestions.splice(${i},1);bowlingAdminRender();checkReady();" style="padding:4px 8px;border-radius:4px;border:none;background:rgba(255,60,60,.2);color:var(--red);cursor:pointer;font-size:12px">✕</button>`;
@@ -4177,16 +4175,6 @@ function cancelEdit(){
   renderBuzzClues();
   selectBuzzSpeed(2);
   selectBuzzFreeze(3);
-  // Reset APOL (questions + bonus Double ou Rien)
-  apolQuestions=[];window.apolQuestions=apolQuestions;
-  apolBonusQ='';apolBonusA='';
-  const _abq=document.getElementById('apol-bonus-q');if(_abq)_abq.value='';
-  const _aba=document.getElementById('apol-bonus-a');if(_aba)_aba.value='';
-  if(typeof apolAdminRender==='function')apolAdminRender();
-  // Reset Trivial Pursuit
-  trivThemes=Array.from({length:6},(_,i)=>({name:'',color:TRIV_COLORS[i],question:'',answer:'',tol:1}));
-  trivQuestions=Array.from({length:6},(_,i)=>({question:'',answer:'',tol:1,sectionIdx:i}));
-  window.trivThemes=trivThemes;window.trivQuestions=trivQuestions;
   selectType('text');updateWC();checkReady();
 }
 
