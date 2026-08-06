@@ -3127,7 +3127,11 @@ function openRoadAhead(q, r, dir, limit) {
 function scorePath(res) {
   if (res.crash) return -1000;
   let s = openRoadAhead(res.q, res.r, res.dir) * 10;
-  if (res.finish) s += 5000;
+  // Arrivée : privilégier la trajectoire qui laisse le PLUS de cases bonus.
+  // Deux totaux différents (DRS, V1 2 jets, dé de reprise) produisent souvent
+  // le même tracé jusqu'à la ligne ; sans ce critère, la déduplication par
+  // forme gardait arbitrairement le plus petit total et volait des cases bonus.
+  if (res.finish) s += 5000 + (res.left || 0) * 20;
   // léger bonus si la jauge d'inertie finit basse (on pourra tourner au coup suivant)
   s -= (res.inertiaEnd || 0);
   return s;
@@ -3180,7 +3184,8 @@ function processRollResult(val, altTotals) {
     const seen = new Set();
     const uniq = [];
     for (const r of list) {
-      const sig = r.dir + '|' + r.path.map(p => p.q + ',' + p.r).join(';');
+      const sig = r.dir + '|' + (r.finish ? (r.left || 0) + '|' : '') +
+                  r.path.map(p => p.q + ',' + p.r).join(';');
       if (seen.has(sig)) continue;
       seen.add(sig);
       uniq.push(r);
