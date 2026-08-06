@@ -1215,6 +1215,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       Tu plonges avec <strong style="color:var(--txt)">1000 O2</strong> qui s'épuisent en permanence.<br>
       ⬇️ Descends 5 paliers · réponds à une question par palier<br>
       💰 Ramasse les trésors <strong style="color:#ffc800">(10·20·35·55·80 pts)</strong> — mais chaque trésor accélère ta consommation O2<br>
+      🪨 Trop chargé ? Tu peux <strong style="color:#ff9090">lâcher un trésor</strong> pour respirer moins vite — mais il est perdu <strong>définitivement</strong><br>
       ❌ Mauvaise réponse → <strong style="color:var(--red)">consommation O2 augmente</strong> · O2=0 → noyade → 0 pts<br>
       ⬆️ Pour remonter : une question par palier · sacrifie un trésor pour passer une question<br>
       <strong style="color:var(--txt)">Score = trésors ramenés vivant · Max 200 pts</strong>
@@ -1620,7 +1621,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <button onclick="equiSubmit()" style="width:52px;height:52px;flex-shrink:0;background:#007830;color:#fff;border:none;border-radius:var(--r);font-size:22px;cursor:pointer">🏇</button>
     </div>
 
-    <button id="equi-giveup-btn" onclick="equiGiveUp()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (0 pt — affiche la réponse)</button>
+    <button id="equi-giveup-btn" onclick="equiGiveUp()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (tu gardes tes points acquis — affiche la réponse)</button>
 
     <div id="equi-fb" class="fb" style="text-align:center;font-size:15px"></div>
 
@@ -4108,6 +4109,43 @@ function plongeeShowDirectionChoice(){
   if(qEl)qEl.textContent=`⏸ Palier ${PL.currentPalier} — ${['20m','40m','60m','80m','100m'][PL.currentPalier-1]} · Continuer ?`;
   if(canDescend){const btn=document.getElementById('plongee-btn-descend');if(btn)btn.style.display='block';}
   const btnA=document.getElementById('plongee-btn-ascend');if(btnA)btnA.style.display='block';
+  plongeeShowDropOption();
+}
+
+// Lâcher un trésor : allège la consommation d'O2, mais le trésor est PERDU
+// définitivement (points retirés, impossible de le reprendre).
+function plongeeShowDropOption(){
+  const fb=document.getElementById('plongee-fb');
+  if(!fb) return;
+  if(!PL.treasures.length){ fb.innerHTML=''; return; }
+  const last=PL.treasures[PL.treasures.length-1];
+  const rate=PL.data.plongeeO2Treasure||2;
+  fb.innerHTML=`<button onclick="plongeeDropTreasure()" style="padding:8px 14px;border-radius:6px;`
+    +`border:1px solid rgba(255,120,120,.35);background:rgba(255,80,80,.08);color:rgba(255,150,150,.95);`
+    +`font-size:11.5px;cursor:pointer">🪨 Lâcher le trésor du palier ${last.palier} `
+    +`(−${last.pts} pts · O2 −${rate}/s) — définitif</button>`;
+}
+
+function plongeeDropTreasure(){
+  if(!PL.treasures.length) return;
+  const t=PL.treasures[PL.treasures.length-1];
+  const rate=PL.data.plongeeO2Treasure||2;
+  if(!confirm(`Lâcher le trésor du palier ${t.palier} ?\n\n`
+    +`Tu perds ${t.pts} pts DÉFINITIVEMENT (impossible de le reprendre), `
+    +`mais ta consommation d'oxygène baisse de ${rate}/s.`)) return;
+
+  PL.treasures.pop();
+  PL.score=Math.max(0,PL.score-t.pts);
+  // La consommation redescend, sans repasser sous le rythme de base
+  PL.o2Rate=Math.max(PL.data.plongeeO2Base||8, PL.o2Rate-rate);
+  // Le palier reste "résolu" : le trésor est détruit, pas remis en jeu
+  GAME.score=PL.score; setScore(PL.score,false);
+  plongeeUpdateUI();
+  const fb=document.getElementById('plongee-fb');
+  if(fb){
+    fb.innerHTML=`<span style="color:#ff9090">🪨 Trésor lâché — perdu définitivement (−${t.pts} pts) · O2 ${PL.o2Rate}/s</span>`;
+    setTimeout(()=>plongeeShowDropOption(),1800);
+  }
 }
 
 function plongeeTakeOrSkipTreasure(){
@@ -9957,7 +9995,7 @@ function equiRenderFlecheBoard(){
       <div id="equi-fleche-fb-${i}" style="margin-top:4px;min-height:18px"></div>
     </div>`;
   }).join('')
-  + `<button onclick="equiFlecheGiveUp()" style="margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (0 pt — affiche les réponses)</button>`;
+  + `<button onclick="equiFlecheGiveUp()" style="margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(255,80,80,.3);background:transparent;color:rgba(255,120,120,.8);font-size:12px;cursor:pointer">🏳️ Je ne sais pas (tu gardes tes points acquis — affiche les réponses)</button>`;
 }
 
 function equiFlecheSubmit(i){
@@ -10410,11 +10448,14 @@ function equiGiveUp(){
   document.getElementById('equi-vf').style.display='none';
   document.getElementById('equi-giveup-btn').style.display='none';
   document.getElementById('equi-q').style.display='none';
-  EQUI.scores.push(0);
+  // Les obstacles à progression partielle (rivière) conservent le meilleur score
+  // déjà atteint — abandonner ne doit pas effacer ce qui a été gagné.
+  const partiel = (obs.type==='riviere') ? (EQUI.riviereBest?.[EQUI.current]||0) : 0;
+  EQUI.scores.push(partiel);
   const gtotal=EQUI.scores.reduce((a,b)=>a+b,0);
   document.getElementById('equi-score-display').textContent=gtotal;
   GAME.score=gtotal; setScore(gtotal,false);
-  EQUI.bars[EQUI.current]=0;
+  EQUI.bars[EQUI.current]=partiel>=45?2:partiel>=20?1:0;
   equiDrawTrack(); equiUpdateBarsDisplay();
   if(obs.type==='mots'){
     const wg=EQUI.wordGrids[EQUI.current];
