@@ -670,6 +670,20 @@ header.top {
   color: #4aa3ff;
 }
 
+/* MODE RALLYE — un code couleur par dé, pour lire d'un coup d'oeil quel dé
+   appartient à quel rapport : vert dV1, jaune dV2, orange dV3, rouge dV4.
+   La classe est posée sur le cube quel que soit son état (engagé, en réserve
+   ou en jet supplémentaire). */
+.dice-cube.rd1 { border-color: #39d98a; color: #39d98a; box-shadow: 0 0 18px rgba(57, 217, 138, .35); }
+.dice-cube.rd2 { border-color: #f7c948; color: #f7c948; box-shadow: 0 0 18px rgba(247, 201, 72, .35); }
+.dice-cube.rd3 { border-color: #ff9f43; color: #ff9f43; box-shadow: 0 0 18px rgba(255, 159, 67, .35); }
+.dice-cube.rd4 { border-color: #ff5d5d; color: #ff5d5d; box-shadow: 0 0 18px rgba(255, 93, 93, .35); }
+
+/* Les états spécifiques (DRS, jets V1, reprise) restent prioritaires sur la
+   couleur de base : ils portent une information de mécanique, pas d'identité. */
+.dice-cube.rd1.drs-picked, .dice-cube.rd2.drs-picked,
+.dice-cube.rd3.drs-picked, .dice-cube.rd4.drs-picked { color: #b464ff; border-color: #b464ff; }
+
 @keyframes diceShake {
   0% { transform: translate(-2px, -2px) rotate(-3deg); }
   100% { transform: translate(2px, 2px) rotate(3deg); }
@@ -1475,6 +1489,18 @@ const RALLYE_DRIFT = {
 };
 const F1_DRIFT = { 5: 1, 6: 2 };
 
+// Persistance locale du mode. Le champ `mode` part bien dans le payload, mais
+// tant que l'API ne le stocke pas, le circuit revient en 'f1' à chaque
+// rechargement. On mémorise donc le mode par circuit côté navigateur et on
+// s'en sert comme secours. Dès que l'API renverra `mode`, elle aura priorité.
+function rememberMode(circuitId, mode) {
+  if (!circuitId) return;
+  try { localStorage.setItem('fg_mode_' + circuitId, mode || 'f1'); } catch (e) {}
+}
+function recallMode(circuitId) {
+  if (!circuitId) return null;
+  try { return localStorage.getItem('fg_mode_' + circuitId); } catch (e) { return null; }
+}
 function isRallye() { return R.mode === 'rallye'; }
 function maxGear()  { return isRallye() ? 4 : 6; }
 function diceSet()  { return isRallye() ? RALLYE_DICE_SET : DICE_SET; }
@@ -2012,7 +2038,8 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.pendingGear = 1;
   R.turn = 0;
   R.lapCount = 0;
-  R.mode = circuit.mode || 'f1';
+  R.mode = circuit.mode || recallMode(circuit.id) || 'f1';
+  if (circuit.mode) rememberMode(circuit.id, circuit.mode);
   // Spéciale rallye = point à point : un seul "tour", du départ à la ligne
   // d'arrivée, sans jamais repasser par la case de départ.
   R.targetLaps = isRallye() ? 1 : circuit.laps;
@@ -3041,7 +3068,16 @@ function rollDiceAnim(drsFace) {
   // impliquent tourne dès le début, EXACTEMENT comme les autres — sinon il
   // semblait surgir de nulle part à la révélation, comme s'il n'avait pas été
   // tiré à l'avance sur la grille commune (alors qu'il l'est bel et bien).
-  const isV1Choice = (R.gear === 1) && !onDRS;
+  // Rallye : on lance TOUJOURS 4 dés. Aux rapports bas, les dés non utilisés
+  // pour la distance deviennent des jets supplémentaires du dé V1 — toutes les
+  // valeurs obtenues sont proposées au joueur comme trajectoires distinctes.
+  //   V1 -> 3 jets de dV1 (+ dV2 en réserve de reprise)
+  //   V2 -> 2 jets de dV1 (+ dV2 engagé, + dV3 en réserve)
+  //   V3 -> 1 jet         (+ dV4 en réserve)
+  //   V4 -> 1 jet         (pas de réserve, rapport maxi)
+  const nJets = isRallye() ? Math.max(1, 4 - R.gear) : (R.gear === 1 ? 2 : 1);
+  const V1_KEYS = [0, 'v1b', 'v1c'];
+  const isV1Choice = (nJets > 1) && !onDRS;
   const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS && !isV1Choice)
     ? nActifs - 1 : -1;
   const twinFaces = isV1Choice ? diceSet()[0] : (bankIdx >= 0 ? diceSet()[bankIdx] : null);
@@ -3057,23 +3093,30 @@ function rollDiceAnim(drsFace) {
     fairEl.style.display = 'block';
   }
   row.innerHTML = '';
-  const cubes = DICE_SET.map((faces, i) => {
+  const cubes = diceSet().map((faces, i) => {
     const c = document.createElement('div');
-    c.className = 'dice-cube' + (i < nActifs ? '' : ' inactif');
+    c.className = 'dice-cube' + (i < nActifs ? '' : ' inactif') +
+                  (isRallye() ? ' rd' + (i + 1) : '');
     c.textContent = '?';
     row.appendChild(c);
     return c;
   });
   // Dé supplémentaire (V1 pure ou reprise) : créé et inséré DÈS MAINTENANT,
   // pour qu'il tourne dans l'animation au même titre que les cinq autres.
-  let extraCube = null;
+  const extraCubes = [];
   if (twinFaces) {
     const twinIdx = isV1Choice ? 0 : bankIdx;
-    extraCube = document.createElement('div');
-    extraCube.className = 'dice-cube';
-    extraCube.textContent = '?';
-    cubes[twinIdx].insertAdjacentElement('afterend', extraCube);
+    const nExtra = isV1Choice ? (nJets - 1) : 1;
+    for (let k = 0; k < nExtra; k++) {
+      const ec = document.createElement('div');
+      ec.className = 'dice-cube' +
+                     (isRallye() ? ' rd' + ((isV1Choice ? 0 : bankIdx) + 1) : '');
+      ec.textContent = '?';
+      cubes[twinIdx].insertAdjacentElement('afterend', ec);
+      extraCubes.push(ec);
+    }
   }
+  let extraCube = extraCubes[0] || null;
   sumEl.textContent = '';
   ov.classList.add('on');
 
@@ -3090,9 +3133,9 @@ function rollDiceAnim(drsFace) {
     // Le dé supplémentaire tourne lui aussi, sur les faces de son jumeau —
     // il ne participe pas encore au total affiché pendant le lancer, seul le
     // résultat final (après choix du joueur) déterminera ce qui compte.
-    if (extraCube) {
-      extraCube.textContent = twinFaces[Math.floor(Math.random() * twinFaces.length)];
-    }
+    extraCubes.forEach(ec => {
+      ec.textContent = twinFaces[Math.floor(Math.random() * twinFaces.length)];
+    });
     sumEl.textContent = 'Σ ' + running;
     counter++;
 
@@ -3122,21 +3165,17 @@ function rollDiceAnim(drsFace) {
           return;
         }
         if (isV1Choice && i === 0) {
-          const d1 = dieValue(diceSet()[0], 1, 0, moveNo);
-          const d2 = dieValue(diceSet()[0], 1, 'v1b', moveNo);
-          // En rallye V1 offre TROIS jets au choix (le 4e dé du coup sert de
-          // dé de reprise pour V2) : c'est le rapport de précision.
-          const d3 = isRallye() ? dieValue(diceSet()[0], 1, 'v1c', moveNo) : null;
+          const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
           c.textContent = d1;
           c.classList.add('v1-picked');
           c.style.borderColor = '#39d98a';
           base += d1;
-          extraValue = d2;
-          if (extraCube) {
-            extraCube.classList.add('v1-picked');
-            extraCube.style.borderColor = '#39d98a';
-            extraCube.textContent = d2;
-          }
+          extraValue = dieValue(diceSet()[0], 1, V1_KEYS[1], moveNo);
+          extraCubes.forEach((ec, k) => {
+            ec.classList.add('v1-picked');
+            ec.style.borderColor = '#39d98a';
+            ec.textContent = dieValue(diceSet()[0], 1, V1_KEYS[k + 1], moveNo);
+          });
           return;
         }
         if (i === bankIdx) {
@@ -3148,17 +3187,21 @@ function rollDiceAnim(drsFace) {
           // frais) est recalculé juste après, dans altTotals — l'ajouter ici
           // le compterait deux fois.
           extraValue = R.bankedDie.value;
-          if (extraCube) {
-            extraCube.classList.add('bank-used');
-            extraCube.style.borderColor = '#4aa3ff';
-            extraCube.textContent = extraValue;
+          if (extraCubes[0]) {
+            extraCubes[0].classList.add('bank-used');
+            extraCubes[0].style.borderColor = '#4aa3ff';
+            extraCubes[0].textContent = extraValue;
           }
           return;
         }
         const v = dieValue(diceSet()[i], R.gear, i, moveNo);
         c.textContent = v;
         if (i < nActifs) {
-          c.style.borderColor = 'var(--ok)';
+          // En rallye chaque dé garde SA couleur (vert dV1 -> rouge dV4) au lieu
+          // de la couleur générique de validation.
+          c.style.borderColor = isRallye()
+            ? ['#39d98a', '#f7c948', '#ff9f43', '#ff5d5d'][i]
+            : 'var(--ok)';
           base += v;
         }
       });
@@ -3178,11 +3221,13 @@ function rollDiceAnim(drsFace) {
         }
         altTotals = [...new Set(sums)].sort((a, b) => a - b);
       } else if (isV1Choice) {
-        // extraValue = d2 (le second tirage), déjà calculé dans la boucle ci-dessus
-        const d1 = dieValue(diceSet()[0], 1, 0, moveNo), d2 = extraValue;
-        const jets = [d1, d2];
-        if (isRallye()) jets.push(dieValue(diceSet()[0], 1, 'v1c', moveNo));
-        altTotals = [...new Set(jets)].sort((a, b) => a - b);
+        // base contient déjà le 1er jet + les dés engagés au-dessus de V1.
+        // Chaque jet alternatif remplace le premier : on retire d1, on ajoute le jet.
+        const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
+        const socle = base - d1;
+        const jets = [];
+        for (let k = 0; k < nJets; k++) jets.push(dieValue(diceSet()[0], 1, V1_KEYS[k], moveNo));
+        altTotals = [...new Set(jets.map(j => socle + j))].sort((a, b) => a - b);
       } else if (bankIdx >= 0) {
         const fresh = dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo);
         const banked = R.bankedDie.value;
@@ -5530,7 +5575,7 @@ async function loadForEdit(id) {
     document.getElementById('c-name').value = c.name;
     document.getElementById('c-laps').value = c.laps;
     const modeSel1 = document.getElementById('c-mode');
-    if (modeSel1) { modeSel1.value = c.mode || 'f1'; syncModeUI(); }
+    if (modeSel1) { modeSel1.value = c.mode || recallMode(c.id) || 'f1'; syncModeUI(); }
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
   const _rgd2 = document.getElementById('c-regen-dice'); if (_rgd2) _rgd2.checked = false;
@@ -7150,6 +7195,7 @@ async function saveCircuit(publish) {
 
     E.editingId = res.id;
     E.published = publish;
+    rememberMode(res.id, body.mode);   // secours tant que l'API ne stocke pas `mode`
 
     document.getElementById('btn-delete').style.display = 'block';
     document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
