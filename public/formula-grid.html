@@ -1187,6 +1187,8 @@ header.top {
       <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
       <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
       <div class="tool" data-tool="drs">⚡<span class="tname">DRS</span></div>
+      <div class="tool" data-tool="terre">🟫<span class="tname">Terre</span></div>
+      <div class="tool" data-tool="neige">❄️<span class="tname">Neige</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
@@ -1209,6 +1211,15 @@ header.top {
       <div class="field">
         <label>Nom du circuit</label>
         <input type="text" id="c-name" placeholder="Ex : Monza">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Mode</label>
+          <select id="c-mode">
+            <option value="f1">🏎️ Formula (circuit, tours)</option>
+            <option value="rallye">🏁 Rallye (spéciale, point à point)</option>
+          </select>
+        </div>
       </div>
       <div class="row">
         <div class="field">
@@ -1443,16 +1454,64 @@ const DICE_SET = [
   [5, 6, 7]    // dé 6  → V6 : 16-27 (moy 21,5)
 ];
 
+// ============================ MODE RALLYE ============================
+// Spéciale point à point (départ -> arrivée, sans boucle), 4 rapports, et
+// 3 surfaces qui ne changent QUE le déport. L'inertie reste commune : c'est
+// la masse à réaligner, elle ne dépend pas du sol. V1 garde inertie 0 ET
+// déport 0 sur toutes les surfaces — c'est la soupape qui garantit qu'aucune
+// géométrie ne devienne infranchissable, quel que soit le placement des zones.
+const RALLYE_DICE_SET = [
+  [1, 2, 3],   // dV1 — 3 jets au choix en V1
+  [2, 3, 4],   // dV2
+  [3, 4, 5],   // dV3
+  [4, 5, 6]    // dV4
+];
+const RALLYE_INERTIA = [0, 0, 1, 2, 3];
+// déport ~ v² / adhérence, arrondi. Facturé au budget de dé (voir getValidPaths).
+const RALLYE_DRIFT = {
+  asphalte: { 4: 1 },                 // 0 / 0 / 0 / 1
+  terre:    { 3: 1, 4: 2 },           // 0 / 0 / 1 / 2
+  neige:    { 2: 1, 3: 2, 4: 3 }      // 0 / 1 / 2 / 3
+};
+const F1_DRIFT = { 5: 1, 6: 2 };
+
+function isRallye() { return R.mode === 'rallye'; }
+function maxGear()  { return isRallye() ? 4 : 6; }
+function diceSet()  { return isRallye() ? RALLYE_DICE_SET : DICE_SET; }
+function inertiaTable() { return isRallye() ? RALLYE_INERTIA : INERTIA; }
+
+// Surface d'une case. Lue CASE PAR CASE pendant le trajet (pas seulement à la
+// case de départ) : un coup en V4 traverse jusqu'à 20 cases et peut très bien
+// passer de l'asphalte à la neige en cours de route.
+function surfaceAt(q, r) {
+  const c = (R.grid[r] ? R.grid[r][q] : '#');
+  if (c === 'T') return 'terre';
+  if (c === 'N') return 'neige';
+  return 'asphalte';
+}
+function driftForGear(gear, surf) {
+  if (isRallye()) return (RALLYE_DRIFT[surf] || RALLYE_DRIFT.asphalte)[gear] || 0;
+  return F1_DRIFT[gear] || 0;
+}
+const SURFACE_LABEL = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige' };
+// ====================================================================
+
 // Le pool d'un rapport = les g premiers dés du jeu commun.
 const DICE_POOLS = [[]];
 for (let g = 1; g <= 6; g++) DICE_POOLS.push(DICE_SET.slice(0, g));
+const RALLYE_POOLS = [[]];
+for (let g = 1; g <= 4; g++) RALLYE_POOLS.push(RALLYE_DICE_SET.slice(0, g));
+function dicePools() { return isRallye() ? RALLYE_POOLS : DICE_POOLS; }
 
 // Bornes min/max de chaque rapport, DÉRIVÉES des dés (jamais saisies à la main,
 // pour qu'affichage et moteur ne puissent pas diverger).
-const DICE = DICE_POOLS.map(pool => [
+const bounds = pools => pools.map(pool => [
   pool.reduce((s, d) => s + Math.min(...d), 0),
   pool.reduce((s, d) => s + Math.max(...d), 0)
 ]);
+const DICE = bounds(DICE_POOLS);
+const RALLYE_DICE = bounds(RALLYE_POOLS);
+function diceBounds() { return isRallye() ? RALLYE_DICE : DICE; }
 
 /* ----------------------------------------------------------------
    POOL DE DÉS COMMUN
@@ -1495,7 +1554,7 @@ function gridDieValue(seed, attemptNo, faces, gear, dieIndex, moveNo) {
 
 // Somme d'un coup complet dans la grille (tous les dés du rapport).
 function gridRoll(seed, attemptNo, gear, moveNo) {
-  const pool = DICE_POOLS[gear] || [];
+  const pool = dicePools()[gear] || [];
   let sum = 0;
   pool.forEach((faces, i) => { sum += gridDieValue(seed, attemptNo, faces, gear, i, moveNo); });
   return sum;
@@ -1953,7 +2012,10 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.pendingGear = 1;
   R.turn = 0;
   R.lapCount = 0;
-  R.targetLaps = circuit.laps;
+  R.mode = circuit.mode || 'f1';
+  // Spéciale rallye = point à point : un seul "tour", du départ à la ligne
+  // d'arrivée, sans jamais repasser par la case de départ.
+  R.targetLaps = isRallye() ? 1 : circuit.laps;
 
   // Essais libres (ex tours de chauffe) : activés par l'admin, terminés par le joueur
   R.freePractice = !skipPractice
@@ -2025,8 +2087,18 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.speedLines = [];
   R.currentKmh = 0;
 
-  // Finish zone tracking
-  R.leftFinishZone = false;
+  // Finish zone tracking. En F1 le départ touche la ligne d'arrivée : il faut
+  // d'abord QUITTER la zone pour qu'un passage compte. En rallye la spéciale est
+  // point à point — le départ n'est pas sur l'arrivée, la ligne compte dès qu'on
+  // l'atteint.
+  R.leftFinishZone = isRallye() ? true : false;
+
+  // TURBO (mode rallye) : une seule activation par spéciale. Fonctionne comme le
+  // DRS — toutes les faces des dés engagés sont proposées, le joueur choisit sa
+  // trajectoire donc implicitement sa face. Différence majeure avec le DRS : ce
+  // n'est pas la piste qui décide du moment, c'est le pilote.
+  R.turboUsed = false;
+  R.turboArmed = false;
 
   // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
   R.inertia = 0;
@@ -2202,6 +2274,8 @@ function onTrackR(q, r) {
   if (r < 0 || r >= R.H || q < 0 || q >= R.W) return false;
   return R.grid[r] && R.grid[r][q] !== '#';
 }
+// 'T' (terre) et 'N' (neige) sont de la piste normale pour tout le reste du
+// moteur — pathfinding, checkpoints, générateur. Seul le déport les distingue.
 
 // Les checkpoints qu'il FAUT franchir pour valider un tour. Un groupe posé dans
 // une impasse (aucun chemin n'y entre puis en ressort avec des virages ≤60°,
@@ -2277,7 +2351,8 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
   //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
   // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
-  const reload = INERTIA[gear] != null ? INERTIA[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
+  const INERT = inertiaTable();
+  const reload = INERT[gear] != null ? INERT[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
   const startInertia = Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
@@ -2328,8 +2403,8 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     // tout simplement impraticable à ce rapport (même logique qu'une case hors
     // piste classique — l'option n'est pas explorée). Le déport ne consomme
     // aucun budget de dé : ce n'est pas une distance voulue par le joueur.
-    const DRIFT = { 5: 1, 6: 2 };
-    const driftN = DRIFT[gear] || 0;
+    // Le déport dépend de la surface SOUS LA VOITURE au moment où elle braque.
+    const driftN = driftForGear(gear, surfaceAt(q, r));
 
     for (const o of opts) {
       const dr = HEX_DIRS[o.d];
@@ -2355,11 +2430,17 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       if (!driftOk) continue;   // le déport sort de la piste : ce virage est
                                  // impraticable à ce rapport, comme une case
                                  // hors piste classique.
+      // LE DÉPORT CONSOMME DU BUDGET. Chaque case parcourue coûte 1 point de
+      // dé, y compris celles qu'on subit. Sans ça le déport était un bonus
+      // caché : on avançait plus loin que le tirage ne le permettait, ce qui
+      // récompensait les hauts rapports au lieu de les taxer.
+      const driftCells = seg.length - 1;
+      const nb = b - 1 - driftCells;
+      if (nb < 0) continue;   // pas assez de dé pour absorber le déport
+
       anyOpen = true;
 
       for (const s of seg) path.push(s);
-
-      const nb = b - 1;
       // Virage → recharge la jauge ; ligne droite → la purge de 1
       const nInertia = o.turn ? reload : Math.max(0, inertia - 1);
       const cell = R.grid[nr] ? R.grid[nr][nq] : '#';
@@ -2414,7 +2495,8 @@ function renderGears() {
   const hg = document.getElementById('hgrid');
   hg.innerHTML = '';
 
-  [0, 1, 2, 3, 4, 5, 6].forEach(g => {
+  const GEARS = isRallye() ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6];
+  GEARS.forEach(g => {
     const el = document.createElement('div');
     let reach = false;
 
@@ -2438,7 +2520,8 @@ function renderGears() {
     el.className = cls;
 
     const label = (g === 0) ? 'STOP' : GEAR_KMH[g] + 'km/h';
-    const range = (g >= 1 && DICE[g]) ? (DICE[g][0] + '-' + DICE[g][1]) : '';
+    const DB = diceBounds();
+    const range = (g >= 1 && DB[g]) ? (DB[g][0] + '-' + DB[g][1]) : '';
     el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>' +
       (range ? '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' + range + '</i>' : '') +
       (R.bankedDie && R.bankedDie.targetGear === g ? '<i style="font-style:normal;font-size:8px;color:#4aa3ff">📥' + R.bankedDie.value + '</i>' : '');
@@ -2453,6 +2536,24 @@ function renderGears() {
 
     hg.appendChild(el);
   });
+
+  // Bouton TURBO : uniquement en rallye, une fois par spéciale.
+  if (isRallye()) {
+    const tb = document.createElement('div');
+    const dispo = !R.turboUsed && R.phase === 'gear' && R.pendingGear >= 1;
+    tb.className = 'gear ' + (R.turboArmed ? 'sel' : (dispo ? 'reach' : 'off'));
+    tb.innerHTML = '<b>🔥</b><span>' + (R.turboUsed ? 'utilisé' : 'TURBO') + '</span>' +
+      '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
+      (R.turboUsed ? '—' : '1× / spéciale') + '</i>';
+    if (dispo) {
+      tb.onclick = () => {
+        R.turboArmed = !R.turboArmed;
+        renderGears();
+        updateSpeedometer();
+      };
+    }
+    hg.appendChild(tb);
+  }
 
   // En panne sèche : forcer la sélection sur le rapport descendant
   if (R.outOfFuel && R.phase === 'gear') {
@@ -2849,7 +2950,7 @@ function syncDash() {
    ================================================================ */
 function executeDiceRoll(gear) {
   if (gear === 0) return 0;
-  const pool = DICE_POOLS[gear];
+  const pool = dicePools()[gear];
   const moveNo = R.turn + 1;
   let sum = 0;
   pool.forEach((faces, i) => { sum += dieValue(faces, gear, i, moveNo); });
@@ -2870,7 +2971,7 @@ function snapshotNextGearDie() {
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
   const moveNo = R.turn;                // le coup qui vient de se conclure
   if (moveNo < 1) { return; }           // avant le tout premier coup, rien à retenir
-  const value = dieValue(DICE_SET[dieIndex], targetGear, dieIndex, moveNo);
+  const value = dieValue(diceSet()[dieIndex], targetGear, dieIndex, moveNo);
   R.bankedDie = { value, targetGear };
 }
 
@@ -2896,7 +2997,11 @@ function rollDiceAnim(drsFace) {
   // implicitement la face utilisée. Compte si on démarre PILE sur une case DRS,
   // OU si le trajet du coup précédent a traversé la zone sans forcément s'y
   // arrêter (à haute vitesse on peut la traverser sans y atterrir exactement).
-  const onDRS = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs;
+  // Le turbo armé ouvre les mêmes possibilités que le DRS : toutes les faces
+  // des dés engagés deviennent des trajectoires proposées.
+  const turboNow = !!R.turboArmed && !R.turboUsed;
+  const onDRS = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs || turboNow;
+  if (turboNow) { R.turboUsed = true; R.turboArmed = false; }
 
   // Anti-spam
   R.phase = 'rolling';
@@ -2923,13 +3028,13 @@ function rollDiceAnim(drsFace) {
   const row = document.getElementById('dice-row');
   const sumEl = document.getElementById('dice-sum');
   const titleEl = document.getElementById('dice-title');
-  const pool = DICE_POOLS[R.gear] || [];
+  const pool = dicePools()[R.gear] || [];
 
   // On affiche TOUJOURS les 6 dés du jeu commun ; seuls les `pool.length` premiers
   // sont engagés à ce rapport. Le joueur voit ainsi concrètement ce que chaque
   // rapport lui ajoute, au lieu de deviner une plage abstraite.
   const nActifs = pool.length;
-  titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR 6';
+  titleEl.textContent = 'RAPPORT ' + R.gear + ' · ' + nActifs + ' DÉ' + (nActifs > 1 ? 'S' : '') + ' SUR ' + maxGear();
 
   // V1 pure et dé de reprise : connus AVANT le lancer (ni l'un ni l'autre ne
   // dépend d'un tirage). On les détermine ici pour que le second dé qu'ils
@@ -2939,7 +3044,7 @@ function rollDiceAnim(drsFace) {
   const isV1Choice = (R.gear === 1) && !onDRS;
   const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS && !isV1Choice)
     ? nActifs - 1 : -1;
-  const twinFaces = isV1Choice ? DICE_SET[0] : (bankIdx >= 0 ? DICE_SET[bankIdx] : null);
+  const twinFaces = isV1Choice ? diceSet()[0] : (bankIdx >= 0 ? diceSet()[bankIdx] : null);
 
   // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
@@ -2977,7 +3082,7 @@ function rollDiceAnim(drsFace) {
     // chaque dé tourne sur ses PROPRES faces
     let running = 0;
     cubes.forEach((c, i) => {
-      const faces = DICE_SET[i];
+      const faces = diceSet()[i];
       const v = faces[Math.floor(Math.random() * faces.length)];
       c.textContent = v;
       if (i < nActifs) running += v;   // les dés en retrait ne comptent pas
@@ -3017,8 +3122,11 @@ function rollDiceAnim(drsFace) {
           return;
         }
         if (isV1Choice && i === 0) {
-          const d1 = dieValue(DICE_SET[0], 1, 0, moveNo);
-          const d2 = dieValue(DICE_SET[0], 1, 'v1b', moveNo);
+          const d1 = dieValue(diceSet()[0], 1, 0, moveNo);
+          const d2 = dieValue(diceSet()[0], 1, 'v1b', moveNo);
+          // En rallye V1 offre TROIS jets au choix (le 4e dé du coup sert de
+          // dé de reprise pour V2) : c'est le rapport de précision.
+          const d3 = isRallye() ? dieValue(diceSet()[0], 1, 'v1c', moveNo) : null;
           c.textContent = d1;
           c.classList.add('v1-picked');
           c.style.borderColor = '#39d98a';
@@ -3032,7 +3140,7 @@ function rollDiceAnim(drsFace) {
           return;
         }
         if (i === bankIdx) {
-          const fresh = dieValue(DICE_SET[i], R.gear, i, moveNo);
+          const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
           c.textContent = fresh;
           c.classList.add('bank-used');
           c.style.borderColor = '#4aa3ff';
@@ -3047,7 +3155,7 @@ function rollDiceAnim(drsFace) {
           }
           return;
         }
-        const v = dieValue(DICE_SET[i], R.gear, i, moveNo);
+        const v = dieValue(diceSet()[i], R.gear, i, moveNo);
         c.textContent = v;
         if (i < nActifs) {
           c.style.borderColor = 'var(--ok)';
@@ -3063,7 +3171,7 @@ function rollDiceAnim(drsFace) {
       if (drsAll) {
         let sums = [0];
         for (let i = 0; i < nActifs; i++) {
-          const faces = [...new Set(DICE_SET[i])];
+          const faces = [...new Set(diceSet()[i])];
           const next = [];
           for (const s of sums) for (const f of faces) next.push(s + f);
           sums = next;
@@ -3071,10 +3179,12 @@ function rollDiceAnim(drsFace) {
         altTotals = [...new Set(sums)].sort((a, b) => a - b);
       } else if (isV1Choice) {
         // extraValue = d2 (le second tirage), déjà calculé dans la boucle ci-dessus
-        const d1 = dieValue(DICE_SET[0], 1, 0, moveNo), d2 = extraValue;
-        altTotals = [...new Set([d1, d2])].sort((a, b) => a - b);
+        const d1 = dieValue(diceSet()[0], 1, 0, moveNo), d2 = extraValue;
+        const jets = [d1, d2];
+        if (isRallye()) jets.push(dieValue(diceSet()[0], 1, 'v1c', moveNo));
+        altTotals = [...new Set(jets)].sort((a, b) => a - b);
       } else if (bankIdx >= 0) {
-        const fresh = dieValue(DICE_SET[bankIdx], R.gear, bankIdx, moveNo);
+        const fresh = dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo);
         const banked = R.bankedDie.value;
         altTotals = [...new Set([banked, fresh])].sort((a, b) => a - b).map(f => base + f);
       }
@@ -3676,11 +3786,11 @@ const DG_EXPORT_MOVES = 40; // nb de coups inclus dans le fichier exporté (marg
 
 // Face d'un dé donné à un coup donné — pure, indépendante de tout état de course.
 function gridDieFace(seed, dieIndex, moveNo) {
-  return gridDieValue(seed, 1, DICE_SET[dieIndex], 0, dieIndex, moveNo);
+  return gridDieValue(seed, 1, diceSet()[dieIndex], 0, dieIndex, moveNo);
 }
 // Second jet de la V1 (mécanique "2 jets, tu choisis") — même principe, clé distincte.
 function gridV1SecondJet(seed, moveNo) {
-  return gridDieValue(seed, 1, DICE_SET[0], 1, 'v1b', moveNo);
+  return gridDieValue(seed, 1, diceSet()[0], 1, 'v1b', moveNo);
 }
 
 function openDiceGrid() {
@@ -4488,7 +4598,71 @@ function hexPath(ctx, x, y, s) {
 }
 
 // Dessin de la voiture F1
+// Voiture de rallye : caisse courte et haute, quatre roues débordantes,
+// aileron de toit. Silhouette volontairement très différente de la monoplace
+// pour qu'on identifie le mode d'un coup d'oeil.
+function drawRallyCar(ctx, hexSize) {
+  const sc = hexSize * 0.025;
+  ctx.save();
+  ctx.scale(sc, sc);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(2, 3, 24, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Roues (débordent de la caisse, typique d'une caisse rallye)
+  ctx.fillStyle = '#14161a';
+  [[13, -13], [13, 13], [-13, -13], [-13, 13]].forEach(w => {
+    ctx.beginPath();
+    ctx.ellipse(w[0], w[1], 7, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Caisse
+  ctx.fillStyle = '#ff6b35';
+  ctx.beginPath();
+  ctx.moveTo(24, -6);
+  ctx.lineTo(24, 6);
+  ctx.lineTo(10, 11);
+  ctx.lineTo(-18, 11);
+  ctx.lineTo(-22, 5);
+  ctx.lineTo(-22, -5);
+  ctx.lineTo(-18, -11);
+  ctx.lineTo(10, -11);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#14161a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Pare-brise
+  ctx.fillStyle = '#8fd3ff';
+  ctx.beginPath();
+  ctx.moveTo(11, -8);
+  ctx.lineTo(2, -7);
+  ctx.lineTo(2, 7);
+  ctx.lineTo(11, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Aileron de toit
+  ctx.fillStyle = '#e8e4da';
+  ctx.fillRect(-24, -11, 5, 22);
+  ctx.strokeStyle = '#14161a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-24, -11, 5, 22);
+
+  // Phares longue portée
+  ctx.fillStyle = '#fff3c4';
+  ctx.beginPath(); ctx.arc(22, -3, 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(22, 3, 2.6, 0, Math.PI * 2); ctx.fill();
+
+  ctx.restore();
+}
+
 function drawCar(ctx, hexSize) {
+  if (isRallye()) { drawRallyCar(ctx, hexSize); return; }
   const sc = hexSize * 0.025;
   ctx.save();
   ctx.scale(sc, sc);
@@ -4647,7 +4821,9 @@ function drawRace() {
       const v = ((q * 3 + r * 7) % 6) - 3;
 
       hexPath(cctx, pt.x, pt.y, hexSize * 0.98);
-      cctx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
+      if (t === 'T')      cctx.fillStyle = 'rgb(' + (92 + v) + ',' + (64 + v) + ',' + (51 + v) + ')';
+      else if (t === 'N') cctx.fillStyle = 'rgb(' + (220 + v) + ',' + (238 + v) + ',' + (255 + v) + ')';
+      else                cctx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       cctx.fill();
     }
   }
@@ -5079,6 +5255,10 @@ function drawMinimap(vp) {
         mctx.fillStyle = '#f7c948';
       } else if (R.grid[r][q] === 'D') {
         mctx.fillStyle = '#b464ff';
+      } else if (R.grid[r][q] === 'T') {
+        mctx.fillStyle = '#5c4033';
+      } else if (R.grid[r][q] === 'N') {
+        mctx.fillStyle = '#dceeff';
       } else {
         mctx.fillStyle = '#4a505a';
       }
@@ -5272,6 +5452,8 @@ function newCircuit() {
 
   document.getElementById('c-name').value = '';
   document.getElementById('c-laps').value = 1;
+  const modeSel0 = document.getElementById('c-mode');
+  if (modeSel0) { modeSel0.value = 'f1'; syncModeUI(); }
   document.getElementById('c-attempts').value = 3;
   document.getElementById('c-width').value = 3;
   document.getElementById('c-turns').value = 6;
@@ -5347,6 +5529,8 @@ async function loadForEdit(id) {
 
     document.getElementById('c-name').value = c.name;
     document.getElementById('c-laps').value = c.laps;
+    const modeSel1 = document.getElementById('c-mode');
+    if (modeSel1) { modeSel1.value = c.mode || 'f1'; syncModeUI(); }
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
   const _rgd2 = document.getElementById('c-regen-dice'); if (_rgd2) _rgd2.checked = false;
@@ -5480,6 +5664,35 @@ function toggleFuelFields() {
 document.getElementById('c-fuel-on').onchange = toggleFuelFields;
 document.getElementById('c-fuel').oninput = updateFuelHint;
 document.getElementById('c-laps').addEventListener('input', updateFuelHint);
+
+// Bascule Formula / Rallye dans l'éditeur. Une spéciale rallye est point à
+// point : un seul passage, donc le champ "Tours" n'a plus de sens et les
+// outils de surface (terre / neige) n'ont d'effet que dans ce mode.
+function syncModeUI() {
+  const sel = document.getElementById('c-mode');
+  if (!sel) return;
+  const rallye = sel.value === 'rallye';
+  const lapsEl = document.getElementById('c-laps');
+  if (lapsEl) {
+    lapsEl.value = rallye ? 1 : lapsEl.value;
+    lapsEl.disabled = rallye;
+    const f = lapsEl.closest('.field');
+    if (f) f.style.opacity = rallye ? 0.4 : 1;
+  }
+  document.querySelectorAll('[data-tool="terre"],[data-tool="neige"]').forEach(el => {
+    el.style.display = rallye ? '' : 'none';
+  });
+  document.querySelectorAll('[data-tool="drs"]').forEach(el => {
+    el.style.display = rallye ? 'none' : '';   // pas de DRS en rallye
+  });
+  if (rallye && (E.tool === 'drs')) E.tool = 'piste';
+  if (!rallye && (E.tool === 'terre' || E.tool === 'neige')) E.tool = 'piste';
+}
+const modeSelEl = document.getElementById('c-mode');
+if (modeSelEl) {
+  modeSelEl.addEventListener('change', () => { syncModeUI(); updateFuelHint(); });
+  syncModeUI();
+}
 
 document.getElementById('btn-new-circuit').onclick = newCircuit;
 
@@ -6567,6 +6780,7 @@ document.getElementById('btn-test-mode').onclick = () => {
       y: E.carPos.r,
       dir: E.carDir
     },
+    mode: (document.getElementById('c-mode') || {}).value || 'f1',
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
     freePractice: document.getElementById('c-warmup').checked,
@@ -6636,9 +6850,11 @@ function drawEditor() {
       const pt = axialToPixel(q, r, hs);
       const v = ((q * 3 + r * 7) % 6) - 3;
 
-      // Asphalte
+      // Asphalte / terre / neige
       hexPath(ectx, pt.x, pt.y, hs * 0.98);
-      ectx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
+      if (t === 'T')      ectx.fillStyle = 'rgb(' + (92 + v) + ',' + (64 + v) + ',' + (51 + v) + ')';
+      else if (t === 'N') ectx.fillStyle = 'rgb(' + (220 + v) + ',' + (238 + v) + ',' + (255 + v) + ')';
+      else                ectx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       ectx.fill();
 
       // Grille fantôme
@@ -6778,6 +6994,10 @@ function paintAt(q, r) {
     // implicitement la face utilisée. Cellule normale pour tout le reste
     // (pathfinding, générateur…).
     E.grid[r][q] = 'D';
+  } else if (E.tool === 'terre') {
+    E.grid[r][q] = 'T';
+  } else if (E.tool === 'neige') {
+    E.grid[r][q] = 'N';
   } else if (E.tool === 'car') {
     if (E.grid[r][q] === '#') E.grid[r][q] = '.';
     E.carPos = { q: q, r: r };
@@ -6908,6 +7128,7 @@ async function saveCircuit(publish) {
       y: E.carPos.r,
       dir: E.carDir
     },
+    mode: (document.getElementById('c-mode') || {}).value || 'f1',
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
     freePractice: document.getElementById('c-warmup').checked,
