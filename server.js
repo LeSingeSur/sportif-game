@@ -353,7 +353,7 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'replique') {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
-    base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    // repliqueAnswer NON transmis (vérif via /api/replique-check)
     base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
@@ -404,7 +404,7 @@ app.get('/api/preview', (req, res) => {
     base.maxScore = 200;
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
-    base.rouletteAnswer = athlete.rouletteAnswer||'';
+    // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
     base.rouletteHint = athlete.rouletteHint||'';
     base.roulettePct = athlete.roulettePct||40;
     base.rouletteChambers = athlete.rouletteChambers||6;
@@ -515,7 +515,9 @@ app.get('/api/preview', (req, res) => {
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
     base.bjTarget  = athlete.bjTarget || 50;
-    base.bjAnswers = athlete.bjAnswers || {};
+    // Seuls les NOMS des cartes sont transmis : les valeurs étaient lisibles
+    // dans la page (masquées par opacity:0 seulement) → combinaison parfaite triviale.
+    base.bjNames = Object.keys(athlete.bjAnswers || {});
     base.maxScore  = 100;
   } else {
     base.clue = athlete.clue || '';
@@ -700,6 +702,76 @@ app.post('/api/apol-bonus-check', (req, res) => {
   res.json({ correct, answer: athlete.bonusA || '' });
 });
 
+// ROULETTE — vérifie la réponse côté serveur, sans jamais l'exposer à l'avance
+app.post('/api/roulette-check', (req, res) => {
+  const { athleteId, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'roulette') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const tol = athlete.rouletteTol || 1;
+  const target = athlete.rouletteAnswer || '';
+  const ansNorm = norm(answer), targetNorm = norm(target);
+  const correct = lev(ansNorm, targetNorm) <= tol ||
+    String(target).split(' ').some(w => w.length >= 3 && lev(norm(w), ansNorm) <= 1);
+  // La réponse n'est renvoyée QUE si elle est trouvée, ou en fin de partie (reveal)
+  res.json({ correct, answer: (correct || req.body.reveal) ? target : null });
+});
+
+// RÉPLIQUE — vérification serveur (saisie libre ou QCM), réponse jamais exposée avant
+app.post('/api/replique-check', (req, res) => {
+  const { athleteId, answer, tol } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'replique') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const target = athlete.repliqueAnswer || '';
+  const t = parseInt(tol);
+  const tolerance = Number.isFinite(t) ? t : 1;
+  const nv = norm(answer), na = norm(target);
+  const correct = tolerance === 0
+    ? (nv === na || na.split(/\s+/).some(p => nv === p))
+    : (lev(nv, na) <= tolerance || na.split(/\s+/).some(p => p.length >= 3 && lev(p, nv) <= 1));
+  // La bonne réponse est révélée APRÈS la tentative (le jeu l'affiche de toute façon)
+  res.json({ correct, answer: target });
+});
+
+// RÉPLIQUE — propositions du QCM construites côté serveur : la bonne réponse est
+// mélangée aux leurres, mais rien n'indique laquelle l'est.
+app.get('/api/replique-options', (req, res) => {
+  const athlete = athletes.find(a => String(a.id) === String(req.query.athleteId));
+  if (!athlete || athlete.type !== 'replique') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const answer = athlete.repliqueAnswer || '';
+  const count = req.query.mode === 'duo' ? 1 : 3;
+  const pool = (athlete.repliqueChoices || []).filter(c => norm(c) !== norm(answer));
+  const options = [answer, ...pool.slice(0, count)].sort(() => Math.random() - 0.5);
+  res.json({ options });
+});
+
+// BLACKJACK — valeur d'une carte, révélée UNIQUEMENT au moment où le joueur la retourne
+app.post('/api/bj-value', (req, res) => {
+  const { athleteId, name } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'blackjack') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const entry = Object.entries(athlete.bjAnswers || {}).find(([k]) => norm(k) === norm(name));
+  if (!entry) return res.status(404).json({ error: 'Carte inconnue' });
+  res.json({ name: entry[0], value: +entry[1] });
+});
+
 // EPO — révèle une réponse non encore trouvée
 app.post('/api/grimpe-epo', (req, res) => {
   const { athleteId, found } = req.body;
@@ -831,7 +903,7 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'replique') {
     base.repliqueAmorce  = athlete.repliqueAmorce || '';
     base.repliqueChoices = athlete.repliqueChoices || [];
-    base.repliqueAnswer  = athlete.repliqueAnswer || '';
+    // repliqueAnswer NON transmis (vérif via /api/replique-check)
     base.rqTolerance    = athlete.rqTolerance !== undefined ? athlete.rqTolerance : 1;
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
@@ -876,7 +948,7 @@ app.get('/api/athlete', (req, res) => {
     base.maxScore = 200;
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
-    base.rouletteAnswer = athlete.rouletteAnswer||'';
+    // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
     base.rouletteHint = athlete.rouletteHint||'';
     base.roulettePct = athlete.roulettePct||40;
     base.rouletteChambers = athlete.rouletteChambers||6;
@@ -960,7 +1032,9 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'blackjack') {
     base.bjTheme   = athlete.bjTheme || '';
     base.bjTarget  = athlete.bjTarget || 50;
-    base.bjAnswers = athlete.bjAnswers || {};
+    // Seuls les NOMS des cartes sont transmis : les valeurs étaient lisibles
+    // dans la page (masquées par opacity:0 seulement) → combinaison parfaite triviale.
+    base.bjNames = Object.keys(athlete.bjAnswers || {});
     base.maxScore  = 100;
   } else if (athlete.type === 'tirarlarc') {
     base.cibles = (athlete.cibles||[]).map(c=>({
