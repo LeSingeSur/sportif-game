@@ -3185,7 +3185,8 @@ function setupBlackjackMode(data){
   BJ.score=0; BJ.target=data.bjTarget||50; BJ.selected=[]; BJ.done=false;
   if(BJ.timerInt){clearInterval(BJ.timerInt);BJ.timerInt=null;}
   BJ.answers={};
-  Object.entries(data.bjAnswers||{}).forEach(([k,v])=>{ BJ.answers[normBJ(k)]={name:k,val:+v}; });
+  // Le serveur n'envoie plus que les NOMS : la valeur reste secrète jusqu'au clic.
+  (data.bjNames||[]).forEach(k=>{ BJ.answers[normBJ(k)]={name:k,val:null}; });
 
   GAME.score=0; GAME.max=100; setScore(0,false);
   GAME.athleteName=data.answer||'Blackjack';
@@ -3207,30 +3208,46 @@ function setupBlackjackMode(data){
     const card=document.createElement('div');
     card.className='bj-card';
     card.dataset.key=key;
-    card.innerHTML=`<span class="bj-card-name">${name}</span><span class="bj-card-val" id="bjval-${key}" style="opacity:0">+${val}</span>`;
+    card.innerHTML=`<span class="bj-card-name">${name}</span><span class="bj-card-val" id="bjval-${key}" style="opacity:0"></span>`;
     card.onclick=()=>toggleBJCard(key);
     grid.appendChild(card);
   });
 }
 
-function toggleBJCard(key){
+async function toggleBJCard(key){
   if(BJ.done) return;
   const card=document.querySelector(`.bj-card[data-key="${key}"]`);
   if(!card||card.classList.contains('used')) return;
 
-  const {val}=BJ.answers[key];
   const wasSelected=card.classList.contains('selected');
-
   if(wasSelected){
     // No deselection allowed — once clicked, it's final
     return;
+  }
+
+  // La valeur est demandée au serveur au moment du retournement
+  let val=BJ.answers[key].val;
+  if(val===null||val===undefined){
+    card.classList.add('selected');
+    try{
+      const r=await fetch('/api/bj-value',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({athleteId:GAME.athleteId,name:BJ.answers[key].name})});
+      const d=await r.json();
+      val=+d.value;
+      BJ.answers[key].val=val;
+    }catch(e){
+      card.classList.remove('selected');
+      return;
+    }
   } else {
     card.classList.add('selected');
+  }
+
+  {
     BJ.selected.push(key);
     BJ.score+=val;
-    // Reveal value
     const valEl=document.getElementById('bjval-'+key);
-    if(valEl) valEl.style.opacity='1';
+    if(valEl){ valEl.textContent='+'+val; valEl.style.opacity='1'; }
   }
 
   updateBJDisplay();
@@ -6073,7 +6090,13 @@ function startRepliqueGlobalTimer(){
       clearInterval(RQ.globalTimerInt);RQ.globalTimerInt=null;
       if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
       if(!RQ.done){
-        if(RQ.phase===1) revealRepliqueResult(false,RQ.data.repliqueAnswer);
+        if(RQ.phase===1){
+          // On demande la réponse au serveur pour l'afficher (fin de manche)
+          fetch('/api/replique-check',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({athleteId:GAME.athleteId,answer:'',tol:0})})
+            .then(r=>r.json()).then(d=>revealRepliqueResult(false,d.answer||''))
+            .catch(()=>revealRepliqueResult(false,''));
+        }
         else submitRepliqueAuthor('timeout',null,null);
       }
     }
@@ -6096,17 +6119,20 @@ function chooseRepliqueMode(mode){
     setTimeout(()=>document.getElementById('rq-cash-in')?.focus(),80);
     setTimeout(()=>{const i=document.getElementById('rq-cash-in');if(i)i.onkeydown=e=>{if(e.key==='Enter')submitRepliqueCash();};},100);
   } else {
-    const allChoices=RQ.data.repliqueChoices||[];
-    const correctAns=RQ.data.repliqueAnswer||'';
-    let pool=allChoices.filter(c=>normRQ(c)!==normRQ(correctAns));
-    const count=mode==='duo'?1:3;
-    let display=[correctAns,...pool.slice(0,count)].sort(()=>Math.random()-.5);
-    display.forEach(ch=>{
-      const btn=document.createElement('div');
-      btn.className='replique-choice'; btn.textContent=ch;
-      btn.onclick=()=>submitRepliqueChoice(ch);
-      area.appendChild(btn);
-    });
+    // Propositions construites par le SERVEUR : le navigateur ne sait pas
+    // laquelle est la bonne (avant, la réponse était lisible dans la page).
+    fetch('/api/replique-options?athleteId='+encodeURIComponent(GAME.athleteId)+'&mode='+encodeURIComponent(mode))
+      .then(r=>r.json())
+      .then(d=>{
+        (d.options||[]).forEach(ch=>{
+          const btn=document.createElement('div');
+          btn.className='replique-choice'; btn.textContent=ch;
+          btn.onclick=()=>submitRepliqueChoice(ch);
+          area.appendChild(btn);
+        });
+      }).catch(()=>{
+        area.innerHTML='<div style="color:var(--red);font-size:12px">Erreur de chargement des propositions</div>';
+      });
   }
 }
 
@@ -6127,24 +6153,38 @@ function matchesAuthor(val,answer){
   return na.split(/\s+/).some(p=>nv===p);
 }
 
-function submitRepliqueCash(timeout){
+async function submitRepliqueCash(timeout){
   if(RQ.p1TimerInt){clearInterval(RQ.p1TimerInt);RQ.p1TimerInt=null;}
   const val=timeout?'':(document.getElementById('rq-cash-in')?.value.trim()||'');
-  const tol=RQ.tolerance;
-  const correct=!timeout&&(tol===0?normRQ(val)===normRQ(RQ.data.repliqueAnswer):levenshtein(normRQ(val),normRQ(RQ.data.repliqueAnswer))<=tol);
+  // Vérification serveur : la réponse n'est plus transmise au navigateur.
+  let correct=false, revealed='';
+  try{
+    const r=await fetch('/api/replique-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:GAME.athleteId,answer:val,tol:RQ.tolerance})});
+    const d=await r.json();
+    correct=!timeout&&!!d.correct; revealed=d.answer||'';
+  }catch(e){ correct=false; }
+  RQ._answer=revealed;
   RQ.p1Score=correct?70:0;
-  revealRepliqueResult(correct,RQ.data.repliqueAnswer);
+  revealRepliqueResult(correct,revealed);
 }
 
-function submitRepliqueChoice(choice){
-  const correct=normRQ(choice)===normRQ(RQ.data.repliqueAnswer);
+async function submitRepliqueChoice(choice){
+  let correct=false, revealed='';
+  try{
+    const r=await fetch('/api/replique-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:GAME.athleteId,answer:choice,tol:0})});
+    const d=await r.json();
+    correct=!!d.correct; revealed=d.answer||'';
+  }catch(e){ correct=false; }
+  RQ._answer=revealed;
   RQ.p1Score=correct?(RQ.mode==='carre'?40:20):0;
   document.querySelectorAll('#replique-answer-area .replique-choice').forEach(btn=>{
-    if(normRQ(btn.textContent)===normRQ(RQ.data.repliqueAnswer)) btn.classList.add('correct');
+    if(normRQ(btn.textContent)===normRQ(revealed)) btn.classList.add('correct');
     else if(normRQ(btn.textContent)===normRQ(choice)&&!correct) btn.classList.add('wrong');
     btn.onclick=null;
   });
-  revealRepliqueResult(correct,RQ.data.repliqueAnswer);
+  revealRepliqueResult(correct,revealed);
 }
 
 function revealRepliqueResult(correct,correctAnswer){
@@ -9199,21 +9239,24 @@ function rouletteFire(onHit,onSafe){
   },400);
 }
 
-function rouletteGuess(){
+async function rouletteGuess(){
   if(RR.done)return;
   const inp=document.getElementById('roulette-in');
   const ans=(inp?.value||'').trim();
   if(!ans)return;
-  const tol=RR.data.rouletteTol||1;
-  // Check word by word for long names
-  const ansNorm=normStr(ans);
-  const targetNorm=normStr(RR.data.rouletteAnswer);
-  const correct=levenshtein(ansNorm,targetNorm)<=tol||
-    targetNorm.split(' ').some(w=>w.length>=3&&levenshtein(normStr(w),ansNorm)<=1);
+  // La réponse n'est plus envoyée au navigateur : c'est le serveur qui tranche.
+  let correct=false, revealed='';
+  try{
+    const r=await fetch('/api/roulette-check',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({athleteId:GAME.athleteId,answer:ans})});
+    const d=await r.json();
+    correct=!!d.correct; revealed=d.answer||'';
+  }catch(e){ correct=false; }
+  RR._revealed=revealed||RR._revealed||'';
   const fb=document.getElementById('roulette-fb');
   if(correct){
     RR.done=true;
-    rouletteEndGame(100,'🎯 EXACT ! '+RR.data.rouletteAnswer+' · 100 pts !');
+    rouletteEndGame(100,'🎯 EXACT ! '+revealed+' · 100 pts !');
   } else {
     if(fb){fb.textContent='❌ Faux — tir !';fb.style.color='var(--red)';}
     inp.value='';
@@ -9313,7 +9356,7 @@ function rouletteJokerConsigliere(){
   }
 }
 
-function rouletteEndGame(score,msg){
+async function rouletteEndGame(score,msg){
   RR.done=true;
   RR.jokers={delateur:false,consigliere:false};
   rouletteUpdateJokers();
@@ -9326,7 +9369,15 @@ function rouletteEndGame(score,msg){
   GAME.score=score;setScore(score,true);
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=score;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Roulette Russe';
-  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(score===100?'🎯 Trouvé !':'💥 Éliminé !')+' · '+RR.data.rouletteAnswer;
+  // Réponse récupérée auprès du serveur (jamais envoyée à l'avance au navigateur)
+  if(!RR._revealed){
+    try{
+      const rr=await fetch('/api/roulette-check',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({athleteId:GAME.athleteId,answer:'',reveal:true})});
+      const dd=await rr.json(); RR._revealed=dd.answer||'';
+    }catch(e){ RR._revealed=''; }
+  }
+  const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent=(score===100?'🎯 Trouvé !':'💥 Éliminé !')+' · '+(RR._revealed||'');
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   setVictoryIcon('roulette');submitScore(score);
   setTimeout(()=>show('sv'),2000);

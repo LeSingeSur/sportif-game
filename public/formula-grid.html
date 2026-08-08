@@ -1316,8 +1316,14 @@ header.top {
         </div>
       </div>
       <div class="row" style="margin-top:2px">
+        <button class="btn" id="btn-solve">🧮 Score parfait</button>
         <button class="btn" id="btn-save-draft">💾 Brouillon</button>
         <button class="btn primary" id="btn-publish">🚀 Publier</button>
+      </div>
+      <div id="solve-out" style="display:none;margin-top:10px;padding:10px 12px;
+           background:#161b22;border:1px solid #232b35;border-radius:9px;
+           font-size:12px;line-height:1.6;color:#c9d4e0"></div>
+      <div style="display:none">
       </div>
       <button class="btn" id="btn-unpublish" style="display:none;background:rgba(255,159,67,.12);border:1px solid rgba(255,159,67,.4);color:#ff9f43">
         📥 Dépublier (repasser en brouillon)
@@ -2409,7 +2415,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       results.push({
         path: path.slice(), q: q, r: r, dir: dir,
         crash: false, finish: false, left: b, lapsGained: crossed ? 1 : 0,
-        inertiaEnd: inertia
+        inertiaEnd: inertia, cpMask: cpMask
       });
       return;
     }
@@ -2487,7 +2493,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
           results.push({
             path: path.slice(), q: nq, r: nr, dir: o.d,
             crash: false, finish: true, left: nb, lapsGained: 1,
-            inertiaEnd: nInertia
+            inertiaEnd: nInertia, cpMask: nCpMask
           });
           for (const s of seg) path.pop();
           continue;
@@ -2506,7 +2512,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
       results.push({
         path: path.slice(), q: q, r: r, dir: dir,
         crash: true, finish: false, left: b, lapsGained: crossed ? 1 : 0,
-        inertiaEnd: inertia
+        inertiaEnd: inertia, cpMask: cpMask
       });
     }
   }
@@ -2992,6 +2998,137 @@ function executeDiceRoll(gear) {
 // sont proposés comme deux trajectoires distinctes sur la piste (même
 // principe que le DRS), pas un calcul silencieux : c'est le joueur qui
 // tranche en choisissant sa trajectoire.
+
+// ═══════════════════════════════════════════════════════════════════════
+// SOLVEUR ADMIN — calcul du score parfait d'un circuit
+//
+// Parcours en largeur sur l'espace d'états, en appelant le VRAI moteur
+// (getValidPaths). C'est le point important : le solveur ne réimplémente
+// aucune règle, donc il ne peut pas diverger du jeu. Toute évolution de la
+// physique est prise en compte automatiquement.
+//
+// Un état = position + cap + inertie + rapport + tour + zone d'arrivée
+//         + masque checkpoints + DRS actif + turbo déjà utilisé.
+// Le dé de reprise n'a pas besoin d'être stocké : il se déduit du rapport
+// précédent et du numéro de coup, tous deux déjà dans l'état.
+//
+// NE JAMAIS EXPOSER CÔTÉ JOUEUR : donnerait la réponse à chaque tour.
+// ═══════════════════════════════════════════════════════════════════════
+
+// Totaux atteignables à un rapport donné, hors interface. Réplique les mêmes
+// règles que rollDiceAnim : DRS/turbo, jets multiples de V1, dé de reprise.
+function solverTotals(gear, prevGear, moveNo, drsActive) {
+  const DS = diceSet();
+  if (drsActive) {
+    let sums = [0];
+    for (let i = 0; i < gear; i++) {
+      const faces = [...new Set(DS[i])], next = [];
+      for (const s of sums) for (const f of faces) next.push(s + f);
+      sums = next;
+    }
+    return [...new Set(sums)].sort((a, b) => a - b);
+  }
+  const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
+  const KEYS = [0, 'v1b', 'v1c'];
+  let base = 0;
+  for (let i = 0; i < gear; i++) base += dieValue(DS[i], gear, i === 0 ? KEYS[0] : i, moveNo);
+  if (nJets > 1) {
+    const socle = base - dieValue(DS[0], gear, KEYS[0], moveNo);
+    const out = [];
+    for (let k = 0; k < nJets; k++) out.push(socle + dieValue(DS[0], gear, KEYS[k], moveNo));
+    return [...new Set(out)].sort((a, b) => a - b);
+  }
+  // Dé de reprise : disponible si on monte d'exactement un rapport
+  const top = maxGear();
+  if (prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2) {
+    const idx = prevGear;
+    const fresh  = dieValue(DS[idx], gear, idx, moveNo);
+    const banked = dieValue(DS[idx], gear, idx, moveNo - 1);
+    const socle  = base - fresh;
+    return [...new Set([socle + fresh, socle + banked])].sort((a, b) => a - b);
+  }
+  return [base];
+}
+
+function solverGears(prevGear) {
+  const top = maxGear();
+  if (prevGear === 0) return isRallye() ? [1] : [1];
+  const out = [];
+  for (let g = 1; g <= top; g++) if (g - prevGear <= 1 && prevGear - g <= 2) out.push(g);
+  return out;
+}
+
+// Calcule l'optimum. Retourne { turns, left, lines, medals, gearProfile } ou null.
+// onProgress(turn, nbEtats) est appelé entre chaque couche pour l'affichage.
+async function solveCircuit(opts) {
+  opts = opts || {};
+  const MAXT = opts.maxTurns || 40;
+  const snap = {
+    inertia: R.inertia, cpTimes: R.cpTimes, leftFinishZone: R.leftFinishZone,
+    crossedDrs: R.crossedDrs, gear: R.gear, bankedDie: R.bankedDie, turboUsed: R.turboUsed
+  };
+  const targetLaps = R.targetLaps || 1;
+  const nCp = (R.checkpoints || []).length;
+
+  const maskToTimes = m => { const t = []; for (let i = 0; i < nCp; i++) if (m & (1 << i)) t[i] = 1; return t; };
+  const enc = st => st.join('|');
+
+  // état : [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, turboUsed]
+  let layer = new Map();
+  const st0 = (R.circuit && R.circuit.start) || { x: R.q, y: R.r, dir: R.dir };
+  layer.set(enc([st0.x, st0.y, st0.dir || 0, 0, 0, 0, isRallye() ? 1 : 0, 0, 0, 0]), true);
+  let best = null, finishes = [];
+
+  for (let turn = 0; turn < MAXT && !best; turn++) {
+    const moveNo = turn + 1;
+    const next = new Map();
+    for (const key of layer.keys()) {
+      const [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, tUsed] = key.split('|').map(Number);
+      const cellIsD = (R.grid[r] && R.grid[r][q] === 'D');
+      for (const g of solverGears(gear)) {
+        const drsNatural = (cellIsD || !!drs);
+        // le turbo (rallye) ouvre les mêmes possibilités que le DRS, 1× par course
+        const turboOpts = (isRallye() && !tUsed && !drsNatural) ? [false, true] : [false];
+        for (const useTurbo of turboOpts) {
+          const drsActive = drsNatural || useTurbo;
+          for (const tot of solverTotals(g, gear, moveNo, drsActive)) {
+            R.inertia = inertia; R.cpTimes = maskToTimes(cpMask);
+            R.leftFinishZone = !!leftF; R.gear = g;
+            for (const res of getValidPaths(q, r, dir, tot, g, lap, targetLaps)) {
+              if (res.crash) continue;
+              if (res.finish) {
+                finishes.push({ turns: moveNo, left: res.left });
+                if (!best || moveNo < best.turns || (moveNo === best.turns && res.left > best.left))
+                  best = { turns: moveNo, left: res.left };
+                continue;
+              }
+              const cell = (R.grid[res.r] || '')[res.q];
+              const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
+              const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
+              next.set(enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
+                            nLeftF, res.cpMask, nDrs, useTurbo ? 1 : tUsed]), true);
+            }
+          }
+        }
+      }
+    }
+    if (opts.onProgress) { opts.onProgress(turn + 1, next.size); await new Promise(r2 => setTimeout(r2, 0)); }
+    if (best) break;
+    layer = next;
+    if (!layer.size) break;
+  }
+
+  Object.assign(R, snap);
+  if (!best) return null;
+  const lines = finishes.filter(f => f.turns === best.turns).length;
+  return {
+    turns: best.turns,
+    left: best.left,
+    lines: lines,
+    medals: { or: best.turns, argent: best.turns + 1, bronze: best.turns + 3, diamant: best.left }
+  };
+}
+
 function snapshotNextGearDie() {
   if (R.gear < 1 || R.gear >= 6 || R.isWarmup) { return; }
   const targetGear = R.gear + 1;
@@ -5040,17 +5177,63 @@ function drawRace() {
       if (res && res.path.length) {
         const pts = [{ q: R.q, r: R.r }].concat(res.path);
 
-        // ligne principale
-        cctx.strokeStyle = res.crash ? 'rgba(255,93,93,0.95)' : 'rgba(247,201,72,0.95)';
+        // ZONE DE DÉRAPAGE : la case entière est peinte, pas un simple point.
+        // Le joueur doit voir un BLOC de piste qu'il ne contrôle plus, pas une
+        // étape de plus sur son trajet.
+        res.path.forEach(st => {
+          if (!st.drift) return;
+          const a = axialToPixel(st.q, st.r, hexSize);
+          hexPath(cctx, a.x, a.y, hexSize * 0.94);
+          cctx.fillStyle = 'rgba(34,211,238,0.22)';
+          cctx.fill();
+          cctx.strokeStyle = 'rgba(34,211,238,0.75)';
+          cctx.lineWidth = Math.max(1.5, hexSize * 0.07);
+          cctx.setLineDash([hexSize * 0.18, hexSize * 0.14]);
+          cctx.stroke();
+          cctx.setLineDash([]);
+        });
+
+        // ligne principale — en TRAIT PLEIN sur la partie pilotée, en POINTILLÉ
+        // cyan sur la partie subie : on voit tout de suite où on lâche la main.
         cctx.lineWidth = Math.max(2, hexSize * 0.18);
         cctx.lineJoin = 'round';
         cctx.lineCap = 'round';
-        cctx.beginPath();
-        pts.forEach((p, i) => {
-          const a = axialToPixel(p.q, p.r, hexSize);
-          if (i === 0) cctx.moveTo(a.x, a.y); else cctx.lineTo(a.x, a.y);
+        for (let i = 1; i < pts.length; i++) {
+          const a = axialToPixel(pts[i - 1].q, pts[i - 1].r, hexSize);
+          const b = axialToPixel(pts[i].q, pts[i].r, hexSize);
+          const slide = !!pts[i].drift;
+          cctx.strokeStyle = res.crash ? 'rgba(255,93,93,0.95)'
+                           : (slide ? 'rgba(34,211,238,0.95)' : 'rgba(247,201,72,0.95)');
+          cctx.setLineDash(slide ? [hexSize * 0.22, hexSize * 0.18] : []);
+          cctx.beginPath();
+          cctx.moveTo(a.x, a.y);
+          cctx.lineTo(b.x, b.y);
+          cctx.stroke();
+        }
+        cctx.setLineDash([]);
+
+        // Traces de pneus : deux traits parallèles orientés dans l'ANCIEN cap,
+        // c'est-à-dire la direction dans laquelle la voiture continue de glisser.
+        res.path.forEach((st, i) => {
+          if (!st.drift) return;
+          const prev = (i === 0) ? { q: R.q, r: R.r } : res.path[i - 1];
+          const a = axialToPixel(prev.q, prev.r, hexSize);
+          const b = axialToPixel(st.q, st.r, hexSize);
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const ux = dx / len, uy = dy / len;      // sens de la glissade
+          const px = -uy, py = ux;                 // perpendiculaire
+          const off = hexSize * 0.26, half = hexSize * 0.42;
+          cctx.strokeStyle = 'rgba(20,22,26,0.55)';
+          cctx.lineWidth = Math.max(1.5, hexSize * 0.09);
+          cctx.setLineDash([]);
+          [-1, 1].forEach(sgn => {
+            cctx.beginPath();
+            cctx.moveTo(b.x + px * off * sgn - ux * half, b.y + py * off * sgn - uy * half);
+            cctx.lineTo(b.x + px * off * sgn + ux * half, b.y + py * off * sgn + uy * half);
+            cctx.stroke();
+          });
         });
-        cctx.stroke();
 
         // numéro de case + marqueur de virage + marqueur de déport
         res.path.forEach((st, i) => {
@@ -5070,22 +5253,12 @@ function drawRace() {
             cctx.textBaseline = 'middle';
             cctx.fillText('↻', a.x, a.y);
           } else if (st.drift) {
-            // DÉPORT CENTRIFUGE : la voiture glisse ici malgré elle (V5/V6 en
-            // virage) — case bien distincte de l'inertie (jaune) et du DRS
-            // (violet), pour que le joueur voie exactement où il va déraper
-            // avant même de valider sa trajectoire.
+            // La case est déjà peinte en bloc + traces de pneus plus haut.
+            // Ici on ne pose qu'un repère discret pour ne pas surcharger.
             cctx.beginPath();
-            cctx.arc(a.x, a.y, hexSize * 0.26, 0, Math.PI * 2);
-            cctx.fillStyle = 'rgba(34,211,238,0.85)';
+            cctx.arc(a.x, a.y, hexSize * 0.10, 0, Math.PI * 2);
+            cctx.fillStyle = 'rgba(34,211,238,0.9)';
             cctx.fill();
-            cctx.strokeStyle = '#14161a';
-            cctx.lineWidth = 1.5;
-            cctx.stroke();
-            cctx.fillStyle = '#14161a';
-            cctx.font = 'bold ' + Math.max(8, hexSize * 0.28) + 'px sans-serif';
-            cctx.textAlign = 'center';
-            cctx.textBaseline = 'middle';
-            cctx.fillText('↝', a.x, a.y);
           } else {
             cctx.beginPath();
             cctx.arc(a.x, a.y, hexSize * 0.12, 0, Math.PI * 2);
@@ -5104,7 +5277,9 @@ function drawRace() {
           cctx.font = 'bold ' + Math.max(9, hexSize * 0.32) + 'px sans-serif';
           cctx.textAlign = 'center';
           cctx.textBaseline = 'middle';
-          cctx.fillText('↝ drift ' + driftCells.length, dp.x, dp.y - hexSize * 0.55);
+          cctx.fillText('↝ ' + driftCells.length + ' dérapage' +
+                        (driftCells.length > 1 ? 's' : '') + ' (−' + driftCells.length + ' dé)',
+                        dp.x, dp.y - hexSize * 0.55);
         }
 
         // flèche de direction finale (le "sens" dans lequel on repart)
@@ -7207,6 +7382,69 @@ async function saveCircuit(publish) {
     toast('Erreur : ' + e.message);
   }
 }
+
+// ── Bouton admin : calcul du score parfait du circuit en cours d'édition ──
+document.getElementById('btn-solve').onclick = async () => {
+  const out = document.getElementById('solve-out');
+  const btn = document.getElementById('btn-solve');
+  out.style.display = 'block';
+  out.innerHTML = 'Analyse en cours…';
+  btn.disabled = true;
+
+  // On monte un état de course complet à partir du circuit de l'éditeur, sans
+  // lancer de partie : le solveur appelle le vrai moteur, il lui faut donc le
+  // même contexte qu'une course réelle.
+  const bak = {
+    grid: R.grid, W: R.W, H: R.H, diceSeed: R.diceSeed, targetLaps: R.targetLaps,
+    checkpoints: R.checkpoints, circuit: R.circuit, mode: R.mode,
+    q: R.q, r: R.r, dir: R.dir, inertia: R.inertia, cpTimes: R.cpTimes,
+    isWarmup: R.isWarmup, turboUsed: R.turboUsed, leftFinishZone: R.leftFinishZone
+  };
+  try {
+    const rows = E.grid.map(row => row.join(''));
+    const modeSel = document.getElementById('c-mode');
+    R.mode = (modeSel && modeSel.value) || 'f1';
+    R.grid = rows; R.W = E.W; R.H = E.H;
+    R.diceSeed = E.diceSeed || (E.editingId || 'preview');
+    R.targetLaps = isRallye() ? 1 : (parseInt(document.getElementById('c-laps').value) || 1);
+    R.circuit = { start: E.start, id: E.editingId || 'preview' };
+    R.q = E.start.x; R.r = E.start.y; R.dir = E.start.dir || 0;
+    R.inertia = 0; R.cpTimes = []; R.isWarmup = false;
+    R.turboUsed = false; R.turboArmed = false;
+    R.leftFinishZone = isRallye() ? true : false;
+    R.checkpoints = buildCheckpoints();
+
+    const res = await solveCircuit({
+      onProgress: (t, n) => { out.innerHTML = 'Analyse… coup ' + t + ' — ' + n + ' états explorés'; }
+    });
+
+    if (!res) {
+      out.innerHTML = '<b style="color:#ff5d5d">⚠️ Circuit INFINISSABLE</b><br>' +
+        'Aucune trajectoire ne rejoint l\'arrivée en franchissant tous les checkpoints. ' +
+        'Vérifie les checkpoints, la largeur des virages et le placement des surfaces.';
+    } else {
+      const m = res.medals;
+      out.innerHTML =
+        '<b style="color:#39d98a">Score parfait : ' + res.turns + ' coups +' + res.left + '</b><br>' +
+        '<span style="color:#8b98a5">' + res.lines + ' trajectoire' + (res.lines > 1 ? 's' : '') +
+        ' atteignent ce nombre de coups</span><br><br>' +
+        '<b>Seuils de médailles</b><br>' +
+        '🥇 Or ' + m.or + ' coups &nbsp; 🥈 Argent ' + m.argent +
+        ' &nbsp; 🥉 Bronze ' + m.bronze + '<br>' +
+        '💎 Diamant : ' + m.or + ' coups +' + m.diamant +
+        ' <span style="color:#6e7b8a">(ne pas afficher aux joueurs)</span><br><br>' +
+        '<span style="color:' + (res.lines < 20 ? '#ff9f43' : (res.lines > 200 ? '#ff9f43' : '#8b98a5')) + '">' +
+        (res.lines < 20 ? '⚠️ Très peu de lignes parfaites : le tracé n\'offre presque pas d\'alternative.'
+         : res.lines > 200 ? '⚠️ Beaucoup de lignes parfaites : l\'optimum sera trouvé trop facilement.'
+         : '✔️ Bonne latitude de trajectoire.') + '</span>';
+    }
+  } catch (e) {
+    out.innerHTML = '<b style="color:#ff5d5d">Erreur : ' + e.message + '</b>';
+  } finally {
+    Object.assign(R, bak);
+    btn.disabled = false;
+  }
+};
 
 document.getElementById('btn-save-draft').onclick = () => {
   saveCircuit(false);
