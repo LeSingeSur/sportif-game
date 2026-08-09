@@ -3300,7 +3300,7 @@ async function solveCircuit(opts) {
 }
 
 function snapshotNextGearDie() {
-  if (R.gear < 1 || R.gear >= 6 || R.isWarmup) { return; }
+  if (R.gear < 1 || R.gear >= maxGear() || R.isWarmup) { return; }
   const targetGear = R.gear + 1;
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
   const moveNo = R.turn;                // le coup qui vient de se conclure
@@ -3728,12 +3728,16 @@ function processRollResult(val, altTotals) {
    ================================================================ */
 function buildRulesHTML() {
   let rows = '';
-  for (let g = 1; g <= 6; g++) {
+  const top = maxGear();
+  const bounds = diceBounds();
+  const pools = dicePools();
+  const inert = inertiaTable();
+  for (let g = 1; g <= top; g++) {
     rows += '<tr>' +
       '<td style="padding:5px 6px;font-weight:900;color:var(--line)">V' + g + '</td>' +
-      '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + DICE[g][0] + '–' + DICE[g][1] + '</td>' +
-      '<td style="padding:5px 6px;text-align:center">' + DICE_POOLS[g].length + '</td>' +
-      '<td style="padding:5px 6px;text-align:center">' + g + '</td>' +
+      '<td style="padding:5px 6px;font-family:ui-monospace,monospace">' + bounds[g][0] + '–' + bounds[g][1] + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + pools[g].length + '</td>' +
+      '<td style="padding:5px 6px;text-align:center">' + (inert[g] || 0) + '</td>' +
       '</tr>';
   }
 
