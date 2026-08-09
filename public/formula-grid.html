@@ -1646,10 +1646,17 @@ function applyJetBonus(totals, bonusRange) {
   if (!bonusRange) return totals;
   const out = new Set(totals);
   for (const t of totals) {
-    if (t - bonusRange >= 0) out.add(t - bonusRange);
-    out.add(t + bonusRange);
+    // Tous les paliers jusqu'au bonus sont proposés, pas seulement le dernier :
+    // un doublé ouvre ±1, un triplé ouvre ±1 ET ±2. Sinon le triplé donnerait
+    // 2 et 4 en sautant le 3, ce qui n'a aucun sens pour le joueur.
+    for (let b = 1; b <= bonusRange; b++) {
+      // Un total de 0 n'a aucun intérêt (la voiture ne bouge pas) et le moteur
+      // renvoie alors une trajectoire vide : on ne le propose jamais.
+      if (t - b >= 1) out.add(t - b);
+      out.add(t + b);
+    }
   }
-  return [...out].sort((a, b) => a - b);
+  return [...out].filter(t => t >= 1).sort((a, b) => a - b);
 }
 
 // Inertie : cases droites obligatoires AU DÉBUT du mouvement (= rapport - 1).
