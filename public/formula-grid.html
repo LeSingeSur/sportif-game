@@ -674,6 +674,19 @@ header.top {
    appartient à quel rapport : vert dV1, jaune dV2, orange dV3, rouge dV4.
    La classe est posée sur le cube quel que soit son état (engagé, en réserve
    ou en jet supplémentaire). */
+.copilot {
+  position: fixed; left: 50%; transform: translateX(-50%) translateY(-14px);
+  top: 64px; z-index: 60; pointer-events: none;
+  background: rgba(13,16,20,.94); border: 1px solid #2f3a46; border-left: 4px solid #ff9f43;
+  border-radius: 10px; padding: 8px 14px; max-width: 86vw;
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 12px; color: #e6edf3; opacity: 0; transition: opacity .18s, transform .18s;
+}
+.copilot.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+.copilot b { color: #ff9f43; }
+.copilot span { color: #8b98a5; font-size: 11px; }
+.copilot span b { color: #c9d4e0; }
+
 .dice-cube.rd1 { border-color: #39d98a; color: #39d98a; box-shadow: 0 0 18px rgba(57, 217, 138, .35); }
 .dice-cube.rd2 { border-color: #f7c948; color: #f7c948; box-shadow: 0 0 18px rgba(247, 201, 72, .35); }
 .dice-cube.rd3 { border-color: #ff9f43; color: #ff9f43; box-shadow: 0 0 18px rgba(255, 159, 67, .35); }
@@ -1228,6 +1241,15 @@ header.top {
       </div>
       <div class="row">
         <div class="field">
+          <label><input type="checkbox" id="c-copilot" checked style="margin-right:6px">
+            Notes du copilote</label>
+          <div style="font-size:10px;color:var(--mute);margin-top:4px">
+            Annonce la surface à venir et rappelle inertie / déport (rallye uniquement)
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
           <label>Mode</label>
           <select id="c-mode">
             <option value="f1">🏎️ Formula (circuit, tours)</option>
@@ -1434,6 +1456,7 @@ header.top {
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+<div class="copilot" id="copilot"></div>
 <script>
 'use strict';
 
@@ -1638,6 +1661,53 @@ async function api(path, opts) {
 }
 
 // Notification temporaire
+// ═══════════ NOTES DU COPILOTE (mode rallye) ═══════════
+// En rallye, personne ne découvre une spéciale à vue : le copilote annonce.
+// La note se déclenche quand la surface CHANGE devant la voiture, à portée
+// du rapport engagé — une note par transition, jamais à chaque coup, sinon
+// ça devient du bruit.
+const SURF_FR = { asphalte: 'asphalte', terre: 'terre', neige: 'neige' };
+
+// Première surface différente rencontrée en ligne droite devant la voiture.
+function surfaceAhead(q, r, dir, dist) {
+  const here = surfaceAt(q, r);
+  let cq = q, cr = r;
+  for (let i = 0; i < dist; i++) {
+    cq += HEX_DIRS[dir].q; cr += HEX_DIRS[dir].r;
+    if (!onTrackR(cq, cr)) break;
+    const s2 = surfaceAt(cq, cr);
+    if (s2 !== here) return { surf: s2, dist: i + 1 };
+  }
+  return null;
+}
+
+function copilotNote() {
+  const el = document.getElementById('copilot');
+  if (!el) return;
+  if (!isRallye() || !R.copilotOn || R.phase !== 'gear') { el.classList.remove('on'); return; }
+
+  const gear = Math.max(1, R.pendingGear || R.gear || 1);
+  const portee = (diceBounds()[gear] || [0, 6])[1];
+  const ahead = surfaceAhead(R.q, R.r, R.dir, portee);
+  const surf = ahead ? ahead.surf : surfaceAt(R.q, R.r);
+  const key = surf + '|' + (ahead ? 'T' : 'H');
+  if (key === R._copilotLast && ahead) { return; }   // déjà annoncé
+  R._copilotLast = key;
+
+  const inert = inertiaTable()[gear] || 0;
+  const drift = driftForGear(gear, surf);
+  const tete = ahead
+    ? '⚠️ ' + SURF_FR[surf].toUpperCase() + ' dans ' + ahead.dist + ' case' + (ahead.dist > 1 ? 's' : '')
+    : '▸ ' + SURF_FR[surf].toUpperCase();
+
+  el.innerHTML = '<b>' + tete + '</b>' +
+    '<span>V' + gear + ' — inertie <b>' + inert + '</b> · déport <b>' + drift + '</b>' +
+    (drift > 0 ? ' case' + (drift > 1 ? 's' : '') : '') + '</span>';
+  el.classList.add('on');
+  clearTimeout(copilotNote._t);
+  copilotNote._t = setTimeout(() => el.classList.remove('on'), 4200);
+}
+
 function toast(t) {
   const el = document.getElementById('toast');
   el.textContent = t;
@@ -2073,6 +2143,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.results = null;
   R.ends = null;
   R.phase = 'gear';
+  copilotNote();
 
   // Trails (traces de pneus)
   R.trail = [];
@@ -2132,6 +2203,8 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // n'est pas la piste qui décide du moment, c'est le pilote.
   R.turboUsed = false;
   R.turboArmed = false;
+  R.copilotOn = (circuit.copilot !== undefined) ? !!circuit.copilot : true;
+  R._copilotLast = null;
 
   // Réserve d'inertie tournante : persiste sur toute la course, remise à 0 au crash
   R.inertia = 0;
@@ -3028,26 +3101,32 @@ function solverTotals(gear, prevGear, moveNo, drsActive) {
     }
     return [...new Set(sums)].sort((a, b) => a - b);
   }
+  // Deux réserves indépendantes, sur deux dés différents : les jets de dV1
+  // (index 0, uniquement à V1) et la reprise du rapport qu'on vient d'engager
+  // (index gear-1, dès qu'on monte d'un cran). Elles se combinent, elles ne
+  // s'excluent pas — c'est le point que corrige cette version.
   const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
   const KEYS = [0, 'v1b', 'v1c'];
-  let base = 0;
-  for (let i = 0; i < gear; i++) base += dieValue(DS[i], gear, i === 0 ? KEYS[0] : i, moveNo);
-  if (nJets > 1) {
-    const socle = base - dieValue(DS[0], gear, KEYS[0], moveNo);
-    const out = [];
-    for (let k = 0; k < nJets; k++) out.push(socle + dieValue(DS[0], gear, KEYS[k], moveNo));
-    return [...new Set(out)].sort((a, b) => a - b);
-  }
-  // Dé de reprise : disponible si on monte d'exactement un rapport
   const top = maxGear();
-  if (prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2) {
-    const idx = prevGear;
-    const fresh  = dieValue(DS[idx], gear, idx, moveNo);
-    const banked = dieValue(DS[idx], gear, idx, moveNo - 1);
-    const socle  = base - fresh;
-    return [...new Set([socle + fresh, socle + banked])].sort((a, b) => a - b);
+  const hasReprise = prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2;
+  const bankIdx = hasReprise ? prevGear : -1;   // = gear - 1
+
+  let base = 0;
+  for (let i = 0; i < gear; i++) {
+    if (i === 0 && nJets > 1) continue;   // traité à part : plusieurs valeurs possibles
+    if (i === bankIdx) continue;          // traité à part : frais vs repris
+    base += dieValue(DS[i], gear, i, moveNo);
   }
-  return [base];
+  const jetOptions = (nJets > 1)
+    ? [...new Set(Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo)))]
+    : [0];
+  const bankOptions = hasReprise
+    ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
+                    dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
+    : [0];
+  const out = [];
+  for (const j of jetOptions) for (const bkv of bankOptions) out.push(base + j + bkv);
+  return [...new Set(out)].sort((a, b) => a - b);
 }
 
 function solverGears(prevGear) {
@@ -3210,14 +3289,23 @@ function rollDiceAnim(drsFace) {
   // valeurs obtenues sont proposées au joueur comme trajectoires distinctes.
   //   V1 -> 3 jets de dV1 (+ dV2 en réserve de reprise)
   //   V2 -> 2 jets de dV1 (+ dV2 engagé, + dV3 en réserve)
-  //   V3 -> 1 jet         (+ dV4 en réserve)
-  //   V4 -> 1 jet         (pas de réserve, rapport maxi)
+  //   V2 -> 2 jets de dV1 (choix)   + dV2 engagé AVEC reprise (frais/repris) + dV3 réservé
+  //   V3 -> 1 jet de dV1 (fixe)      + dV3 engagé AVEC reprise               + dV4 réservé
+  //   V4 -> 1 jet de dV1 (fixe)      + dV4 engagé AVEC reprise               + rien à réserver (rapport maxi)
+  // Les deux réserves portent sur DEUX DÉS DIFFÉRENTS (index 0 pour les jets
+  // de V1, index gear-1 pour la reprise du rapport qu'on vient d'engager) :
+  // elles coexistent, contrairement à l'ancienne version qui les rendait
+  // mutuellement exclusives (bug : les jets de V2 désactivaient sa reprise).
   const nJets = isRallye() ? Math.max(1, 4 - R.gear) : (R.gear === 1 ? 2 : 1);
   const V1_KEYS = [0, 'v1b', 'v1c'];
   const isV1Choice = (nJets > 1) && !onDRS;
-  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS && !isV1Choice)
-    ? nActifs - 1 : -1;
-  const twinFaces = isV1Choice ? diceSet()[0] : (bankIdx >= 0 ? diceSet()[bankIdx] : null);
+  // La reprise ne peut jamais cibler l'index 0 : elle n'existe qu'en montant
+  // d'un rapport (R.bankedDie.targetGear = ancien rapport + 1 >= 2), donc
+  // R.gear - 1 >= 1 dès qu'elle est valide.
+  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS)
+    ? R.gear - 1 : -1;
+  const twinFacesV1 = isV1Choice ? diceSet()[0] : null;
+  const twinFacesBank = (bankIdx >= 0 && bankIdx !== 0) ? diceSet()[bankIdx] : null;
 
   // Transparence : pool commun en course, hasard pur en essais libres
   const fairEl = document.getElementById('dice-fair');
@@ -3240,20 +3328,28 @@ function rollDiceAnim(drsFace) {
   });
   // Dé supplémentaire (V1 pure ou reprise) : créé et inséré DÈS MAINTENANT,
   // pour qu'il tourne dans l'animation au même titre que les cinq autres.
-  const extraCubes = [];
-  if (twinFaces) {
-    const twinIdx = isV1Choice ? 0 : bankIdx;
-    const nExtra = isV1Choice ? (nJets - 1) : 1;
-    for (let k = 0; k < nExtra; k++) {
+  // extraCubesV1  : jets supplémentaires de dV1 (0, 1 ou 2 selon le rapport)
+  // extraCubesBank : le dé de reprise du rapport engagé (0 ou 1)
+  const extraCubesV1 = [];
+  if (twinFacesV1) {
+    for (let k = 0; k < nJets - 1; k++) {
       const ec = document.createElement('div');
-      ec.className = 'dice-cube' +
-                     (isRallye() ? ' rd' + ((isV1Choice ? 0 : bankIdx) + 1) : '');
+      ec.className = 'dice-cube' + (isRallye() ? ' rd1' : '');
       ec.textContent = '?';
-      cubes[twinIdx].insertAdjacentElement('afterend', ec);
-      extraCubes.push(ec);
+      cubes[0].insertAdjacentElement('afterend', ec);
+      extraCubesV1.push(ec);
     }
   }
-  let extraCube = extraCubes[0] || null;
+  const extraCubesBank = [];
+  if (twinFacesBank) {
+    const ec = document.createElement('div');
+    ec.className = 'dice-cube' + (isRallye() ? ' rd' + (bankIdx + 1) : '');
+    ec.textContent = '?';
+    cubes[bankIdx].insertAdjacentElement('afterend', ec);
+    extraCubesBank.push(ec);
+  }
+  const extraCubes = extraCubesV1.concat(extraCubesBank);   // pour la rétro-compat de renderGears()
+  let extraCube = extraCubesBank[0] || extraCubesV1[0] || null;
   sumEl.textContent = '';
   ov.classList.add('on');
 
@@ -3307,8 +3403,7 @@ function rollDiceAnim(drsFace) {
           c.classList.add('v1-picked');
           c.style.borderColor = '#39d98a';
           base += d1;
-          extraValue = dieValue(diceSet()[0], 1, V1_KEYS[1], moveNo);
-          extraCubes.forEach((ec, k) => {
+          extraCubesV1.forEach((ec, k) => {
             ec.classList.add('v1-picked');
             ec.style.borderColor = '#39d98a';
             ec.textContent = dieValue(diceSet()[0], 1, V1_KEYS[k + 1], moveNo);
@@ -3323,11 +3418,10 @@ function rollDiceAnim(drsFace) {
           // NE PAS ajouter `fresh` à `base` ici : le total exact (reprise OU
           // frais) est recalculé juste après, dans altTotals — l'ajouter ici
           // le compterait deux fois.
-          extraValue = R.bankedDie.value;
-          if (extraCubes[0]) {
-            extraCubes[0].classList.add('bank-used');
-            extraCubes[0].style.borderColor = '#4aa3ff';
-            extraCubes[0].textContent = extraValue;
+          if (extraCubesBank[0]) {
+            extraCubesBank[0].classList.add('bank-used');
+            extraCubesBank[0].style.borderColor = '#4aa3ff';
+            extraCubesBank[0].textContent = R.bankedDie.value;
           }
           return;
         }
@@ -3357,18 +3451,26 @@ function rollDiceAnim(drsFace) {
           sums = next;
         }
         altTotals = [...new Set(sums)].sort((a, b) => a - b);
-      } else if (isV1Choice) {
-        // base contient déjà le 1er jet + les dés engagés au-dessus de V1.
-        // Chaque jet alternatif remplace le premier : on retire d1, on ajoute le jet.
-        const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
-        const socle = base - d1;
-        const jets = [];
-        for (let k = 0; k < nJets; k++) jets.push(dieValue(diceSet()[0], 1, V1_KEYS[k], moveNo));
-        altTotals = [...new Set(jets.map(j => socle + j))].sort((a, b) => a - b);
-      } else if (bankIdx >= 0) {
-        const fresh = dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo);
-        const banked = R.bankedDie.value;
-        altTotals = [...new Set([banked, fresh])].sort((a, b) => a - b).map(f => base + f);
+      } else if (isV1Choice || bankIdx >= 0) {
+        // `base` contient déjà le 1er jet de dV1 + tous les dés fixes (ceux qui
+        // ne sont ni le slot des jets, ni le slot de reprise). On le retire pour
+        // reconstruire un socle "propre" sur lequel recombiner les options.
+        // Si dV1 n'a qu'une seule valeur possible à ce rapport, elle est déjà
+        // comptée dans `base` (ajoutée par la boucle forEach ci-dessus) : il ne
+        // faut alors AUCUNE contribution supplémentaire, sous peine de la
+        // compter deux fois.
+        const socle = isV1Choice
+          ? base - dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo)
+          : base;
+        const jetOptions = isV1Choice
+          ? [...new Set(Array.from({ length: nJets }, (_, k) => dieValue(diceSet()[0], 1, V1_KEYS[k], moveNo)))]
+          : [0];
+        const bankOptions = (bankIdx >= 0)
+          ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
+          : [0];
+        const out = [];
+        for (const j of jetOptions) for (const bkv of bankOptions) out.push(socle + j + bkv);
+        altTotals = [...new Set(out)].sort((a, b) => a - b);
       }
       // La reprise est consommée dès qu'on engage le rapport ciblé, qu'elle
       // ait servi ou non (elle a eu sa chance ce coup-ci) — un nouvel instantané
@@ -4384,6 +4486,7 @@ function finalizeMove(r) {
     R.results = null;
     R.ends = null;
     R.phase = 'gear';
+  copilotNote();
 
     renderGears();
     syncDash();
@@ -4428,6 +4531,7 @@ function finalizeMove(r) {
     R.preview = null;
     R.trail = [];
     R.phase = 'gear';
+  copilotNote();
 
     // La trace du fantôme doit refléter la position APRÈS réapparition,
     // sinon le fantôme enregistré montre un saut depuis le point de crash.
@@ -4470,6 +4574,7 @@ function finalizeMove(r) {
   R.results = null;
   R.ends = null;
   R.phase = 'gear';
+  copilotNote();
 
   // Auto-center si le joueur n'a pas pan manuellement
   if (!R.userPanned) {
@@ -5751,6 +5856,8 @@ async function loadForEdit(id) {
     document.getElementById('c-laps').value = c.laps;
     const modeSel1 = document.getElementById('c-mode');
     if (modeSel1) { modeSel1.value = c.mode || recallMode(c.id) || 'f1'; syncModeUI(); }
+    const cop1 = document.getElementById('c-copilot');
+    if (cop1) cop1.checked = (c.copilot === undefined) ? true : !!c.copilot;
     document.getElementById('c-attempts').value = c.attempts;
     document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
   const _rgd2 = document.getElementById('c-regen-dice'); if (_rgd2) _rgd2.checked = false;
@@ -5899,6 +6006,8 @@ function syncModeUI() {
     const f = lapsEl.closest('.field');
     if (f) f.style.opacity = rallye ? 0.4 : 1;
   }
+  const copEl = document.getElementById('c-copilot');
+  if (copEl && copEl.closest('.row')) copEl.closest('.row').style.display = rallye ? '' : 'none';
   document.querySelectorAll('[data-tool="terre"],[data-tool="neige"]').forEach(el => {
     el.style.display = rallye ? '' : 'none';
   });
@@ -7001,6 +7110,7 @@ document.getElementById('btn-test-mode').onclick = () => {
       dir: E.carDir
     },
     mode: (document.getElementById('c-mode') || {}).value || 'f1',
+    copilot: (document.getElementById('c-copilot') || { checked: true }).checked,
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
     freePractice: document.getElementById('c-warmup').checked,
@@ -7349,6 +7459,7 @@ async function saveCircuit(publish) {
       dir: E.carDir
     },
     mode: (document.getElementById('c-mode') || {}).value || 'f1',
+    copilot: (document.getElementById('c-copilot') || { checked: true }).checked,
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
     freePractice: document.getElementById('c-warmup').checked,
@@ -7401,14 +7512,21 @@ document.getElementById('btn-solve').onclick = async () => {
     isWarmup: R.isWarmup, turboUsed: R.turboUsed, leftFinishZone: R.leftFinishZone
   };
   try {
+    // L'éditeur ne stocke pas les mêmes champs que la course : la grille est un
+    // tableau de tableaux, les dimensions sont les constantes EW/EH, et le départ
+    // vit dans carPos/carDir. On traduit avant d'appeler le moteur.
+    if (!E.grid) throw new Error('aucune grille : dessine un circuit d\'abord');
+    if (!E.carPos) throw new Error('place la voiture de départ (outil 🚗) avant de calculer');
     const rows = E.grid.map(row => row.join(''));
     const modeSel = document.getElementById('c-mode');
     R.mode = (modeSel && modeSel.value) || 'f1';
-    R.grid = rows; R.W = E.W; R.H = E.H;
-    R.diceSeed = E.diceSeed || (E.editingId || 'preview');
+    R.grid = rows; R.W = EW; R.H = EH;
+    R.diceSeed = E.diceSeed || E.editingId || 'preview';
+    R.attemptNo = 1;
     R.targetLaps = isRallye() ? 1 : (parseInt(document.getElementById('c-laps').value) || 1);
-    R.circuit = { start: E.start, id: E.editingId || 'preview' };
-    R.q = E.start.x; R.r = E.start.y; R.dir = E.start.dir || 0;
+    const start = { x: E.carPos.q, y: E.carPos.r, dir: E.carDir || 0 };
+    R.circuit = { start: start, id: E.editingId || 'preview' };
+    R.q = start.x; R.r = start.y; R.dir = start.dir;
     R.inertia = 0; R.cpTimes = []; R.isWarmup = false;
     R.turboUsed = false; R.turboArmed = false;
     R.leftFinishZone = isRallye() ? true : false;
