@@ -3336,6 +3336,7 @@ function rollDiceAnim(drsFace) {
       const ec = document.createElement('div');
       ec.className = 'dice-cube' + (isRallye() ? ' rd1' : '');
       ec.textContent = '?';
+      ec.__slot = 'v1';
       cubes[0].insertAdjacentElement('afterend', ec);
       extraCubesV1.push(ec);
     }
@@ -3345,6 +3346,7 @@ function rollDiceAnim(drsFace) {
     const ec = document.createElement('div');
     ec.className = 'dice-cube' + (isRallye() ? ' rd' + (bankIdx + 1) : '');
     ec.textContent = '?';
+    ec.__slot = 'bank';
     cubes[bankIdx].insertAdjacentElement('afterend', ec);
     extraCubesBank.push(ec);
   }
@@ -3367,7 +3369,8 @@ function rollDiceAnim(drsFace) {
     // il ne participe pas encore au total affiché pendant le lancer, seul le
     // résultat final (après choix du joueur) déterminera ce qui compte.
     extraCubes.forEach(ec => {
-      ec.textContent = twinFaces[Math.floor(Math.random() * twinFaces.length)];
+      ec.textContent = (ec.__slot === 'bank' ? twinFacesBank : twinFacesV1)[
+        Math.floor(Math.random() * (ec.__slot === 'bank' ? twinFacesBank : twinFacesV1).length)];
     });
     sumEl.textContent = 'Σ ' + running;
     counter++;
