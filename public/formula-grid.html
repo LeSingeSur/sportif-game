@@ -2143,7 +2143,7 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.pendingGear = 1;
   R.turn = 0;
   R.lapCount = 0;
-  R.mode = circuit.mode || recallMode(circuit.id) || 'f1';
+  R.mode = circuit.mode || recallMode(circuit.id) || (Array.isArray(circuit.rows) && circuit.rows.some(r => r.includes('S')) ? 'rallye' : 'f1');
   if (circuit.mode) rememberMode(circuit.id, circuit.mode);
   // Spéciale rallye = point à point : un seul "tour", du départ à la ligne
   // d'arrivée, sans jamais repasser par la case de départ.
@@ -6005,6 +6005,24 @@ async function loadAdminList() {
   }
 }
 
+// Devine le mode d'un circuit avec le meilleur indice disponible, dans l'ordre :
+// 1) le champ renvoyé par l'API (fiable, quand elle le stocke) ;
+// 2) le souvenir local par circuit (recallMode) — mais ne vaut que sur LE MÊME
+//    navigateur que celui qui a sauvegardé ;
+// 3) la grille elle-même : une case 'S' (ligne de départ) n'existe QUE sur un
+//    circuit rallye (obligatoire à la sauvegarde, cf. saveCircuit) — un bien
+//    meilleur indice qu'un défaut aveugle sur 'f1', qui était la vraie source
+//    du mauvais mode : dès que l'API ne renvoie pas `mode` ET que le navigateur
+//    n'a pas mémorisé ce circuit (autre appareil, cache vidé…), l'ancien code
+//    retombait silencieusement sur Formula même pour un rallye.
+function detectCircuitMode(c) {
+  if (c && c.mode) return c.mode;
+  const remembered = recallMode(c && c.id);
+  if (remembered) return remembered;
+  if (c && Array.isArray(c.rows) && c.rows.some(r => r.includes('S'))) return 'rallye';
+  return 'f1';
+}
+
 async function loadForEdit(id) {
   try {
     const c = await api('/api/formula/circuit/' + id);
@@ -6025,7 +6043,7 @@ async function loadForEdit(id) {
     document.getElementById('c-name').value = c.name;
     document.getElementById('c-laps').value = c.laps;
     const modeSel1 = document.getElementById('c-mode');
-    if (modeSel1) { modeSel1.value = c.mode || recallMode(c.id) || 'f1'; syncModeUI(); }
+    if (modeSel1) { modeSel1.value = detectCircuitMode(c); syncModeUI(); rememberMode(c.id, modeSel1.value); }
     const cop1 = document.getElementById('c-copilot');
     if (cop1) cop1.checked = (c.copilot === undefined) ? true : !!c.copilot;
     document.getElementById('c-attempts').value = c.attempts;
