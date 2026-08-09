@@ -2211,9 +2211,12 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.cells = 0;   // cases parcourues depuis le départ
 
   // Point de reprise en cas de crash : la ligne de départ tant qu'aucun checkpoint n'est franchi
+  // En rallye (point à point), le départ n'est PAS sur la ligne d'arrivée : la
+  // zone est considérée quittée dès le début. Figer `false` ici rendait la
+  // spéciale impossible à terminer après un crash — l'arrivée ne comptait plus.
   R.lastCP = {
     q: R.q, r: R.r, dir: R.dir,
-    lapCount: 0, leftFinishZone: false,
+    lapCount: 0, leftFinishZone: R.leftFinishZone,
     cpTimes: [], index: -1
   };
   R.animating = false;
@@ -3155,7 +3158,11 @@ async function solveCircuit(opts) {
   // état : [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, turboUsed]
   let layer = new Map();
   const st0 = (R.circuit && R.circuit.start) || { x: R.q, y: R.r, dir: R.dir };
-  layer.set(enc([st0.x, st0.y, st0.dir || 0, 0, 0, 0, isRallye() ? 1 : 0, 0, 0, 0]), true);
+  const startKey = enc([st0.x, st0.y, st0.dir || 0, 0, 0, 0, isRallye() ? 1 : 0, 0, 0, 0]);
+  layer.set(startKey, null);
+  // Historique des couches : permet de remonter la ligne parfaite coup par coup
+  // une fois l'optimum trouvé (chaque état retient d'où il vient et comment).
+  const layers = [layer];
   let best = null, finishes = [];
 
   for (let turn = 0; turn < MAXT && !best; turn++) {
@@ -3178,14 +3185,16 @@ async function solveCircuit(opts) {
               if (res.finish) {
                 finishes.push({ turns: moveNo, left: res.left });
                 if (!best || moveNo < best.turns || (moveNo === best.turns && res.left > best.left))
-                  best = { turns: moveNo, left: res.left };
+                  best = { turns: moveNo, left: res.left, prev: key, gear: g, tot: tot,
+                           turbo: useTurbo, layerIdx: turn };
                 continue;
               }
               const cell = (R.grid[res.r] || '')[res.q];
               const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
               const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
-              next.set(enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
-                            nLeftF, res.cpMask, nDrs, useTurbo ? 1 : tUsed]), true);
+              const nk = enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
+                              nLeftF, res.cpMask, nDrs, useTurbo ? 1 : tUsed]);
+              if (!next.has(nk)) next.set(nk, { prev: key, gear: g, tot: tot, turbo: useTurbo });
             }
           }
         }
@@ -3194,16 +3203,58 @@ async function solveCircuit(opts) {
     if (opts.onProgress) { opts.onProgress(turn + 1, next.size); await new Promise(r2 => setTimeout(r2, 0)); }
     if (best) break;
     layer = next;
+    layers.push(layer);
     if (!layer.size) break;
   }
 
+  if (!best) { Object.assign(R, snap); return null; }
+
+  // ─── Reconstruction de la ligne parfaite ───
+  // On remonte la chaîne des prédécesseurs, puis on rejoue chaque coup dans le
+  // vrai moteur pour récupérer le tracé case par case (on ne stocke pas les
+  // chemins pendant la recherche : ça exploserait en mémoire).
+  const chain = [];
+  let cur = { prev: best.prev, gear: best.gear, tot: best.tot, turbo: best.turbo };
+  let li = best.layerIdx;
+  while (cur && cur.prev != null) {
+    chain.unshift({ key: cur.prev, gear: cur.gear, tot: cur.tot, turbo: cur.turbo });
+    cur = layers[li] ? layers[li].get(cur.prev) : null;
+    li--;
+  }
+
+  const moves = [];
+  for (let i = 0; i < chain.length; i++) {
+    const st = chain[i];
+    const [q, r, dir, inertia, gear, lap, leftF, cpMask] = st.key.split('|').map(Number);
+    R.inertia = inertia; R.cpTimes = maskToTimes(cpMask);
+    R.leftFinishZone = !!leftF; R.gear = st.gear;
+    const nextKey = (i + 1 < chain.length) ? chain[i + 1].key : null;
+    let chosen = null;
+    for (const res of getValidPaths(q, r, dir, st.tot, st.gear, lap, targetLaps)) {
+      if (res.crash) continue;
+      if (nextKey === null) { if (res.finish) { chosen = res; break; } continue; }
+      const cell = (R.grid[res.r] || '')[res.q];
+      const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
+      const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
+      const k = enc([res.q, res.r, res.dir, res.inertiaEnd, st.gear, lap + res.lapsGained,
+                     nLeftF, res.cpMask, nDrs, st.turbo ? 1 : Number(st.key.split('|')[9])]);
+      if (k === nextKey) { chosen = res; break; }
+    }
+    moves.push({
+      n: i + 1, gear: st.gear, total: st.tot, turbo: !!st.turbo,
+      from: { q: q, r: r }, to: chosen ? { q: chosen.q, r: chosen.r } : null,
+      left: chosen ? chosen.left : null,
+      path: chosen ? chosen.path.map(p => ({ q: p.q, r: p.r, drift: !!p.drift })) : []
+    });
+  }
+
   Object.assign(R, snap);
-  if (!best) return null;
   const lines = finishes.filter(f => f.turns === best.turns).length;
   return {
     turns: best.turns,
     left: best.left,
     lines: lines,
+    moves: moves,
     medals: { or: best.turns, argent: best.turns + 1, bronze: best.turns + 3, diamant: best.left }
   };
 }
@@ -7257,6 +7308,38 @@ function drawEditor() {
     }
   }
 
+  // ── Ligne parfaite calculée par le solveur (admin) ──
+  // Un dégradé vert -> rouge suit la progression de la course, un pastille
+  // numérotée marque la case d'arrêt de chaque coup avec son rapport.
+  if (E.solveMoves && E.solveMoves.length) {
+    const N = E.solveMoves.length;
+    E.solveMoves.forEach((mv, mi) => {
+      const teinte = 120 - (120 * mi / Math.max(1, N - 1));   // 120=vert -> 0=rouge
+      const col = 'hsl(' + teinte + ',85%,55%)';
+      const pts = [mv.from].concat(mv.path);
+      ectx.strokeStyle = col;
+      ectx.lineWidth = Math.max(2, hs * 0.16);
+      ectx.lineJoin = 'round'; ectx.lineCap = 'round';
+      for (let i = 1; i < pts.length; i++) {
+        const a = axialToPixel(pts[i - 1].q, pts[i - 1].r, hs);
+        const b = axialToPixel(pts[i].q, pts[i].r, hs);
+        ectx.setLineDash(pts[i].drift ? [hs * 0.2, hs * 0.16] : []);
+        ectx.beginPath(); ectx.moveTo(a.x, a.y); ectx.lineTo(b.x, b.y); ectx.stroke();
+      }
+      ectx.setLineDash([]);
+      if (mv.to) {
+        const e = axialToPixel(mv.to.q, mv.to.r, hs);
+        ectx.beginPath(); ectx.arc(e.x, e.y, hs * 0.42, 0, Math.PI * 2);
+        ectx.fillStyle = '#0d1014'; ectx.fill();
+        ectx.strokeStyle = col; ectx.lineWidth = Math.max(1.5, hs * 0.1); ectx.stroke();
+        ectx.fillStyle = col;
+        ectx.font = 'bold ' + Math.max(7, hs * 0.42) + 'px sans-serif';
+        ectx.textAlign = 'center'; ectx.textBaseline = 'middle';
+        ectx.fillText('V' + mv.gear, e.x, e.y);
+      }
+    });
+  }
+
   // Voiture
   if (E.carPos) {
     const pt = axialToPixel(E.carPos.q, E.carPos.r, hs);
@@ -7307,6 +7390,9 @@ function paintAt(q, r) {
   if (q < 0 || q >= EW || r < 0 || r >= EH) return;
 
   pushUndo();
+
+  // La piste change : le tracé parfait calculé précédemment ne correspond plus.
+  E.solveMoves = null;
 
   if (E.tool === 'piste') {
     E.grid[r][q] = '.';
@@ -7557,7 +7643,27 @@ document.getElementById('btn-solve').onclick = async () => {
         '<span style="color:' + (res.lines < 20 ? '#ff9f43' : (res.lines > 200 ? '#ff9f43' : '#8b98a5')) + '">' +
         (res.lines < 20 ? '⚠️ Très peu de lignes parfaites : le tracé n\'offre presque pas d\'alternative.'
          : res.lines > 200 ? '⚠️ Beaucoup de lignes parfaites : l\'optimum sera trouvé trop facilement.'
-         : '✔️ Bonne latitude de trajectoire.') + '</span>';
+         : '✔️ Bonne latitude de trajectoire.') + '</span>' +
+        '<div style="margin-top:10px;border-top:1px solid #232b35;padding-top:8px">' +
+        '<b>Coup par coup</b> ' +
+        '<button id="btn-solve-show" style="float:right;font-size:11px;padding:3px 9px;' +
+        'background:#1b2430;border:1px solid #58a6ff;border-radius:6px;color:#58a6ff;cursor:pointer">' +
+        '👁️ Afficher sur la carte</button><br>' +
+        (res.moves || []).map(function (mv) {
+          const t = 120 - (120 * (mv.n - 1) / Math.max(1, (res.moves.length - 1)));
+          return '<span style="display:inline-block;margin:3px 6px 0 0;padding:2px 7px;border-radius:5px;' +
+            'background:hsl(' + t + ',85%,55%,.16);border:1px solid hsl(' + t + ',85%,55%);' +
+            'color:hsl(' + t + ',85%,72%);font-size:11px">' +
+            mv.n + '. <b>V' + mv.gear + '</b> · ' + mv.total + (mv.turbo ? ' 🔥' : '') + '</span>';
+        }).join('') +
+        '</div>';
+      // Le bouton bascule l'affichage du tracé sur la carte de l'éditeur
+      const showBtn = document.getElementById('btn-solve-show');
+      if (showBtn) showBtn.onclick = () => {
+        E.solveMoves = E.solveMoves ? null : (res.moves || []);
+        showBtn.textContent = E.solveMoves ? '🙈 Masquer le tracé' : '👁️ Afficher sur la carte';
+        drawEditor();
+      };
     }
   } catch (e) {
     out.innerHTML = '<b style="color:#ff5d5d">Erreur : ' + e.message + '</b>';
