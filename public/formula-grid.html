@@ -1211,12 +1211,13 @@ header.top {
     <div id="editor-toolbar">
       <div class="tool sel" data-tool="piste">🛣️<span class="tname">Piste</span></div>
       <div class="tool" data-tool="mur">⬛<span class="tname">Mur</span></div>
+      <div class="tool" data-tool="depart">🚦<span class="tname">Ligne départ</span></div>
       <div class="tool" data-tool="finish">🏁<span class="tname">Arrivée</span></div>
       <div class="tool" data-tool="checkpoint">📍<span class="tname">Checkpoint</span></div>
       <div class="tool" data-tool="drs">⚡<span class="tname">DRS</span></div>
       <div class="tool" data-tool="terre">🟫<span class="tname">Terre</span></div>
       <div class="tool" data-tool="neige">❄️<span class="tname">Neige</span></div>
-      <div class="tool" data-tool="car">🏎️<span class="tname">Départ</span></div>
+      <div class="tool" data-tool="car">🏎️<span class="tname">Voiture</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
     </div>
@@ -1621,6 +1622,34 @@ function dieValue(faces, gear, dieIndex, moveNo) {
     return faces[Math.floor(Math.random() * faces.length)];
   }
   return gridDieValue(R.diceSeed, R.attemptNo, faces, gear, dieIndex, moveNo);
+}
+
+// ── BONUS DOUBLÉ / TRIPLÉ (rallye uniquement) ──────────────────────────────
+// Le dé vert dV1 est relancé plusieurs fois au même coup (3 jets en V1, 2 en
+// V2 — jamais en V3/V4). Si au moins 2 de ces jets tombent sur la même face,
+// c'est un DOUBLÉ : le joueur peut aussi viser total ± 1 case. Si les 3 jets
+// tombent sur la même face (possible UNIQUEMENT en V1, seul rapport à 3 jets
+// du même dé), c'est un TRIPLÉ : total ± 2 cases. Le joueur voit directement
+// ces trajectoires bonus/malus sur le plateau et choisit — réduire la
+// distance peut être un avantage (pile sur un virage, un checkpoint…).
+function jetBonusRange(jetValues) {
+  if (!isRallye() || !jetValues || jetValues.length < 2) return 0;
+  const counts = {};
+  for (const v of jetValues) counts[v] = (counts[v] || 0) + 1;
+  const maxCount = Math.max(...Object.values(counts));
+  if (maxCount >= 3) return 2;   // triplé
+  if (maxCount >= 2) return 1;   // doublé
+  return 0;
+}
+// Ajoute total-bonus et total+bonus à chaque total déjà possible (jamais sous 0).
+function applyJetBonus(totals, bonusRange) {
+  if (!bonusRange) return totals;
+  const out = new Set(totals);
+  for (const t of totals) {
+    if (t - bonusRange >= 0) out.add(t - bonusRange);
+    out.add(t + bonusRange);
+  }
+  return [...out].sort((a, b) => a - b);
 }
 
 // Inertie : cases droites obligatoires AU DÉBUT du mouvement (= rapport - 1).
@@ -3123,13 +3152,17 @@ function solverTotals(gear, prevGear, moveNo, drsActive) {
   const jetOptions = (nJets > 1)
     ? [...new Set(Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo)))]
     : [0];
+  const jetRaw = (nJets > 1)
+    ? Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo))
+    : [];
+  const bonusRange = jetBonusRange(jetRaw);
   const bankOptions = hasReprise
     ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
                     dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
     : [0];
   const out = [];
   for (const j of jetOptions) for (const bkv of bankOptions) out.push(base + j + bkv);
-  return [...new Set(out)].sort((a, b) => a - b);
+  return applyJetBonus([...new Set(out)].sort((a, b) => a - b), bonusRange);
 }
 
 function solverGears(prevGear) {
@@ -3496,6 +3529,7 @@ function rollDiceAnim(drsFace) {
       // coup précédent contre tirage frais) — jamais deux de ces trois
       // mécaniques à la fois.
       let altTotals = null;
+      let jetBonus = 0;
       if (drsAll) {
         let sums = [0];
         for (let i = 0; i < nActifs; i++) {
@@ -3516,20 +3550,30 @@ function rollDiceAnim(drsFace) {
         const socle = isV1Choice
           ? base - dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo)
           : base;
+        const jetRaw = isV1Choice
+          ? Array.from({ length: nJets }, (_, k) => dieValue(diceSet()[0], 1, V1_KEYS[k], moveNo))
+          : [];
         const jetOptions = isV1Choice
-          ? [...new Set(Array.from({ length: nJets }, (_, k) => dieValue(diceSet()[0], 1, V1_KEYS[k], moveNo)))]
+          ? [...new Set(jetRaw)]
           : [0];
         const bankOptions = (bankIdx >= 0)
           ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
           : [0];
         const out = [];
         for (const j of jetOptions) for (const bkv of bankOptions) out.push(socle + j + bkv);
-        altTotals = [...new Set(out)].sort((a, b) => a - b);
+        jetBonus = jetBonusRange(jetRaw);
+        altTotals = applyJetBonus([...new Set(out)].sort((a, b) => a - b), jetBonus);
       }
       // La reprise est consommée dès qu'on engage le rapport ciblé, qu'elle
       // ait servi ou non (elle a eu sa chance ce coup-ci) — un nouvel instantané
       // sera repris automatiquement au prochain coup si les conditions le permettent.
       if (bankIdx >= 0) R.bankedDie = null;
+
+      const bonusTag = jetBonus === 2
+        ? ' <span style="color:#ff5d5d;font-size:11px">🎲🎲🎲 TRIPLÉ · ±2 cases débloqué</span>'
+        : jetBonus === 1
+        ? ' <span style="color:#ff9f43;font-size:11px">🎲🎲 DOUBLÉ · ±1 case débloqué</span>'
+        : '';
 
       if (drsAll) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
@@ -3538,11 +3582,14 @@ function rollDiceAnim(drsFace) {
       } else if (isV1Choice) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
-          ' <span style="color:#39d98a;font-size:11px">🎯 V1 · 2 jets, à toi de choisir</span>';
+          ' <span style="color:#39d98a;font-size:11px">🎯 V' + R.gear + ' · ' + nJets +
+          ' jets, à toi de choisir</span>' +
+          bonusTag;
       } else if (bankIdx >= 0) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
-          ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>';
+          ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>' +
+          bonusTag;
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
@@ -3814,6 +3861,13 @@ function buildRulesHTML() {
   details('🎯 V1 : deux jets, tu choisis',
     'En <b>rapport 1</b>, et seulement lui, tu ne subis pas un tirage unique : le dé de base est lancé <b>deux fois</b>, et c\'est ta trajectoire choisie sur la piste qui détermine lequel des deux résultats compte.<br><br>' +
     'C\'est ce qui fait de la V1 le rapport de précision : en plus d\'un braquage toujours libre, tu as un vrai contrôle sur la distance parcourue.') +
+
+  (isRallye() ?
+    details('🎲 Doublé / triplé (rallye)',
+      'En <b>rapport 1</b>, le dé vert <b>dV1</b> est lancé <b>3 fois</b> ; en <b>rapport 2</b>, <b>2 fois</b>. Si au moins deux de ces jets tombent sur le <b>même chiffre</b>, c\'est un <b style="color:#ff9f43">DOUBLÉ</b> : en plus des totaux normaux, tu peux aussi viser <b>±1 case</b>.<br><br>' +
+      'Si les <b>3 jets</b> tombent sur le même chiffre — possible <b>uniquement en V1</b>, seul rapport à relancer 3 fois le même dé — c\'est un <b style="color:#ff5d5d">TRIPLÉ</b> : tu peux viser <b>±2 cases</b>.<br><br>' +
+      'Les trajectoires bonus/malus apparaissent directement sur la piste avec les autres, à toucher comme n\'importe quelle case cible. Réduire la distance n\'est pas toujours une pénalité : ça peut t\'aligner pile sur un virage ou un checkpoint.')
+    : '') +
 
   details('🏁 Points et classement',
     'Le classement se recalcule en direct. Le 1er marque le nombre de joueurs × un coefficient fixé par l\'organisateur, le 2e un cran en dessous, etc. Plus il y a de participants, plus la victoire rapporte.<br><br>' +
@@ -4224,7 +4278,7 @@ function downloadDiceGrid(seed) {
     rows: (E && E.grid) ? E.grid.map(r => r.join('')) : null,
     start: (E && E.carPos) ? { x: E.carPos.q, y: E.carPos.r, dir: E.carDir || 0 } : null,
     note: 'rows/start = la piste, au même format que /api/formula/circuit/<id> ' +
-      '(un caractère par case : "#" mur, "." piste, "F" arrivée, "C" checkpoint, "D" DRS). ' +
+      '(un caractère par case : "#" mur, "." piste, "F" arrivée, "S" ligne de départ (rallye), "C" checkpoint, "D" DRS). ' +
       'Total du rapport Vn au coup m = die1+die2+...+dieN de cette ligne (die1 = v1_die). ' +
       'v1_second_jet = second jet de la mécanique V1 (2 jets, le joueur choisit). ' +
       'Dé de reprise au rapport n : compare la valeur "dieN" du coup où le rapport n-1 était engagé ' +
@@ -4938,6 +4992,25 @@ function hexPath(ctx, x, y, s) {
   ctx.closePath();
 }
 
+// Bandes de la ligne de DÉPART (case 'S', rallye uniquement) : rayures vert/blanc
+// en diagonale, volontairement très différentes du damier noir/blanc de l'arrivée
+// pour qu'on distingue les deux lignes d'un coup d'oeil sur une spéciale point à point.
+function drawStartStripes(ctx, pt, hexSize) {
+  ctx.save();
+  hexPath(ctx, pt.x, pt.y, hexSize * 0.98);
+  ctx.clip();
+  ctx.fillStyle = '#0f5132';
+  ctx.fillRect(pt.x - hexSize, pt.y - hexSize, hexSize * 2, hexSize * 2);
+  ctx.translate(pt.x, pt.y);
+  ctx.rotate(Math.PI / 4);
+  const sw = hexSize * 0.3;
+  ctx.fillStyle = '#f4f6f5';
+  for (let i = -3; i <= 3; i++) {
+    ctx.fillRect(i * sw * 1.8 - sw / 2, -hexSize * 1.6, sw, hexSize * 3.2);
+  }
+  ctx.restore();
+}
+
 // Dessin de la voiture F1
 // Voiture de rallye : caisse courte et haute, quatre roues débordantes,
 // aileron de toit. Silhouette volontairement très différente de la monoplace
@@ -5251,6 +5324,14 @@ function drawRace() {
           cctx.fillRect(pt.x + i * sq, pt.y + j * sq, sq, sq);
         }
       }
+    }
+  }
+
+  // 4bis) Ligne de départ (case 'S', rallye)
+  for (let r = vis.minR; r <= vis.maxR; r++) {
+    for (let q = vis.minQ; q <= vis.maxQ; q++) {
+      if (!R.grid[r] || R.grid[r][q] !== 'S') continue;
+      drawStartStripes(cctx, axialToPixel(q, r, hexSize), hexSize);
     }
   }
 
@@ -5630,6 +5711,8 @@ function drawMinimap(vp) {
 
       if (R.grid[r][q] === 'F') {
         mctx.fillStyle = '#ecf0f1';
+      } else if (R.grid[r][q] === 'S') {
+        mctx.fillStyle = '#2ecc71';
       } else if (R.grid[r][q] === 'C') {
         mctx.fillStyle = '#f7c948';
       } else if (R.grid[r][q] === 'D') {
@@ -6062,14 +6145,14 @@ function syncModeUI() {
   }
   const copEl = document.getElementById('c-copilot');
   if (copEl && copEl.closest('.row')) copEl.closest('.row').style.display = rallye ? '' : 'none';
-  document.querySelectorAll('[data-tool="terre"],[data-tool="neige"]').forEach(el => {
+  document.querySelectorAll('[data-tool="terre"],[data-tool="neige"],[data-tool="depart"]').forEach(el => {
     el.style.display = rallye ? '' : 'none';
   });
   document.querySelectorAll('[data-tool="drs"]').forEach(el => {
     el.style.display = rallye ? 'none' : '';   // pas de DRS en rallye
   });
   if (rallye && (E.tool === 'drs')) E.tool = 'piste';
-  if (!rallye && (E.tool === 'terre' || E.tool === 'neige')) E.tool = 'piste';
+  if (!rallye && (E.tool === 'terre' || E.tool === 'neige' || E.tool === 'depart')) E.tool = 'piste';
 }
 const modeSelEl = document.getElementById('c-mode');
 if (modeSelEl) {
@@ -7262,6 +7345,11 @@ function drawEditor() {
         }
       }
 
+      // Ligne de départ (rallye)
+      if (t === 'S') {
+        drawStartStripes(ectx, pt, hs);
+      }
+
       // Zone DRS
       if (t === 'D') {
         ectx.fillStyle = 'rgba(180,100,255,0.22)';
@@ -7401,6 +7489,10 @@ function paintAt(q, r) {
     if (E.carPos && E.carPos.q === q && E.carPos.r === r) {
       E.carPos = null;
     }
+  } else if (E.tool === 'depart') {
+    // Ligne de départ (rallye uniquement) : purement visuelle/repère — le point
+    // de départ réel et le cap restent définis par l'outil 🏎️ Voiture.
+    E.grid[r][q] = 'S';
   } else if (E.tool === 'finish') {
     E.grid[r][q] = 'F';
   } else if (E.tool === 'checkpoint') {
@@ -7532,6 +7624,12 @@ async function saveCircuit(publish) {
 
   if (!rows.some(r => r.includes('F'))) {
     toast('Place une ligne d\'arrivée 🏁');
+    return;
+  }
+
+  const modeVal = (document.getElementById('c-mode') || {}).value || 'f1';
+  if (modeVal === 'rallye' && !rows.some(r => r.includes('S'))) {
+    toast('Place une ligne de départ 🚦 (spéciale rallye = point à point)');
     return;
   }
 
