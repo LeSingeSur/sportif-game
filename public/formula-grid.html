@@ -334,6 +334,15 @@ header.top {
 }
 
 #g-dice .val { color: var(--line); }
+#g-dice.replayable {
+  cursor: pointer;
+  border: 1px solid rgba(247, 201, 72, .45);
+}
+#g-dice.replayable .lbl::after {
+  content: ' 🔁';
+  opacity: .8;
+}
+#g-dice.replayable:active { background: var(--panel2); }
 #g-lap .val { color: var(--ok); }
 
 /* ============================================================
@@ -1141,14 +1150,13 @@ header.top {
     </div>
     <div id="speed-bar-bg"><div id="speed-bar"></div></div>
   </div>
-  <div id="fuelmeter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:10px 14px;border:1px solid #2c3038">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">⛽ ESSENCE</span>
-      <span class="val" id="fuel-val" style="font-family:ui-monospace,monospace;font-size:16px;font-weight:900">— / —</span>
+  <div id="surfacemeter" style="width:100%;background:var(--panel);border-radius:var(--r);padding:9px 12px;border:1px solid #2c3038">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span class="lbl" style="font-size:10px;letter-spacing:2px;color:var(--mute)">🛞 INERTIE &amp; DÉPORT</span>
+      <span id="surf-now" style="font-size:10px;font-weight:800;color:var(--line)"></span>
     </div>
-    <div style="width:100%;height:8px;background:#2b2f36;border-radius:4px;overflow:hidden;margin-top:6px">
-      <div id="fuel-bar" style="height:100%;width:100%;border-radius:4px;transition:width .3s,background .3s"></div>
-    </div>
+    <div id="surf-cards" style="display:flex;gap:6px"></div>
+    <div id="surf-note" style="font-size:9.5px;color:var(--mute);margin-top:6px;line-height:1.3"></div>
   </div>
 
 </section>
@@ -1325,17 +1333,6 @@ header.top {
         <div class="field">
           <label>Points × joueur</label>
           <input type="number" id="c-mult" min="1" max="100" value="10">
-        </div>
-      </div>
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--txt)">
-          <input type="checkbox" id="c-fuel-on" checked style="width:18px;height:18px;accent-color:var(--line)">
-          ⛽ Gérer l'essence (sinon illimitée)
-        </label>
-        <div id="fuel-fields" style="margin-top:7px">
-          <label>Réservoir (0 = automatique)</label>
-          <input type="number" id="c-fuel" min="0" max="9999" value="0">
-          <div id="fuel-hint" style="font-size:10px;color:var(--mute);margin-top:4px"></div>
         </div>
       </div>
       <div class="row" style="margin-top:2px">
@@ -1998,26 +1995,7 @@ async function openCircuit(id) {
    ================================================================ */
 const R = {};
 
-// Capacité d'essence : proportionnelle à la taille du circuit (nb de cases piste),
-// calibrée pour ~1.4 tour à plein régime avant la panne — force à gérer sur 3-4 tours.
-// Capacité d'essence : valeur fixée par l'admin, ou calcul automatique si 0/absent.
-// L'auto est proportionnel à la taille du circuit et au nombre de tours.
-function fuelCapacityFor(circuit) {
-  const manual = parseInt(circuit.fuelCapacity) || 0;
-  if (manual > 0) return manual;
-  return autoFuelCapacity(circuit);
-}
-
-function autoFuelCapacity(circuit) {
-  let trackCells = 0;
-  for (const row of circuit.rows) {
-    for (const ch of row) if (ch !== '#') trackCells++;
-  }
-  const laps = circuit.laps || 1;
-  // Une course "à fond" consommerait environ trackCells/6 dés par tour (V6 = 6 cases/dé).
-  const perLap = Math.max(12, Math.round(trackCells / 6));
-  return Math.max(20, Math.round(perLap * laps * 0.6));
-}
+// (mécanique d'essence retirée du jeu)
 
 document.getElementById('back-menu').onclick = backToMenu;
 
@@ -2193,14 +2171,11 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.bankedDie = null;   // { value, targetGear }
 
 
-  // Essence : 1 point consommé par dé (= par rapport). Réserve = ~1.4× la distance théorique du circuit.
-  R.fuelEnabled = circuit.fuelEnabled !== false;
-  R.fuelMax = R.fuelEnabled ? fuelCapacityFor(circuit) : Infinity;
-  R.fuel = R.fuelMax;
-  R.outOfFuel = false;   // true = décélération forcée en cours (roule sans consommer)
-  R.refueling = false;   // true pendant la phase d'arrêt progressif
+  // Dernier lancer rejouable (clic sur la jauge DÉ)
+  R.lastRoll = null;
 
   // Caméra
+  R.camSpan = null;       // portée de vue lissée (évite les sauts de zoom)
   R.panOffsetX = 0;
   R.panOffsetY = 0;
   R.isPanning = false;
@@ -2389,6 +2364,7 @@ function setupRaceControls() {
 function centerOnCar() {
   R.panOffsetX = 0;
   R.panOffsetY = 0;
+  R.camSpan = null;   // recale immédiatement la portée de vue
   R.zoomLevel = 1;
   R.userPanned = false;
   updateZoomIndicator();
@@ -2645,10 +2621,7 @@ function renderGears() {
     const el = document.createElement('div');
     let reach = false;
 
-    if (R.outOfFuel) {
-      // Panne sèche : descente forcée d'exactement 1 rapport (jamais monter ni rester)
-      reach = (g === R.gear - 1);
-    } else if (R.gear === 0) {
+    if (R.gear === 0) {
       reach = (g === 1);
     } else {
       // Freinage plus vif que l'accélération : -2 rapports en descente, +1 seulement
@@ -2700,11 +2673,6 @@ function renderGears() {
     hg.appendChild(tb);
   }
 
-  // En panne sèche : forcer la sélection sur le rapport descendant
-  if (R.outOfFuel && R.phase === 'gear') {
-    R.pendingGear = Math.max(0, R.gear - 1);
-  }
-
   // Dé de reprise : mini-case passive, ENTIÈREMENT AUTOMATIQUE (aucun bouton,
   // aucune phrase à lire — juste le chiffre actuellement en reprise).
   const bankTag = document.getElementById('banked-die-tag');
@@ -2719,28 +2687,17 @@ function renderGears() {
     }
   }
 
-  // Tag stress / panne
-  const gb = document.getElementById('gearbox');
-  let tag = document.getElementById('stress-tag');
-
-  if (R.outOfFuel && R.phase === 'gear') {
-    if (!tag) {
-      tag = document.createElement('div');
-      tag.id = 'stress-tag';
-      tag.style.cssText =
-        'margin-top:8px;font-size:11px;color:var(--crash);' +
-        'font-weight:700;text-align:center';
-      gb.appendChild(tag);
-    }
-    tag.textContent = '⛽ PANNE SÈCHE — décélération forcée jusqu\'à l\'arrêt';
-  } else if (tag) {
-    tag.remove();
-  }
 }
 
 function updateSpeedometer() {
-  const kmh = R.currentKmh || GEAR_KMH[R.pendingGear] || 0;
-  const pct = (kmh / 350) * 100;
+  // En phase de choix de rapport, on affiche la vitesse THÉORIQUE du rapport
+  // sélectionné (sinon la jauge restait bloquée sur la vitesse réelle du coup
+  // précédent et ne réagissait plus aux changements de rapport).
+  const kmhMax = GEAR_KMH[maxGear()] || 350;
+  const kmh = (R.phase === 'gear')
+    ? (GEAR_KMH[R.pendingGear] || 0)
+    : (R.currentKmh || GEAR_KMH[R.gear] || 0);
+  const pct = Math.min(100, (kmh / kmhMax) * 100);
 
   const bar = document.getElementById('speed-bar');
   bar.style.width = pct + '%';
@@ -2753,7 +2710,7 @@ function updateSpeedometer() {
 
   bar.style.background = color;
 
-  document.getElementById('speed-val').textContent = kmh + ' / 350 km/h';
+  document.getElementById('speed-val').textContent = kmh + ' / ' + kmhMax + ' km/h';
   document.getElementById('speed-val').style.color = color;
   document.getElementById('speed-warning').style.opacity = (pct > 80) ? '1' : '0';
 }
@@ -2771,23 +2728,6 @@ function say(t, cls) {
    IMMERSION — RADIO INGÉNIEUR
    ================================================================ */
 const RADIO_LINES = {
-  fuelLow: [
-    'Attention essence, il faut lever le pied.',
-    'On surveille la conso, reste propre.',
-    'Le réservoir descend vite, gère tes rapports.'
-  ],
-  fuelCritical: [
-    'Essence critique ! Passe en mode économie.',
-    'On est très juste en carburant, lève le pied MAINTENANT.'
-  ],
-  outOfFuel: [
-    'Panne sèche ! Rétrograde jusqu\'à l\'arrêt.',
-    'Plus rien dans le réservoir, ramène-la doucement.'
-  ],
-  refuel: [
-    'Plein terminé, tu peux repartir. Vas-y !',
-    'Réservoir plein. On repart de zéro, attaque.'
-  ],
   purple: [
     'Secteur violet ! Magnifique.',
     'Meilleur secteur de tous, continue comme ça !'
@@ -2983,32 +2923,54 @@ function updateDeltaHud() {
   el.style.borderColor = ref > 0 ? 'rgba(255,93,93,.5)' : (ref < 0 ? 'rgba(177,74,237,.6)' : '#2c3038');
 }
 
-function updateFuelGauge() {
-  const el = document.getElementById('fuel-val');
-  const bar = document.getElementById('fuel-bar');
-  if (!el || !bar) return;
+// Rappel permanent : ce que le rapport engagé impose en inertie (cases tout
+// droit avant de pouvoir braquer) et en déport (cases de dérapage en sortie de
+// virage), surface par surface. Remplace l'ancienne jauge d'essence.
+function updateSurfaceHint() {
+  const nowEl   = document.getElementById('surf-now');
+  const cardsEl = document.getElementById('surf-cards');
+  const noteEl  = document.getElementById('surf-note');
+  if (!nowEl || !cardsEl || !noteEl) return;
 
-  // Essence désactivée par l'organisateur : réservoir infini
-  if (!R.fuelEnabled) {
-    el.textContent = '∞ ILLIMITÉE';
-    el.style.color = 'var(--mute)';
-    bar.style.width = '100%';
-    bar.style.background = 'linear-gradient(90deg,#39d98a,#4ac7ff)';
-    bar.style.opacity = '0.35';
-    return;
-  }
-  bar.style.opacity = '1';
-  const pct = R.fuelMax ? (R.fuel / R.fuelMax) * 100 : 0;
-  el.textContent = R.fuel + ' / ' + R.fuelMax;
-  bar.style.width = pct + '%';
-  let color;
-  if (R.outOfFuel) color = '#ff5d5d';
-  else if (pct < 20) color = '#ff5d5d';
-  else if (pct < 40) color = '#ff9f43';
-  else color = '#39d98a';
-  bar.style.background = color;
-  el.style.color = color;
-  if (R.outOfFuel) el.textContent = 'PANNE SÈCHE';
+  const g = Math.max(1, (R.phase === 'gear' ? R.pendingGear : R.gear) || 1);
+  const here = surfaceAt(R.q, R.r);
+  const inert = inertiaTable()[g] || 0;
+
+  nowEl.textContent = 'V' + g + ' · sous la voiture : ' + SURFACE_LABEL[here];
+
+  const surfs = isRallye()
+    ? ['asphalte', 'terre', 'neige']
+    : ['asphalte'];
+
+  cardsEl.innerHTML = '';
+  surfs.forEach(sf => {
+    const d = driftForGear(g, sf);
+    const on = (sf === here);
+    const col = d === 0 ? '#39d98a' : (d === 1 ? '#f7c948' : (d === 2 ? '#ff9f43' : '#ff5d5d'));
+    const card = document.createElement('div');
+    card.style.cssText =
+      'flex:1;border-radius:8px;padding:5px 7px;text-align:center;' +
+      'background:' + (on ? 'rgba(247,201,72,.10)' : '#22262e') + ';' +
+      'border:1px solid ' + (on ? 'var(--line)' : '#2c3038');
+    card.innerHTML =
+      '<div style="font-size:9.5px;color:var(--mute);letter-spacing:.4px">' + SURFACE_LABEL[sf] + '</div>' +
+      '<div style="font-family:ui-monospace,monospace;font-size:12px;font-weight:900;margin-top:2px">' +
+        '<span style="color:var(--line)">🎯' + inert + '</span>' +
+        '<span style="color:#4a5058"> · </span>' +
+        '<span style="color:' + col + '">↝' + d + '</span>' +
+      '</div>';
+    cardsEl.appendChild(card);
+  });
+
+  const dHere = driftForGear(g, here);
+  noteEl.innerHTML =
+    '🎯 <b>inertie ' + inert + '</b> = ' + (inert === 0
+      ? 'braquage libre à chaque case'
+      : inert + ' case(s) tout droit après chaque virage') +
+    ' &nbsp;·&nbsp; ↝ <b>déport ' + dHere + '</b> = ' + (dHere === 0
+      ? 'la voiture s\'arrête net dans le virage'
+      : dHere + ' case(s) de glisse en plus après le virage, facturées au budget de dé — si la glisse sort de la piste, le virage est impraticable à ce rapport') +
+    (isRallye() ? '' : ' · en Formula, le déport ne dépend que du rapport (V5 = 1, V6 = 2).');
 }
 
 function updateInertiaGauge() {
@@ -3018,7 +2980,8 @@ function updateInertiaGauge() {
   if (!val || !cells || !txt) return;
 
   const g = (R.phase === 'gear') ? R.pendingGear : R.gear;
-  const reload = INERTIA[g] != null ? INERTIA[g] : Math.max(0, (g||1) - 1);   // V1=0 … V6=5
+  const IT = inertiaTable();
+  const reload = IT[g] != null ? IT[g] : Math.max(0, (g || 1) - 1);   // dépend du mode (Formula / Rallye)
   const cur = Math.max(0, R.inertia || 0);    // état actuel de la jauge
 
   if (!g) {
@@ -3062,16 +3025,18 @@ function syncDash() {
   document.getElementById('v-roll').textContent = R.rolled ?? '—';
   document.getElementById('v-turn').textContent = R.turn;
 
-  updateFuelGauge();
+  // La jauge DÉ n'est cliquable (relecture) que si un jet a déjà été fait
+  const gd = document.getElementById('g-dice');
+  if (gd) gd.classList.toggle('replayable', !!R.lastRoll);
+
+  updateSurfaceHint();
   updateInertiaGauge();
   updateDeltaHud();
 
-  // Bouton lancer : normalement désactivé au rapport 0, SAUF en panne sèche au rapport 0
-  // où il devient le bouton "faire le plein" (la voiture est arrêtée, 0 case parcourue).
+  // Bouton lancer : désactivé au rapport 0 (la voiture est à l'arrêt)
   const rollBtn = document.getElementById('roll');
-  const refuelStop = (R.outOfFuel && R.pendingGear === 0);
-  rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || (R.pendingGear === 0 && !refuelStop));
-  rollBtn.textContent = refuelStop ? '⛽ FAIRE LE PLEIN' : (R.lightsDone ? '🎲 LANCER LE DÉ' : '🚦 Attends les feux…');
+  rollBtn.disabled = (R.phase !== 'gear' || R.animating || !R.lightsDone || R.pendingGear === 0);
+  rollBtn.textContent = R.lightsDone ? '🎲 LANCER LE DÉ' : '🚦 Attends les feux…';
 
   const rs = document.getElementById('btn-restart');
   if (rs) {
@@ -3313,16 +3278,6 @@ function rollDiceAnim(drsFace) {
   if (R.phase !== 'gear') return;
   if (R.animating) return;
 
-  // Cas spécial : panne sèche, rapport 0 atteint → faire le plein (pas de dé, la voiture est arrêtée)
-  if (R.outOfFuel && R.pendingGear === 0) {
-    R.gear = 0;
-    R.rolled = 0;
-    R.phase = 'pick';
-    // Résultat "sur place" : aucun déplacement, déclenche le plein dans finalizeMove
-    applyResult({ path: [], q: R.q, r: R.r, dir: R.dir, crash: false, finish: false, left: 0, lapsGained: 0 });
-    return;
-  }
-
   if (R.pendingGear === 0) return;
 
   // Zone DRS : le dernier dé n'est pas tiré, il affiche "DRS". Toutes ses faces
@@ -3341,22 +3296,7 @@ function rollDiceAnim(drsFace) {
   R.phase = 'rolling';
   R.gear = R.pendingGear;
 
-  // Consommation d'essence = nombre de dés = rapport engagé.
-  // Exception : en panne sèche (décélération forcée), la voiture roule sur sa réserve, sans consommer.
-  if (!R.outOfFuel && R.fuelEnabled) {
-    const before = R.fuel;
-    R.fuel = Math.max(0, R.fuel - R.gear);
-    if (R.fuel === 0 && R.gear > 0) {
-      // Panne sèche : à partir de maintenant, décélération forcée d'un rapport par tour
-      R.outOfFuel = true;
-      radio('outOfFuel');
-    } else if (R.fuelMax) {
-      const pctBefore = before / R.fuelMax, pctNow = R.fuel / R.fuelMax;
-      if (pctBefore > 0.15 && pctNow <= 0.15) radio('fuelCritical');
-      else if (pctBefore > 0.35 && pctNow <= 0.35) radio('fuelLow');
-      else if (R.gear >= 5 && Math.random() < 0.25) radio('highGear');
-    }
-  }
+  if (R.gear >= maxGear() - 1 && Math.random() < 0.25) radio('highGear');
 
   const ov = document.getElementById('dice-anim-overlay');
   const row = document.getElementById('dice-row');
@@ -3601,14 +3541,62 @@ function rollDiceAnim(drsFace) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
 
+      // Mémorise le jet TEL QU'AFFICHÉ (avant remise à zéro des styles) pour
+      // pouvoir le revoir à tout moment via la jauge DÉ.
+      R.lastRoll = {
+        title: titleEl.textContent,
+        row: row.innerHTML,
+        sum: sumEl.innerHTML,
+        fair: fairEl ? fairEl.textContent : '',
+        turn: R.turn + 1
+      };
+
       setTimeout(() => {
         ov.classList.remove('on');
         cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used'); });
         processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals);
         renderGears();   // rafraîchit le bouton/étiquette de réserve (consommée)
-      }, 1400);   // 900ms + 500ms : laisse le temps de lire le total et le message sous les dés (doublé/triplé, DRS, essais libres…)
+        syncDash();      // la jauge DÉ devient cliquable (relecture du jet)
+      }, 2000);   // 2 s : le temps de lire le total ET le message sous les dés (doublé/triplé, DRS, reprise…)
     }
   }, 120);
+}
+
+/* ── Relecture du dernier jet ────────────────────────────────────────────
+   Clic sur la jauge DÉ : réaffiche l'overlay tel qu'il était au moment du
+   lancer. Purement visuel — aucun dé n'est relancé, aucun état n'est touché.
+   Un clic n'importe où (ou Échap) referme. */
+function replayLastRoll() {
+  if (!R.lastRoll) { toast('Aucun jet à revoir pour l\'instant'); return; }
+  if (R.phase === 'rolling' || R.replayingDice) return;
+
+  const ov = document.getElementById('dice-anim-overlay');
+  document.getElementById('dice-title').textContent = '🔁 REVOIR · COUP ' + R.lastRoll.turn;
+  document.getElementById('dice-row').innerHTML = R.lastRoll.row;
+  document.getElementById('dice-sum').innerHTML = R.lastRoll.sum;
+  const fairEl = document.getElementById('dice-fair');
+  if (fairEl) {
+    fairEl.textContent = 'Appuie n\'importe où pour fermer' +
+      (R.lastRoll.fair ? ' · ' + R.lastRoll.fair : '');
+    fairEl.style.display = 'block';
+  }
+  R.replayingDice = true;
+  ov.classList.add('on');
+}
+
+function closeReplay() {
+  if (!R.replayingDice) return;
+  R.replayingDice = false;
+  document.getElementById('dice-anim-overlay').classList.remove('on');
+}
+
+document.getElementById('dice-anim-overlay').addEventListener('pointerdown', closeReplay);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReplay(); });
+
+const gDiceEl = document.getElementById('g-dice');
+if (gDiceEl) {
+  gDiceEl.title = 'Revoir le dernier jet';
+  gDiceEl.addEventListener('click', replayLastRoll);
 }
 
 // Combien de cases dégagées devant soi dans une direction donnée (max 8)
@@ -3831,26 +3819,17 @@ function buildRulesHTML() {
 
   '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--line);margin:20px 0 9px;font-weight:800">En savoir plus</div>' +
 
-  // L'essence n'est montrée que si CE circuit l'a activée — inutile d'expliquer
-  // une mécanique que l'organisateur n'utilise pas encore.
-  (typeof R !== 'undefined' && R && R.fuelEnabled ?
-    details('⛽ L\'essence',
-      'Si l\'organisateur l\'a activée, chaque dé lancé consomme 1 point : rouler en V6 coûte 6 points par coup, en V2 seulement 2.<br><br>' +
-      'À sec, c\'est la panne : tu descends d\'un rapport à chaque coup jusqu\'à l\'arrêt, puis le plein se fait tout seul et tu repars.<br><br>' +
-      'Quand la jauge affiche <b>∞ ILLIMITÉE</b>, l\'essence est désactivée sur ce circuit : roule comme tu veux.')
-    : '') +
-
   details('🎲 Détail des dés',
     '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
       '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
         '<th style="padding:5px 6px">RAPPORT</th><th style="padding:5px 6px">CASES</th><th style="padding:5px 6px">DÉS</th><th style="padding:5px 6px">INERTIE</th>' +
       '</tr>' + rows +
     '</table>' +
-    '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés est aussi le coût en essence et le niveau de recharge de l\'inertie.</div>') +
+    '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés engagés fixe aussi le niveau de recharge de l\'inertie.</div>') +
 
   details('💥 Sortie de piste',
     'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>.<br><br>' +
-    'Les coups déjà joués restent comptés et l\'essence n\'est pas rendue : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
+    'Les coups déjà joués restent comptés : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
 
   details('🔄 Recommencer la course',
     'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
@@ -4165,9 +4144,9 @@ document.getElementById('tuto-next').onclick = () => setTutoStep(TUTO.step + 1);
 
 function openRules() {
   const body = document.getElementById('rules-body');
-  // Pas de cache : les règles dépendent du circuit en cours (l'essence n'est
-  // affichée que si CE circuit l'a activée), donc on reconstruit à chaque
-  // ouverture plutôt que de figer un état obtenu lors du tout premier appui.
+  // Pas de cache : les règles dépendent du circuit en cours (mode Formula ou
+  // Rallye), donc on reconstruit à chaque ouverture plutôt que de figer un
+  // état obtenu lors du tout premier appui.
   if (body) body.innerHTML = buildRulesHTML();
   document.getElementById('rules-modal').style.display = 'flex';
   startTuto();
@@ -4492,6 +4471,16 @@ function applyResult(r) {
 function animStep() {
   if (!R.animating) return;
 
+  // La caméra reprend la main pendant le déplacement : si le joueur avait
+  // décalé la vue à la main, on la ramène en douceur sur la voiture pour
+  // qu'elle ne sorte jamais de l'écran.
+  if (R.panOffsetX || R.panOffsetY) {
+    R.panOffsetX *= 0.82;
+    R.panOffsetY *= 0.82;
+    if (Math.abs(R.panOffsetX) < 0.6) R.panOffsetX = 0;
+    if (Math.abs(R.panOffsetY) < 0.6) R.panOffsetY = 0;
+  }
+
   const speed = Math.max(2, 8 - R.gear);
   R.animT += speed * 0.06;
 
@@ -4501,6 +4490,11 @@ function animStep() {
 
     if (R.animIdx >= R.animPath.length) {
       R.animating = false;
+      // Recentrée sur la voiture : le décalage manuel a été résorbé pendant
+      // le déplacement, il ne doit pas ressurgir au coup suivant.
+      R.panOffsetX = 0;
+      R.panOffsetY = 0;
+      R.userPanned = false;
       finalizeMove(R.animResult);
       return;
     }
@@ -4569,7 +4563,8 @@ function finalizeMove(r) {
   // Vitesse réelle (affichée dans le speedomètre) — on prend le budget de la
   // trajectoire réellement choisie (utile en zone DRS : plusieurs totaux
   // étaient possibles, R.rolled ne reflète que le plus grand d'entre eux).
-  const maxDice = DICE[R.gear] ? DICE[R.gear][1] : 1;
+  const DB = diceBounds();
+  const maxDice = DB[R.gear] ? DB[R.gear][1] : 1;
   const usedBudget = (r.budgetUsed != null) ? r.budgetUsed : R.rolled;
   R.currentKmh = Math.round(GEAR_KMH[R.gear] * (usedBudget / maxDice));
 
@@ -4655,7 +4650,7 @@ function finalizeMove(r) {
 
   // Crash → réapparition au dernier checkpoint franchi (ou au départ), à l'arrêt.
   // Aucun avantage : toute la distance parcourue depuis le checkpoint est perdue,
-  // les coups déjà dépensés restent comptés, et l'essence n'est pas rendue.
+  // les coups déjà dépensés restent comptés.
   if (r.crash) {
     const cp = R.lastCP || { q: R.q, r: R.r, dir: R.dir, lapCount: 0, leftFinishZone: isRallye(), cpTimes: [], index: -1 };
 
@@ -4706,13 +4701,7 @@ function finalizeMove(r) {
 
   // Mouvement normal
 
-  // Panne sèche : si on vient de retomber au rapport 0, le plein est fait → on repart plein
-  if (R.outOfFuel && R.gear === 0) {
-    R.outOfFuel = false;
-    R.fuel = R.fuelMax;
-    say('⛽ Plein effectué ! Réservoir plein, tu peux repartir.', 'go');
-    radio('refuel');
-  } else if (r.lapsGained) {
+  if (r.lapsGained) {
     const remaining = R.targetLaps - R.lapCount;
     if (remaining === 1) { showLapFlag('DERNIER TOUR', null); radio('lastLap'); }
     else if (remaining > 1) showLapFlag('TOUR ' + (R.lapCount + 1), 'sur ' + R.targetLaps);
@@ -4720,7 +4709,7 @@ function finalizeMove(r) {
   } else {
     say('Trajectoire validée.');
   }
-  R.pendingGear = R.outOfFuel ? Math.max(0, R.gear - 1) : R.gear;
+  R.pendingGear = R.gear;
   R.rolled = null;
   R.budget = null;
   R.results = null;
@@ -5239,12 +5228,33 @@ function drawRace() {
   const size = Math.min(cw, ch);   // échelle de zoom basée sur la plus petite dimension
 
   const vp = getRaceViewport();
-  const speedZoom = 1 - (R.gear / 6) * 0.1;
-  const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
+
+  // Portée de vue LISSÉE : sans ça, le passage "choix de trajectoire" (vue
+  // large) -> "déplacement" (vue serrée) provoquait un saut de zoom brutal.
+  // On interpole vers la cible, et on redemande une frame tant que ce n'est
+  // pas stabilisé (pendant l'animation, animStep s'en charge déjà).
+  if (R.camSpan == null || !isFinite(R.camSpan)) R.camSpan = vp.span;
+  const dSpan = vp.span - R.camSpan;
+  if (Math.abs(dSpan) < 0.02) {
+    R.camSpan = vp.span;
+  } else {
+    R.camSpan += dSpan * 0.22;
+    if (!R.animating && !R._camRaf) {
+      R._camRaf = requestAnimationFrame(() => { R._camRaf = 0; drawRace(); });
+    }
+  }
+
+  const speedZoom = 1 - (R.gear / maxGear()) * 0.1;
+  const hexSize = (size / R.camSpan) * R.zoomLevel * speedZoom;
   // Centrer la caméra sur la VOITURE (position animée en cours de déplacement),
   // pas sur le coin du viewport — la voiture reste toujours au milieu de l'écran.
   const camPos = getAnimCarPos();
   const centerOff = axialToPixel(camPos.q, camPos.r, hexSize);
+
+  // Mémorisé pour que le clic utilise EXACTEMENT le même référentiel que le
+  // rendu (sinon, avec le zoom lissé, les clics tombent à côté).
+  R._camHexSize = hexSize;
+  R._camPos = camPos;
 
   // Screen shake
   let shX = 0, shY = 0;
@@ -5815,12 +5825,18 @@ cv.addEventListener('pointerdown', (e) => {
   // Échelles X et Y SÉPARÉES : le canvas n'est pas forcément carré
   const sx = rect.width ? (cw / rect.width) : 1;
   const sy = rect.height ? (ch / rect.height) : 1;
-  const size = Math.min(cw, ch);   // même base d'échelle que drawRace
-  const vp = getRaceViewport();
-  const speedZoom = 1 - (R.gear / 6) * 0.1;
-  const hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
-  // IMPORTANT : même référentiel que drawRace (centré sur la voiture), sinon les clics tombent à côté
-  const camPos = getAnimCarPos();
+  // IMPORTANT : on réutilise TELS QUELS l'échelle et le centre du dernier
+  // rendu. Les recalculer ici les désynchroniserait du zoom lissé et les clics
+  // tomberaient à côté.
+  const size = Math.min(cw, ch);
+  let hexSize = R._camHexSize;
+  let camPos = R._camPos;
+  if (!hexSize || !camPos) {
+    const vp = getRaceViewport();
+    const speedZoom = 1 - (R.gear / maxGear()) * 0.1;
+    hexSize = (size / vp.span) * R.zoomLevel * speedZoom;
+    camPos = getAnimCarPos();
+  }
   const co = axialToPixel(camPos.q, camPos.r, hexSize);
 
   const clickX = (e.clientX - rect.left) * sx + co.x - R.panOffsetX - cw / 2;
@@ -5969,9 +5985,6 @@ function newCircuit() {
   const _ccg = document.getElementById('c-counts-global'); if (_ccg) _ccg.checked = true;
   const _cdl = document.getElementById('c-daily'); if (_cdl) _cdl.checked = false;
   document.getElementById('c-mult').value = 10;
-  document.getElementById('c-fuel').value = 0;
-  document.getElementById('c-fuel-on').checked = true;
-  toggleFuelFields();
   document.getElementById('btn-delete').style.display = 'none';
   document.getElementById('btn-unpublish').style.display = 'none';
   document.getElementById('scores-panel').style.display = 'none';
@@ -6061,9 +6074,6 @@ async function loadForEdit(id) {
     document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
   const _rgd2 = document.getElementById('c-regen-dice'); if (_rgd2) _rgd2.checked = false;
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
-    document.getElementById('c-fuel').value = c.fuelCapacity || 0;
-    document.getElementById('c-fuel-on').checked = (c.fuelEnabled !== false);
-    toggleFuelFields();
     document.getElementById('btn-delete').style.display = 'block';
     document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
     updateTestLinkBtn();
@@ -6071,7 +6081,6 @@ async function loadForEdit(id) {
     resetView();
     drawEditor();
     loadScores();
-    updateFuelHint();
     toast('Circuit chargé');
   } catch (e) {
     toast('Erreur : ' + e.message);
@@ -6171,25 +6180,6 @@ async function loadScores() {
 
 document.getElementById('btn-reload-scores').onclick = loadScores;
 
-// Indicateur : montre ce que donne le mode automatique sur le circuit courant
-function updateFuelHint() {
-  const hint = document.getElementById('fuel-hint');
-  if (!hint || !E.grid) return;
-  const rows = E.grid.map(r => r.join(''));
-  const laps = parseInt(document.getElementById('c-laps').value) || 1;
-  const auto = autoFuelCapacity({ rows: rows, laps: laps });
-  const manual = parseInt(document.getElementById('c-fuel').value) || 0;
-  const used = manual > 0 ? manual : auto;
-  hint.textContent = 'Auto = ' + auto + ' pts · utilisé : ' + used +
-    ' → ~' + Math.floor(used / 6) + ' lancers en V6 ou ~' + Math.floor(used / 3) + ' en V3';
-}
-function toggleFuelFields() {
-  const on = document.getElementById('c-fuel-on').checked;
-  document.getElementById('fuel-fields').style.display = on ? 'block' : 'none';
-}
-document.getElementById('c-fuel-on').onchange = toggleFuelFields;
-document.getElementById('c-fuel').oninput = updateFuelHint;
-document.getElementById('c-laps').addEventListener('input', updateFuelHint);
 
 // Bascule Formula / Rallye dans l'éditeur. Une spéciale rallye est point à
 // point : un seul passage, donc le champ "Tours" n'a plus de sens et les
@@ -6218,7 +6208,7 @@ function syncModeUI() {
 }
 const modeSelEl = document.getElementById('c-mode');
 if (modeSelEl) {
-  modeSelEl.addEventListener('change', () => { syncModeUI(); updateFuelHint(); });
+  modeSelEl.addEventListener('change', syncModeUI);
   syncModeUI();
 }
 
@@ -6726,7 +6716,6 @@ document.getElementById('btn-generate').onclick = () => {
 
   document.getElementById('car-rotate').classList.remove('on');
   centerOnCircuit();
-  if (typeof updateFuelHint === 'function') updateFuelHint();
 
   let cells = 0;
   for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') cells++;
@@ -7197,7 +7186,6 @@ document.getElementById('btn-import-confirm').onclick = () => {
 
   centerOnCircuit();
   drawEditor();
-  if (typeof updateFuelHint === 'function') updateFuelHint();
 
   const cells = comp.size;
   toast(cells < 60
@@ -7316,8 +7304,8 @@ document.getElementById('btn-test-mode').onclick = () => {
     regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
     dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
-    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
-    fuelEnabled: document.getElementById('c-fuel-on').checked
+    fuelCapacity: 0,
+    fuelEnabled: false
   }, 'TesteurAdmin', 99, true);
 };
 
@@ -7716,8 +7704,8 @@ async function saveCircuit(publish) {
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
     dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
     pointsMultiplier: parseInt(document.getElementById('c-mult').value) || 10,
-    fuelCapacity: parseInt(document.getElementById('c-fuel').value) || 0,
-    fuelEnabled: document.getElementById('c-fuel-on').checked,
+    fuelCapacity: 0,
+    fuelEnabled: false,
     published: (publish !== undefined) ? publish : E.published
   };
 
