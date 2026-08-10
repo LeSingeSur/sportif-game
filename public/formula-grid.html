@@ -3135,15 +3135,18 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
       for (const s of fixedCombos) for (const f of faces) next.push(s + f);
       fixedCombos = next;
     }
-    // Jets de dV1 : même nombre de jets que le lancer normal, mais chaque jet
-    // choisit librement sa face — un doublé/triplé reste toujours atteignable.
+    // Jets de dV1 : UN SEUL des nJets jets compte dans le total — exactement
+    // comme le lancer normal, où on retient le meilleur des nJets essais, PAS
+    // leur somme (nJets jets ne sont pas nJets dés à additionner, ce sont
+    // nJets tentatives dont une seule sert de résultat). Le libre choix du
+    // turbo porte sur LA FACE de ce jet retenu.
+    // Le doublé/triplé reste calculé sur nJets : comme les faces sont libres,
+    // aligner 2 ou 3 jets sur la même valeur est TOUJOURS possible en turbo
+    // (il suffit de répéter le même choix), donc le bonus max est
+    // systématiquement disponible, quelle que soit la face retenue.
     const v1Faces = [...new Set(DS[0])];
-    let v1Combos = [[]];
-    for (let k = 0; k < nJets; k++) {
-      const next = [];
-      for (const combo of v1Combos) for (const f of v1Faces) next.push(combo.concat([f]));
-      v1Combos = next;
-    }
+    const maxJetBonus = nJets >= 3 ? 2 : (nJets >= 2 ? 1 : 0);
+    const v1Options = applyJetBonus(v1Faces, maxJetBonus);
     // Dé de reprise : PAS de libre choix — 2 options seulement (frais ou
     // repris), comme un lancer normal, car déjà tiré au tour précédent.
     const bankOptions = hasReprise
@@ -3152,11 +3155,8 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
       : [0];
     const out = new Set();
     for (const fixed of fixedCombos) {
-      for (const v1c of v1Combos) {
-        const v1Sum = v1c.reduce((a, b) => a + b, 0);
-        const bonus = jetBonusRange(v1c);
-        const withBonus = applyJetBonus([v1Sum], bonus);
-        for (const bkv of bankOptions) for (const wb of withBonus) out.add(fixed + wb + bkv);
+      for (const v1v of v1Options) {
+        for (const bkv of bankOptions) out.add(fixed + v1v + bkv);
       }
     }
     return [...out].filter(t => t >= 1).sort((a, b) => a - b);
@@ -3584,17 +3584,16 @@ function rollDiceAnim(drsFace) {
           for (const s of fixedCombos) for (const f of faces) next.push(s + f);
           fixedCombos = next;
         }
-        // Jets de dV1 : même NOMBRE de jets que le lancer normal (nJets), mais
-        // chaque jet choisit librement sa face — un doublé/triplé reste
-        // possible (et même toujours atteignable) en choisissant la même face
-        // plusieurs fois, exactement comme un lancer normal chanceux.
+        // Jets de dV1 : UN SEUL des nJets jets compte dans le total — comme le
+        // lancer normal, où on retient le meilleur des nJets essais, PAS leur
+        // somme. Le libre choix du turbo porte sur LA FACE de ce jet retenu.
+        // Le doublé/triplé reste calculé sur nJets : les faces étant libres,
+        // aligner 2 ou 3 jets sur la même valeur est TOUJOURS possible en
+        // turbo (il suffit de répéter le même choix), donc le bonus max est
+        // systématiquement disponible, quelle que soit la face retenue.
         const v1Faces = [...new Set(diceSet()[0])];
-        let v1Combos = [[]];
-        for (let k = 0; k < nJets; k++) {
-          const next = [];
-          for (const combo of v1Combos) for (const f of v1Faces) next.push(combo.concat([f]));
-          v1Combos = next;
-        }
+        const maxJetBonus = nJets >= 3 ? 2 : (nJets >= 2 ? 1 : 0);
+        const v1Options = applyJetBonus(v1Faces, maxJetBonus);
         // Dé de reprise : AUCUN libre choix — 2 options seulement, identiques
         // à un lancer normal (frais ou repris), car il a déjà été tiré au
         // tour précédent.
@@ -3602,17 +3601,12 @@ function rollDiceAnim(drsFace) {
           ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
           : [0];
         const out = new Set();
-        let maxBonus = 0;
         for (const fixed of fixedCombos) {
-          for (const v1c of v1Combos) {
-            const v1Sum = v1c.reduce((a, b) => a + b, 0);
-            const bonus = jetBonusRange(v1c);
-            if (bonus > maxBonus) maxBonus = bonus;
-            const withBonus = applyJetBonus([v1Sum], bonus);
-            for (const bkv of bankOptions) for (const wb of withBonus) out.add(fixed + wb + bkv);
+          for (const v1v of v1Options) {
+            for (const bkv of bankOptions) out.add(fixed + v1v + bkv);
           }
         }
-        jetBonus = maxBonus;
+        jetBonus = maxJetBonus;
         altTotals = [...out].filter(t => t >= 1).sort((a, b) => a - b);
       } else if (isV1Choice || bankIdx >= 0) {
         // `base` contient déjà le 1er jet de dV1 + tous les dés fixes (ceux qui
