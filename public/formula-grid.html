@@ -2179,13 +2179,16 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // peut mettre de côté le dé du rapport supérieur (celui qu'il gagnerait en
   // montant). Quand il engage vraiment ce rapport, plus tard, ce dé mis en
   // réserve est confronté à un dé fraîchement tiré : le meilleur des deux compte.
-  R.bankedDie = null;   // { value, targetGear }
+  // { value, targetGear, turbo } — turbo:true = venu d'un coup TURBO : aucune
+  // valeur figée à l'avance, choix libre parmi TOUTE la plage au moment de la
+  // récupérer (voir bankTurboFree plus bas).
+  R.bankedDie = null;
 
-  // Turbo : la face du dé du rapport SUPÉRIEUR (celui qui partira en reprise
-  // au coup suivant) est choisie par le joueur au lieu d'être imposée par la
-  // grille. { targetGear, dieIndex, faces, value }
-  R.turboBankPick = null;
-
+  // Vrai si CE coup vient d'utiliser le turbo — lu en fin de coup par
+  // snapshotNextGearDie() pour savoir si le dé du rapport supérieur mis en
+  // réserve doit rester une case "turbo" (choix libre au tour où on le
+  // récupère) ou une réserve automatique classique (valeur de grille).
+  R.turboThisMove = false;
 
   // Dernier lancer rejouable (clic sur la jauge DÉ)
   R.lastRoll = null;
@@ -2659,7 +2662,7 @@ function renderGears() {
     el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>' +
       (range ? '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' + range + '</i>' : '') +
       (R.bankedDie && R.bankedDie.targetGear === g ? '<i style="font-style:normal;font-size:8px;color:' +
-        (R.bankedDie.turbo ? '#ff9f43' : '#4aa3ff') + '">📥' + R.bankedDie.value + '</i>' : '');
+        (R.bankedDie.turbo ? '#ff9f43' : '#4aa3ff') + '">📥' + (R.bankedDie.turbo ? '🔥' : R.bankedDie.value) + '</i>' : '');
 
     if (reach && R.phase === 'gear') {
       el.onclick = () => {
@@ -2690,35 +2693,12 @@ function renderGears() {
     hg.appendChild(tb);
   }
 
-  // TURBO — choix de la face du dé qui partira en reprise. Seul moment du jeu
-  // où le joueur décide d'un dé qui ne bouge PAS la voiture ce coup-ci : il
-  // arme le coup suivant. Visible entre le lancer turbo et la validation du
-  // déplacement ; la face haute est présélectionnée pour que l'ignorer ne
-  // pénalise pas.
+  // Le dé du rapport supérieur marqué "reprise turbo" ne demande plus de
+  // choix ici : la face reste ouverte jusqu'à sa récupération (voir
+  // bankTurboFree dans rollDiceAnim). Rien à afficher entre le lancer turbo
+  // et la validation du déplacement.
   const pickWrap = document.getElementById('turbo-bank-pick');
-  if (pickWrap) {
-    const P = R.turboBankPick;
-    if (P && R.phase !== 'rolling') {
-      pickWrap.style.display = 'flex';
-      pickWrap.innerHTML = '<span style="font-size:9px;color:#ff9f43;letter-spacing:.5px;font-weight:800">' +
-        '🔥 REPRISE V' + P.targetGear + '</span>';
-      P.faces.forEach(f => {
-        const b = document.createElement('div');
-        b.textContent = f;
-        const on = (P.value === f);
-        b.style.cssText = 'width:24px;height:24px;border-radius:6px;cursor:pointer;' +
-          'display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;' +
-          'font-weight:900;font-size:12px;border:2px solid #ff9f43;' +
-          (on ? 'background:#ff9f43;color:#12141a' : 'background:var(--panel);color:#ff9f43;opacity:.55');
-        b.title = 'Mettre le ' + f + ' en reprise pour V' + P.targetGear;
-        b.onclick = () => { P.value = f; renderGears(); };
-        pickWrap.appendChild(b);
-      });
-    } else {
-      pickWrap.style.display = 'none';
-      pickWrap.innerHTML = '';
-    }
-  }
+  if (pickWrap) { pickWrap.style.display = 'none'; pickWrap.innerHTML = ''; }
 
   // Dé de reprise : mini-case passive, ENTIÈREMENT AUTOMATIQUE (aucun bouton,
   // aucune phrase à lire — juste le chiffre actuellement en reprise).
@@ -2728,10 +2708,12 @@ function renderGears() {
     if (R.bankedDie) {
       const tc = R.bankedDie.turbo ? '#ff9f43' : '#4aa3ff';
       bankTag.style.display = 'flex';
-      bankMini.textContent = R.bankedDie.value;
+      // Une reprise TURBO n'a pas de valeur tant qu'elle n'est pas récupérée
+      // (choix libre à ce moment-là) — on affiche 🔥 plutôt qu'un chiffre.
+      bankMini.textContent = R.bankedDie.turbo ? '🔥' : R.bankedDie.value;
       bankMini.style.borderColor = tc;
       bankMini.style.color = tc;
-      bankMini.title = (R.bankedDie.turbo ? 'Dé de reprise TURBO (face choisie) pour V' : 'Dé de reprise pour V') +
+      bankMini.title = (R.bankedDie.turbo ? 'Dé de reprise TURBO (choix libre à la récupération) pour V' : 'Dé de reprise pour V') +
         R.bankedDie.targetGear;
     } else {
       bankTag.style.display = 'none';
@@ -3155,16 +3137,16 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
   const top = maxGear();
   const hasReprise = prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2;
   const bankIdx = hasReprise ? prevGear : -1;   // = gear - 1
-  // bankFace > 0 : la reprise vient d'un dé TURBO choisi au coup précédent —
-  // valeur fixe, aucun tirage frais ne vient plus la contester (cf. moteur réel).
-  // bankFace === 0 (ou absent) : reprise automatique classique, dérivée de la
-  // grille (frais vs banque, comme avant).
-  const bankIsFixed = hasReprise && bankFace > 0;
+  // bankTurboOrigin = true : la reprise vient d'un coup TURBO — aucune valeur
+  // n'a jamais été figée, le choix reste ENTIER (toute la plage de faces)
+  // jusqu'au moment où on la récupère. bankTurboOrigin = false : réserve
+  // automatique classique, dérivée de la grille (frais vs banque, comme avant).
+  const bankTurboOrigin = hasReprise && bankFace === 1;
   // La moitié "fraîche" d'une reprise entrante non figée se joue MAINTENANT :
   // sous turbo, elle est donc libre comme n'importe quel autre dé engagé.
-  // bankIsFixed (reprise déjà figée par un turbo précédent) et turboNow ne
-  // peuvent jamais coexister — un seul turbo par course.
-  const bankFreeTurbo = turboNow && hasReprise && !bankIsFixed;
+  // bankTurboOrigin et turboNow s'ajoutent (l'un ou l'autre suffit à rendre
+  // ce dé pleinement libre).
+  const bankFreeTurbo = hasReprise && (bankTurboOrigin || turboNow);
 
   if (drsNatural) {
     let sums = [0];
@@ -3198,10 +3180,9 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
     const v1Faces = [...new Set(DS[0])];
     const maxJetBonus = nJets >= 3 ? 2 : (nJets >= 2 ? 1 : 0);
     const v1Options = applyJetBonus(v1Faces, maxJetBonus);
-    // Dé de reprise : déjà fondu dans fixedCombos ci-dessus s'il est libre ce
-    // coup-ci (bankFreeTurbo) — neutre ici pour éviter un double comptage.
-    // Sinon (reprise figée par un turbo précédent), valeur fixe.
-    const bankOptions = bankIsFixed ? [bankFace] : [0];
+    // Dé de reprise : déjà fondu dans fixedCombos ci-dessus (toujours libre
+    // sous turbo) — neutre ici pour éviter un double comptage.
+    const bankOptions = [0];
     const out = new Set();
     for (const fixed of fixedCombos) {
       for (const v1v of v1Options) {
@@ -3228,7 +3209,8 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
     ? Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo))
     : [];
   const bonusRange = jetBonusRange(jetRaw);
-  const bankOptions = bankIsFixed ? [bankFace]
+  const bankOptions = bankFreeTurbo
+    ? [...new Set(DS[bankIdx])]
     : hasReprise
     ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
                     dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
@@ -3302,20 +3284,16 @@ async function solveCircuit(opts) {
               const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
               const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
               const nTUsed = useTurbo ? 1 : tUsed;
-              // Prochaine face en reprise (dé du rapport g+1) : si CE coup est
-              // en turbo et qu'un rapport supérieur existe, le joueur choisit
-              // librement la face (une branche par face possible, fixée pour
-              // la reprise du coup suivant, sans tirage frais concurrent).
-              // Sinon, reprise automatique classique (bankFace=0, dérivée de
-              // la grille par solverTotals le moment venu).
-              const nextBankFaces = (useTurbo && g < maxGear())
-                ? [...new Set(diceSet()[g])]
-                : [0];
-              for (const nbf of nextBankFaces) {
-                const nk = enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
-                                nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
-                if (!next.has(nk)) next.set(nk, { prev: key, gear: g, tot: tot, turbo: useTurbo });
-              }
+              // Prochaine reprise (dé du rapport g+1) : si CE coup est en
+              // turbo et qu'un rapport supérieur existe, elle est marquée
+              // "turbo" (bankFlag=1) — aucune valeur figée, choix libre sur
+              // toute la plage au moment où solverTotals la consommera.
+              // Sinon, reprise automatique classique (bankFlag=0, dérivée de
+              // la grille le moment venu).
+              const nbf = (useTurbo && g < maxGear()) ? 1 : 0;
+              const nk = enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
+                              nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
+              if (!next.has(nk)) next.set(nk, { prev: key, gear: g, tot: tot, turbo: useTurbo });
             }
           }
         }
@@ -3351,10 +3329,9 @@ async function solveCircuit(opts) {
     R.leftFinishZone = !!leftF; R.gear = st.gear;
     const nextKey = (i + 1 < chain.length) ? chain[i + 1].key : null;
     let chosen = null;
-    // Mêmes candidats de bankFace que dans la boucle de recherche (une face
-    // par branche turbo possible), pour retrouver EXACTEMENT la clé stockée.
-    const nextBankFaces = (st.turbo && st.gear < maxGear())
-      ? [...new Set(diceSet()[st.gear])] : [0];
+    // Même règle que dans la boucle de recherche : bankFlag=1 si ce coup est
+    // en turbo et qu'un rapport supérieur existe, sinon 0.
+    const nbf = (st.turbo && st.gear < maxGear()) ? 1 : 0;
     for (const res of getValidPaths(q, r, dir, st.tot, st.gear, lap, targetLaps)) {
       if (res.crash) continue;
       if (nextKey === null) { if (res.finish) { chosen = res; break; } continue; }
@@ -3362,13 +3339,9 @@ async function solveCircuit(opts) {
       const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
       const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
       const nTUsed = st.turbo ? 1 : Number(st.key.split('|')[9]);
-      let matched = false;
-      for (const nbf of nextBankFaces) {
-        const k = enc([res.q, res.r, res.dir, res.inertiaEnd, st.gear, lap + res.lapsGained,
-                       nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
-        if (k === nextKey) { matched = true; break; }
-      }
-      if (matched) { chosen = res; break; }
+      const k = enc([res.q, res.r, res.dir, res.inertiaEnd, st.gear, lap + res.lapsGained,
+                     nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
+      if (k === nextKey) { chosen = res; break; }
     }
     moves.push({
       n: i + 1, gear: st.gear, total: st.tot, turbo: !!st.turbo,
@@ -3390,21 +3363,24 @@ async function solveCircuit(opts) {
 }
 
 function snapshotNextGearDie() {
-  const pick = R.turboBankPick;
-  R.turboBankPick = null;               // la fenêtre de choix se referme avec le coup
+  const wasTurbo = !!R.turboThisMove;
+  R.turboThisMove = false;              // la fenêtre se referme avec le coup
   if (R.gear < 1 || R.gear >= maxGear() || R.isWarmup) { return; }
   const targetGear = R.gear + 1;
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
   const moveNo = R.turn;                // le coup qui vient de se conclure
   if (moveNo < 1) { return; }           // avant le tout premier coup, rien à retenir
-  // TURBO : ce dé-là aussi est un dé turbo. Sa face n'est pas tirée dans la
-  // grille commune, c'est le joueur qui la choisit pendant le coup de turbo —
-  // en aveugle, puisqu'il ne connaîtra le tirage frais adverse qu'au coup
-  // suivant. Sans choix explicite, on retient la face haute par défaut.
-  const turboChosen = !!(pick && pick.targetGear === targetGear && pick.value != null);
-  const value = turboChosen ? pick.value
-                            : dieValue(diceSet()[dieIndex], targetGear, dieIndex, moveNo);
-  R.bankedDie = { value, targetGear, turbo: turboChosen };
+  if (wasTurbo) {
+    // TURBO : ce dé-là est lui aussi un dé turbo — mais SANS valeur figée à
+    // l'avance. Le choix de face reste ouvert, exactement comme n'importe
+    // quel dé engagé sous turbo ; il se fait au moment où ce dé est
+    // effectivement récupéré (rapport suivant réellement engagé), avec toute
+    // la plage de faces possibles — pas une valeur pariée en aveugle.
+    R.bankedDie = { targetGear, turbo: true };
+    return;
+  }
+  const value = dieValue(diceSet()[dieIndex], targetGear, dieIndex, moveNo);
+  R.bankedDie = { value, targetGear, turbo: false };
 }
 
 function rollDiceAnim(drsFace) {
@@ -3479,21 +3455,12 @@ function rollDiceAnim(drsFace) {
   // turbo garde le dé de reprise à part, hors du libre choix.
   const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !drsNatural)
     ? R.gear - 1 : -1;
-  // Un dé mis en reprise via TURBO a déjà été choisi délibérément (pas tiré) :
-  // le récupérer ne le remet PAS en jeu face à un tirage frais, il reste
-  // exactement la valeur choisie. Seul un dé de reprise automatique (non
-  // turbo) garde le duel frais/repris classique.
-  const bankForced = bankIdx >= 0 && !!(R.bankedDie && R.bankedDie.turbo);
-  // Le dé de reprise ENTRANT (celui qui arrive à échéance ce coup-ci) n'a
-  // JAMAIS été tiré à l'avance quand il vient d'une réserve automatique
-  // classique (non turbo) — seule sa moitié "frais" se joue MAINTENANT. Si
-  // CE coup est lui-même en turbo, cette moitié fraîche doit donc être aussi
-  // librement choisissable que n'importe quel autre dé engagé ce coup-ci :
-  // rien ne justifie de la bloquer sur 2 valeurs pendant que tout le reste
-  // est libre. bankForced (reprise déjà figée par un turbo précédent) reste
-  // seule exception : elle a déjà consommé le tour turbo de la course, elle
-  // ne peut donc jamais coexister avec turboNow.
-  const bankFreeTurbo = turboNow && bankIdx >= 0 && !bankForced;
+  // Un dé mis en reprise via TURBO n'a JAMAIS de valeur figée à l'avance : le
+  // choix reste ouvert jusqu'au moment où on le récupère, avec toute la plage
+  // de faces possibles — que CE coup soit lui-même en turbo ou un lancer tout
+  // simple. Seule une réserve automatique classique (non turbo) garde le
+  // duel "frais vs repris" à 2 options.
+  const bankTurboFree = bankIdx >= 0 && (!!(R.bankedDie && R.bankedDie.turbo) || turboNow);
   const twinFacesV1 = isV1Choice ? diceSet()[0] : null;
   const twinFacesBank = (bankIdx >= 0 && bankIdx !== 0) ? diceSet()[bankIdx] : null;
 
@@ -3574,16 +3541,12 @@ function rollDiceAnim(drsFace) {
       // proposé d'un coup sous forme de trajectoires distinctes — beaucoup de
       // possibilités, mais toujours dans la plage officielle du rapport.
       const moveNo = R.turn + 1;
-      // TURBO — dé de reprise : le dé du rapport SUPÉRIEUR (index R.gear) est
-      // lui aussi tiré et affiché à chaque coup, mais il ne sert pas ce coup-ci.
-      // En turbo, sa face devient choisissable comme toutes les autres : c'est
-      // elle qui partira en reprise et qui sera confrontée au tirage frais au
-      // coup suivant. Choix en aveugle (le tirage frais n'est pas encore connu),
-      // donc viser bas reste parfois le bon calcul.
+      // TURBO — dé de reprise : ce coup marque le rapport supérieur (R.gear+1)
+      // comme "reprise turbo" pour plus tard. Pas de valeur choisie ici, en
+      // aveugle — le choix de face reste ENTIER et se fera librement au
+      // moment où ce dé sera vraiment récupéré (rapport suivant engagé).
       if (turboNow && R.gear < maxGear() && !R.isWarmup) {
-        const bf = [...new Set(diceSet()[R.gear])].sort((a, b) => a - b);
-        R.turboBankPick = { targetGear: R.gear + 1, dieIndex: R.gear, faces: bf,
-                            value: bf[bf.length - 1] };
+        R.turboThisMove = true;
       }
       // drsAll : Cartésien pur (chaque dé = 1 valeur libre) — DRS naturel
       // UNIQUEMENT. Le turbo ne passe plus par ici (voir plus bas).
@@ -3603,48 +3566,33 @@ function rollDiceAnim(drsFace) {
           c.style.borderColor = '#b464ff';
           return;
         }
-        // Dé de reprise : JAMAIS en libre choix, même en turbo — il a déjà été
-        // tiré (ou choisi) au tour précédent. S'il vient d'un tirage normal,
-        // ses 2 options (frais/repris) sont recalculées juste après dans
-        // altTotals, et on affiche ici le tirage frais réel. S'il vient d'un
-        // TURBO (bankForced), il n'y a plus de frais à afficher — le tirage
-        // frais n'a plus aucune influence sur le total (cf. altTotals), donc
-        // le montrer serait trompeur ("pourquoi ce chiffre ne compte pas ?").
-        // On affiche directement la valeur figée, avec le style turbo pour que
-        // ce soit visuellement cohérent avec le message "reprise turbo".
+        // Dé de reprise entrant : soit une réserve automatique classique
+        // (jamais tirée à l'avance, sa moitié "frais" se joue MAINTENANT —
+        // confrontée au choix repris), soit une reprise TURBO, qui n'a de
+        // toute façon jamais eu de valeur figée : choix libre sur toute la
+        // plage, ici comme à n'importe quel autre coup.
         if (i === bankIdx) {
-          if (bankFreeTurbo) {
-            // La moitié "fraîche" de cette reprise SE JOUE ce coup-ci — sous
-            // turbo, elle est donc libre comme tous les autres dés engagés.
-            // La case jumelle continue d'afficher, pour info seulement,
-            // l'ancienne valeur déjà en réserve (dépassée par le libre choix).
+          if (bankTurboFree) {
             c.textContent = '🔥';
             c.classList.add('turbo-picked');
             c.style.borderColor = '#ff9f43';
             if (extraCubesBank[0]) {
-              extraCubesBank[0].classList.add('bank-used');
-              extraCubesBank[0].style.borderColor = '#4aa3ff';
-              extraCubesBank[0].textContent = R.bankedDie.value;
-              extraCubesBank[0].title = 'Valeur déjà en réserve (dépassée par le choix libre)';
+              extraCubesBank[0].classList.add('turbo-picked');
+              extraCubesBank[0].style.borderColor = '#ff9f43';
+              extraCubesBank[0].textContent = '🔥';
             }
             return;
           }
-          if (bankForced) {
-            c.textContent = R.bankedDie.value;
-            c.classList.add('bank-used', 'turbo-picked');
-            c.style.borderColor = '#ff9f43';
-          } else {
-            const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
-            c.textContent = fresh;
-            c.classList.add('bank-used');
-            c.style.borderColor = '#4aa3ff';
-          }
-          // NE PAS ajouter à `base` ici : le total exact (reprise OU frais,
-          // ou reprise figée) est recalculé juste après, dans altTotals —
-          // l'ajouter ici le compterait deux fois.
+          const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
+          c.textContent = fresh;
+          c.classList.add('bank-used');
+          c.style.borderColor = '#4aa3ff';
+          // NE PAS ajouter à `base` ici : le total exact (reprise OU frais)
+          // est recalculé juste après, dans altTotals — l'ajouter ici le
+          // compterait deux fois.
           if (extraCubesBank[0]) {
-            extraCubesBank[0].classList.add('bank-used', bankForced ? 'turbo-picked' : '');
-            extraCubesBank[0].style.borderColor = bankForced ? '#ff9f43' : '#4aa3ff';
+            extraCubesBank[0].classList.add('bank-used');
+            extraCubesBank[0].style.borderColor = '#4aa3ff';
             extraCubesBank[0].textContent = R.bankedDie.value;
           }
           return;
@@ -3667,16 +3615,10 @@ function rollDiceAnim(drsFace) {
           }
           return;
         }
-        // Dé du rapport supérieur sous turbo : affiché comme un dé turbo à
-        // part entière (il ne compte pas dans le total de CE coup, mais sa
-        // face est bel et bien choisie par le joueur).
-        if (R.turboBankPick && i === R.turboBankPick.dieIndex) {
-          c.textContent = '🔥';
-          c.classList.add('turbo-picked', 'bank-arm');
-          c.style.borderColor = '#ff9f43';
-          c.style.opacity = '1';
-          return;
-        }
+        // Le dé du rapport supérieur (celui que ce coup turbo marquera comme
+        // "reprise turbo" pour plus tard) n'est PAS engagé ce coup-ci : rien
+        // à choisir maintenant, il s'affiche normalement, comme n'importe
+        // quel dé inactif — le choix libre aura lieu à sa récupération.
         if (isV1Choice && i === 0) {
           const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
           c.textContent = d1;
@@ -3719,14 +3661,14 @@ function rollDiceAnim(drsFace) {
         }
         altTotals = [...new Set(sums)].sort((a, b) => a - b);
       } else if (turboNow) {
-        // Dés fixes engagés (ni dV1, ni reprise figée) : libre choix parmi
-        // TOUTES leurs faces, combinées entre elles (Cartésien). Le dé de
-        // reprise ENTRANT rejoint ce libre choix quand sa moitié "fraîche" se
-        // joue ce coup-ci (bankFreeTurbo) — seule une reprise déjà figée par
-        // un turbo précédent (bankForced) reste à part, plus bas.
+        // Dés fixes engagés (ni dV1, ni reprise) : libre choix parmi TOUTES
+        // leurs faces, combinées entre elles (Cartésien). Le dé de reprise
+        // ENTRANT rejoint TOUJOURS ce libre choix sous turbo (bankTurboFree
+        // est systématiquement vrai ici dès que bankIdx>=0, puisque turboNow
+        // en fait partie) — plus aucune valeur figée à part.
         let fixedCombos = [0];
         for (let i = 1; i < R.gear; i++) {
-          if (i === bankIdx && !bankFreeTurbo) continue;
+          if (i === bankIdx && !bankTurboFree) continue;
           const faces = [...new Set(diceSet()[i])];
           const next = [];
           for (const s of fixedCombos) for (const f of faces) next.push(s + f);
@@ -3742,13 +3684,9 @@ function rollDiceAnim(drsFace) {
         const v1Faces = [...new Set(diceSet()[0])];
         const maxJetBonus = nJets >= 3 ? 2 : (nJets >= 2 ? 1 : 0);
         const v1Options = applyJetBonus(v1Faces, maxJetBonus);
-        // Dé de reprise ENTRANT : déjà fondu dans fixedCombos ci-dessus s'il
-        // est libre ce coup-ci (bankFreeTurbo) — bankOptions reste alors
-        // neutre pour éviter de le compter deux fois. Sinon (reprise figée
-        // par un turbo précédent), aucun libre choix : valeur fixe.
-        const bankOptions = (bankIdx >= 0 && !bankFreeTurbo)
-          ? [R.bankedDie.value]
-          : [0];
+        // Dé de reprise ENTRANT : déjà fondu dans fixedCombos ci-dessus —
+        // bankOptions reste neutre pour éviter de le compter deux fois.
+        const bankOptions = [0];
         const out = new Set();
         for (const fixed of fixedCombos) {
           for (const v1v of v1Options) {
@@ -3775,8 +3713,9 @@ function rollDiceAnim(drsFace) {
           ? [...new Set(jetRaw)]
           : [0];
         const bankOptions = (bankIdx >= 0)
-          ? (bankForced ? [R.bankedDie.value]
-                        : [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])])
+          ? (bankTurboFree
+              ? [...new Set(diceSet()[bankIdx])]
+              : [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])])
           : [0];
         const out = [];
         for (const j of jetOptions) for (const bkv of bankOptions) out.push(socle + j + bkv);
@@ -3802,8 +3741,8 @@ function rollDiceAnim(drsFace) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#ff9f43;font-size:11px">🔥 TURBO · à toi de choisir</span>' +
-          (R.turboBankPick ? ' <span style="color:#ff9f43;font-size:11px">+ dé de reprise V' +
-            R.turboBankPick.targetGear + ' au choix</span>' : '') +
+          (R.turboThisMove && R.gear < maxGear() ? ' <span style="color:#ff9f43;font-size:11px">+ reprise V' +
+            (R.gear + 1) + ' libre au tour suivant</span>' : '') +
           bonusTag;
       } else if (isV1Choice) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
@@ -3811,21 +3750,16 @@ function rollDiceAnim(drsFace) {
           ' <span style="color:#39d98a;font-size:11px">🎯 V' + R.gear + ' · ' + nJets +
           ' jets, à toi de choisir</span>' +
           bonusTag;
-      } else if (bankIdx >= 0 && !bankForced) {
+      } else if (bankIdx >= 0 && bankTurboFree) {
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          altTotals.join(' ou ') + ' cases</span>' +
+          ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo · à toi de choisir</span>' +
+          bonusTag;
+      } else if (bankIdx >= 0) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>' +
           bonusTag;
-      } else if (bankIdx >= 0 && bankForced && altTotals && altTotals.length > 1) {
-        // Reprise turbo combinée à un autre choix (jets V1) : la reprise
-        // elle-même est fixe, seul l'autre levier varie.
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
-          altTotals.join(' ou ') + ' cases</span>' +
-          ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo fixée · V' + R.gear + '</span>';
-      } else if (bankIdx >= 0 && bankForced) {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
-          (altTotals ? altTotals[0] : base) + ' cases</span>' +
-          ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo</span>';
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
@@ -4953,7 +4887,7 @@ function finalizeMove(r) {
     R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
     R.crossedDrs = false;   // aucun avantage : on repart sans le bonus du coup raté
     R.bankedDie = null;     // le coup raté n'ouvre droit à aucun instantané de réserve
-    R.turboBankPick = null; // ni au choix turbo de la face à mettre en reprise
+    R.turboThisMove = false; // ni au marquage turbo du dé de rapport supérieur
 
     // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
