@@ -1138,6 +1138,7 @@ header.top {
   <div id="gearbox">
     <div class="lbl">BOÎTE SÉQUENTIELLE</div>
     <div id="hgrid"></div>
+    <div id="turbo-bank-pick" style="display:none;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
     <div id="banked-die-tag" style="display:none;align-items:center;gap:6px;margin-top:6px">
       <span style="font-size:9px;color:var(--mute);letter-spacing:.5px">REPRISE</span>
       <div id="banked-die-mini" style="width:26px;height:26px;border-radius:7px;background:var(--panel);border:2px solid #4aa3ff;color:#4aa3ff;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-weight:900;font-size:13px"></div>
@@ -2180,6 +2181,11 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // réserve est confronté à un dé fraîchement tiré : le meilleur des deux compte.
   R.bankedDie = null;   // { value, targetGear }
 
+  // Turbo : la face du dé du rapport SUPÉRIEUR (celui qui partira en reprise
+  // au coup suivant) est choisie par le joueur au lieu d'être imposée par la
+  // grille. { targetGear, dieIndex, faces, value }
+  R.turboBankPick = null;
+
 
   // Dernier lancer rejouable (clic sur la jauge DÉ)
   R.lastRoll = null;
@@ -2652,7 +2658,8 @@ function renderGears() {
     const range = (g >= 1 && DB[g]) ? (DB[g][0] + '-' + DB[g][1]) : '';
     el.innerHTML = '<b>' + g + '</b><span>' + label + '</span>' +
       (range ? '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' + range + '</i>' : '') +
-      (R.bankedDie && R.bankedDie.targetGear === g ? '<i style="font-style:normal;font-size:8px;color:#4aa3ff">📥' + R.bankedDie.value + '</i>' : '');
+      (R.bankedDie && R.bankedDie.targetGear === g ? '<i style="font-style:normal;font-size:8px;color:' +
+        (R.bankedDie.turbo ? '#ff9f43' : '#4aa3ff') + '">📥' + R.bankedDie.value + '</i>' : '');
 
     if (reach && R.phase === 'gear') {
       el.onclick = () => {
@@ -2683,15 +2690,49 @@ function renderGears() {
     hg.appendChild(tb);
   }
 
+  // TURBO — choix de la face du dé qui partira en reprise. Seul moment du jeu
+  // où le joueur décide d'un dé qui ne bouge PAS la voiture ce coup-ci : il
+  // arme le coup suivant. Visible entre le lancer turbo et la validation du
+  // déplacement ; la face haute est présélectionnée pour que l'ignorer ne
+  // pénalise pas.
+  const pickWrap = document.getElementById('turbo-bank-pick');
+  if (pickWrap) {
+    const P = R.turboBankPick;
+    if (P && R.phase !== 'rolling') {
+      pickWrap.style.display = 'flex';
+      pickWrap.innerHTML = '<span style="font-size:9px;color:#ff9f43;letter-spacing:.5px;font-weight:800">' +
+        '🔥 REPRISE V' + P.targetGear + '</span>';
+      P.faces.forEach(f => {
+        const b = document.createElement('div');
+        b.textContent = f;
+        const on = (P.value === f);
+        b.style.cssText = 'width:24px;height:24px;border-radius:6px;cursor:pointer;' +
+          'display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;' +
+          'font-weight:900;font-size:12px;border:2px solid #ff9f43;' +
+          (on ? 'background:#ff9f43;color:#12141a' : 'background:var(--panel);color:#ff9f43;opacity:.55');
+        b.title = 'Mettre le ' + f + ' en reprise pour V' + P.targetGear;
+        b.onclick = () => { P.value = f; renderGears(); };
+        pickWrap.appendChild(b);
+      });
+    } else {
+      pickWrap.style.display = 'none';
+      pickWrap.innerHTML = '';
+    }
+  }
+
   // Dé de reprise : mini-case passive, ENTIÈREMENT AUTOMATIQUE (aucun bouton,
   // aucune phrase à lire — juste le chiffre actuellement en reprise).
   const bankTag = document.getElementById('banked-die-tag');
   const bankMini = document.getElementById('banked-die-mini');
   if (bankTag && bankMini) {
     if (R.bankedDie) {
+      const tc = R.bankedDie.turbo ? '#ff9f43' : '#4aa3ff';
       bankTag.style.display = 'flex';
       bankMini.textContent = R.bankedDie.value;
-      bankMini.title = 'Dé de reprise pour V' + R.bankedDie.targetGear;
+      bankMini.style.borderColor = tc;
+      bankMini.style.color = tc;
+      bankMini.title = (R.bankedDie.turbo ? 'Dé de reprise TURBO (face choisie) pour V' : 'Dé de reprise pour V') +
+        R.bankedDie.targetGear;
     } else {
       bankTag.style.display = 'none';
     }
@@ -3316,13 +3357,21 @@ async function solveCircuit(opts) {
 }
 
 function snapshotNextGearDie() {
+  const pick = R.turboBankPick;
+  R.turboBankPick = null;               // la fenêtre de choix se referme avec le coup
   if (R.gear < 1 || R.gear >= maxGear() || R.isWarmup) { return; }
   const targetGear = R.gear + 1;
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
   const moveNo = R.turn;                // le coup qui vient de se conclure
   if (moveNo < 1) { return; }           // avant le tout premier coup, rien à retenir
-  const value = dieValue(diceSet()[dieIndex], targetGear, dieIndex, moveNo);
-  R.bankedDie = { value, targetGear };
+  // TURBO : ce dé-là aussi est un dé turbo. Sa face n'est pas tirée dans la
+  // grille commune, c'est le joueur qui la choisit pendant le coup de turbo —
+  // en aveugle, puisqu'il ne connaîtra le tirage frais adverse qu'au coup
+  // suivant. Sans choix explicite, on retient la face haute par défaut.
+  const turboChosen = !!(pick && pick.targetGear === targetGear && pick.value != null);
+  const value = turboChosen ? pick.value
+                            : dieValue(diceSet()[dieIndex], targetGear, dieIndex, moveNo);
+  R.bankedDie = { value, targetGear, turbo: turboChosen };
 }
 
 function rollDiceAnim(drsFace) {
@@ -3477,6 +3526,17 @@ function rollDiceAnim(drsFace) {
       // proposé d'un coup sous forme de trajectoires distinctes — beaucoup de
       // possibilités, mais toujours dans la plage officielle du rapport.
       const moveNo = R.turn + 1;
+      // TURBO — dé de reprise : le dé du rapport SUPÉRIEUR (index R.gear) est
+      // lui aussi tiré et affiché à chaque coup, mais il ne sert pas ce coup-ci.
+      // En turbo, sa face devient choisissable comme toutes les autres : c'est
+      // elle qui partira en reprise et qui sera confrontée au tirage frais au
+      // coup suivant. Choix en aveugle (le tirage frais n'est pas encore connu),
+      // donc viser bas reste parfois le bon calcul.
+      if (turboNow && R.gear < maxGear() && !R.isWarmup) {
+        const bf = [...new Set(diceSet()[R.gear])].sort((a, b) => a - b);
+        R.turboBankPick = { targetGear: R.gear + 1, dieIndex: R.gear, faces: bf,
+                            value: bf[bf.length - 1] };
+      }
       // drsAll : Cartésien pur (chaque dé = 1 valeur libre) — DRS naturel
       // UNIQUEMENT. Le turbo ne passe plus par ici (voir plus bas).
       const drsAll = drsNatural;
@@ -3529,6 +3589,16 @@ function rollDiceAnim(drsFace) {
               ec.textContent = '🔥';
             });
           }
+          return;
+        }
+        // Dé du rapport supérieur sous turbo : affiché comme un dé turbo à
+        // part entière (il ne compte pas dans le total de CE coup, mais sa
+        // face est bel et bien choisie par le joueur).
+        if (R.turboBankPick && i === R.turboBankPick.dieIndex) {
+          c.textContent = '🔥';
+          c.classList.add('turbo-picked', 'bank-arm');
+          c.style.borderColor = '#ff9f43';
+          c.style.opacity = '1';
           return;
         }
         if (isV1Choice && i === 0) {
@@ -3652,6 +3722,8 @@ function rollDiceAnim(drsFace) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#ff9f43;font-size:11px">🔥 TURBO · à toi de choisir</span>' +
+          (R.turboBankPick ? ' <span style="color:#ff9f43;font-size:11px">+ dé de reprise V' +
+            R.turboBankPick.targetGear + ' au choix</span>' : '') +
           bonusTag;
       } else if (isV1Choice) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
@@ -3680,7 +3752,7 @@ function rollDiceAnim(drsFace) {
 
       setTimeout(() => {
         ov.classList.remove('on');
-        cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used', 'turbo-picked'); });
+        cubes.forEach(c => { c.style.borderColor = ''; c.style.opacity = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used', 'turbo-picked', 'bank-arm'); });
         processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals);
         renderGears();   // rafraîchit le bouton/étiquette de réserve (consommée)
         syncDash();      // la jauge DÉ devient cliquable (relecture du jet)
@@ -3940,7 +4012,8 @@ function buildRulesHTML() {
       'À chaque coup où tu ne montes <b style="color:var(--txt)">pas</b> de rapport, le jeu retient <b style="color:var(--txt)">automatiquement</b> — sans rien à cliquer — la valeur que le rapport supérieur t\'aurait donnée ce coup-là.<br><br>' +
       '• Au coup suivant, si tu engages vraiment ce rapport, ce dé de reprise est confronté à un <b style="color:var(--txt)">tirage frais</b><br>' +
       '• Les deux résultats te sont proposés comme deux trajectoires distinctes, comme pour le DRS<br>' +
-      '• Une <b style="color:#4aa3ff">mini-case bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise' +
+      '• Une <b style="color:#4aa3ff">mini-case bleue</b> à côté de la boîte de vitesses affiche en permanence le dé actuellement en reprise<br>' +
+      '• <b style="color:#ff9f43">🔥 Turbo</b> : le dé de reprise devient lui aussi un dé turbo. Tu choisis sa face parmi toutes celles possibles, et c\'est cette face-là qui sera confrontée au tirage frais au coup suivant. Choix en <b style="color:var(--txt)">aveugle</b> (le tirage frais n\'est pas encore connu) : viser bas peut être le bon calcul si tu veux garder l\'option d\'un petit déplacement' +
     '</div>' +
   '</div>' +
 
@@ -4790,6 +4863,7 @@ function finalizeMove(r) {
     R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
     R.crossedDrs = false;   // aucun avantage : on repart sans le bonus du coup raté
     R.bankedDie = null;     // le coup raté n'ouvre droit à aucun instantané de réserve
+    R.turboBankPick = null; // ni au choix turbo de la face à mettre en reprise
 
     // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
     R.gear = 0;
