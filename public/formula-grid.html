@@ -3148,13 +3148,18 @@ function executeDiceRoll(gear) {
 // reprise. drsNatural et turboNow sont désormais séparés : le DRS naturel
 // écrase tout par un Cartésien pur, le turbo garde la structure des jets/
 // reprise mais ouvre le libre choix de face (sauf sur la reprise elle-même).
-function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
+function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
   const DS = diceSet();
   const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
   const KEYS = [0, 'v1b', 'v1c'];
   const top = maxGear();
   const hasReprise = prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2;
   const bankIdx = hasReprise ? prevGear : -1;   // = gear - 1
+  // bankFace > 0 : la reprise vient d'un dé TURBO choisi au coup précédent —
+  // valeur fixe, aucun tirage frais ne vient plus la contester (cf. moteur réel).
+  // bankFace === 0 (ou absent) : reprise automatique classique, dérivée de la
+  // grille (frais vs banque, comme avant).
+  const bankIsFixed = hasReprise && bankFace > 0;
 
   if (drsNatural) {
     let sums = [0];
@@ -3190,7 +3195,8 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
     const v1Options = applyJetBonus(v1Faces, maxJetBonus);
     // Dé de reprise : PAS de libre choix — 2 options seulement (frais ou
     // repris), comme un lancer normal, car déjà tiré au tour précédent.
-    const bankOptions = hasReprise
+    const bankOptions = bankIsFixed ? [bankFace]
+      : hasReprise
       ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
                       dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
       : [0];
@@ -3220,7 +3226,8 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
     ? Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo))
     : [];
   const bonusRange = jetBonusRange(jetRaw);
-  const bankOptions = hasReprise
+  const bankOptions = bankIsFixed ? [bankFace]
+    : hasReprise
     ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
                     dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
     : [0];
@@ -3252,10 +3259,13 @@ async function solveCircuit(opts) {
   const maskToTimes = m => { const t = []; for (let i = 0; i < nCp; i++) if (m & (1 << i)) t[i] = 1; return t; };
   const enc = st => st.join('|');
 
-  // état : [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, turboUsed]
+  // état : [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, turboUsed, bankFace]
+  // bankFace : 0 = reprise automatique classique (dérivée de la grille au
+  // moment voulu) ; >0 = valeur figée par un choix TURBO au coup précédent,
+  // sans tirage frais concurrent au moment de la reprise.
   let layer = new Map();
   const st0 = (R.circuit && R.circuit.start) || { x: R.q, y: R.r, dir: R.dir };
-  const startKey = enc([st0.x, st0.y, st0.dir || 0, 0, 0, 0, isRallye() ? 1 : 0, 0, 0, 0]);
+  const startKey = enc([st0.x, st0.y, st0.dir || 0, 0, 0, 0, isRallye() ? 1 : 0, 0, 0, 0, 0]);
   layer.set(startKey, null);
   // Historique des couches : permet de remonter la ligne parfaite coup par coup
   // une fois l'optimum trouvé (chaque état retient d'où il vient et comment).
@@ -3266,7 +3276,7 @@ async function solveCircuit(opts) {
     const moveNo = turn + 1;
     const next = new Map();
     for (const key of layer.keys()) {
-      const [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, tUsed] = key.split('|').map(Number);
+      const [q, r, dir, inertia, gear, lap, leftF, cpMask, drs, tUsed, bankFace] = key.split('|').map(Number);
       const cellIsD = (R.grid[r] && R.grid[r][q] === 'D');
       for (const g of solverGears(gear)) {
         const drsNatural = (cellIsD || !!drs);
@@ -3274,7 +3284,7 @@ async function solveCircuit(opts) {
         // pas le Cartésien pur du DRS — cf. solverTotals. 1× par course.
         const turboOpts = (isRallye() && !tUsed && !drsNatural) ? [false, true] : [false];
         for (const useTurbo of turboOpts) {
-          for (const tot of solverTotals(g, gear, moveNo, drsNatural, useTurbo)) {
+          for (const tot of solverTotals(g, gear, moveNo, drsNatural, useTurbo, bankFace)) {
             R.inertia = inertia; R.cpTimes = maskToTimes(cpMask);
             R.leftFinishZone = !!leftF; R.gear = g;
             for (const res of getValidPaths(q, r, dir, tot, g, lap, targetLaps)) {
@@ -3289,9 +3299,21 @@ async function solveCircuit(opts) {
               const cell = (R.grid[res.r] || '')[res.q];
               const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
               const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
-              const nk = enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
-                              nLeftF, res.cpMask, nDrs, useTurbo ? 1 : tUsed]);
-              if (!next.has(nk)) next.set(nk, { prev: key, gear: g, tot: tot, turbo: useTurbo });
+              const nTUsed = useTurbo ? 1 : tUsed;
+              // Prochaine face en reprise (dé du rapport g+1) : si CE coup est
+              // en turbo et qu'un rapport supérieur existe, le joueur choisit
+              // librement la face (une branche par face possible, fixée pour
+              // la reprise du coup suivant, sans tirage frais concurrent).
+              // Sinon, reprise automatique classique (bankFace=0, dérivée de
+              // la grille par solverTotals le moment venu).
+              const nextBankFaces = (useTurbo && g < maxGear())
+                ? [...new Set(diceSet()[g])]
+                : [0];
+              for (const nbf of nextBankFaces) {
+                const nk = enc([res.q, res.r, res.dir, res.inertiaEnd, g, lap + res.lapsGained,
+                                nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
+                if (!next.has(nk)) next.set(nk, { prev: key, gear: g, tot: tot, turbo: useTurbo });
+              }
             }
           }
         }
@@ -3327,15 +3349,24 @@ async function solveCircuit(opts) {
     R.leftFinishZone = !!leftF; R.gear = st.gear;
     const nextKey = (i + 1 < chain.length) ? chain[i + 1].key : null;
     let chosen = null;
+    // Mêmes candidats de bankFace que dans la boucle de recherche (une face
+    // par branche turbo possible), pour retrouver EXACTEMENT la clé stockée.
+    const nextBankFaces = (st.turbo && st.gear < maxGear())
+      ? [...new Set(diceSet()[st.gear])] : [0];
     for (const res of getValidPaths(q, r, dir, st.tot, st.gear, lap, targetLaps)) {
       if (res.crash) continue;
       if (nextKey === null) { if (res.finish) { chosen = res; break; } continue; }
       const cell = (R.grid[res.r] || '')[res.q];
       const nLeftF = (cell === 'F' && res.lapsGained > 0) ? 0 : (cell !== 'F' ? 1 : leftF);
       const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
-      const k = enc([res.q, res.r, res.dir, res.inertiaEnd, st.gear, lap + res.lapsGained,
-                     nLeftF, res.cpMask, nDrs, st.turbo ? 1 : Number(st.key.split('|')[9])]);
-      if (k === nextKey) { chosen = res; break; }
+      const nTUsed = st.turbo ? 1 : Number(st.key.split('|')[9]);
+      let matched = false;
+      for (const nbf of nextBankFaces) {
+        const k = enc([res.q, res.r, res.dir, res.inertiaEnd, st.gear, lap + res.lapsGained,
+                       nLeftF, res.cpMask, nDrs, nTUsed, nbf]);
+        if (k === nextKey) { matched = true; break; }
+      }
+      if (matched) { chosen = res; break; }
     }
     moves.push({
       n: i + 1, gear: st.gear, total: st.tot, turbo: !!st.turbo,
@@ -3446,6 +3477,11 @@ function rollDiceAnim(drsFace) {
   // turbo garde le dé de reprise à part, hors du libre choix.
   const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !drsNatural)
     ? R.gear - 1 : -1;
+  // Un dé mis en reprise via TURBO a déjà été choisi délibérément (pas tiré) :
+  // le récupérer ne le remet PAS en jeu face à un tirage frais, il reste
+  // exactement la valeur choisie. Seul un dé de reprise automatique (non
+  // turbo) garde le duel frais/repris classique.
+  const bankForced = bankIdx >= 0 && !!(R.bankedDie && R.bankedDie.turbo);
   const twinFacesV1 = isV1Choice ? diceSet()[0] : null;
   const twinFacesBank = (bankIdx >= 0 && bankIdx !== 0) ? diceSet()[bankIdx] : null;
 
@@ -3668,7 +3704,8 @@ function rollDiceAnim(drsFace) {
         // à un lancer normal (frais ou repris), car il a déjà été tiré au
         // tour précédent.
         const bankOptions = (bankIdx >= 0)
-          ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
+          ? (bankForced ? [R.bankedDie.value]
+                        : [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])])
           : [0];
         const out = new Set();
         for (const fixed of fixedCombos) {
@@ -3696,7 +3733,8 @@ function rollDiceAnim(drsFace) {
           ? [...new Set(jetRaw)]
           : [0];
         const bankOptions = (bankIdx >= 0)
-          ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
+          ? (bankForced ? [R.bankedDie.value]
+                        : [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])])
           : [0];
         const out = [];
         for (const j of jetOptions) for (const bkv of bankOptions) out.push(socle + j + bkv);
@@ -3731,11 +3769,21 @@ function rollDiceAnim(drsFace) {
           ' <span style="color:#39d98a;font-size:11px">🎯 V' + R.gear + ' · ' + nJets +
           ' jets, à toi de choisir</span>' +
           bonusTag;
-      } else if (bankIdx >= 0) {
+      } else if (bankIdx >= 0 && !bankForced) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>' +
           bonusTag;
+      } else if (bankIdx >= 0 && bankForced && altTotals && altTotals.length > 1) {
+        // Reprise turbo combinée à un autre choix (jets V1) : la reprise
+        // elle-même est fixe, seul l'autre levier varie.
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          altTotals.join(' ou ') + ' cases</span>' +
+          ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo fixée · V' + R.gear + '</span>';
+      } else if (bankIdx >= 0 && bankForced) {
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          (altTotals ? altTotals[0] : base) + ' cases</span>' +
+          ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo</span>';
       } else {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
       }
