@@ -3570,17 +3570,43 @@ function rollDiceAnim(drsFace) {
         // (jamais tirée à l'avance, sa moitié "frais" se joue MAINTENANT —
         // confrontée au choix repris), soit une reprise TURBO, qui n'a de
         // toute façon jamais eu de valeur figée : choix libre sur toute la
-        // plage, ici comme à n'importe quel autre coup.
+        // plage, ici comme à n'importe quel autre coup. Dans les deux cas
+        // bankTurboFree, DEUX cases restent affichées côte à côte — jamais
+        // deux flammes identiques : une case "réelle" (soit le tirage normal,
+        // soit l'ancienne valeur déjà en réserve) et une case 🔥 qui porte le
+        // libre choix, chacune du bon côté selon d'où vient la liberté.
         if (i === bankIdx) {
           if (bankTurboFree) {
-            c.textContent = '🔥';
-            c.classList.add('turbo-picked');
-            c.style.borderColor = '#ff9f43';
-            if (extraCubesBank[0]) {
-              extraCubesBank[0].classList.add('turbo-picked');
-              extraCubesBank[0].style.borderColor = '#ff9f43';
-              extraCubesBank[0].textContent = '🔥';
+            const originTurbo = !!(R.bankedDie && R.bankedDie.turbo);
+            if (originTurbo) {
+              // La reprise vient d'un choix TURBO antérieur (aucune valeur
+              // figée) : CE coup n'est pas forcément turbo lui-même, donc ce
+              // dé montre un vrai tirage normal — le libre choix turbo reste
+              // disponible EN PLUS, sur la case jumelle.
+              const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
+              c.textContent = fresh;
+              c.classList.add('bank-used');
+              c.style.borderColor = '#4aa3ff';
+              if (extraCubesBank[0]) {
+                extraCubesBank[0].classList.add('turbo-picked');
+                extraCubesBank[0].style.borderColor = '#ff9f43';
+                extraCubesBank[0].textContent = '🔥';
+              }
+            } else {
+              // Reprise classique absorbée par CE coup turbo : le dé rejoint
+              // le libre choix (🔥) — sa jumelle rappelle, pour référence,
+              // l'ancienne valeur déjà en réserve (dépassée par le libre choix).
+              c.textContent = '🔥';
+              c.classList.add('turbo-picked');
+              c.style.borderColor = '#ff9f43';
+              if (extraCubesBank[0]) {
+                extraCubesBank[0].classList.add('bank-used');
+                extraCubesBank[0].style.borderColor = '#4aa3ff';
+                extraCubesBank[0].textContent = R.bankedDie.value;
+              }
             }
+            // NE PAS ajouter à `base` ici : le total exact (toute la plage
+            // libre) est recalculé juste après, dans altTotals.
             return;
           }
           const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
