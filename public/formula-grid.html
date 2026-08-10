@@ -679,6 +679,16 @@ header.top {
   color: #4aa3ff;
 }
 
+/* Dé en turbo : contrairement au DRS, il GARDE la structure du lancer normal
+   (jets de dV1, dés fixes) mais chaque face est librement choisie — sauf le
+   dé de reprise, qui reste "bank-used" et n'entre jamais ici. */
+.dice-cube.turbo-picked {
+  font-size: 14px;
+  color: #ff9f43;
+}
+.dice-cube.rd1.turbo-picked, .dice-cube.rd2.turbo-picked,
+.dice-cube.rd3.turbo-picked, .dice-cube.rd4.turbo-picked { color: #ff9f43; border-color: #ff9f43; }
+
 /* MODE RALLYE — un code couleur par dé, pour lire d'un coup d'oeil quel dé
    appartient à quel rapport : vert dV1, jaune dV2, orange dV3, rouge dV4.
    La classe est posée sur le cube quel que soit son état (engagé, en réserve
@@ -3093,10 +3103,19 @@ function executeDiceRoll(gear) {
 // ═══════════════════════════════════════════════════════════════════════
 
 // Totaux atteignables à un rapport donné, hors interface. Réplique les mêmes
-// règles que rollDiceAnim : DRS/turbo, jets multiples de V1, dé de reprise.
-function solverTotals(gear, prevGear, moveNo, drsActive) {
+// règles que rollDiceAnim : DRS naturel, turbo, jets multiples de V1, dé de
+// reprise. drsNatural et turboNow sont désormais séparés : le DRS naturel
+// écrase tout par un Cartésien pur, le turbo garde la structure des jets/
+// reprise mais ouvre le libre choix de face (sauf sur la reprise elle-même).
+function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow) {
   const DS = diceSet();
-  if (drsActive) {
+  const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
+  const KEYS = [0, 'v1b', 'v1c'];
+  const top = maxGear();
+  const hasReprise = prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2;
+  const bankIdx = hasReprise ? prevGear : -1;   // = gear - 1
+
+  if (drsNatural) {
     let sums = [0];
     for (let i = 0; i < gear; i++) {
       const faces = [...new Set(DS[i])], next = [];
@@ -3105,16 +3124,48 @@ function solverTotals(gear, prevGear, moveNo, drsActive) {
     }
     return [...new Set(sums)].sort((a, b) => a - b);
   }
-  // Deux réserves indépendantes, sur deux dés différents : les jets de dV1
-  // (index 0, uniquement à V1) et la reprise du rapport qu'on vient d'engager
-  // (index gear-1, dès qu'on monte d'un cran). Elles se combinent, elles ne
-  // s'excluent pas — c'est le point que corrige cette version.
-  const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
-  const KEYS = [0, 'v1b', 'v1c'];
-  const top = maxGear();
-  const hasReprise = prevGear >= 1 && prevGear < top && gear === prevGear + 1 && moveNo >= 2;
-  const bankIdx = hasReprise ? prevGear : -1;   // = gear - 1
 
+  if (turboNow) {
+    // Dés fixes engagés (ni dV1, ni reprise) : libre choix parmi TOUTES leurs
+    // faces, combinées entre elles (Cartésien).
+    let fixedCombos = [0];
+    for (let i = 1; i < gear; i++) {
+      if (i === bankIdx) continue;
+      const faces = [...new Set(DS[i])], next = [];
+      for (const s of fixedCombos) for (const f of faces) next.push(s + f);
+      fixedCombos = next;
+    }
+    // Jets de dV1 : même nombre de jets que le lancer normal, mais chaque jet
+    // choisit librement sa face — un doublé/triplé reste toujours atteignable.
+    const v1Faces = [...new Set(DS[0])];
+    let v1Combos = [[]];
+    for (let k = 0; k < nJets; k++) {
+      const next = [];
+      for (const combo of v1Combos) for (const f of v1Faces) next.push(combo.concat([f]));
+      v1Combos = next;
+    }
+    // Dé de reprise : PAS de libre choix — 2 options seulement (frais ou
+    // repris), comme un lancer normal, car déjà tiré au tour précédent.
+    const bankOptions = hasReprise
+      ? [...new Set([dieValue(DS[bankIdx], gear, bankIdx, moveNo),
+                      dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1)])]
+      : [0];
+    const out = new Set();
+    for (const fixed of fixedCombos) {
+      for (const v1c of v1Combos) {
+        const v1Sum = v1c.reduce((a, b) => a + b, 0);
+        const bonus = jetBonusRange(v1c);
+        const withBonus = applyJetBonus([v1Sum], bonus);
+        for (const bkv of bankOptions) for (const wb of withBonus) out.add(fixed + wb + bkv);
+      }
+    }
+    return [...out].filter(t => t >= 1).sort((a, b) => a - b);
+  }
+
+  // Lancer normal : deux réserves indépendantes, sur deux dés différents : les
+  // jets de dV1 (index 0, plusieurs jets selon le rapport) et la reprise du
+  // rapport qu'on vient d'engager (index gear-1, dès qu'on monte d'un cran).
+  // Elles se combinent, elles ne s'excluent pas.
   let base = 0;
   for (let i = 0; i < gear; i++) {
     if (i === 0 && nJets > 1) continue;   // traité à part : plusieurs valeurs possibles
@@ -3178,11 +3229,11 @@ async function solveCircuit(opts) {
       const cellIsD = (R.grid[r] && R.grid[r][q] === 'D');
       for (const g of solverGears(gear)) {
         const drsNatural = (cellIsD || !!drs);
-        // le turbo (rallye) ouvre les mêmes possibilités que le DRS, 1× par course
+        // le turbo (rallye) garde la structure normale des dés (jets/reprise),
+        // pas le Cartésien pur du DRS — cf. solverTotals. 1× par course.
         const turboOpts = (isRallye() && !tUsed && !drsNatural) ? [false, true] : [false];
         for (const useTurbo of turboOpts) {
-          const drsActive = drsNatural || useTurbo;
-          for (const tot of solverTotals(g, gear, moveNo, drsActive)) {
+          for (const tot of solverTotals(g, gear, moveNo, drsNatural, useTurbo)) {
             R.inertia = inertia; R.cpTimes = maskToTimes(cpMask);
             R.leftFinishZone = !!leftF; R.gear = g;
             for (const res of getValidPaths(q, r, dir, tot, g, lap, targetLaps)) {
@@ -3286,10 +3337,18 @@ function rollDiceAnim(drsFace) {
   // implicitement la face utilisée. Compte si on démarre PILE sur une case DRS,
   // OU si le trajet du coup précédent a traversé la zone sans forcément s'y
   // arrêter (à haute vitesse on peut la traverser sans y atterrir exactement).
-  // Le turbo armé ouvre les mêmes possibilités que le DRS : toutes les faces
-  // des dés engagés deviennent des trajectoires proposées.
+  // Le turbo N'EST PAS un DRS : le DRS naturel remplace TOUS les dés engagés
+  // par un Cartésien pur (chaque dé = une seule valeur libre), ce qui perd la
+  // structure des jets de dV1 (donc plus aucun doublé/triplé possible), et
+  // traite même le dé de reprise comme entièrement libre.
+  // Le turbo garde EXACTEMENT la même structure que le lancer normal (même
+  // nombre de jets de dV1 selon le rapport, même dé de reprise), mais permet
+  // de choisir librement la face de chaque dé — SAUF le dé de reprise, déjà
+  // tiré au tour précédent, qui conserve ses 2 seules options (frais/repris).
+  // Un doublé/triplé sur les jets de dV1 reste donc possible en turbo.
   const turboNow = !!R.turboArmed && !R.turboUsed;
-  const onDRS = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs || turboNow;
+  const drsNatural = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs;
+  const onDRS = drsNatural || turboNow;
   if (turboNow) { R.turboUsed = true; R.turboArmed = false; }
 
   // Anti-spam
@@ -3329,11 +3388,14 @@ function rollDiceAnim(drsFace) {
   // mutuellement exclusives (bug : les jets de V2 désactivaient sa reprise).
   const nJets = isRallye() ? Math.max(1, 4 - R.gear) : (R.gear === 1 ? 2 : 1);
   const V1_KEYS = [0, 'v1b', 'v1c'];
-  const isV1Choice = (nJets > 1) && !onDRS;
+  // !drsNatural (et non !onDRS) : en turbo on GARDE la structure des jets de
+  // dV1, seul le DRS naturel l'écrase par son Cartésien pur.
+  const isV1Choice = (nJets > 1) && !drsNatural;
   // La reprise ne peut jamais cibler l'index 0 : elle n'existe qu'en montant
   // d'un rapport (R.bankedDie.targetGear = ancien rapport + 1 >= 2), donc
-  // R.gear - 1 >= 1 dès qu'elle est valide.
-  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !onDRS)
+  // R.gear - 1 >= 1 dès qu'elle est valide. !drsNatural (pas !onDRS) : le
+  // turbo garde le dé de reprise à part, hors du libre choix.
+  const bankIdx = (R.bankedDie && R.bankedDie.targetGear === R.gear && !drsNatural)
     ? R.gear - 1 : -1;
   const twinFacesV1 = isV1Choice ? diceSet()[0] : null;
   const twinFacesBank = (bankIdx >= 0 && bankIdx !== 0) ? diceSet()[bankIdx] : null;
@@ -3415,7 +3477,9 @@ function rollDiceAnim(drsFace) {
       // proposé d'un coup sous forme de trajectoires distinctes — beaucoup de
       // possibilités, mais toujours dans la plage officielle du rapport.
       const moveNo = R.turn + 1;
-      const drsAll = onDRS;
+      // drsAll : Cartésien pur (chaque dé = 1 valeur libre) — DRS naturel
+      // UNIQUEMENT. Le turbo ne passe plus par ici (voir plus bas).
+      const drsAll = drsNatural;
       // isV1Choice, bankIdx et extraCube ont déjà été déterminés AVANT le
       // lancer (voir plus haut) — c'est justement ce qui permet à ce second dé
       // de tourner dès le début, comme les autres, plutôt que d'apparaître
@@ -3431,19 +3495,9 @@ function rollDiceAnim(drsFace) {
           c.style.borderColor = '#b464ff';
           return;
         }
-        if (isV1Choice && i === 0) {
-          const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
-          c.textContent = d1;
-          c.classList.add('v1-picked');
-          c.style.borderColor = '#39d98a';
-          base += d1;
-          extraCubesV1.forEach((ec, k) => {
-            ec.classList.add('v1-picked');
-            ec.style.borderColor = '#39d98a';
-            ec.textContent = dieValue(diceSet()[0], 1, V1_KEYS[k + 1], moveNo);
-          });
-          return;
-        }
+        // Dé de reprise : JAMAIS en libre choix, même en turbo — il a déjà été
+        // tiré au tour précédent. Ses 2 seules options (frais/repris) sont
+        // recalculées juste après, dans altTotals.
         if (i === bankIdx) {
           const fresh = dieValue(diceSet()[i], R.gear, i, moveNo);
           c.textContent = fresh;
@@ -3459,6 +3513,37 @@ function rollDiceAnim(drsFace) {
           }
           return;
         }
+        // Turbo : ce dé (le/les jet(s) de dV1 comme n'importe quel dé fixe du
+        // rapport) est intégralement choisissable — aucune valeur imposée par
+        // le tirage. Toutes les combinaisons, doublé/triplé compris, sont
+        // recalculées juste après dans altTotals avec la même structure de
+        // jets que le lancer normal.
+        if (turboNow && i < nActifs) {
+          c.textContent = '🔥';
+          c.classList.add('turbo-picked');
+          c.style.borderColor = '#ff9f43';
+          if (i === 0) {
+            extraCubesV1.forEach(ec => {
+              ec.classList.add('turbo-picked');
+              ec.style.borderColor = '#ff9f43';
+              ec.textContent = '🔥';
+            });
+          }
+          return;
+        }
+        if (isV1Choice && i === 0) {
+          const d1 = dieValue(diceSet()[0], 1, V1_KEYS[0], moveNo);
+          c.textContent = d1;
+          c.classList.add('v1-picked');
+          c.style.borderColor = '#39d98a';
+          base += d1;
+          extraCubesV1.forEach((ec, k) => {
+            ec.classList.add('v1-picked');
+            ec.style.borderColor = '#39d98a';
+            ec.textContent = dieValue(diceSet()[0], 1, V1_KEYS[k + 1], moveNo);
+          });
+          return;
+        }
         const v = dieValue(diceSet()[i], R.gear, i, moveNo);
         c.textContent = v;
         if (i < nActifs) {
@@ -3471,9 +3556,10 @@ function rollDiceAnim(drsFace) {
         }
       });
 
-      // Totaux possibles : DRS (produit de toutes les faces de tous les dés
-      // engagés), V1 pure (deux tirages du dé de base), ou reprise (tirage du
-      // coup précédent contre tirage frais) — jamais deux de ces trois
+      // Totaux possibles : DRS naturel (Cartésien sur tous les dés engagés),
+      // turbo (structure normale mais libre choix de face, reprise exclue),
+      // V1 pure (deux/trois tirages du dé de base), ou reprise (tirage du
+      // coup précédent contre tirage frais) — jamais plusieurs de ces
       // mécaniques à la fois.
       let altTotals = null;
       let jetBonus = 0;
@@ -3486,6 +3572,48 @@ function rollDiceAnim(drsFace) {
           sums = next;
         }
         altTotals = [...new Set(sums)].sort((a, b) => a - b);
+      } else if (turboNow) {
+        // Dés fixes engagés (ni dV1, ni reprise) : libre choix parmi TOUTES
+        // leurs faces, combinées entre elles (Cartésien) — comme le turbo
+        // le permettait déjà avant cette correction.
+        let fixedCombos = [0];
+        for (let i = 1; i < R.gear; i++) {
+          if (i === bankIdx) continue;
+          const faces = [...new Set(diceSet()[i])];
+          const next = [];
+          for (const s of fixedCombos) for (const f of faces) next.push(s + f);
+          fixedCombos = next;
+        }
+        // Jets de dV1 : même NOMBRE de jets que le lancer normal (nJets), mais
+        // chaque jet choisit librement sa face — un doublé/triplé reste
+        // possible (et même toujours atteignable) en choisissant la même face
+        // plusieurs fois, exactement comme un lancer normal chanceux.
+        const v1Faces = [...new Set(diceSet()[0])];
+        let v1Combos = [[]];
+        for (let k = 0; k < nJets; k++) {
+          const next = [];
+          for (const combo of v1Combos) for (const f of v1Faces) next.push(combo.concat([f]));
+          v1Combos = next;
+        }
+        // Dé de reprise : AUCUN libre choix — 2 options seulement, identiques
+        // à un lancer normal (frais ou repris), car il a déjà été tiré au
+        // tour précédent.
+        const bankOptions = (bankIdx >= 0)
+          ? [...new Set([R.bankedDie.value, dieValue(diceSet()[bankIdx], R.gear, bankIdx, moveNo)])]
+          : [0];
+        const out = new Set();
+        let maxBonus = 0;
+        for (const fixed of fixedCombos) {
+          for (const v1c of v1Combos) {
+            const v1Sum = v1c.reduce((a, b) => a + b, 0);
+            const bonus = jetBonusRange(v1c);
+            if (bonus > maxBonus) maxBonus = bonus;
+            const withBonus = applyJetBonus([v1Sum], bonus);
+            for (const bkv of bankOptions) for (const wb of withBonus) out.add(fixed + wb + bkv);
+          }
+        }
+        jetBonus = maxBonus;
+        altTotals = [...out].filter(t => t >= 1).sort((a, b) => a - b);
       } else if (isV1Choice || bankIdx >= 0) {
         // `base` contient déjà le 1er jet de dV1 + tous les dés fixes (ceux qui
         // ne sont ni le slot des jets, ni le slot de reprise). On le retire pour
@@ -3526,6 +3654,11 @@ function rollDiceAnim(drsFace) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>';
+      } else if (turboNow) {
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
+          ' <span style="color:#ff9f43;font-size:11px">🔥 TURBO · à toi de choisir</span>' +
+          bonusTag;
       } else if (isV1Choice) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
@@ -3553,7 +3686,7 @@ function rollDiceAnim(drsFace) {
 
       setTimeout(() => {
         ov.classList.remove('on');
-        cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used'); });
+        cubes.forEach(c => { c.style.borderColor = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used', 'turbo-picked'); });
         processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals);
         renderGears();   // rafraîchit le bouton/étiquette de réserve (consommée)
         syncDash();      // la jauge DÉ devient cliquable (relecture du jet)
