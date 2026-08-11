@@ -1825,7 +1825,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
         <div><span style="color:#8e44ad">🙈 Question Voilée</span> — 1 mot sur 2 masqué à la question suivante, mais <strong>+30</strong> au lieu de 20</div>
         <div><span style="color:#27ae60">🎰 Jackpot</span> — cagnotte qui monte (+10, +20, +30…) à chaque bonne réponse d'affilée · une erreur annule tout et coûte <strong>−10</strong></div>
         <div><span style="color:#2980b9">⚖️ Pari</span> — parie sur ta propre réponse avant la correction : <strong>+10</strong> si tu vois juste, <strong>−10</strong> sinon</div>
-        <div><span style="color:#e74c3c">🔮 Prophétie</span> — annonce combien de bonnes réponses tu vas enchaîner : <strong>+10 par question</strong> si exact, <strong>−15</strong> si raté</div>
+        <div><span style="color:#e74c3c">🔮 Prophétie</span> — annonce combien de bonnes réponses tu vas enchaîner : <strong>+10 par question</strong> si exact, sinon <strong>−5 par point d'écart</strong> (plafonné à −15)</div>
       </div>
       <div style="margin-top:8px;font-size:11px;opacity:.75">À la fin, une dernière boîte <strong style="color:#00dc78">sans risque</strong> : +10 à +40 pts selon le tirage.</div>
       <button onclick="apolStart()" style="margin-top:12px;width:100%!important;background:linear-gradient(135deg,#7a5000,#d4900a);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,180,0,.3)">📦 OUVRIR LE DEAL</button>
@@ -1833,6 +1833,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <!-- Questions -->
     <div id="apol-question-wrap" style="display:none;flex-direction:column;gap:8px">
       <div id="apol-effect-badge" style="display:none;text-align:center;font-size:12px;padding:6px;border-radius:8px;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.25);color:#ffb400;font-weight:700"></div>
+      <div id="apol-q-theme" style="display:none;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:#ffb400;font-weight:800;margin-bottom:4px"></div>
       <div id="apol-q-text" style="font-size:16px;font-weight:800;color:var(--txt);line-height:1.4;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,180,0,.15)"></div>
       <div id="apol-pari-wrap" style="display:none;gap:8px;align-items:center;background:rgba(41,128,185,.1);border:1px solid rgba(41,128,185,.3);border-radius:8px;padding:8px">
         <span style="font-size:12px;color:#2980b9;flex-shrink:0">⚖️ Paries-tu que tu as juste ?</span>
@@ -11390,6 +11391,11 @@ function apolShowQuestion(){
     eb.style.display='block';
   }
   document.getElementById('apol-q-text').textContent=qText;
+  const thEl=document.getElementById('apol-q-theme');
+  if(thEl){
+    if(q.theme&&q.theme.trim()){ thEl.textContent='🏷️ '+q.theme; thEl.style.display='block'; }
+    else thEl.style.display='none';
+  }
   document.getElementById('apol-qnum').textContent=(APOL.qIdx+1)+'/'+(qs.length);
   document.getElementById('apol-in').value='';
   document.getElementById('apol-fb').textContent='';
@@ -11599,7 +11605,7 @@ function apolRevealEffect(item){
     for(let n=1;n<=remaining;n++)
       opts+='<button onclick="apolSetProphetie('+n+','+remaining+')" style="flex:1;padding:10px;border-radius:8px;border:1px solid #e74c3c44;background:#e74c3c18;color:#e74c3c;font-family:var(--fh);font-size:14px;cursor:pointer">'+n+'/'+remaining+'</button>';
     if(res) res.innerHTML='<div style="font-family:var(--fh);font-size:12px;color:#e74c3c;margin-bottom:8px">🔮 PROPHÉTIE — Prédit ta réussite sur les '+remaining+' prochaines questions</div>'+
-      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Prédiction exacte → +10 pts par question annoncée · Ratée → −15 pts</div>'+
+      '<div style="font-size:11px;color:var(--mute);margin-bottom:10px">Prédiction exacte → +10 pts par question annoncée · Sinon −5 pts par écart (max −15)</div>'+
       '<div style="display:flex;gap:8px">'+opts+'</div>';
   }
 }
@@ -11665,8 +11671,8 @@ async function apolResolveAnswer(effectApplied){
     if(correct)p.correct++;
     p.remaining--;
     if(p.remaining<=0){
-      if(p.correct===p.prediction){const b=p.prediction*10;delta+=b;bonusMsg+=' (prophétie +'+b+' 🔮)';}
-      else{delta-=15;bonusMsg+=' (prophétie échouée −15 🔮)';}
+      if(p.correct===p.prediction){const b=p.prediction*10;delta+=b;bonusMsg+=' (prophétie exacte +'+b+' 🔮)';}
+      else{const gap=Math.abs(p.correct-p.prediction);const pen=Math.min(15,gap*5);delta-=pen;bonusMsg+=' (prophétie ratée de '+gap+' −'+pen+' 🔮)';}
       APOL.prophecy=null;APOL.effect=null;
     }
   }
