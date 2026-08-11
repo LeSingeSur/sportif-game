@@ -978,7 +978,8 @@ app.get('/api/athlete', (req, res) => {
   } else if (athlete.type === 'melimelo') {
     base.meliWords = (athlete.meliWords||[]).slice(0,5).map(w=>({
       scrambled:(w.scrambled||'').toUpperCase().trim(),
-      answer:(w.answer||'').toUpperCase().trim()
+      answer:(w.answer||'').toUpperCase().trim(),
+      indice:w.indice||''
     }));
     base.meliTimer = athlete.meliTimer||60;
     base.maxScore = 100;
