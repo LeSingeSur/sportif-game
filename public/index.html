@@ -1820,6 +1820,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="apol-no-q-warn" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff6666;margin-bottom:8px">⚠️ Aucune question configurée — édite cet athlete dans l'admin pour ajouter les 5 questions.</div>
     <div id="apol-rules" style="background:rgba(255,180,0,.06);border:1px solid rgba(255,180,0,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--mute);line-height:1.9">
       5 questions · 20 pts chacune · Après chaque réponse : <strong style="color:#ffb400">ouvrir une boîte</strong> ou <strong style="color:var(--txt)">passer</strong><br>
+      <span style="color:#ffb400">Chaque bonus ne sort qu'une seule fois par partie</span> — une fois obtenu, il disparaît de la roue.<br>
       <div style="margin-top:8px;line-height:1.65;font-size:11.5px">
         <div><span style="color:#f39c12">⚡ Double ou Rien</span> — une question bonus : <strong>+40</strong> si juste, <strong>−20</strong> sinon</div>
         <div><span style="color:#8e44ad">🙈 Question Voilée</span> — 1 mot sur 2 masqué à la question suivante, mais <strong>+30</strong> au lieu de 20</div>
@@ -11335,6 +11336,7 @@ const APOL={
   effect:null, jackpotStreak:0, prophecy:null,
   voileeActive:false, parisActive:false,
   _pendingAnswer:null, _pendingPari:null, _wasVoilee:false,
+  usedBoxes:[],   // chaque bonus ne sort QU'UNE fois par partie
   boxItems:[
     {id:'double',    label:'Double ou Rien',    emoji:'⚡', color:'#f39c12'},
     {id:'voilee',    label:'Question Voilée',   emoji:'🙈', color:'#8e44ad'},
@@ -11348,6 +11350,7 @@ function setupApol(data){
   APOL.data=data; APOL.qIdx=0; APOL.score=0; APOL.done=false;
   APOL._isFinal=false; APOL.effect=null; APOL.jackpotStreak=0;
   APOL.prophecy=null; APOL.voileeActive=false; APOL.parisActive=false;
+  APOL.usedBoxes=[];
   APOL._pendingAnswer=null; APOL._wasVoilee=false;
   const badge=document.getElementById('type-badge');
   if(badge){badge.textContent='📦 À prendre ou à laisser';badge.className='type-badge';}
@@ -11411,6 +11414,10 @@ function apolPari(bet){
   const y=document.getElementById('apol-pari-yes'),n=document.getElementById('apol-pari-non');
   if(y)y.style.opacity=bet==='oui'?'1':'0.4';
   if(n)n.style.opacity=bet==='non'?'1':'0.4';
+  // Manquait ici : sans ce bouton, le joueur restait BLOQUÉ après avoir parié
+  // (une fonction jumelle apolPariChoix l'affichait, mais n'était jamais appelée).
+  const c=document.getElementById('apol-pari-confirm');
+  if(c&&!c.innerHTML) c.innerHTML='<button onclick="apolContinuePasser()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;background:#2980b9;color:#fff;border:none;font-family:var(--fh);font-size:13px;cursor:pointer">✓ VALIDER ET VOIR LA RÉPONSE</button>';
 }
 
 function apolSubmit(){
@@ -11435,7 +11442,19 @@ function apolShowMidDilemme(){
   const t=document.getElementById('apol-dilemme-title');
   if(t) t.textContent='OUVRIR UNE BOÎTE OU PASSER ?';
   const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
-  const ob=document.getElementById('apol-open-btn'); if(ob){ob.style.display='block';ob.onclick=apolTriggerRandom;}
+  // Plus aucune boîte disponible → on ne propose plus d'en ouvrir une
+  const restantes=APOL.boxItems.filter(b=>!APOL.usedBoxes.includes(b.id)).length;
+  const ob=document.getElementById('apol-open-btn');
+  if(ob){
+    if(restantes>0){
+      ob.style.display='block';
+      ob.onclick=apolTriggerRandom;
+      ob.textContent='📦 OUVRIR UNE BOÎTE ('+restantes+' restante'+(restantes>1?'s':'')+')';
+    } else {
+      ob.style.display='none';
+    }
+  }
+  if(t) t.textContent=restantes>0?'OUVRIR UNE BOÎTE OU PASSER ?':'PLUS DE BOÎTES — CONTINUE';
   const cb=document.getElementById('apol-continue-btn');
   if(cb){cb.style.display='block';cb.textContent='⏭ PROCHAINE QUESTION';cb.onclick=apolContinuePasser;}
   document.getElementById('apol-dilemme').style.display='flex';
@@ -11453,7 +11472,15 @@ function apolTriggerRandom(){
   const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
   const cb=document.getElementById('apol-continue-btn'); if(cb)cb.style.display='none';
   const res=document.getElementById('apol-box-result'); if(res)res.innerHTML='';
-  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  // Chaque bonus ne peut sortir qu'une fois : on tire parmi ceux qui restent.
+  const dispo=APOL.boxItems.filter(b=>!APOL.usedBoxes.includes(b.id));
+  if(!dispo.length){
+    if(res) res.innerHTML='<div style="font-size:12px;color:var(--mute);padding:10px">Toutes les boîtes ont déjà été ouvertes.</div>';
+    if(cb){cb.style.display='block';cb.textContent='▶ VOIR LA RÉPONSE';cb.onclick=apolContinuePasser;}
+    return;
+  }
+  const item=dispo[Math.floor(Math.random()*dispo.length)];
+  APOL.usedBoxes.push(item.id);
   apolSpinWheel(item,()=>apolRevealEffect(item));
 }
 
@@ -11475,7 +11502,12 @@ function apolShowFinalDilemme(){
 function apolTriggerRandomFinal(){
   const kb=document.getElementById('apol-keep-btn'); if(kb)kb.style.display='none';
   const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
-  const item=APOL.boxItems[Math.floor(Math.random()*APOL.boxItems.length)];
+  // Même règle qu'en cours de partie : une boîte déjà obtenue ne ressort pas.
+  // Si les 5 ont servi, la boîte finale rouvre l'ensemble (sinon rien à tirer).
+  let dispo=APOL.boxItems.filter(b=>!APOL.usedBoxes.includes(b.id));
+  if(!dispo.length){ APOL.usedBoxes=[]; dispo=APOL.boxItems.slice(); }
+  const item=dispo[Math.floor(Math.random()*dispo.length)];
+  APOL.usedBoxes.push(item.id);
   apolSpinWheel(item,()=>apolFinalBoxEffect(item));
 }
 
@@ -11522,16 +11554,20 @@ function apolSpinWheel(item,onDone){
     ctx.clearRect(0,0,220,220);
     items.forEach((w,i)=>{
       const a0=-Math.PI/2+rot+i*slice, a1=a0+slice;
+      // Une boîte déjà obtenue est grisée : elle ne peut plus sortir
+      const epuisee = APOL.usedBoxes.includes(w.id) && w.id!==item.id;
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a0,a1);ctx.closePath();
-      ctx.fillStyle=(w.color||'#888')+'cc';ctx.fill();
+      ctx.fillStyle=epuisee ? 'rgba(70,70,75,.85)' : (w.color||'#888')+'cc';ctx.fill();
       ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;ctx.stroke();
       const m=a0+slice/2;
       ctx.save();ctx.translate(cx+Math.cos(m)*R*0.62,cy+Math.sin(m)*R*0.62);
       ctx.rotate(m+Math.PI/2);
+      ctx.globalAlpha=epuisee?0.4:1;
       ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(w.emoji,0,-7);
+      ctx.fillText(epuisee?'✖':w.emoji,0,-7);
       ctx.font='bold 8px sans-serif';ctx.fillText(w.label,0,8);
+      ctx.globalAlpha=1;
       ctx.restore();
     });
     ctx.beginPath();ctx.arc(cx,cy,20,0,Math.PI*2);
@@ -11622,14 +11658,6 @@ function apolRevealEffect(item){
   }
 }
 
-function apolPariChoix(bet){
-  APOL._pendingPari=bet;
-  const y=document.getElementById('apol-pari-yes'),n=document.getElementById('apol-pari-non');
-  if(y)y.style.opacity=bet==='oui'?'1':'0.4';
-  if(n)n.style.opacity=bet==='non'?'1':'0.4';
-  const c=document.getElementById('apol-pari-confirm');
-  if(c&&!c.innerHTML) c.innerHTML='<button onclick="apolContinuePasser()" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;background:#2980b9;color:#fff;border:none;font-family:var(--fh);font-size:13px;cursor:pointer">✓ VALIDER ET VOIR LA RÉPONSE</button>';
-}
 
 function apolSetProphetie(prediction,remaining){
   APOL.prophecy={prediction,correct:0,remaining};
