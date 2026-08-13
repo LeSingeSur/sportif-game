@@ -3452,20 +3452,24 @@ document.getElementById('btn-save').onclick=async()=>{
   })();
   btn.disabled=true;
 
-  // Validate image via proxy only for URL mode
+  // Vérification de l'image en mode URL — AVERTISSEMENT, pas blocage.
+  // Avant, un site distant lent ou capricieux (le proxy dépend d'un tiers, délai 10s)
+  // rendait le défi impubliable, y compris lors d'une simple modification d'un défi
+  // déjà en ligne qui fonctionnait très bien.
   if(currentType==='image' && imgSrc==='url' && imageUrl){
     btn.textContent='🔍 Vérification de l\'image…';
+    let imgWarn='';
     try{
       const testRes=await fetch('/api/img-proxy?url='+encodeURIComponent(imageUrl));
-      if(!testRes.ok){
-        showMsg('save-msg','err','❌ Image inaccessible ('+testRes.status+'). Essaie une URL Wikipédia.');
+      if(!testRes.ok) imgWarn='⚠️ L\'image n\'a pas pu être vérifiée (code '+testRes.status+').';
+    }catch(e){
+      imgWarn='⚠️ Vérification de l\'image impossible (site distant injoignable).';
+    }
+    if(imgWarn){
+      if(!confirm(imgWarn+'\n\nCela peut venir du site distant (lenteur, blocage), pas forcément de ton URL.\n\nPublier quand même ?')){
         btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
         return;
       }
-    }catch(e){
-      showMsg('save-msg','err','❌ Impossible de vérifier l\'image. Vérifie l\'URL.');
-      btn.disabled=false;btn.textContent=editId?'💾 Enregistrer':'🚀 Publier ce défi';
-      return;
     }
   }
 

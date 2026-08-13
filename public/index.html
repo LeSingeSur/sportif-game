@@ -11441,7 +11441,13 @@ function apolShowMidDilemme(){
   document.getElementById('apol-dilemme').style.display='flex';
 }
 
-function apolContinuePasser(){ apolResolveAnswer(null); }
+function apolContinuePasser(){
+  // Verrou anti-double-déclenchement : le bouton de secours ET le délai automatique
+  // pouvaient appeler cette fonction deux fois, ce qui comptait la question 2 fois.
+  if(APOL._resolving) return;
+  APOL._resolving=true;
+  Promise.resolve(apolResolveAnswer(null)).finally(()=>{ APOL._resolving=false; });
+}
 
 function apolTriggerRandom(){
   const ob=document.getElementById('apol-open-btn'); if(ob)ob.style.display='none';
@@ -11577,6 +11583,12 @@ function apolRevealEffect(item){
       '<button onclick="apolSubmitDouble()" style="width:46px;height:46px;flex-shrink:0;background:#f39c12;color:#fff;border:none;border-radius:8px;font-size:20px;cursor:pointer">✓</button></div>'+
       '<div id="apol-bonus-fb" style="text-align:center;font-size:13px;min-height:18px;margin-top:6px"></div>';
     setTimeout(()=>document.getElementById('apol-bonus-in')?.focus(),100);
+    // Tant que le bonus attend une réponse, on masque le bouton "question suivante" :
+    // il restait visible AU-DESSUS du champ et permettait de sauter le bonus
+    // (ou de bloquer l'enchaînement en cliquant au mauvais moment).
+    const cbD=document.getElementById('apol-continue-btn'); if(cbD)cbD.style.display='none';
+    const obD=document.getElementById('apol-open-btn'); if(obD)obD.style.display='none';
+    const kbD=document.getElementById('apol-keep-btn'); if(kbD)kbD.style.display='none';
 
   } else if(item.id==='voilee'){
     if(isLastQ){noEffect("c'est la dernière question");return;}
@@ -11644,6 +11656,14 @@ async function apolSubmitDouble(){
   else{APOL.score=Math.max(0,APOL.score-20);if(fb){fb.innerHTML='❌ C\'était <strong>'+revealedAnswer+'</strong> · −20 pts';fb.style.color='var(--red)';}}
   document.getElementById('apol-score').textContent=APOL.score;
   GAME.score=APOL.score; setScore(APOL.score,false);
+  // Filet de sécurité : si l'enchaînement automatique échoue (réseau, erreur JS),
+  // le joueur restait bloqué sans aucun bouton. On en réaffiche un dans tous les cas.
+  const cbEnd=document.getElementById('apol-continue-btn');
+  if(cbEnd){
+    cbEnd.style.display='block';
+    cbEnd.textContent='▶ CONTINUER';
+    cbEnd.onclick=apolContinuePasser;
+  }
   setTimeout(apolContinuePasser,1500);
 }
 
