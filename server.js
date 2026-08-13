@@ -854,6 +854,9 @@ app.get('/api/athlete', (req, res) => {
       : `/api/img-proxy?url=${encodeURIComponent(athlete.imageUrl)}`;
     base.gridSize  = gridSize;
     base.maxScore  = gridSize * gridSize;
+    // Manquait ici (présent seulement dans /api/preview) : l'indice saisi en admin
+    // n'atteignait donc jamais le joueur en vrai jeu.
+    base.imageIndication = athlete.imageIndication||'';
   } else if (athlete.type === 'buzz') {
     base.clues             = athlete.clues;
     base.maxScore          = 100;
@@ -1630,7 +1633,7 @@ app.post('/api/admin/athlete', (req, res) => {
   // Vérification taille image base64
   const b64 = req.body.imageBase64 || '';
   if (b64 && b64.length > 8 * 1024 * 1024) {
-    return res.status(400).json({ error: 'Image trop lourde — max 6MB' });
+    return res.status(400).json({ error: 'Image trop lourde — max 8 Mo une fois encodée (environ 6 Mo de fichier)' });
   }
 
   // Support réponses multiples séparées par ; dans le champ réponse
