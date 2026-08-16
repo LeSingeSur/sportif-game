@@ -412,7 +412,9 @@ app.get('/api/preview', (req, res) => {
     }));
     base.sautTheme = athlete.sautTheme||'';
     base.sautTol = athlete.sautTol!=null?athlete.sautTol:1;
-    base.maxScore = 350;   // 20+40+60+80+100 de base + jusqu'à 50 de bonus (5×10)
+    base.sautTimer = athlete.sautTimer!=null?athlete.sautTimer:20;
+    base.sautPenalty = athlete.sautPenalty!=null?athlete.sautPenalty:2;
+    base.maxScore = 100;   // 5 barres × 20 pts max chacune
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
@@ -1016,7 +1018,9 @@ app.get('/api/athlete', (req, res) => {
     }));
     base.sautTheme = athlete.sautTheme||'';
     base.sautTol = athlete.sautTol!=null?athlete.sautTol:1;
-    base.maxScore = 350;   // 20+40+60+80+100 de base + jusqu'à 50 de bonus (5×10)
+    base.sautTimer = athlete.sautTimer!=null?athlete.sautTimer:20;
+    base.sautPenalty = athlete.sautPenalty!=null?athlete.sautPenalty:2;
+    base.maxScore = 100;   // 5 barres × 20 pts max chacune
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
@@ -1798,6 +1802,8 @@ app.post('/api/admin/athlete', (req, res) => {
     sautWords:          type === 'saut' ? (req.body.sautWords||[]) : undefined,
     sautTheme:          type === 'saut' ? (req.body.sautTheme||'').trim() : undefined,
     sautTol:            type === 'saut' ? (parseInt(req.body.sautTol)||1) : undefined,
+    sautTimer:          type === 'saut' ? Math.max(0,Math.min(120,parseInt(req.body.sautTimer)??20)) : undefined,
+    sautPenalty:        type === 'saut' ? Math.max(0,Math.min(30,parseInt(req.body.sautPenalty)??2)) : undefined,
     plongeeTol:         type === 'plongee' ? (parseInt(req.body.plongeeTol)||1) : undefined,
     rouletteText:       type === 'roulette' ? (req.body.rouletteText||'').trim() : undefined,
     rouletteAnswer:     type === 'roulette' ? (req.body.rouletteAnswer||'').trim() : undefined,
