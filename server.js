@@ -358,7 +358,9 @@ app.get('/api/preview', (req, res) => {
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
-    base.answer          = athlete.repliqueAuthor || athlete.answer || '';
+    // repliqueAuthor NON transmis (vérif via /api/replique-author-check) —
+    // avant, l'auteur de la citation était lisible en clair dans la page.
+    base.answer          = '';
     base.maxScore = 100;
   } else if (athlete.type === 'assaut') {
     base.phase1 = (athlete.phase1||[]).map(q=>({q:q.q||'',a:q.a||'',w:q.w||'',p:q.p||''}));
@@ -402,6 +404,15 @@ app.get('/api/preview', (req, res) => {
     base.escaladeTheme = athlete.escaladeTheme||'';
     base.escaladeTol = athlete.escaladeTol||1;
     base.maxScore = 200;
+  } else if (athlete.type === 'saut') {
+    // Le mot n'est PLUS transmis (vérif via /api/saut-check) — sinon n'importe qui
+    // pouvait lire les 5 réponses en clair avant de jouer.
+    base.sautWords = (athlete.sautWords||[]).map(w=>({
+      indices:Array.isArray(w.indices)?w.indices.slice(0,3):['','','']
+    }));
+    base.sautTheme = athlete.sautTheme||'';
+    base.sautTol = athlete.sautTol!=null?athlete.sautTol:1;
+    base.maxScore = 350;   // 20+40+60+80+100 de base + jusqu'à 50 de bonus (5×10)
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
@@ -772,6 +783,52 @@ app.post('/api/bj-value', (req, res) => {
   res.json({ name: entry[0], value: +entry[1] });
 });
 
+// LE SAUT EN HAUTEUR — vérifie un mot sans jamais l'exposer à l'avance
+app.post('/api/saut-check', (req, res) => {
+  const { athleteId, level, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'saut') return res.status(404).json({ error: 'Défi introuvable' });
+  const words = athlete.sautWords || [];
+  const w = words[level];
+  if (!w) return res.status(400).json({ error: 'Palier invalide' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function lev(a,b){
+    const m=a.length,n=b.length;
+    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+  const tol = athlete.sautTol!=null ? parseInt(athlete.sautTol) : 1;
+  const correct = lev(norm(answer), norm(w.mot)) <= tol;
+  // Le mot n'est révélé QUE si trouvé, ou explicitement demandé (fin de partie / élimination)
+  res.json({ correct, mot: (correct || req.body.reveal) ? w.mot : null });
+});
+
+// RÉPLIQUE — phase 2 (auteur) : vérification serveur, jamais exposée à l'avance
+app.post('/api/replique-author-check', (req, res) => {
+  const { athleteId, answer } = req.body;
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  if (!athlete || athlete.type !== 'replique') return res.status(404).json({ error: 'Défi introuvable' });
+  const norm = s => (s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'');
+  // Réplique exacte de matchesAuthor côté client : pas de tolérance, prénom OU nom accepté
+  const target = athlete.repliqueAuthor || athlete.answer || '';
+  const nv = norm(answer), na = norm(target);
+  const correct = nv === na || na.split(' ').filter(Boolean).some(p => nv === p);
+  res.json({ correct, answer: target });
+});
+
+// RÉPLIQUE — options du duo auteur : la bonne réponse mélangée à un leurre,
+// sans jamais indiquer laquelle l'est (le bouton affichait le nom en clair avant).
+app.get('/api/replique-author-options', (req, res) => {
+  const athlete = athletes.find(a => String(a.id) === String(req.query.athleteId));
+  if (!athlete || athlete.type !== 'replique') return res.status(404).json({ error: 'Défi introuvable' });
+  const target = athlete.repliqueAuthor || athlete.answer || '';
+  const wrong = (athlete.repliqueAuthorChoices || [])[0] || '?';
+  const options = [target, wrong].sort(() => Math.random() - 0.5);
+  res.json({ options });
+});
+
 // EPO — révèle une réponse non encore trouvée
 app.post('/api/grimpe-epo', (req, res) => {
   const { athleteId, found } = req.body;
@@ -911,7 +968,9 @@ app.get('/api/athlete', (req, res) => {
     base.rqTime        = athlete.rqTime || 60;
     base.repliqueAuthorChoices = athlete.repliqueAuthorChoices || [];
     base.repliqueCitation = athlete.repliqueCitation || '';
-    base.answer          = athlete.repliqueAuthor || athlete.answer || '';
+    // repliqueAuthor NON transmis (vérif via /api/replique-author-check) —
+    // avant, l'auteur de la citation était lisible en clair dans la page.
+    base.answer          = '';
     base.maxScore = 100;
   } else if (athlete.type === 'biathlon') {
     base.biatTheme         = athlete.biatTheme || '';
@@ -949,6 +1008,15 @@ app.get('/api/athlete', (req, res) => {
     }));
     base.escaladeTheme = athlete.escaladeTheme||'';
     base.maxScore = 200;
+  } else if (athlete.type === 'saut') {
+    // Le mot n'est PLUS transmis (vérif via /api/saut-check) — sinon n'importe qui
+    // pouvait lire les 5 réponses en clair avant de jouer.
+    base.sautWords = (athlete.sautWords||[]).map(w=>({
+      indices:Array.isArray(w.indices)?w.indices.slice(0,3):['','','']
+    }));
+    base.sautTheme = athlete.sautTheme||'';
+    base.sautTol = athlete.sautTol!=null?athlete.sautTol:1;
+    base.maxScore = 350;   // 20+40+60+80+100 de base + jusqu'à 50 de bonus (5×10)
   } else if (athlete.type === 'roulette') {
     base.rouletteText = athlete.rouletteText||'';
     // rouletteAnswer volontairement NON transmis (vérif via /api/roulette-check)
@@ -1614,7 +1682,7 @@ app.get('/api/admin/scores', (req, res) => {
 app.post('/api/admin/athlete', (req, res) => {
   const { password, answer, aliases, emoji, clue, clues, imageUrl, gridSize, type, editId, buzzDecrement, question, unit, targetValue, sportusHint1, sportusHint2, sportusHint0, coefficient } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
-  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit') return res.status(400).json({ error: 'Nom obligatoire' });
+  if (!answer && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'saut' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit') return res.status(400).json({ error: 'Nom obligatoire' });
   if (type === 'image' && !imageUrl && !req.body.imageBase64) return res.status(400).json({ error: 'Image obligatoire (URL ou fichier)' });
   if (type === 'buzz' && (!clues || !clues.length)) return res.status(400).json({ error: 'Indices Buzz obligatoires' });
   if (type === 'sportus' && !answer) return res.status(400).json({ error: 'Nom obligatoire' });
@@ -1628,7 +1696,8 @@ app.post('/api/admin/athlete', (req, res) => {
   if (type === 'biathlon' && (!req.body.biatTheme || !req.body.biatSprintAnswers || req.body.biatSprintAnswers.length < 1)) return res.status(400).json({ error: 'Thème et réponses sprint obligatoires' });
   if (type === 'maillonfaible' && (!req.body.mfQuestions || req.body.mfQuestions.length < 1)) return res.status(400).json({ error: 'Questions obligatoires' });
   if (type === 'blackjack' && (!req.body.bjTheme || !req.body.bjTarget || !req.body.bjAnswers || !Object.keys(req.body.bjAnswers).length)) return res.status(400).json({ error: 'Thème, cible et réponses obligatoires' });
-  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
+  if (type === 'saut' && (!req.body.sautWords || req.body.sautWords.length < 5 || !req.body.sautWords.slice(0,5).every(w=>w && w.mot && Array.isArray(w.indices) && w.indices.filter(Boolean).length>=1))) return res.status(400).json({ error: '5 mots avec au moins 1 indice chacun sont obligatoires' });
+  if (type !== 'image' && type !== 'buzz' && type !== 'sportus' && type !== 'prix' && type !== 'trappe' && type !== 'demineur' && type !== 'chase' && type !== 'scout' && type !== 'replique' && type !== 'blackjack' && type !== 'grimpe' && type !== 'biathlon' && type !== 'maillonfaible' && type !== 'haltero' && type !== 'tirarlarc' && type !== 'nagesync' && type !== 'assaut' && type !== 'var' && type !== 'rvlf' && type !== 'plongee' && type !== 'escalade' && type !== 'saut' && type !== 'roulette' && type !== 'bowling' && type !== 'equitation' && type !== 'badminton' && type !== 'melimelo' && type !== 'apol' && type !== 'trivpursuit' && !clue) return res.status(400).json({ error: 'Description obligatoire' });
 
   // Vérification taille image base64
   const b64 = req.body.imageBase64 || '';
@@ -1638,7 +1707,7 @@ app.post('/api/admin/athlete', (req, res) => {
 
   // Support réponses multiples séparées par ; dans le champ réponse
   const answerParts = (answer||'').split(';').map(s=>s.trim()).filter(Boolean);
-  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
+  const safeAnswer = answerParts[0] || (type==='demineur'?'Le Démineur':type==='chase'?'The Chase':type==='replique'?(req.body.repliqueAuthor||'Réplique').trim():type==='blackjack'?(req.body.bjTheme||'Blackjack').trim():type==='grimpe'?(req.body.grimpeTheme||"L'Alpe d'Huez").trim():type==='var'?'La VAR':type==='rvlf'?'Retour vers le Futur':type==='plongee'?'La Plongée':type==='escalade'?"L'Escalade":type==='saut'?'Le Saut en Hauteur':type==='roulette'?'Roulette Russe':type==='bowling'?'Bowling Quiz':type==='equitation'?'Équitation CSO':type==='badminton'?'Badminton Quiz':'???');
   const parts         = safeAnswer.split(/\s+/);
   const autoAliases   = [safeAnswer.toLowerCase()];
   if(parts.length > 1) autoAliases.push(parts[parts.length - 1].toLowerCase());
@@ -1726,6 +1795,9 @@ app.post('/api/admin/athlete', (req, res) => {
     escaladeQuestions:  type === 'escalade' ? (req.body.escaladeQuestions||[]) : undefined,
     escaladeTheme:      type === 'escalade' ? (req.body.escaladeTheme||'').trim() : undefined,
     escaladeTol:        type === 'escalade' ? (parseInt(req.body.escaladeTol)||1) : undefined,
+    sautWords:          type === 'saut' ? (req.body.sautWords||[]) : undefined,
+    sautTheme:          type === 'saut' ? (req.body.sautTheme||'').trim() : undefined,
+    sautTol:            type === 'saut' ? (parseInt(req.body.sautTol)||1) : undefined,
     plongeeTol:         type === 'plongee' ? (parseInt(req.body.plongeeTol)||1) : undefined,
     rouletteText:       type === 'roulette' ? (req.body.rouletteText||'').trim() : undefined,
     rouletteAnswer:     type === 'roulette' ? (req.body.rouletteAnswer||'').trim() : undefined,
