@@ -1234,7 +1234,6 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="saut-rules" style="background:var(--c2);border-radius:12px;padding:14px;font-size:12px;line-height:1.85;color:var(--mute)">
       <div style="font-family:var(--fh);font-size:13px;color:var(--neon);margin-bottom:4px;letter-spacing:1px">🤸 LE SAUT EN HAUTEUR</div>
       <div id="saut-theme-display" style="display:none;font-family:var(--fh);font-size:16px;color:var(--txt);text-align:center;background:rgba(255,255,255,.04);border-radius:8px;padding:8px;margin-bottom:8px;letter-spacing:1px"></div>
-      <div id="saut-timer" style="display:none;font-family:ui-monospace,monospace;font-weight:900;font-size:15px;text-align:center;color:var(--txt);margin-bottom:6px">⏱ 20s</div>
       Franchis <strong style="color:var(--txt)">5 barres</strong> en devinant le mot mystère de chacune.<br><br>
       🎯 <strong style="color:var(--txt)">20 pts par barre</strong> — plus tu trouves vite, plus tu marques :<br>
       <strong style="color:#00e676">20 pts</strong> au 1<sup>er</sup> indice · <strong style="color:#ffc800">15 pts</strong> au 2<sup>e</sup> · <strong style="color:var(--mute)">10 pts</strong> au 3<sup>e</sup><br>
@@ -1251,6 +1250,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
     <div id="saut-header" style="display:none;justify-content:space-between;align-items:center;background:var(--c2);border-radius:10px;padding:8px 14px">
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="saut-score">0</div></div>
       <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">BARRE</span><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="saut-level-badge">2m10</div></div>
+      <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div id="saut-timer" style="font-family:ui-monospace,monospace;font-weight:900;font-size:20px;color:var(--txt)">20s</div></div>
       <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">VIES</span><div id="saut-lives" style="display:flex;gap:2px;justify-content:flex-end"></div></div>
     </div>
 
@@ -4075,7 +4075,7 @@ const SAUT_BAR_BOTTOM=[18,33,48,63,78]; // position verticale (%) dans le stade
 
 const SAUT={data:null,level:0,attempt:0,failStreak:0,score:0,done:false,timeLeft:20,timerInt:null,penalty:0};
 
-const SAUT_DISPLAY={'saut-header':'flex','saut-stade':'block','saut-q':'flex','saut-in-row':'flex','saut-pastilles':'flex','saut-timer':'block'};
+const SAUT_DISPLAY={'saut-header':'flex','saut-stade':'block','saut-q':'flex','saut-in-row':'flex','saut-pastilles':'flex'};
 
 function setupSaut(data){
   SAUT.data=data; SAUT.level=0; SAUT.attempt=0; SAUT.failStreak=0; SAUT.score=0; SAUT.done=false;
@@ -4107,7 +4107,7 @@ function setupSaut(data){
 }
 
 function sautHideGame(){
-  ['saut-header','saut-stade','saut-q','saut-in-row','saut-fb','saut-impasse-btn','saut-pastilles','saut-timer'].forEach(id=>{
+  ['saut-header','saut-stade','saut-q','saut-in-row','saut-fb','saut-impasse-btn','saut-pastilles'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.style.display='none';
   });
 }
@@ -4191,10 +4191,10 @@ function sautStartTimer(){
   const el = document.getElementById('saut-timer');
   if(!base || base<=0){
     SAUT.timeLeft = 0;
-    if(el) el.style.display='none';
+    if(el && el.parentNode) el.parentNode.style.display='none';
     return;
   }
-  if(el) el.style.display='block';
+  if(el && el.parentNode) el.parentNode.style.display='';
   SAUT.timeLeft = Math.max(5, base - SAUT.penalty);
   sautUpdateTimerDisplay();
   SAUT.timerInt = setInterval(()=>{
@@ -4212,7 +4212,7 @@ function sautStopTimer(){
 function sautUpdateTimerDisplay(){
   const el=document.getElementById('saut-timer');
   if(!el) return;
-  el.textContent='⏱ '+SAUT.timeLeft+'s';
+  el.textContent=SAUT.timeLeft+'s';
   el.style.color = SAUT.timeLeft<=5 ? 'var(--red)' : (SAUT.timeLeft<=10 ? '#ffc800' : 'var(--txt)');
 }
 // Temps écoulé sur une tentative : traité comme une réponse fautée
@@ -5254,6 +5254,7 @@ function rvlfJoker(type){
       setTimeout(()=>{if(fb)fb.textContent='';},1500);
       return;
     }
+    RVLF.jokers.balise=false;   // consommée : un joker ne sert QU'UNE fois
     RVLF.balise={
       score:RVLF.score,
       jokers:{...RVLF.jokers},
@@ -5269,6 +5270,11 @@ function rvlfJoker(type){
     setTimeout(()=>{if(fb)fb.textContent='';},1500);
     return; // don't stop timer, don't disable buttons
   }
+  // Lien et Schrödinger : consommés dès validation de l'usage.
+  // Avant, ils n'étaient marqués utilisés QUE dans les cas d'échec, donc
+  // réutilisables à l'infini dès qu'ils fonctionnaient normalement.
+  RVLF.jokers[type]=false;
+  rvlfUpdateUI();
   rvlfStopTimer();
   document.querySelectorAll('#rvlf-choices .biat-qcm-btn').forEach(b=>b.disabled=true);
 
@@ -5523,7 +5529,13 @@ function rvlfActivateBalise(){
   const saved=RVLF.balise;
   const cardsLost=RVLF.qIdx-saved.qIdxNext;
   RVLF.score=saved.score;
-  RVLF.jokers={...saved.jokers, balise:false};
+  // Un joker consommé le reste DÉFINITIVEMENT : la balise restaure le score,
+  // pas les jokers dépensés depuis (sinon Lien/Schrödinger redeviendraient gratuits).
+  RVLF.jokers={
+    lien: RVLF.jokers.lien && saved.jokers.lien,
+    schrodinger: RVLF.jokers.schrodinger && saved.jokers.schrodinger,
+    balise: false
+  };
   RVLF.superActive=saved.superActive||false;
   RVLF.deadUniverse=saved.deadUniverse!==undefined?saved.deadUniverse:null;
   // qIdx stays advanced — cards between balise and error are permanently lost
