@@ -1239,7 +1239,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <strong style="color:#00e676">20 pts</strong> au 1<sup>er</sup> indice · <strong style="color:#ffc800">15 pts</strong> au 2<sup>e</sup> · <strong style="color:var(--mute)">10 pts</strong> au 3<sup>e</sup><br>
       → <strong style="color:#ffd700">100 pts maximum</strong><br><br>
       <span id="saut-rule-timer">⏱ <strong style="color:var(--txt)">20 secondes</strong> par tentative. Chaque erreur te coûte <strong style="color:var(--red)">2 secondes</strong> pour la suite.<br></span>
-      ❤️ <strong style="color:var(--txt)">3 échecs d'affilée</strong> = éliminé, tu gardes tes points acquis.<br>
+      ❤️ <strong style="color:var(--txt)">3 essais par mot</strong> — au 3<sup>e</sup> raté, la barre est manquée (0 pt) et tu passes à la suivante.<br>
       ⏭️ <strong style="color:var(--txt)">Impasse</strong> : passe à la barre suivante si tu bloques (sauf sur la dernière).
       <div style="margin-top:10px">
         <button onclick="sautStart()" style="width:100%;padding:12px;border-radius:10px;border:2px solid var(--neon);background:rgba(212,255,0,.1);color:var(--neon);font-family:var(--fh);font-size:15px;cursor:pointer;letter-spacing:1px">🤸 C'EST PARTI</button>
@@ -1251,7 +1251,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div><span style="font-size:10px;color:var(--mute)">SCORE</span><div style="font-family:var(--fh);font-size:28px;color:var(--neon)" id="saut-score">0</div></div>
       <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">BARRE</span><div style="font-family:var(--fh);font-size:20px;color:var(--txt)" id="saut-level-badge">2m10</div></div>
       <div style="text-align:center"><span style="font-size:10px;color:var(--mute)">TEMPS</span><div id="saut-timer" style="font-family:ui-monospace,monospace;font-weight:900;font-size:20px;color:var(--txt)">20s</div></div>
-      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">VIES</span><div id="saut-lives" style="display:flex;gap:2px;justify-content:flex-end"></div></div>
+      <div style="text-align:right"><span style="font-size:10px;color:var(--mute)">ESSAIS</span><div id="saut-lives" style="display:flex;gap:2px;justify-content:flex-end"></div></div>
     </div>
 
     <!-- Échelle des barres -->
@@ -4073,16 +4073,16 @@ const SAUT_LEVELS=[
 const SAUT_BONUS=[20,15,10]; // points TOTAUX (pas un ajout) selon l'essai — plafonné à 20/barre
 const SAUT_BAR_BOTTOM=[18,33,48,63,78]; // position verticale (%) dans le stade
 
-const SAUT={data:null,level:0,attempt:0,failStreak:0,score:0,done:false,timeLeft:20,timerInt:null,penalty:0};
+const SAUT={data:null,level:0,attempt:0,score:0,done:false,timeLeft:20,timerInt:null,penalty:0};
 
 const SAUT_DISPLAY={'saut-header':'flex','saut-stade':'block','saut-q':'flex','saut-in-row':'flex','saut-pastilles':'flex'};
 
 function setupSaut(data){
-  SAUT.data=data; SAUT.level=0; SAUT.attempt=0; SAUT.failStreak=0; SAUT.score=0; SAUT.done=false;
+  SAUT.data=data; SAUT.level=0; SAUT.attempt=0; SAUT.score=0; SAUT.done=false;
   SAUT.timeLeft=20; SAUT.penalty=0; if(SAUT.timerInt){clearInterval(SAUT.timerInt);SAUT.timerInt=null;}
   const _tps=data.sautTimer!=null?parseInt(data.sautTimer):20;
   const _t=document.getElementById('game-tip');
-  if(_t)_t.textContent=(_tps>0?_tps+"s par tentative · ":"")+"3 indices par mot · 3 échecs d'affilée = éliminé";
+  if(_t)_t.textContent=(_tps>0?_tps+"s par tentative · ":"")+"3 indices par mot · les 5 barres sont toujours jouées";
   const themeEl=document.getElementById('saut-theme-display');
   if(themeEl&&data.sautTheme){themeEl.textContent='📌 Thème : '+data.sautTheme;themeEl.style.display='block';}
   else if(themeEl){themeEl.style.display='none';}
@@ -4150,9 +4150,10 @@ function sautUpdateLives(){
   const wrap=document.getElementById('saut-lives');
   if(!wrap)return;
   wrap.innerHTML='';
+  // Essais restants sur LE MOT en cours (les échecs ne se cumulent plus d'un mot à l'autre)
   for(let i=0;i<3;i++){
     const s=document.createElement('span');
-    s.className='saut-life'+(i<SAUT.failStreak?' lost':'');
+    s.className='saut-life'+(i<SAUT.attempt?' lost':'');
     s.textContent='❤️';
     wrap.appendChild(s);
   }
@@ -4273,7 +4274,6 @@ function sautSuccess(){
   // 1er indice = 20, 2e = 15, 3e = 10. Total sur 5 barres plafonné à 100.
   const pts=SAUT_BONUS[SAUT.attempt];
   SAUT.score+=pts;
-  SAUT.failStreak=0;
   GAME.score=SAUT.score;setScore(SAUT.score,false);
   const scEl=document.getElementById('saut-score');if(scEl)scEl.textContent=SAUT.score;
   sautUpdateLives();
@@ -4295,23 +4295,33 @@ function sautSuccess(){
 
 function sautWrong(){
   sautStopTimer();
-  SAUT.failStreak++;
   const malus = SAUT.data && SAUT.data.sautPenalty!=null ? parseInt(SAUT.data.sautPenalty) : 2;
   SAUT.penalty=Math.min(60,SAUT.penalty+malus);   // malus réglé par l'admin, une seule fois par erreur
+  SAUT.attempt++;
   sautUpdateLives();
   const stade=document.getElementById('saut-stade');
   if(stade){stade.classList.add('saut-shake');setTimeout(()=>stade.classList.remove('saut-shake'),400);}
   const athlete=document.getElementById('saut-athlete');
   if(athlete)athlete.className='saut-athlete fail';
   const fb=document.getElementById('saut-fb');
-  if(SAUT.failStreak>=3){
-    if(fb){fb.textContent="❌ 3e échec d'affilée — Éliminé !";fb.style.color='var(--red)';}
+
+  // Les échecs comptent PAR MOT : 3 indices épuisés = barre manquée (0 pt),
+  // on passe simplement à la suivante. Plus d'élimination de la partie.
+  if(SAUT.attempt>=3){
+    const dernier = SAUT.level>=SAUT_LEVELS.length-1;
+    if(fb){fb.textContent='❌ Barre manquée — 0 pt'+(dernier?'':', on passe à la suivante');fb.style.color='var(--red)';}
     const inp=document.getElementById('saut-in');if(inp)inp.style.display='none';
     const imp=document.getElementById('saut-impasse-btn');if(imp)imp.style.display='none';
-    setTimeout(()=>sautFinish(false),1300);
+    SAUT.level++;
+    sautUpdateLadder();
+    setTimeout(()=>{
+      if(fb)fb.textContent='';
+      if(SAUT.level>=SAUT_LEVELS.length) sautFinish(false);
+      else sautShowWord();
+    },1400);
     return;
   }
-  SAUT.attempt++;
+
   sautUpdatePastilles();
   if(fb){fb.textContent='❌ Raté ! Indice suivant…';fb.style.color='var(--red)';}
   setTimeout(()=>{
@@ -4333,7 +4343,7 @@ function sautImpasse(){
   const imp=document.getElementById('saut-impasse-btn');if(imp)imp.style.display='none';
   SAUT.level++;
   sautUpdateLadder();
-  if(fb){fb.textContent='⏭️ Impasse — tu gardes '+SAUT.failStreak+" échec(s) de retard sur la barre suivante";fb.style.color='#ffc800';}
+  if(fb){fb.textContent='⏭️ Impasse — on passe à la barre suivante';fb.style.color='#ffc800';}
   setTimeout(()=>{if(fb)fb.textContent='';sautShowWord();},1400);
 }
 
@@ -4346,7 +4356,11 @@ function sautFinish(record){
   const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
   const vName=document.getElementById('v-name');if(vName)vName.textContent='Le Saut en Hauteur';
   const vSub=document.getElementById('v-sub');
-  const statut=record?'🏆 Record du Monde franchi !':'💀 Éliminé à '+(SAUT_LEVELS[SAUT.level]?.h||'2m50');
+  // Plus d'élimination : les 5 barres sont toujours jouées, on résume la performance
+  const statut = finalScore>=100 ? '🏆 Sans-faute — Record du Monde !'
+               : finalScore>=60  ? '🥇 Beau concours'
+               : finalScore>0    ? '🥉 Quelques barres franchies'
+               : '💪 Aucune barre cette fois';
   if(vSub)vSub.textContent=statut+' · '+finalScore+' pts';
   ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   setVictoryIcon('saut');submitScore(finalScore);
