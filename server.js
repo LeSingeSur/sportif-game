@@ -1376,7 +1376,10 @@ app.post('/api/formula/circuit', async (req, res) => {
       const m = req.body.medals || {};
       const v = (x, d) => Math.max(1, Math.min(99, parseInt(x) || d));
       const dia = v(m.diamant, 12);
-      return { diamant: dia, or: v(m.or, dia+1), argent: v(m.argent, dia+3), bronze: v(m.bronze, dia+6) };
+      // marge mini optionnelle (cases bonus) pour décrocher le Diamant en plus du nombre
+      // de coups ; 0 = désactivée, le Diamant se comporte alors comme avant (coups seuls)
+      const diaLeft = Math.max(0, Math.min(99, parseInt(m.diamantLeft) || 0));
+      return { diamant: dia, diamantLeft: diaLeft, or: v(m.or, dia+1), argent: v(m.argent, dia+3), bronze: v(m.bronze, dia+6) };
     })(),
     published: !!published,
     // Le fantôme de référence survit à une réédition du circuit
