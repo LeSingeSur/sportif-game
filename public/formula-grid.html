@@ -1046,6 +1046,11 @@ header.top {
     animation: none !important;
   }
 }
+@keyframes medalPop {
+  0%   { transform: scale(0) rotate(-25deg); opacity: 0; }
+  60%  { transform: scale(1.18) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -1081,6 +1086,7 @@ header.top {
     <button id="back-menu" style="flex:1;text-align:left">← Circuits</button>
     <button id="gh-ref" class="btn" style="padding:6px 9px;font-size:11px" title="Fantôme de l'organisateur">👻</button>
     <button id="gh-own" class="btn" style="padding:6px 9px;font-size:11px" title="Ton meilleur tour">👤</button>
+    <button id="btn-surf-table" class="btn" style="display:none;padding:6px 9px;font-size:11px" title="Inertie et déport par rapport">🛞</button>
     <button id="btn-rules-race" class="btn" style="padding:6px 12px;font-size:12px">📖 Règles</button>
     <button id="btn-quit-race" class="btn" style="padding:6px 9px;font-size:11px" title="Quitter le jeu">🚪</button>
   </div>
@@ -1150,6 +1156,9 @@ header.top {
     ↻ Autre trajectoire vers cette case
   </button>
   <div id="msg">Choisis ta vitesse puis lance le dé.</div>
+  <button id="btn-undo" class="btn" style="display:none;background:rgba(121,192,255,.1);border:1px solid rgba(121,192,255,.4);color:#79c0ff;font-size:12px;padding:9px" onclick="undoLastMove()">
+    ↩️ Annuler le dernier coup
+  </button>
   <button id="btn-restart" class="btn" style="background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.35);color:var(--crash);font-size:12px;padding:9px">
     🔄 Recommencer la course
   </button>
@@ -1293,15 +1302,31 @@ header.top {
           <input type="number" id="c-width" min="2" max="6" value="3">
         </div>
         <div class="field">
-          <label>Virages</label>
-          <input type="number" id="c-turns" min="3" max="12" value="6">
+          <label>Longueur — coups au parfait</label>
+          <input type="number" id="c-moves" min="5" max="40" value="12">
         </div>
       </div>
-      <div class="row">
-        <div class="field">
-          <label>Longueur du tour (cases)</label>
-          <input type="number" id="c-length" min="60" max="280" step="10" value="180">
+
+      <div class="field">
+        <label>Profil de pilotage — répartition des rapports</label>
+        <div style="font-size:10px;color:var(--mute);margin-bottom:6px">
+          Nombre de coups d'un tour sans faute · beaucoup de V4 = lignes droites, beaucoup de V1 = virages serrés
         </div>
+        <div id="gearmix-rows"></div>
+        <div id="gearmix-sum" style="font-size:10.5px;margin-top:4px"></div>
+      </div>
+
+      <div class="field" id="surface-block" style="display:none">
+        <label>Surfaces (rallye)</label>
+        <div id="surfmix-rows"></div>
+        <div id="surfmix-sum" style="font-size:10.5px;margin-top:4px"></div>
+        <label style="display:flex;align-items:center;gap:7px;margin-top:8px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--txt)">
+          <input type="checkbox" id="c-surf-alt" style="width:17px;height:17px;accent-color:var(--line)">
+          Alterner les secteurs (sinon un seul bloc par surface)
+        </label>
+      </div>
+
+      <div class="row">
         <div class="field">
           <label>Checkpoints</label>
           <input type="number" id="c-checkpoints" min="0" max="6" value="3">
@@ -1320,6 +1345,47 @@ header.top {
             <span style="font-size:12px;color:var(--mute)">Avant la course, jusqu'à "Fin des essais"</span>
           </label>
         </div>
+        <div class="field">
+          <label>Retour arrière</label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
+            <input type="checkbox" id="c-undo" style="width:18px;height:18px;accent-color:#79c0ff">
+            <span style="font-size:12px;color:var(--mute)">Annuler 1 coup par essai</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🏅 Médailles — nombre de coups à ne pas dépasser</label>
+        <div style="font-size:10px;color:var(--mute);margin-bottom:7px">
+          Le 💎 Diamant est le chrono parfait du circuit. Règle les autres seuils librement.
+        </div>
+        <div class="row">
+          <div class="field">
+            <label style="color:#7ee7ff">💎 Diamant</label>
+            <input type="number" id="c-med-diamant" min="1" max="99" value="12">
+          </div>
+          <div class="field">
+            <label style="color:#ffd700">🥇 Or</label>
+            <input type="number" id="c-med-or" min="1" max="99" value="13">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label style="color:#c0c8d4">🥈 Argent</label>
+            <input type="number" id="c-med-argent" min="1" max="99" value="15">
+          </div>
+          <div class="field">
+            <label style="color:#cd7f32">🥉 Bronze</label>
+            <input type="number" id="c-med-bronze" min="1" max="99" value="18">
+          </div>
+        </div>
+        <button class="btn" id="btn-med-auto" style="margin-top:6px;padding:8px;font-size:12px">
+          ⚙️ Calculer automatiquement depuis le tracé
+        </button>
+        <div id="med-hint" style="font-size:10.5px;color:var(--mute);margin-top:5px"></div>
+      </div>
+
+      <div class="row">
         <div class="field">
           <label>Classement général</label>
           <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;padding:8px 0">
@@ -1416,6 +1482,7 @@ header.top {
      ============================================================ -->
 <div id="finish">
   <div id="flag"></div>
+  <div id="fmedal" style="display:none;text-align:center;margin-bottom:6px"></div>
   <h2 id="fh2">ARRIVÉE !</h2>
   <div class="stats" id="fstats"></div>
   <p id="fsub"></p>
@@ -1465,7 +1532,8 @@ header.top {
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
-<div class="copilot" id="copilot"></div>
+<div class="copilot" id="copilot" onclick="showSurfaceTable()"></div>
+<div id="surf-table" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(8,9,11,.88);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'"></div>
 <script>
 'use strict';
 
@@ -1746,10 +1814,69 @@ function copilotNote() {
 
   el.innerHTML = '<b>' + tete + '</b>' +
     '<span>V' + gear + ' — inertie <b>' + inert + '</b> · déport <b>' + drift + '</b>' +
-    (drift > 0 ? ' case' + (drift > 1 ? 's' : '') : '') + '</span>';
+    (drift > 0 ? ' case' + (drift > 1 ? 's' : '') : '') +
+    ' <b style="color:var(--line)">· voir tout ▸</b></span>';
   el.classList.add('on');
+  el.style.cursor = 'pointer';
+  R._copilotSurf = surf;                 // surface annoncée, pour le tableau détaillé
   clearTimeout(copilotNote._t);
   copilotNote._t = setTimeout(() => el.classList.remove('on'), 4200);
+}
+
+// Tableau complet des 4 rapports sur une surface — ouvert en touchant l'annonce
+function refreshSurfBtn() {
+  const b = document.getElementById('btn-surf-table');
+  if (!b) return;
+  b.style.display = isRallye() ? 'block' : 'none';
+  b.onclick = () => showSurfaceTable(surfaceAt(R.q, R.r));
+}
+
+function showSurfaceTable(surf) {
+  const s = surf || R._copilotSurf || surfaceAt(R.q, R.r);
+  const maxG = isRallye() ? 4 : 6;
+  const inertT = inertiaTable();
+  const bounds = diceBounds();
+  const couleurs = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff' };
+  const c = couleurs[s] || '#9aa4b2';
+
+  let lignes = '';
+  for (let g = 1; g <= maxG; g++) {
+    const b = bounds[g] || [0, 0];
+    const dr = driftForGear(g, s);
+    const enCours = (g === (R.pendingGear || R.gear));
+    lignes +=
+      '<tr style="' + (enCours ? 'background:rgba(247,201,72,.12)' : '') + '">' +
+        '<td style="padding:7px 8px;font-weight:900;color:var(--line)">V' + g + (enCours ? ' ◂' : '') + '</td>' +
+        '<td style="padding:7px 8px;font-family:ui-monospace,monospace">' + b[0] + '–' + b[1] + '</td>' +
+        '<td style="padding:7px 8px;text-align:center">' + (inertT[g] || 0) + '</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:' + (dr > 0 ? '#ff9f43' : 'var(--mute)') + '">' +
+          (dr > 0 ? '+' + dr : '—') + '</td>' +
+      '</tr>';
+  }
+
+  const box = document.getElementById('surf-table');
+  if (!box) return;
+  box.innerHTML =
+    '<div style="background:var(--panel);border:1px solid ' + c + '55;border-radius:12px;padding:14px;max-width:340px;width:100%">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+        '<span style="font-size:13px;font-weight:900;letter-spacing:1px;color:' + c + ';flex:1">' +
+          (SURF_FR[s] || s).toUpperCase() + '</span>' +
+        '<button class="btn" onclick="document.getElementById(\'surf-table\').style.display=\'none\'" ' +
+          'style="padding:5px 11px;font-size:12px">✕</button>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' +
+        '<tr style="font-size:9.5px;letter-spacing:1px;color:var(--mute);text-align:left">' +
+          '<th style="padding:4px 8px">RAPPORT</th><th style="padding:4px 8px">CASES</th>' +
+          '<th style="padding:4px 8px;text-align:center">INERTIE</th>' +
+          '<th style="padding:4px 8px;text-align:center">DÉPORT</th></tr>' +
+        lignes +
+      '</table>' +
+      '<div style="font-size:10.5px;color:var(--mute);margin-top:9px;line-height:1.45">' +
+        'L\'<b style="color:var(--txt)">inertie</b> est le nombre de cases droites à faire avant de pouvoir tourner.<br>' +
+        'Le <b style="color:#ff9f43">déport</b> te pousse vers l\'extérieur à chaque virage.' +
+      '</div>' +
+    '</div>';
+  box.style.display = 'flex';
 }
 
 function toast(t) {
@@ -1772,6 +1899,7 @@ function show(id) {
 // Retour au menu
 function backToMenu() {
   document.getElementById('finish').classList.remove('on');
+  const _fm = document.getElementById('fmedal'); if (_fm) _fm.style.display = 'none';
   show('scr-menu');
   loadCircuitList();
 }
@@ -2214,6 +2342,10 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.ghost = R.ghostRef || R.ghostOwn;   // référence pour le delta chrono
   R.worldBest = circuit.worldBest || null;
   R.turnPositions = [{ q: circuit.start.x, r: circuit.start.y, dir: circuit.start.dir || 0 }];
+  // Retour arrière : autorisé par l'organisateur, une seule fois par essai
+  R.undoAllowed = (circuit.undoEnabled === true);
+  R.undoUsed = false;
+  R.undoSnap = null;
   R.lightsDone = false;
 
   // Effets visuels
@@ -3086,6 +3218,8 @@ function syncDash() {
     ap.style.display = (R.phase === 'pick' && n > 1 && !R.animating) ? 'block' : 'none';
   }
 
+  if (typeof refreshUndoBtn === 'function') refreshUndoBtn();
+  if (typeof refreshSurfBtn === 'function') refreshSurfBtn();
 }
 
 /* ================================================================
@@ -4707,7 +4841,64 @@ document.getElementById('alt-path').onclick = () => {
 /* ================================================================
    COURSE — ANIMATION DE DÉPLACEMENT
    ================================================================ */
+// RETOUR ARRIÈRE — instantané pris AVANT que le coup ne s'applique.
+// Une seule utilisation par essai, activable par l'organisateur.
+function snapshotForUndo() {
+  if (!R.undoAllowed || R.undoUsed) return;
+  R.undoSnap = {
+    q: R.q, r: R.r, dir: R.dir, gear: R.gear, inertia: R.inertia,
+    turn: R.turn, lapCount: R.lapCount, leftFinishZone: R.leftFinishZone,
+    cpTimes: (R.cpTimes || []).slice(),
+    lastCP: R.lastCP ? { ...R.lastCP } : null,
+    turnPositions: (R.turnPositions || []).map(p => ({ ...p })),
+    drsUsed: R.drsUsed, turboUsed: R.turboUsed,
+    reprise: R.reprise ? { ...R.reprise } : null,
+    trail: (R.trail || []).map(p => ({ ...p })),
+    fullTrail: (R.fullTrail || []).map(p => ({ ...p }))
+  };
+}
+
+function undoLastMove() {
+  if (!R.undoAllowed || R.undoUsed || !R.undoSnap || R.animating) return;
+  if (R.phase === 'done') return;
+  const s = R.undoSnap;
+  R.q = s.q; R.r = s.r; R.dir = s.dir;
+  R.gear = s.gear; R.pendingGear = s.gear; R.inertia = s.inertia;
+  R.turn = s.turn; R.lapCount = s.lapCount; R.leftFinishZone = s.leftFinishZone;
+  R.cpTimes = s.cpTimes.slice();
+  R.lastCP = s.lastCP ? { ...s.lastCP } : null;
+  R.turnPositions = s.turnPositions.map(p => ({ ...p }));
+  R.drsUsed = s.drsUsed; R.turboUsed = s.turboUsed;
+  R.reprise = s.reprise ? { ...s.reprise } : null;
+  R.trail = s.trail.map(p => ({ ...p }));
+  R.fullTrail = s.fullTrail.map(p => ({ ...p }));
+
+  R.undoUsed = true;      // une seule fois par essai
+  R.undoSnap = null;
+  R.rolled = null; R.budget = null; R.results = null; R.ends = null;
+  R.endPaths = null; R.preview = null; R.phase = 'gear';
+  R.animating = false;
+
+  syncDash();
+  renderGears();
+  updateSpeedometer();
+  refreshUndoBtn();
+  drawRace();
+  say('↩️ Coup annulé — rejoue ce tour', 'info');
+}
+
+function refreshUndoBtn() {
+  const b = document.getElementById('btn-undo');
+  if (!b) return;
+  const dispo = R.undoAllowed && !R.undoUsed && R.undoSnap && R.turn > 0 && R.phase !== 'done';
+  b.style.display = R.undoAllowed ? 'block' : 'none';
+  b.disabled = !dispo;
+  b.style.opacity = dispo ? '1' : '0.35';
+  b.textContent = R.undoUsed ? '↩️ Retour arrière (utilisé)' : '↩️ Annuler le dernier coup';
+}
+
 function applyResult(r) {
+  snapshotForUndo();
   R.animating = true;
   R.animPath = r.path;
   R.animIdx = 0;
@@ -4982,6 +5173,70 @@ function finalizeMove(r) {
 
 // Tableau de classement du circuit (arrivée + mode test). `me` surligne le joueur,
 // et si le joueur n'est pas dans le top affiché, on ajoute sa ligne à part.
+// MÉDAILLE DE FIN DE COURSE — mesurée sur le CHRONO DE RÉFÉRENCE du circuit
+// (le nombre de coups d'un tour sans faute), pas sur le classement.
+// Le joueur sait donc immédiatement s'il a bien piloté, même s'il joue seul.
+const MEDAL_TIERS = [
+  { max: 0, emoji: '💎', nom: 'DIAMANT',  couleur: '#7ee7ff', halo: 'rgba(126,231,255,.45)' },
+  { max: 1, emoji: '🥇', nom: 'OR',       couleur: '#ffd700', halo: 'rgba(255,215,0,.4)'   },
+  { max: 3, emoji: '🥈', nom: 'ARGENT',   couleur: '#c0c8d4', halo: 'rgba(192,200,212,.3)' },
+  { max: 6, emoji: '🥉', nom: 'BRONZE',   couleur: '#cd7f32', halo: 'rgba(205,127,50,.3)'  }
+];
+
+function medalFor(moves, medals) {
+  if (!medals || !medals.diamant) return null;      // circuit sans seuils
+  const paliers = [
+    { seuil: medals.diamant, emoji: '💎', nom: 'DIAMANT', couleur: '#7ee7ff', halo: 'rgba(126,231,255,.45)' },
+    { seuil: medals.or,      emoji: '🥇', nom: 'OR',      couleur: '#ffd700', halo: 'rgba(255,215,0,.4)'   },
+    { seuil: medals.argent,  emoji: '🥈', nom: 'ARGENT',  couleur: '#c0c8d4', halo: 'rgba(192,200,212,.3)' },
+    { seuil: medals.bronze,  emoji: '🥉', nom: 'BRONZE',  couleur: '#cd7f32', halo: 'rgba(205,127,50,.3)'  }
+  ];
+  for (const p of paliers) if (moves <= p.seuil) return { ...p, ecart: moves - medals.diamant };
+  return { emoji: '🏁', nom: 'TERMINÉ', couleur: 'var(--mute)', halo: 'transparent',
+           ecart: moves - medals.diamant, seuil: null };
+}
+
+function showMedal(rank, total) {
+  const el = document.getElementById('fmedal');
+  if (!el) return;
+
+  const c = R.circuit || {};
+  // Seuils définis par l'organisateur, sinon barème dérivé du chrono parfait
+  const medals = (c.medals && c.medals.diamant)
+    ? c.medals
+    : (c.targetMoves ? { diamant: c.targetMoves, or: c.targetMoves + 1,
+                         argent: c.targetMoves + 3, bronze: c.targetMoves + 6 } : null);
+  const m = medalFor(R.turn, medals);
+
+  if (!m) {                                          // pas de seuils : on retombe sur le rang
+    if (!rank) { el.style.display = 'none'; return; }
+    el.innerHTML =
+      '<div style="font-size:44px;line-height:1">🏁</div>' +
+      '<div style="font-size:15px;font-weight:900;letter-spacing:2px;color:var(--mute);margin-top:2px">' +
+        rank + 'ᵉ sur ' + total + '</div>';
+    el.style.display = 'block';
+    return;
+  }
+
+  const ecartTxt = m.ecart <= 0
+    ? 'chrono parfait — ' + medals.diamant + ' coups'
+    : '+' + m.ecart + ' coup' + (m.ecart > 1 ? 's' : '') + ' sur le parfait (' + medals.diamant + ')';
+
+  const rangTxt = rank ? ' · ' + rank + 'ᵉ sur ' + total : '';
+
+  el.innerHTML =
+    '<div style="font-size:52px;line-height:1;filter:drop-shadow(0 0 14px ' + m.halo + ')">' + m.emoji + '</div>' +
+    '<div style="font-size:17px;font-weight:900;letter-spacing:2px;color:' + m.couleur + ';margin-top:2px">' + m.nom + '</div>' +
+    '<div style="font-size:11px;color:var(--mute);margin-top:1px">' + ecartTxt + rangTxt + '</div>';
+  el.style.display = 'block';
+
+  if (m.nom !== 'TERMINÉ') {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'medalPop .6s cubic-bezier(.2,1.4,.4,1)';
+  }
+}
+
 function renderCircuitBoard(top, pseudo, myRank, myTotal, limit) {
   const list = (top || []).slice(0, limit || 10);
   if (!list.length) return '<div style="color:var(--mute);padding:6px">Aucun temps enregistré — tu es le premier !</div>';
@@ -5198,6 +5453,8 @@ async function finishRace(r) {
       (res.countsInGlobal === false)
         ? ' · Rang ' + res.rank + ' · 🎈 hors classement général'
         : ' · 🏆 ' + res.points + ' pts (Rang ' + res.rank + ')';
+
+    showMedal(res.rank, res.totalPlayers);
 
     const rb = document.getElementById('btn-retry');
     rb.disabled = (res.attemptsLeft <= 0);
@@ -6231,6 +6488,10 @@ function newCircuit() {
   document.getElementById('c-width').value = 3;
   document.getElementById('c-turns').value = 6;
   document.getElementById('c-warmup').checked = false;
+    document.getElementById('c-undo').checked = (c.undoEnabled === true);
+    E.targetMoves = c.targetMoves || 0;
+    if (c.targetMoves) document.getElementById('c-moves').value = c.targetMoves;
+    writeMedals(c.medals && c.medals.diamant ? c.medals : medalsFromTarget(c.targetMoves || 12));
   const _rgd = document.getElementById('c-regen-dice'); if (_rgd) _rgd.checked = false;
   E.diceSeed = null;   // la grille naîtra au premier enregistrement
   const _ccg = document.getElementById('c-counts-global'); if (_ccg) _ccg.checked = true;
@@ -6760,240 +7021,389 @@ function centerOnCircuit() {
 }
 
 // Bouton Générer
-document.getElementById('btn-generate').onclick = () => {
-  const trackW   = parseInt(document.getElementById('c-width').value) || 3;
-  const numTurns = parseInt(document.getElementById('c-turns').value) || 6;
-  const targetLen = Math.max(60, Math.min(600, parseInt(document.getElementById('c-length').value) || 220));
+/* ================================================================
+   RÉPARTITIONS (rapports & surfaces) — curseurs normalisés à 100 %
+   ================================================================ */
+const GEARMIX = { 1: 20, 2: 30, 3: 30, 4: 20 };
+const SURFMIX = { asphalte: 100, terre: 0, neige: 0 };
 
-  const nbCp = parseInt((document.getElementById('c-checkpoints') || {}).value);
-  let grid = emptyGrid();
-  let keptPath = null;   // ligne médiane du tracé retenu → sens de la course
-  let startPos = null;   // départ posé automatiquement
-  let bestLen = 0;
-  let success = false;
-  let lenBias = 1;   // correction d'échelle apprise au fil des tentatives
+function mixRow(label, color, key, val, oninput) {
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+    '<span style="width:74px;font-size:11.5px;color:' + color + ';font-weight:800">' + label + '</span>' +
+    '<input type="range" min="0" max="100" step="5" value="' + val + '" data-mix="' + key + '" ' +
+      'oninput="' + oninput + '(\'' + key + '\',this.value)" style="flex:1;accent-color:' + color + '">' +
+    '<span id="mixval-' + key + '" style="width:38px;text-align:right;font-family:ui-monospace,monospace;font-size:11.5px">' + val + '%</span>' +
+  '</div>';
+}
 
-  for (let attempt = 0; attempt < 40 && !success; attempt++) {
-    grid = emptyGrid();
+function renderGearMix() {
+  const box = document.getElementById('gearmix-rows');
+  if (!box) return;
+  const cols = { 1: '#7ee787', 2: '#79c0ff', 3: '#ffa657', 4: '#ff7b72' };
+  const noms = { 1: 'V1 serré', 2: 'V2', 3: 'V3', 4: 'V4 rapide' };
+  box.innerHTML = [1,2,3,4].map(g => mixRow(noms[g], cols[g], 'g'+g, GEARMIX[g], 'setGearMix')).join('');
+  updateMixSum('gear');
+}
+function renderSurfMix() {
+  const box = document.getElementById('surfmix-rows');
+  if (!box) return;
+  const cols = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff' };
+  const noms = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige' };
+  box.innerHTML = Object.keys(SURFMIX).map(k => mixRow(noms[k], cols[k], k, SURFMIX[k], 'setSurfMix')).join('');
+  updateMixSum('surf');
+}
+function setGearMix(key, v) {
+  GEARMIX[parseInt(key.slice(1))] = parseInt(v);
+  const el = document.getElementById('mixval-' + key); if (el) el.textContent = v + '%';
+  updateMixSum('gear');
+}
+function setSurfMix(key, v) {
+  SURFMIX[key] = parseInt(v);
+  const el = document.getElementById('mixval-' + key); if (el) el.textContent = v + '%';
+  updateMixSum('surf');
+}
+function updateMixSum(which) {
+  const isGear = which === 'gear';
+  const total = isGear ? [1,2,3,4].reduce((s,g)=>s+GEARMIX[g],0)
+                       : Object.values(SURFMIX).reduce((s,v)=>s+v,0);
+  const el = document.getElementById(isGear ? 'gearmix-sum' : 'surfmix-sum');
+  if (!el) return;
+  if (total === 0) { el.innerHTML = '<span style="color:var(--crash)">⚠️ Tout à zéro — mets au moins une valeur</span>'; return; }
+  el.innerHTML = total === 100
+    ? '<span style="color:var(--ok)">✓ 100 %</span>'
+    : '<span style="color:var(--mute)">Total ' + total + ' % — sera ramené à 100 % automatiquement</span>';
+}
+// Ramène une répartition à des proportions sûres, quelle que soit la somme saisie
+function normalizeMix(obj) {
+  const keys = Object.keys(obj);
+  const total = keys.reduce((s,k)=>s+obj[k],0);
+  if (total <= 0) { const eq = {}; keys.forEach(k=>eq[k]=1/keys.length); return eq; }
+  const out = {}; keys.forEach(k => out[k] = obj[k]/total);
+  return out;
+}
 
-    const ctrl = generateControlPoints(numTurns);
+renderGearMix();
+renderSurfMix();
 
-    // Spline Catmull-Rom
-    const path = [];
-    const steps = 20;
-    for (let i = 0; i < ctrl.length; i++) {
-      const p0 = ctrl[(i - 1 + ctrl.length) % ctrl.length];
-      const p1 = ctrl[i];
-      const p2 = ctrl[(i + 1) % ctrl.length];
-      const p3 = ctrl[(i + 2) % ctrl.length];
-      for (let sIdx = 0; sIdx < steps; sIdx++) {
-        path.push(catmullRom(p0, p1, p2, p3, sIdx / steps));
+/* ================================================================
+   GÉNÉRATEUR — piloté par la RÉPARTITION DES RAPPORTS
+   La géométrie découle du profil voulu : un segment V4 impose une longue
+   ligne droite (déport + inertie), un segment V1 autorise un virage serré.
+   En rallye la spéciale est POINT À POINT (départ ≠ arrivée).
+   ================================================================ */
+
+// Cases parcourues au COUP PARFAIT pour ce rapport (meilleure face de chaque dé).
+// C'est cette valeur qui dimensionne le circuit : la longueur demandée en coups
+// correspond ainsi au temps d'un pilote sans faute, pas à une course moyenne.
+function bestCasesForGear(g, rallye) {
+  const set = rallye ? RALLYE_DICE_SET : DICE_SET;
+  const pool = set.slice(0, g);
+  return pool.reduce((s, d) => s + Math.max(...d), 0);
+}
+
+// Construit la ligne médiane comme une SUITE DE SEGMENTS.
+// Chaque segment = un coup joué à un rapport donné : sa longueur vient des dés,
+// et l'angle qui le suit vient de l'inertie de ce rapport (V4 tourne peu, V1 pivote).
+function buildSpineFromGearMix(moves, gearMix, rallye, boucle) {
+  const inert = rallye ? RALLYE_INERTIA : INERTIA;
+  const maxG = rallye ? 4 : 6;
+
+  // Tirage de la séquence de rapports respectant les proportions demandées
+  const seq = [];
+  const keys = Object.keys(gearMix).map(Number).filter(g => g >= 1 && g <= maxG);
+  keys.forEach(g => {
+    const n = Math.round(gearMix[g] * moves);
+    for (let i = 0; i < n; i++) seq.push(g);
+  });
+  while (seq.length < moves) seq.push(keys[keys.length - 1] || 2);
+  seq.length = moves;
+  for (let i = seq.length - 1; i > 0; i--) {          // mélange
+    const j = Math.floor(Math.random() * (i + 1));
+    [seq[i], seq[j]] = [seq[j], seq[i]];
+  }
+  // En F1 le circuit doit BOUCLER : on répartit le virage total sur 360°
+  // pour que la fin du tracé revienne naturellement sur son départ.
+
+  // Marche : chaque coup avance de sa distance puis tourne d'un angle
+  // d'autant plus faible que le rapport est élevé.
+  const pts = [];
+  let x = 0, y = 0, ang = Math.random() * Math.PI * 2;
+  pts.push({ x, y });
+  // Pour une boucle, chaque coup doit tourner en moyenne de 360°/moves
+  const biaisBoucle = boucle ? (Math.PI * 2) / seq.length : 0;
+  seq.forEach(g => {
+    const dist = bestCasesForGear(g, rallye) * SQRT3;   // en pixels visuels
+    // Plus le rapport est haut, plus la courbe est douce (inertie élevée)
+    const maxTurn = Math.PI / (1.6 + inert[g] * 1.5);
+    const turn = biaisBoucle + (Math.random() - 0.5) * 2 * Math.min(maxTurn, boucle ? maxTurn * 0.6 : maxTurn);
+    const nSub = Math.max(2, Math.round(dist / SQRT3));
+    for (let k = 1; k <= nSub; k++) {
+      const a = ang + turn * (k / nSub);
+      x += (dist / nSub) * Math.cos(a);
+      y += (dist / nSub) * Math.sin(a);
+      pts.push({ x, y });
+    }
+    ang += turn;
+  });
+  // FERMETURE DE LA BOUCLE (F1) : le biais de rotation rapproche la fin du
+  // départ sans garantir la jonction. On corrige en répartissant l'écart
+  // résiduel sur tout le tracé — chaque point est ramené progressivement,
+  // ce qui referme l'anneau sans déformer la forme générale.
+  if (boucle && pts.length > 3) {
+    const dx = pts[0].x - pts[pts.length - 1].x;
+    const dy = pts[0].y - pts[pts.length - 1].y;
+    for (let i = 0; i < pts.length; i++) {
+      const t = i / (pts.length - 1);
+      pts[i].x += dx * t;
+      pts[i].y += dy * t;
+    }
+    pts.pop();   // le dernier point coïncide désormais avec le premier
+  }
+  return { pts, seq };
+}
+
+// Ramène le tracé dans la grille, en gardant les proportions
+function fitSpineToGrid(pts, margin) {
+  let mnX = Infinity, mxX = -Infinity, mnY = Infinity, mxY = -Infinity;
+  pts.forEach(p => { mnX = Math.min(mnX, p.x); mxX = Math.max(mxX, p.x);
+                     mnY = Math.min(mnY, p.y); mxY = Math.max(mxY, p.y); });
+  const availW = SQRT3 * (EW - 1) - SQRT3 * (EH - 1) / 2 - margin * 2;
+  const availH = 1.5 * (EH - 1) - margin * 2;
+  const k = Math.min(availW / Math.max(1, mxX - mnX), availH / Math.max(1, mxY - mnY), 1);
+  const offX = SQRT3 * (EH - 1) / 2 + margin + (availW - (mxX - mnX) * k) / 2;
+  const offY = margin + (availH - (myOrZero(mxY) - mnY) * k) / 2;
+  return pts.map(p => {
+    const vx = offX + (p.x - mnX) * k;
+    const vy = offY + (p.y - mnY) * k;
+    const ax = visualToAxial(vx, vy);
+    return cubeRound(ax.q, ax.r);
+  });
+}
+function myOrZero(v) { return isFinite(v) ? v : 0; }
+
+// Peint le ruban autour de la ligne médiane
+function paintRibbon(grid, spine, trackW) {
+  spine.forEach(c => {
+    for (let dq = -trackW; dq <= trackW; dq++) {
+      for (let dr = -trackW; dr <= trackW; dr++) {
+        const nq = c.q + dq, nr = c.r + dr;
+        if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+        const dist = (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
+        if (dist <= trackW) grid[nr][nq] = '.';
       }
     }
+  });
+}
 
-    // Lissage
-    let smoothed = path;
-    for (let pass = 0; pass < 2; pass++) {
-      const next = [];
-      for (let i = 0; i < smoothed.length; i++) {
-        const prev = smoothed[(i - 1 + smoothed.length) % smoothed.length];
-        const curr = smoothed[i];
-        const nxt = smoothed[(i + 1) % smoothed.length];
-        next.push({
-          q: (prev.q + curr.q * 2 + nxt.q) / 4,
-          r: (prev.r + curr.r * 2 + nxt.r) / 4
-        });
-      }
-      smoothed = next;
-    }
+// Applique les surfaces par SECTEURS le long de la spéciale
+function paintSurfaces(grid, spine, trackW, surfMix, alterne) {
+  const parts = Object.keys(surfMix).filter(k => surfMix[k] > 0);
+  if (parts.length <= 1 && (!parts.length || parts[0] === 'asphalte')) return;
 
-    // LONGUEUR DEMANDÉE : on mesure la ligne médiane puis on met le tracé à l'échelle
-    const lenOf = (pts) => {
-      let L = 0;
-      for (let i = 0; i < pts.length; i++) {
-        const a = pts[i], b = pts[(i + 1) % pts.length];
-        L += hexDistF(a.q, a.r, b.q, b.r);
-      }
-      return L;
-    };
-    const rawLen = lenOf(smoothed);
-    if (rawLen > 1) {
-      let cq = 0, cr = 0;
-      for (const p of smoothed) { cq += p.q; cr += p.r; }
-      cq /= smoothed.length; cr /= smoothed.length;
-
-      let k = (targetLen * lenBias) / rawLen;
-      // On borne l'échelle pour rester dans la grille
-      const maxR = Math.min(EW, EH) * 0.46;
-      let far = 0;
-      for (const p of smoothed) far = Math.max(far, Math.hypot(p.q - cq, p.r - cr));
-      if (far * k > maxR) k = maxR / far;
-
-      smoothed = smoothed.map(p => ({
-        q: cq + (p.q - cq) * k,
-        r: cr + (p.r - cr) * k
-      }));
-      // Recentrage sur la grille
-      let mnQ = Infinity, mxQ = -Infinity, mnR = Infinity, mxR = -Infinity;
-      for (const p of smoothed) {
-        mnQ = Math.min(mnQ, p.q); mxQ = Math.max(mxQ, p.q);
-        mnR = Math.min(mnR, p.r); mxR = Math.max(mxR, p.r);
-      }
-      const dq = EW / 2 - (mnQ + mxQ) / 2;
-      const dr = EH / 2 - (mnR + mxR) / 2;
-      smoothed = smoothed.map(p => ({ q: p.q + dq, r: p.r + dr }));
-    }
-
-    // ÉCART MINIMAL DU TRACÉ AVEC LUI-MÊME.
-    // Si deux portions éloignées le long du tour se retrouvent proches dans l'espace,
-    // les coups de pinceau fusionnent : la piste devient un grand champ ouvert au
-    // lieu de deux couloirs distincts. On rejette ces formes.
-    {
-      const need = trackW + 2;          // couloirs séparés par au moins 2 cases d'herbe
-      const N2 = smoothed.length;
-      const minArc = Math.max(8, Math.round(N2 * 0.06));
-      let tooClose = false;
-      for (let i = 0; i < N2 && !tooClose; i++) {
-        for (let j = i + minArc; j < N2; j++) {
-          if (Math.min(j - i, N2 - (j - i)) < minArc) continue;
-          if (hexDistF(smoothed[i].q, smoothed[i].r, smoothed[j].q, smoothed[j].r) < need) {
-            tooClose = true; break;
-          }
-        }
-      }
-      if (tooClose) {
-        lenBias = Math.min(4, lenBias * 1.06);   // un peu plus grand = plus d'air
-        continue;
-      }
-    }
-
-    // DENSIFICATION avant rasterisation.
-    // La spline est échantillonnée à pas de paramètre constant : dans les portions
-    // rapides (peu de virages, tracé agrandi), deux points consécutifs peuvent être
-    // distants de plusieurs cases et le pinceau laissait des TROUS dans le ruban.
-    // Le ruban n'était alors pas une boucle fermée, d'où le repli quasi systématique
-    // sur l'ovale de secours. On interpole pour garder moins d'une case entre deux points.
-    {
-      const dense = [];
-      for (let i = 0; i < smoothed.length; i++) {
-        const a = smoothed[i], b = smoothed[(i + 1) % smoothed.length];
-        const steps2 = Math.max(1, Math.ceil(hexDistF(a.q, a.r, b.q, b.r)));
-        for (let s = 0; s < steps2; s++) {
-          dense.push({ q: a.q + (b.q - a.q) * s / steps2, r: a.r + (b.r - a.r) * s / steps2 });
-        }
-      }
-      smoothed = dense;
-    }
-
-    // Rasterisation de la piste À LA LARGEUR DEMANDÉE.
-    // L'ancienne version comparait une distance déjà doublée à (trackW + 1) : les
-    // largeurs 3 et 4 donnaient le même ruban (5 cases), 5 et 6 aussi (7 cases).
-    // On mesure ici la distance hexagonale RÉELLE au tracé, en continu, ce qui
-    // permet des largeurs paires et une progression fidèle au réglage.
-    const halfW = Math.max(1, trackW / 2);
-    const reach = Math.ceil(halfW) + 1;
-    for (const p of smoothed) {
-      const c = cubeRound(p.q, p.r);
-      for (let ddq = -reach; ddq <= reach; ddq++) {
-        for (let ddr = -reach; ddr <= reach; ddr++) {
-          const nq = c.q + ddq, nr = c.r + ddr;
-          if (nq >= 0 && nq < EW && nr >= 0 && nr < EH) {
-            if (hexDistF(nq, nr, p.q, p.r) <= halfW) grid[nr][nq] = '.';
-          }
-        }
-      }
-    }
-
-    // Longueur réellement obtenue = cases de piste / largeur du ruban
-    let cellCount = 0;
-    for (let rr = 0; rr < EH; rr++) for (let qq = 0; qq < EW; qq++) if (grid[rr][qq] !== '#') cellCount++;
-    // Longueur du tour = cases de piste / largeur du ruban (largeur réelle, pas 2W+1)
-    bestLen = Math.round(cellCount / Math.max(1, trackW));
-
-    // Le tracé doit former une BOUCLE FERMÉE d'un seul tenant.
-    // Échec typique : avec peu de virages, l'intérieur se remplit et le circuit devient
-    // un pâté sans trou. On agrandit alors la boucle — retenter à l'identique ne servait
-    // à rien et menait tout droit à l'ovale de secours.
-    if (!isClosedLoop(grid)) {
-      lenBias = Math.min(4, lenBias * 1.10);
-      continue;
-    }
-
-    // ...et coller à la longueur demandée (±18 %). Sinon on corrige l'échelle et on retente :
-    // la relation entre l'échelle de la spline et la longueur finale n'est pas linéaire.
-    const ratio = bestLen / targetLen;
-    // Tolérance élargie au fil des tentatives : mieux vaut un circuit VALIDE et jouable
-    // un peu plus court/long que l'ovale de secours. Certaines combinaisons
-    // (peu de virages + piste large + tour long) n'admettent pas la longueur demandée.
-    const tol = Math.min(0.45, 0.18 + attempt * 0.009);
-    const lenOk = (ratio >= 1 - tol && ratio <= 1 + tol);
-
-    // Longueur atteinte (ou dernières tentatives) : on finit le circuit et on vérifie
-    // qu'un tour est réellement bouclable. Un tracé injouable est rejeté et regénéré.
-    if (lenOk || attempt >= 34) {
-      const cand = grid.map(row => row.slice());
-      const sp = finishGeneratedTrack(cand, smoothed, Number.isFinite(nbCp) ? nbCp : 3);
-      if (sp && isDrivable(cand, sp)) {
-        grid = cand;
-        startPos = sp;
-        keptPath = smoothed;
-        success = true;
-        continue;
-      }
-      // Sinon : forme non jouable (impasse, épingle infranchissable…) → autre forme
-      if (!lenOk) continue;
-    }
-
-    if (!lenOk) {
-      // On ajuste la consigne interne pour la tentative suivante
-      lenBias *= (ratio > 0 ? (1 / ratio) : 1);
-      lenBias = Math.max(0.4, Math.min(4, lenBias));
-    }
+  // Découpage de la spéciale en secteurs proportionnels aux pourcentages
+  let secteurs = [];
+  if (alterne && parts.length > 1) {
+    // Plusieurs passages par surface, entrelacés
+    const nBlocs = Math.min(8, parts.length * 2);
+    for (let i = 0; i < nBlocs; i++) secteurs.push(parts[i % parts.length]);
+  } else {
+    parts.forEach(k => secteurs.push(k));
   }
 
-  if (!success) {
-    // Aucune forme jouable trouvée : ovale de secours, toujours praticable
-    grid = emptyGrid();
-    startPos = generateOvalFallback(grid, trackW);
-    toast('⚠️ Ovale de secours — retente ou change les réglages');
+  // Longueur de chaque secteur, au prorata du % de sa surface
+  const poids = secteurs.map(k => surfMix[k] / secteurs.filter(x => x === k).length);
+  const somme = poids.reduce((a, b) => a + b, 0) || 1;
+  let idx = 0;
+  secteurs.forEach((surf, i) => {
+    const n = Math.round(spine.length * poids[i] / somme);
+    const fin = (i === secteurs.length - 1) ? spine.length : Math.min(spine.length, idx + n);
+    if (surf !== 'asphalte') {
+      const ch = surf === 'terre' ? 'T' : 'N';
+      for (let j = idx; j < fin; j++) {
+        const c = spine[j];
+        for (let dq = -trackW; dq <= trackW; dq++) {
+          for (let dr = -trackW; dr <= trackW; dr++) {
+            const nq = c.q + dq, nr = c.r + dr;
+            if (nq < 0 || nq >= EW || nr < 0 || nr >= EH) continue;
+            if (grid[nr][nq] === '.') grid[nr][nq] = ch;
+          }
+        }
+      }
+    }
+    idx = fin;
+  });
+}
+
+// SEUILS DE MÉDAILLES — réglables à la main, y compris sur un circuit existant.
+// Le Diamant sert de référence "chrono parfait" ; les autres sont libres.
+function medFields() {
+  return {
+    diamant: document.getElementById('c-med-diamant'),
+    or:      document.getElementById('c-med-or'),
+    argent:  document.getElementById('c-med-argent'),
+    bronze:  document.getElementById('c-med-bronze')
+  };
+}
+function readMedals() {
+  const f = medFields();
+  const v = k => Math.max(1, parseInt(f[k] && f[k].value) || 0);
+  return { diamant: v('diamant'), or: v('or'), argent: v('argent'), bronze: v('bronze') };
+}
+function writeMedals(m) {
+  const f = medFields();
+  if (f.diamant) f.diamant.value = m.diamant;
+  if (f.or)      f.or.value      = m.or;
+  if (f.argent)  f.argent.value  = m.argent;
+  if (f.bronze)  f.bronze.value  = m.bronze;
+  updateMedHint();
+}
+// Barème conseillé à partir du chrono parfait
+function medalsFromTarget(t) {
+  return { diamant: t, or: t + 1, argent: t + 3, bronze: t + 6 };
+}
+function updateMedHint() {
+  const el = document.getElementById('med-hint');
+  if (!el) return;
+  const m = readMedals();
+  const croissant = m.diamant <= m.or && m.or <= m.argent && m.argent <= m.bronze;
+  el.innerHTML = croissant
+    ? '<span style="color:var(--ok)">✓ 💎 ≤' + m.diamant + ' · 🥇 ≤' + m.or + ' · 🥈 ≤' + m.argent + ' · 🥉 ≤' + m.bronze + ' · au-delà : terminé</span>'
+    : '<span style="color:var(--crash)">⚠️ Les seuils doivent aller en croissant (diamant ≤ or ≤ argent ≤ bronze)</span>';
+}
+['c-med-diamant','c-med-or','c-med-argent','c-med-bronze'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.oninput = updateMedHint;
+});
+const _bma = document.getElementById('btn-med-auto');
+if (_bma) _bma.onclick = () => {
+  // Estime le chrono parfait à partir du tracé réellement présent sur la grille
+  let cells = 0;
+  for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (E.grid && E.grid[r] && E.grid[r][q] !== '#') cells++;
+  const largeur = (parseInt(document.getElementById('c-width').value) || 3) * 2 + 1;
+  const longueur = cells / Math.max(1, largeur);
+  const rallye = (E.mode === 'rallye');
+  let parCoup = 0;
+  const mix = normalizeMix({ 1: GEARMIX[1], 2: GEARMIX[2], 3: GEARMIX[3], 4: GEARMIX[4] });
+  Object.keys(mix).forEach(g => { parCoup += mix[g] * bestCasesForGear(parseInt(g), rallye); });
+  const t = Math.max(1, Math.round(longueur / Math.max(1, parCoup)));
+  E.targetMoves = t;
+  writeMedals(medalsFromTarget(t));
+  toast('⚙️ Seuils calculés : diamant à ' + t + ' coups');
+};
+updateMedHint();
+
+document.getElementById('btn-generate').onclick = () => {
+  const rallye  = (E.mode === 'rallye');
+  const trackW  = parseInt(document.getElementById('c-width').value) || 3;
+  const moves   = Math.max(5, Math.min(40, parseInt(document.getElementById('c-moves').value) || 12));
+  const nbCp    = parseInt((document.getElementById('c-checkpoints') || {}).value);
+
+  const gearMix = normalizeMix(rallye
+    ? { 1: GEARMIX[1], 2: GEARMIX[2], 3: GEARMIX[3], 4: GEARMIX[4] }
+    : { 1: GEARMIX[1], 2: GEARMIX[2], 3: GEARMIX[3], 4: GEARMIX[4] });
+  const surfMix = normalizeMix({ ...SURFMIX });
+  const alterne = !!(document.getElementById('c-surf-alt') || {}).checked;
+
+  let grid = null, spine = null;
+  for (let attempt = 0; attempt < 30 && !grid; attempt++) {
+    const g = emptyGrid();
+    const built = buildSpineFromGearMix(moves, gearMix, rallye, !rallye);
+    const fitted = fitSpineToGrid(built.pts, 6);
+
+    // Le tracé ne doit pas se recouper : une spéciale ne repasse pas sur elle-même
+    const seen = new Set();
+    let ok = true;
+    for (const c of fitted) {
+      if (c.q < 0 || c.q >= EW || c.r < 0 || c.r >= EH) { ok = false; break; }
+      const k = c.q + ',' + c.r;
+      if (seen.has(k)) continue;
+      seen.add(k);
+    }
+    if (!ok || fitted.length < 8) continue;
+
+    // Écart minimal entre deux portions non consécutives (sinon la piste fusionne)
+    let tropProche = false;
+    // En boucle, début et fin SE TOUCHENT volontairement : on ignore la jonction
+    const ignoreFin = rallye ? 0 : trackW * 4;
+    for (let i = 0; i < fitted.length && !tropProche; i++) {
+      for (let j = i + trackW * 4; j < fitted.length - ignoreFin; j++) {
+        const d = (Math.abs(fitted[i].q - fitted[j].q) + Math.abs(fitted[i].r - fitted[j].r)
+                 + Math.abs((fitted[i].q + fitted[i].r) - (fitted[j].q + fitted[j].r))) / 2;
+        if (d <= trackW * 2 + 1) { tropProche = true; break; }
+      }
+    }
+    if (tropProche) continue;
+
+    paintRibbon(g, fitted, trackW);
+    if (rallye) paintSurfaces(g, fitted, trackW, surfMix, alterne);
+    grid = g; spine = fitted;
+  }
+
+  if (!grid) {
+    toast('⚠️ Tracé impossible — réduis la longueur ou la largeur');
+    return;
+  }
+
+  // Arrivée : au BOUT du tracé en rallye (point à point), sur la ligne de
+  // départ en F1 (le circuit boucle, on repasse dessus à chaque tour).
+  const idxFin = rallye ? spine.length - 1 : 0;
+  const last = spine[idxFin];
+  const avant = rallye ? spine[Math.max(0, spine.length - 3)] : spine[Math.min(2, spine.length - 1)];
+  const dirFin = rallye ? hexDirectionBetween(avant, last) : hexDirectionBetween(last, avant);
+  const perp = HEX_DIRS[(dirFin + 2) % 6];
+  for (let k = -trackW; k <= trackW; k++) {
+    const fq = last.q + perp.q * k, fr = last.r + perp.r * k;
+    if (fq >= 0 && fq < EW && fr >= 0 && fr < EH && grid[fr][fq] !== '#') grid[fr][fq] = 'F';
+  }
+
+  // Checkpoints répartis le long de la spéciale
+  const nCp = Number.isFinite(nbCp) ? Math.max(0, Math.min(6, nbCp)) : 3;
+  for (let i = 1; i <= nCp; i++) {
+    const idx = Math.floor(spine.length * i / (nCp + 1));
+    const c = spine[idx], av = spine[Math.max(0, idx - 2)];
+    const d = hexDirectionBetween(av, c);
+    const pp = HEX_DIRS[(d + 2) % 6];
+    for (let k = -trackW; k <= trackW; k++) {
+      const cq = c.q + pp.q * k, cr = c.r + pp.r * k;
+      if (cq >= 0 && cq < EW && cr >= 0 && cr < EH && grid[cr][cq] !== '#' && grid[cr][cq] !== 'F') grid[cr][cq] = 'C';
+    }
   }
 
   E.grid = grid;
-  // Ligne médiane conservée : sens de la course, utile aux diagnostics et au test auto
-  E.genPath = keptPath ? keptPath.map(p => cubeRound(p.q, p.r)) : null;
-  E.carPos = startPos ? { q: startPos.q, r: startPos.r } : null;
-  E.carDir = startPos ? (startPos.dir || 0) : 0;
+  // Référence de chrono du circuit : le nombre de coups d'un tour sans faute.
+  // C'est elle qui déterminera les médailles du joueur (et non le classement).
+  E.targetMoves = moves;
+  writeMedals(medalsFromTarget(moves));   // seuils proposés, modifiables ensuite
+  // En F1 on recule un peu le départ pour ne pas naître SUR la ligne d'arrivée
+  const idxDep = rallye ? 0 : Math.min(spine.length - 2, trackW + 3);
+  E.carPos = { q: spine[idxDep].q, r: spine[idxDep].r };
+  E.carDir = hexDirectionBetween(spine[idxDep], spine[Math.min(idxDep + 2, spine.length - 1)]);
   E.undoStack = [];
 
-  document.getElementById('car-rotate').classList.remove('on');
-  centerOnCircuit();
+  document.getElementById('car-rotate').classList.add('on');
+  requestAnimationFrame(() => centerOnCircuit());
+  if (typeof updateFuelHint === 'function') updateFuelHint();
 
   let cells = 0;
   for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') cells++;
-
-  if (success) {
-    // Largeur réelle du ruban (le libellé annonçait trackW*2+1, ce qui était faux)
-    let nbF = 0, nbC = 0;
-    for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) {
-      if (grid[r][q] === 'F') nbF++;
-      else if (grid[r][q] === 'C') nbC++;
-    }
-    if (nbF > 0 && startPos) {
-      // Certaines combinaisons sont géométriquement impossibles (beaucoup de virages
-      // sur un tour très court) : on le dit plutôt que de laisser croire à un bug.
-      const ecart = Math.round((bestLen / targetLen - 1) * 100);
-      const note = Math.abs(ecart) > 20
-        ? ' ⚠️ ' + (ecart > 0 ? '+' : '') + ecart + '% vs demandé (trop de virages pour ce tour ?)'
-        : '';
-      toast('🏁 Tour ~' + bestLen + ' cases · ' + trackW + ' de large · arrivée + ' +
-            countCheckpointLines(grid) + ' checkpoint(s) + départ posés' + note);
-    } else {
-      toast('🏁 Tour ~' + bestLen + ' cases — place 🏁 📍 🏎️ à la main');
-    }
-  }
-
-  drawEditor();
+  toast('🏁 ' + moves + ' coups au parfait · ' + cells + ' cases · ' + (rallye ? 'spéciale point à point' : 'circuit bouclé'));
 };
+
+// Direction hexagonale approchée entre deux cases
+function hexDirectionBetween(a, b) {
+  const pa = axialToPixel(a.q, a.r, 1), pb = axialToPixel(b.q, b.r, 1);
+  const ang = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+  let best = 0, bestD = Infinity;
+  for (let d = 0; d < 6; d++) {
+    const dd = HEX_DIRS[d];
+    const pd = axialToPixel(dd.q, dd.r, 1);
+    const a2 = Math.atan2(pd.y, pd.x);
+    let diff = Math.abs(a2 - ang);
+    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+    if (diff < bestD) { bestD = diff; best = d; }
+  }
+  return best;
+}
 
 /* ================================================================
    GÉNÉRATEUR — FINITION AUTOMATIQUE
@@ -7552,11 +7962,17 @@ document.getElementById('btn-test-mode').onclick = () => {
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
     freePractice: document.getElementById('c-warmup').checked,
+    undoEnabled: document.getElementById('c-undo').checked,
+    targetMoves: readMedals().diamant,
+    medals: readMedals(),
     regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
     dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
     fuelCapacity: 0,
-    fuelEnabled: false
+    fuelEnabled: false,
+    undoEnabled: document.getElementById('c-undo').checked,
+    targetMoves: readMedals().diamant,
+    medals: readMedals()
   }, 'TesteurAdmin', 99, true);
 };
 
