@@ -5431,11 +5431,13 @@ async function finishRace(r) {
     };
   }
 
-  // Mode test : pas d'envoi serveur
+  // Mode test : pas d'envoi serveur, mais on affiche quand même la médaille
+  // (sinon impossible de vérifier ses seuils sans publier et jouer pour de vrai)
   if (R.testMode) {
     document.getElementById('flb').innerHTML =
       '<div style="color:var(--ok);padding:6px">✅ Mode test — non enregistré</div>' +
       renderCircuitBoard(R.board, R.pseudo, 0, 0, 10);
+    showMedal(0, 0, r.left);
 
     const rb = document.getElementById('btn-retry');
     rb.disabled = false;
@@ -7993,14 +7995,15 @@ document.getElementById('btn-test-mode').onclick = () => {
     undoEnabled: document.getElementById('c-undo').checked,
     targetMoves: readMedals().diamant,
     medals: readMedals(),
+    // Même graine que le bouton « Analyse » (E.diceSeed si le circuit est déjà
+    // publié, sinon E.editingId) : sans ça le mode test tirait des dés purement
+    // aléatoires et le score parfait trouvé par l'Analyse n'était pas reproductible.
+    diceSeed: E.diceSeed || E.editingId || 'preview',
     regenDiceSeed: !!(document.getElementById('c-regen-dice') || {}).checked,
     countsInGlobal: (document.getElementById('c-counts-global') || {}).checked !== false,
     dailyRequired: !!(document.getElementById('c-daily') || {}).checked,
     fuelCapacity: 0,
-    fuelEnabled: false,
-    undoEnabled: document.getElementById('c-undo').checked,
-    targetMoves: readMedals().diamant,
-    medals: readMedals()
+    fuelEnabled: false
   }, 'TesteurAdmin', 99, true);
 };
 
