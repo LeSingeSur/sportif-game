@@ -204,7 +204,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, diceSeed: c.diceSeed || null };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, undoEnabled: c.undoEnabled === true, targetMoves: c.targetMoves || 0, medals: c.medals || null, diceSeed: c.diceSeed || null };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -1370,6 +1370,14 @@ app.post('/api/formula/circuit', async (req, res) => {
     pointsMultiplier: Math.max(1, Math.min(100, parseInt(req.body.pointsMultiplier)||10)),
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
+    undoEnabled: req.body.undoEnabled === true,  // retour arrière : 1 coup par essai
+    targetMoves: Math.max(0, Math.min(99, parseInt(req.body.targetMoves)||0)), // chrono de référence (coups au parfait)
+    medals: (() => {                       // seuils de médailles réglés par l'organisateur
+      const m = req.body.medals || {};
+      const v = (x, d) => Math.max(1, Math.min(99, parseInt(x) || d));
+      const dia = v(m.diamant, 12);
+      return { diamant: dia, or: v(m.or, dia+1), argent: v(m.argent, dia+3), bronze: v(m.bronze, dia+6) };
+    })(),
     published: !!published,
     // Le fantôme de référence survit à une réédition du circuit
     ghost: existingIdx>=0 ? circuits[existingIdx].ghost : undefined,
