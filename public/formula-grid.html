@@ -1361,23 +1361,36 @@ header.top {
         </div>
         <div class="row">
           <div class="field">
-            <label style="color:#7ee7ff">💎 Diamant</label>
+            <label style="color:#7ee7ff">💎 Diamant — coups</label>
             <input type="number" id="c-med-diamant" min="1" max="99" value="12">
           </div>
+          <div class="field">
+            <label style="color:#7ee7ff">💎 marge mini (+)</label>
+            <input type="number" id="c-med-diamant-left" min="0" max="99" value="0">
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--mute);margin:-3px 0 7px">
+          Marge à 0 : le Diamant récompense tout run en ≤ coups, comme les autres médailles.
+          Marge réglée (ex: 13, cf. bouton « Analyse » du circuit) : le Diamant n'est décroché QUE par
+          la trajectoire optimale exacte — un run avec le même nombre de coups mais moins de marge
+          décroche l'Or à la place.
+        </div>
+        <div class="row">
           <div class="field">
             <label style="color:#ffd700">🥇 Or</label>
             <input type="number" id="c-med-or" min="1" max="99" value="13">
           </div>
-        </div>
-        <div class="row">
           <div class="field">
             <label style="color:#c0c8d4">🥈 Argent</label>
             <input type="number" id="c-med-argent" min="1" max="99" value="15">
           </div>
+        </div>
+        <div class="row">
           <div class="field">
             <label style="color:#cd7f32">🥉 Bronze</label>
             <input type="number" id="c-med-bronze" min="1" max="99" value="18">
           </div>
+          <div class="field"></div>
         </div>
         <button class="btn" id="btn-med-auto" style="margin-top:6px;padding:8px;font-size:12px">
           ⚙️ Calculer automatiquement depuis le tracé
@@ -5183,10 +5196,16 @@ const MEDAL_TIERS = [
   { max: 6, emoji: '🥉', nom: 'BRONZE',   couleur: '#cd7f32', halo: 'rgba(205,127,50,.3)'  }
 ];
 
-function medalFor(moves, medals) {
+function medalFor(moves, left, medals) {
   if (!medals || !medals.diamant) return null;      // circuit sans seuils
+  // Diamant : ≤ coups ET (si une marge mini est réglée) marge >= marge mini.
+  // Marge mini = 0/absente → se comporte comme avant (uniquement sur les coups).
+  const diaOk = moves <= medals.diamant && (!medals.diamantLeft || (left || 0) >= medals.diamantLeft);
+  if (diaOk) {
+    return { seuil: medals.diamant, emoji: '💎', nom: 'DIAMANT', couleur: '#7ee7ff',
+             halo: 'rgba(126,231,255,.45)', ecart: moves - medals.diamant };
+  }
   const paliers = [
-    { seuil: medals.diamant, emoji: '💎', nom: 'DIAMANT', couleur: '#7ee7ff', halo: 'rgba(126,231,255,.45)' },
     { seuil: medals.or,      emoji: '🥇', nom: 'OR',      couleur: '#ffd700', halo: 'rgba(255,215,0,.4)'   },
     { seuil: medals.argent,  emoji: '🥈', nom: 'ARGENT',  couleur: '#c0c8d4', halo: 'rgba(192,200,212,.3)' },
     { seuil: medals.bronze,  emoji: '🥉', nom: 'BRONZE',  couleur: '#cd7f32', halo: 'rgba(205,127,50,.3)'  }
@@ -5196,7 +5215,7 @@ function medalFor(moves, medals) {
            ecart: moves - medals.diamant, seuil: null };
 }
 
-function showMedal(rank, total) {
+function showMedal(rank, total, left) {
   const el = document.getElementById('fmedal');
   if (!el) return;
 
@@ -5204,9 +5223,9 @@ function showMedal(rank, total) {
   // Seuils définis par l'organisateur, sinon barème dérivé du chrono parfait
   const medals = (c.medals && c.medals.diamant)
     ? c.medals
-    : (c.targetMoves ? { diamant: c.targetMoves, or: c.targetMoves + 1,
+    : (c.targetMoves ? { diamant: c.targetMoves, diamantLeft: 0, or: c.targetMoves + 1,
                          argent: c.targetMoves + 3, bronze: c.targetMoves + 6 } : null);
-  const m = medalFor(R.turn, medals);
+  const m = medalFor(R.turn, left || 0, medals);
 
   if (!m) {                                          // pas de seuils : on retombe sur le rang
     if (!rank) { el.style.display = 'none'; return; }
@@ -5454,7 +5473,7 @@ async function finishRace(r) {
         ? ' · Rang ' + res.rank + ' · 🎈 hors classement général'
         : ' · 🏆 ' + res.points + ' pts (Rang ' + res.rank + ')';
 
-    showMedal(res.rank, res.totalPlayers);
+    showMedal(res.rank, res.totalPlayers, r.left);
 
     const rb = document.getElementById('btn-retry');
     rb.disabled = (res.attemptsLeft <= 0);
@@ -7238,39 +7257,48 @@ function paintSurfaces(grid, spine, trackW, surfMix, alterne) {
 // Le Diamant sert de référence "chrono parfait" ; les autres sont libres.
 function medFields() {
   return {
-    diamant: document.getElementById('c-med-diamant'),
-    or:      document.getElementById('c-med-or'),
-    argent:  document.getElementById('c-med-argent'),
-    bronze:  document.getElementById('c-med-bronze')
+    diamant:     document.getElementById('c-med-diamant'),
+    diamantLeft: document.getElementById('c-med-diamant-left'),
+    or:          document.getElementById('c-med-or'),
+    argent:      document.getElementById('c-med-argent'),
+    bronze:      document.getElementById('c-med-bronze')
   };
 }
 function readMedals() {
   const f = medFields();
   const v = k => Math.max(1, parseInt(f[k] && f[k].value) || 0);
-  return { diamant: v('diamant'), or: v('or'), argent: v('argent'), bronze: v('bronze') };
+  return {
+    diamant: v('diamant'),
+    // marge mini optionnelle : 0 = désactivée (le Diamant se comporte comme avant)
+    diamantLeft: Math.max(0, parseInt(f.diamantLeft && f.diamantLeft.value) || 0),
+    or: v('or'), argent: v('argent'), bronze: v('bronze')
+  };
 }
 function writeMedals(m) {
   const f = medFields();
-  if (f.diamant) f.diamant.value = m.diamant;
-  if (f.or)      f.or.value      = m.or;
-  if (f.argent)  f.argent.value  = m.argent;
-  if (f.bronze)  f.bronze.value  = m.bronze;
+  if (f.diamant)     f.diamant.value     = m.diamant;
+  if (f.diamantLeft) f.diamantLeft.value = m.diamantLeft || 0;
+  if (f.or)          f.or.value          = m.or;
+  if (f.argent)       f.argent.value      = m.argent;
+  if (f.bronze)      f.bronze.value      = m.bronze;
   updateMedHint();
 }
-// Barème conseillé à partir du chrono parfait
+// Barème conseillé à partir du chrono parfait (marge à 0 : pas encore connue,
+// il faut lancer « Analyse » sur le circuit pour l'obtenir précisément)
 function medalsFromTarget(t) {
-  return { diamant: t, or: t + 1, argent: t + 3, bronze: t + 6 };
+  return { diamant: t, diamantLeft: 0, or: t + 1, argent: t + 3, bronze: t + 6 };
 }
 function updateMedHint() {
   const el = document.getElementById('med-hint');
   if (!el) return;
   const m = readMedals();
   const croissant = m.diamant <= m.or && m.or <= m.argent && m.argent <= m.bronze;
+  const diaTxt = '💎 ≤' + m.diamant + (m.diamantLeft ? ' (et marge≥' + m.diamantLeft + ', sinon 🥇)' : '');
   el.innerHTML = croissant
-    ? '<span style="color:var(--ok)">✓ 💎 ≤' + m.diamant + ' · 🥇 ≤' + m.or + ' · 🥈 ≤' + m.argent + ' · 🥉 ≤' + m.bronze + ' · au-delà : terminé</span>'
+    ? '<span style="color:var(--ok)">✓ ' + diaTxt + ' · 🥇 ≤' + m.or + ' · 🥈 ≤' + m.argent + ' · 🥉 ≤' + m.bronze + ' · au-delà : terminé</span>'
     : '<span style="color:var(--crash)">⚠️ Les seuils doivent aller en croissant (diamant ≤ or ≤ argent ≤ bronze)</span>';
 }
-['c-med-diamant','c-med-or','c-med-argent','c-med-bronze'].forEach(id => {
+['c-med-diamant','c-med-diamant-left','c-med-or','c-med-argent','c-med-bronze'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.oninput = updateMedHint;
 });
@@ -8449,12 +8477,20 @@ document.getElementById('btn-solve').onclick = async () => {
       out.innerHTML =
         '<b style="color:#39d98a">Score parfait : ' + res.turns + ' coups +' + res.left + '</b><br>' +
         '<span style="color:#8b98a5">' + res.lines + ' trajectoire' + (res.lines > 1 ? 's' : '') +
-        ' atteignent ce nombre de coups</span><br><br>' +
-        '<b>Seuils de médailles</b><br>' +
+        ' atteignent ce nombre de coups' +
+        (res.lines > 1 ? ' — la meilleure a une marge de +' + res.left + ' case' + (res.left > 1 ? 's' : '') + ' bonus' : '') +
+        '</span><br><br>' +
+        '<b>Seuils de médailles suggérés</b><br>' +
         '🥇 Or ' + m.or + ' coups &nbsp; 🥈 Argent ' + m.argent +
         ' &nbsp; 🥉 Bronze ' + m.bronze + '<br>' +
-        '💎 Diamant : ' + m.or + ' coups +' + m.diamant +
-        ' <span style="color:#6e7b8a">(ne pas afficher aux joueurs)</span><br><br>' +
+        '💎 Diamant : ' + res.turns + ' coups' + (res.lines > 1 ? ', marge ≥ ' + res.left : '') +
+        ' <span style="color:#6e7b8a">' +
+        (res.lines > 1
+          ? '(sans la marge, l\'Or et le Diamant seraient identiques ici)'
+          : '(seule trajectoire parfaite : la marge n\'est pas nécessaire)') + '</span><br>' +
+        '<button id="btn-solve-apply" style="margin-top:6px;font-size:11px;padding:4px 10px;' +
+        'background:#132b26;border:1px solid #39d98a;border-radius:6px;color:#39d98a;cursor:pointer">' +
+        '💎 Régler le Diamant sur ce score</button><br><br>' +
         '<span style="color:' + (res.lines < 20 ? '#ff9f43' : (res.lines > 200 ? '#ff9f43' : '#8b98a5')) + '">' +
         (res.lines < 20 ? '⚠️ Très peu de lignes parfaites : le tracé n\'offre presque pas d\'alternative.'
          : res.lines > 200 ? '⚠️ Beaucoup de lignes parfaites : l\'optimum sera trouvé trop facilement.'
@@ -8472,6 +8508,20 @@ document.getElementById('btn-solve').onclick = async () => {
             mv.n + '. <b>V' + mv.gear + '</b> · ' + mv.total + (mv.turbo ? ' 🔥' : '') + '</span>';
         }).join('') +
         '</div>';
+      // Le bouton copie directement le score parfait trouvé dans les champs Diamant
+      // (coups + marge), sans que l'admin ait à retaper "7+13" à la main quelque part.
+      const applyBtn = document.getElementById('btn-solve-apply');
+      if (applyBtn) applyBtn.onclick = () => {
+        const f = readMedals();
+        writeMedals({
+          diamant: res.turns,
+          diamantLeft: res.lines > 1 ? res.left : 0,   // marge utile seulement s'il y a plusieurs lignes parfaites
+          or: Math.max(f.or, res.turns),
+          argent: Math.max(f.argent, res.turns),
+          bronze: Math.max(f.bronze, res.turns)
+        });
+        toast('💎 Diamant réglé : ' + res.turns + ' coups' + (res.lines > 1 ? ' (marge ≥' + res.left + ')' : ''));
+      };
       // Le bouton bascule l'affichage du tracé sur la carte de l'éditeur
       const showBtn = document.getElementById('btn-solve-show');
       if (showBtn) showBtn.onclick = () => {
