@@ -6509,10 +6509,9 @@ function newCircuit() {
   document.getElementById('c-width').value = 3;
   document.getElementById('c-turns').value = 6;
   document.getElementById('c-warmup').checked = false;
-    document.getElementById('c-undo').checked = (c.undoEnabled === true);
-    E.targetMoves = c.targetMoves || 0;
-    if (c.targetMoves) document.getElementById('c-moves').value = c.targetMoves;
-    writeMedals(c.medals && c.medals.diamant ? c.medals : medalsFromTarget(c.targetMoves || 12));
+  document.getElementById('c-undo').checked = false;
+  E.targetMoves = 0;
+  writeMedals(medalsFromTarget(12));   // seuils par défaut, pas ceux du circuit précédent
   const _rgd = document.getElementById('c-regen-dice'); if (_rgd) _rgd.checked = false;
   E.diceSeed = null;   // la grille naîtra au premier enregistrement
   const _ccg = document.getElementById('c-counts-global'); if (_ccg) _ccg.checked = true;
