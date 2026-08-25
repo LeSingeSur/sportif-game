@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1">
-<title>FORMULA GRID - HEX</title>
+<title>RALLYE GRID</title>
 <style>
 /* ============================================================
    VARIABLES
@@ -711,6 +711,17 @@ header.top {
 .dice-cube.rd3 { border-color: #ff9f43; color: #ff9f43; box-shadow: 0 0 18px rgba(255, 159, 67, .35); }
 .dice-cube.rd4 { border-color: #ff5d5d; color: #ff5d5d; box-shadow: 0 0 18px rgba(255, 93, 93, .35); }
 
+/* DÉ DE REPRISE BICOLORE : porte à la fois la couleur du rapport d'origine
+   (celui qu'on quitte) et celle du rapport engagé (celui qu'on rejoint) —
+   dégradé diagonal entre les deux, pour signaler d'un coup d'œil qu'il est
+   candidat au doublé avec le dé de sa couleur d'origine. */
+.dice-cube.bicolor-1-2 { border-image: linear-gradient(135deg, #39d98a, #f7c948) 1; color: #f7c948;
+  box-shadow: 0 0 18px rgba(57, 217, 138, .25), 0 0 18px rgba(247, 201, 72, .25); }
+.dice-cube.bicolor-2-3 { border-image: linear-gradient(135deg, #f7c948, #ff9f43) 1; color: #ff9f43;
+  box-shadow: 0 0 18px rgba(247, 201, 72, .25), 0 0 18px rgba(255, 159, 67, .25); }
+.dice-cube.bicolor-3-4 { border-image: linear-gradient(135deg, #ff9f43, #ff5d5d) 1; color: #ff5d5d;
+  box-shadow: 0 0 18px rgba(255, 159, 67, .25), 0 0 18px rgba(255, 93, 93, .25); }
+
 /* Les états spécifiques (DRS, jets V1, reprise) restent prioritaires sur la
    couleur de base : ils portent une information de mécanique, pas d'identité. */
 .dice-cube.rd1.drs-picked, .dice-cube.rd2.drs-picked,
@@ -1060,7 +1071,7 @@ header.top {
      ============================================================ -->
 <section class="scr on" id="scr-menu">
   <header class="top">
-    <h1>FORMULA<em>·HEX</em></h1>
+    <h1>RALLYE<em>·GRID</em></h1>
     <span class="eyebrow">Contre-la-montre</span>
   </header>
   <div class="card field">
@@ -1245,6 +1256,14 @@ header.top {
       <div class="tool" data-tool="drs">⚡<span class="tname">DRS</span></div>
       <div class="tool" data-tool="terre">🟫<span class="tname">Terre</span></div>
       <div class="tool" data-tool="neige">❄️<span class="tname">Neige</span></div>
+      <div class="tool" data-tool="sable">🏜️<span class="tname">Sable</span></div>
+      <div class="tool" data-tool="roche">🪨<span class="tname">Roche</span></div>
+      <div class="tool" data-tool="arbre">🌳<span class="tname">Arbre</span></div>
+      <div class="tool" data-tool="maison">🏠<span class="tname">Maison</span></div>
+      <div class="tool" data-tool="riviere">🌊<span class="tname">Rivière</span></div>
+      <div class="tool" data-tool="montagne">⛰️<span class="tname">Montagne</span></div>
+      <div class="tool" data-tool="montee">🔺<span class="tname">Montée</span></div>
+      <div class="tool" data-tool="descente">🔻<span class="tname">Descente</span></div>
       <div class="tool" data-tool="car">🏎️<span class="tname">Voiture</span></div>
       <div class="tool" data-tool="pan">🤚<span class="tname">Déplacer</span></div>
       <div class="tool" data-tool="undo">↩️<span class="tname">Annuler</span></div>
@@ -1281,8 +1300,8 @@ header.top {
         <div class="field">
           <label>Mode</label>
           <select id="c-mode">
-            <option value="f1">🏎️ Formula (circuit, tours)</option>
-            <option value="rallye">🏁 Rallye (spéciale, point à point)</option>
+            <option value="rallye">🏁 Rallye (spéciale, piste tracée)</option>
+            <option value="dakar">🧭 Dakar (carte ouverte, checkpoints libres)</option>
           </select>
         </div>
       </div>
@@ -1604,8 +1623,23 @@ const RALLYE_INERTIA = [0, 0, 1, 2, 3];
 const RALLYE_DRIFT = {
   asphalte: { 4: 1 },                 // 0 / 0 / 0 / 1
   terre:    { 3: 1, 4: 2 },           // 0 / 0 / 1 / 2
-  neige:    { 2: 1, 3: 2, 4: 3 }      // 0 / 1 / 2 / 3
+  neige:    { 2: 1, 3: 2, 4: 3 },     // 0 / 1 / 2 / 3
+  sable:    { 3: 1, 4: 2 },           // 0 / 0 / 1 / 2
+  roche:    { 4: 1 }                  // 0 / 0 / 0 / 1
 };
+// Sable et Roche ont une inertie PROPRE (Sable pivote plus tôt : la voiture
+// s'enfonce et perd de l'appui avant même que la vitesse ne l'exige).
+const SURF_INERTIA = {
+  asphalte: [0, 0, 1, 2, 3],
+  terre:    [0, 0, 1, 2, 3],
+  neige:    [0, 0, 1, 2, 3],
+  sable:    [0, 0, 0, 1, 2],          // 0 / 0 / 1 / 2 (indices V1..V4)
+  roche:    [0, 0, 1, 2, 3]
+};
+function inertiaForSurface(gear, surf) {
+  const t = SURF_INERTIA[surf] || SURF_INERTIA.asphalte;
+  return t[gear] || 0;
+}
 const F1_DRIFT = { 5: 1, 6: 2 };
 
 // Persistance locale du mode. Le champ `mode` part bien dans le payload, mais
@@ -1614,16 +1648,26 @@ const F1_DRIFT = { 5: 1, 6: 2 };
 // s'en sert comme secours. Dès que l'API renverra `mode`, elle aura priorité.
 function rememberMode(circuitId, mode) {
   if (!circuitId) return;
-  try { localStorage.setItem('fg_mode_' + circuitId, mode || 'f1'); } catch (e) {}
+  try { localStorage.setItem('fg_mode_' + circuitId, mode || 'rallye'); } catch (e) {}
 }
 function recallMode(circuitId) {
   if (!circuitId) return null;
   try { return localStorage.getItem('fg_mode_' + circuitId); } catch (e) { return null; }
 }
-function isRallye() { return R.mode === 'rallye'; }
+// Mode F1 supprimé : Rallye·Grid ne propose plus que Rallye et Dakar.
+// isRallye() reste vrai pour LES DEUX : la physique de course (rapports,
+// dés, surfaces, déport, frein à main) est identique dans les deux modes —
+// seule la FORME du terrain change (piste tracée vs carte ouverte), géré
+// uniquement au niveau du générateur et de isDakar().
+function isRallye() { return true; }
+function isDakar() { return R.mode === 'dakar'; }
 function maxGear()  { return isRallye() ? 4 : 6; }
 function diceSet()  { return isRallye() ? RALLYE_DICE_SET : DICE_SET; }
-function inertiaTable() { return isRallye() ? RALLYE_INERTIA : INERTIA; }
+function inertiaTable(surf) {
+  if (!isRallye()) return INERTIA;
+  if (surf && SURF_INERTIA[surf]) return SURF_INERTIA[surf];
+  return RALLYE_INERTIA;
+}
 
 // Surface d'une case. Lue CASE PAR CASE pendant le trajet (pas seulement à la
 // case de départ) : un coup en V4 traverse jusqu'à 20 cases et peut très bien
@@ -1632,13 +1676,23 @@ function surfaceAt(q, r) {
   const c = (R.grid[r] ? R.grid[r][q] : '#');
   if (c === 'T') return 'terre';
   if (c === 'N') return 'neige';
+  if (c === 'B') return 'sable';   // 'S' déjà pris par la case Départ → 'B' (saBle)
+  if (c === 'K') return 'roche';   // 'R' évité par prudence (proche visuellement d'autres repères)
   return 'asphalte';
+}
+// DÉNIVELÉ : indépendant de la surface — lit R.gradeGrid, un calque à part,
+// jamais R.grid. Une case peut donc être neige ET montée en même temps.
+function surfaceGrade(q, r) {
+  const c = (R.gradeGrid && R.gradeGrid[r]) ? R.gradeGrid[r][q] : null;
+  if (c === 'U') return 'montee';
+  if (c === 'E') return 'descente';
+  return null;
 }
 function driftForGear(gear, surf) {
   if (isRallye()) return (RALLYE_DRIFT[surf] || RALLYE_DRIFT.asphalte)[gear] || 0;
   return F1_DRIFT[gear] || 0;
 }
-const SURFACE_LABEL = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige' };
+const SURFACE_LABEL = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige', sable: '🏜️ Sable', roche: '🪨 Roche' };
 // ====================================================================
 
 // Le pool d'un rapport = les g premiers dés du jeu commun.
@@ -1721,8 +1775,13 @@ function dieValue(faces, gear, dieIndex, moveNo) {
 // du même dé), c'est un TRIPLÉ : total ± 2 cases. Le joueur voit directement
 // ces trajectoires bonus/malus sur le plateau et choisit — réduire la
 // distance peut être un avantage (pile sur un virage, un checkpoint…).
-function jetBonusRange(jetValues) {
+function jetBonusRange(jetValues, surf) {
   if (!isRallye() || !jetValues || jetValues.length < 2) return 0;
+  // ROCHE : la voiture rebondit sur le terrain irrégulier — impossible d'aligner
+  // deux jets identiques d'affilée. Aucun bonus doublé/triplé sur cette surface.
+  // 'surf' doit être fourni par l'appelant (jamais déduit de R.q/R.r ici : un
+  // solveur explore des positions hypothétiques différentes de la voiture réelle).
+  if (surf === 'roche') return 0;
   const counts = {};
   for (const v of jetValues) counts[v] = (counts[v] || 0) + 1;
   const maxCount = Math.max(...Object.values(counts));
@@ -1791,7 +1850,7 @@ async function api(path, opts) {
 // La note se déclenche quand la surface CHANGE devant la voiture, à portée
 // du rapport engagé — une note par transition, jamais à chaque coup, sinon
 // ça devient du bruit.
-const SURF_FR = { asphalte: 'asphalte', terre: 'terre', neige: 'neige' };
+const SURF_FR = { asphalte: 'asphalte', terre: 'terre', neige: 'neige', sable: 'sable', roche: 'roche' };
 
 // Première surface différente rencontrée en ligne droite devant la voiture.
 function surfaceAhead(q, r, dir, dist) {
@@ -1819,7 +1878,7 @@ function copilotNote() {
   if (key === R._copilotLast && ahead) { return; }   // déjà annoncé
   R._copilotLast = key;
 
-  const inert = inertiaTable()[gear] || 0;
+  const inert = inertiaTable(surf)[gear] || 0;
   const drift = driftForGear(gear, surf);
   const tete = ahead
     ? '⚠️ ' + SURF_FR[surf].toUpperCase() + ' dans ' + ahead.dist + ' case' + (ahead.dist > 1 ? 's' : '')
@@ -1849,7 +1908,7 @@ function showSurfaceTable(surf) {
   const maxG = isRallye() ? 4 : 6;
   const inertT = inertiaTable();
   const bounds = diceBounds();
-  const couleurs = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff' };
+  const couleurs = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff', sable: '#e0c988', roche: '#7a7268' };
   const c = couleurs[s] || '#9aa4b2';
 
   let lignes = '';
@@ -2027,7 +2086,7 @@ let grassPattern = null;
 const pseudoIn = document.getElementById('pseudo-in');
 pseudoIn.value = localStorage.getItem('arena_pseudo') || localStorage.getItem('fg_pseudo') || '';
 // Connecté via Arena Sport (login PIN) : le pseudo est celui du compte, non modifiable —
-// c'est ce qui garantit que les points Formula·Grid s'additionnent au classement général.
+// c'est ce qui garantit que les points Rallye·Grid s'additionnent au classement général.
 if (localStorage.getItem('arena_pseudo')) {
   pseudoIn.readOnly = true;
   pseudoIn.style.opacity = '.7';
@@ -2159,7 +2218,7 @@ document.getElementById('btn-quit-race').onclick = async () => {
   const enCourse = R.phase && R.phase !== 'done' && !R.isWarmup && !R.testMode && R.turn > 0;
 
   if (!enCourse) {
-    if (confirm('Quitter Formula·Grid et retourner à Arena Sport ?')) location.href = 'index.html';
+    if (confirm('Quitter Rallye·Grid et retourner à Arena Sport ?')) location.href = 'index.html';
     return;
   }
 
@@ -2269,6 +2328,11 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.W = circuit.w;
   R.H = circuit.h;
   R.grid = circuit.rows.map(r => r.split(''));
+  // Dénivelé : calque indépendant, reconstruit depuis gradeRows si le circuit
+  // en a (absent = circuit créé avant l'ajout de ce champ → aucun dénivelé).
+  R.gradeGrid = Array.isArray(circuit.gradeRows)
+    ? circuit.gradeRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
+    : Array.from({ length: circuit.h }, () => Array(circuit.w).fill(null));
 
   // Position voiture (sur la ligne F)
   R.q = circuit.start.x;
@@ -2280,8 +2344,9 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.pendingGear = 1;
   R.turn = 0;
   R.lapCount = 0;
-  R.mode = circuit.mode || recallMode(circuit.id) || (Array.isArray(circuit.rows) && circuit.rows.some(r => r.includes('S')) ? 'rallye' : 'f1');
-  if (circuit.mode) rememberMode(circuit.id, circuit.mode);
+  // Rallye et Dakar partagent le même moteur de course ; seul le champ
+  // `mode` du circuit distingue les deux (absent = ancien circuit = rallye).
+  R.mode = (circuit.mode === 'dakar') ? 'dakar' : 'rallye';
   // Spéciale rallye = point à point : un seul "tour", du départ à la ligne
   // d'arrivée, sans jamais repasser par la case de départ.
   R.targetLaps = isRallye() ? 1 : circuit.laps;
@@ -2378,6 +2443,9 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // n'est pas la piste qui décide du moment, c'est le pilote.
   R.turboUsed = false;
   R.turboArmed = false;
+  // FREIN À MAIN : 1× par spéciale, comme le turbo. Interdit sur le sable.
+  R.handbrakeUsed = false;
+  R.handbrakeArmed = false;
   R.copilotOn = (circuit.copilot !== undefined) ? !!circuit.copilot : true;
   R._copilotLast = null;
 
@@ -2555,9 +2623,27 @@ document.getElementById('btn-end-practice').onclick = () => {
 /* ================================================================
    COURSE — PATHFINDING HEXAGONAL
    ================================================================ */
+// Décors A(rbre)/H(maison)/V(rivière)/M(ontagne) : purement visuels, mais
+// infranchissables comme un mur — l'idée est de sculpter le terrain, pas
+// d'ajouter une nouvelle surface avec ses propres règles.
+const DECOR_LETTERS = ['A', 'H', 'V', 'M'];
+const DECOR_STYLE = {
+  A: { bg: 'rgba(45,106,79,.55)', icon: '🌳' },
+  H: { bg: 'rgba(169,68,66,.55)', icon: '🏠' },
+  V: { bg: 'rgba(41,128,185,.55)', icon: '🌊' },
+  M: { bg: 'rgba(93,93,107,.55)', icon: '⛰️' }
+};
+// DÉNIVELÉ : U(p)/montée et E(n bas)/descente. Restent ROULABLES — ne
+// figurent PAS dans DECOR_LETTERS — mais plafonnent (montée) ou planchent
+// (descente) le rapport sélectionnable. Rendu à part, en fine bordure plutôt
+// qu'en fond plein, pour ne pas les confondre visuellement avec un obstacle.
+const GRADE_STYLE = {
+  U: { border: '#ff9f43', icon: '🔺' },
+  E: { border: '#4aa3ff', icon: '🔻' }
+};
 function onTrackR(q, r) {
   if (r < 0 || r >= R.H || q < 0 || q >= R.W) return false;
-  return R.grid[r] && R.grid[r][q] !== '#';
+  return R.grid[r] && R.grid[r][q] !== '#' && !DECOR_LETTERS.includes(R.grid[r][q]);
 }
 // 'T' (terre) et 'N' (neige) sont de la piste normale pour tout le reste du
 // moteur — pathfinding, checkpoints, générateur. Seul le déport les distingue.
@@ -2572,7 +2658,7 @@ function passableCheckpointIndexes() {
   for (const cp of (R.checkpoints || [])) {
     (groups[cp.index] = groups[cp.index] || []).push(cp);
   }
-  const onT = (q, r) => q >= 0 && q < R.W && r >= 0 && r < R.H && R.grid[r] && R.grid[r][q] !== '#';
+  const onT = (q, r) => q >= 0 && q < R.W && r >= 0 && r < R.H && R.grid[r] && R.grid[r][q] !== '#' && !DECOR_LETTERS.includes(R.grid[r][q]);
   const passable = [];
   for (const idx of Object.keys(groups)) {
     const members = groups[idx];
@@ -2628,7 +2714,7 @@ function checkpointsRemaining() {
   return required.filter(i => R.cpTimes[i] === undefined).length;
 }
 
-function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
+function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbrakeDrift) {
   // JAUGE D'INERTIE (décompte à purger) :
   // - Après chaque coup de volant, la jauge est chargée à (vitesse - 1).
   // - Chaque case franchie EN LIGNE DROITE la fait baisser de 1.
@@ -2636,9 +2722,14 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
   // - Elle NE SE RÉINITIALISE JAMAIS entre deux lancers : on repart de R.inertia,
   //   l'état exact avec lequel la voiture a terminé son mouvement précédent.
   // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
-  const INERT = inertiaTable();
+  const INERT = inertiaTable(surfaceAt(q0, r0));
   const reload = INERT[gear] != null ? INERT[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
-  const startInertia = Math.max(0, R.inertia || 0);
+  // FREIN À MAIN : purge intégralement la jauge d'inertie (pivot immédiat
+  // possible dès ce coup), et convertit la dette purgée en déport vers
+  // L'INTÉRIEUR du virage — l'inverse du déport centrifuge habituel.
+  const handbrakeActive = !!handbrakeDrift;
+  const purgedInertia = handbrakeActive ? Math.max(0, R.inertia || 0) : 0;
+  const startInertia = handbrakeActive ? 0 : Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
 
@@ -2658,8 +2749,8 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     cpBitAt[cp.q + ',' + cp.r] = (1 << cp.index);
   }
 
-  function dfs(q, r, dir, b, inertia, crossed, path, cpMask) {
-    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed + ',' + cpMask;
+  function dfs(q, r, dir, b, inertia, crossed, path, cpMask, hbLeft) {
+    const key = q + ',' + r + ',' + dir + ',' + b + ',' + inertia + ',' + crossed + ',' + cpMask + ',' + (hbLeft ? 1 : 0);
     if (memo.has(key)) return;
     memo.add(key);
 
@@ -2712,6 +2803,19 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
           seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true });
         }
       }
+      // FREIN À MAIN : au tout premier virage du coup, la dette d'inertie
+      // purgée se convertit en déport vers l'INTÉRIEUR — la voiture coupe la
+      // corde au lieu de glisser large. Ne s'applique qu'une fois par coup.
+      let hbUsedHere = false;
+      if (driftOk && o.turn && hbLeft > 0) {
+        for (let k = 0; k < hbLeft; k++) {
+          nq += dr.q;
+          nr += dr.r;
+          if (!onTrackR(nq, nr)) { driftOk = false; break; }
+          seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true, inside: true });
+        }
+        hbUsedHere = true;
+      }
       if (!driftOk) continue;   // le déport sort de la piste : ce virage est
                                  // impraticable à ce rapport, comme une case
                                  // hors piste classique.
@@ -2750,13 +2854,13 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
           for (const s of seg) path.pop();
           continue;
         } else {
-          dfs(nq, nr, o.d, nb, nInertia, true, path, nCpMask);
+          dfs(nq, nr, o.d, nb, nInertia, true, path, nCpMask, hbUsedHere ? 0 : hbLeft);
           for (const s of seg) path.pop();
           continue;
         }
       }
 
-      dfs(nq, nr, o.d, nb, nInertia, crossed, path, nCpMask);
+      dfs(nq, nr, o.d, nb, nInertia, crossed, path, nCpMask, hbUsedHere ? 0 : hbLeft);
       for (const s of seg) path.pop();
     }
 
@@ -2769,7 +2873,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps) {
     }
   }
 
-  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask);
+  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask, purgedInertia);
   return results;
 }
 
@@ -2793,6 +2897,13 @@ function renderGears() {
       // qu'on n'accélère) et ça permet le freinage tardif avant un virage.
       reach = (g - R.gear <= 1) && (R.gear - g <= 2);
     }
+
+    // DÉNIVELÉ : en montée le moteur ne tient jamais le rapport le plus haut
+    // (perte de puissance face à la gravité) ; en descente la pente pousse la
+    // voiture, impossible de rouler aussi lentement que V1 sans frein actif.
+    const terrain = surfaceGrade(R.q, R.r);
+    if (terrain === 'montee' && g > 3) reach = false;
+    if (terrain === 'descente' && g > 0 && g < 2) reach = false;
 
     let cls = 'gear';
     if (g === R.pendingGear) cls += ' sel';
@@ -2823,11 +2934,11 @@ function renderGears() {
   // Bouton TURBO : uniquement en rallye, une fois par spéciale.
   if (isRallye()) {
     const tb = document.createElement('div');
-    const dispo = !R.turboUsed && R.phase === 'gear' && R.pendingGear >= 1;
+    const dispo = !R.turboUsed && surfaceAt(R.q, R.r) !== 'sable' && R.phase === 'gear' && R.pendingGear >= 1;
     tb.className = 'gear ' + (R.turboArmed ? 'sel' : (dispo ? 'reach' : 'off'));
     tb.innerHTML = '<b>🔥</b><span>' + (R.turboUsed ? 'utilisé' : 'TURBO') + '</span>' +
       '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
-      (R.turboUsed ? '—' : '1× / spéciale') + '</i>';
+      (surfaceAt(R.q, R.r) === 'sable' && !R.turboUsed ? 'interdit ici' : (R.turboUsed ? '—' : '1× / spéciale')) + '</i>';
     if (dispo) {
       tb.onclick = () => {
         R.turboArmed = !R.turboArmed;
@@ -2836,6 +2947,24 @@ function renderGears() {
       };
     }
     hg.appendChild(tb);
+
+    // Bouton FREIN À MAIN : une fois par spéciale, interdit sur le sable.
+    const hb = document.createElement('div');
+    const surIci = surfaceAt(R.q, R.r);
+    const sableIci = (surIci === 'sable');
+    const hbDispo = !R.handbrakeUsed && !sableIci && R.phase === 'gear' && R.pendingGear >= 1;
+    hb.className = 'gear ' + (R.handbrakeArmed ? 'sel' : (hbDispo ? 'reach' : 'off'));
+    hb.innerHTML = '<b>🛑</b><span>' + (R.handbrakeUsed ? 'utilisé' : 'FREIN À MAIN') + '</span>' +
+      '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
+      (sableIci && !R.handbrakeUsed ? 'interdit ici' : (R.handbrakeUsed ? '—' : '1× / spéciale')) + '</i>';
+    if (hbDispo) {
+      hb.onclick = () => {
+        R.handbrakeArmed = !R.handbrakeArmed;
+        renderGears();
+        updateSpeedometer();
+      };
+    }
+    hg.appendChild(hb);
   }
 
   // Le dé du rapport supérieur marqué "reprise turbo" ne demande plus de
@@ -3112,12 +3241,12 @@ function updateSurfaceHint() {
 
   const g = Math.max(1, (R.phase === 'gear' ? R.pendingGear : R.gear) || 1);
   const here = surfaceAt(R.q, R.r);
-  const inert = inertiaTable()[g] || 0;
+  const inert = inertiaTable(here)[g] || 0;
 
   nowEl.textContent = 'V' + g + ' · sous la voiture : ' + SURFACE_LABEL[here];
 
   const surfs = isRallye()
-    ? ['asphalte', 'terre', 'neige']
+    ? ['asphalte', 'terre', 'neige', 'sable', 'roche']
     : ['asphalte'];
 
   cardsEl.innerHTML = '';
@@ -3277,7 +3406,7 @@ function executeDiceRoll(gear) {
 // reprise. drsNatural et turboNow sont désormais séparés : le DRS naturel
 // écrase tout par un Cartésien pur, le turbo garde la structure des jets/
 // reprise mais ouvre le libre choix de face (sauf sur la reprise elle-même).
-function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
+function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace, surf) {
   const DS = diceSet();
   const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
   const KEYS = [0, 'v1b', 'v1c'];
@@ -3355,7 +3484,17 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace) {
   const jetRaw = (nJets > 1)
     ? Array.from({ length: nJets }, (_, k) => dieValue(DS[0], gear, KEYS[k], moveNo))
     : [];
-  const bonusRange = jetBonusRange(jetRaw);
+  let bonusRange = jetBonusRange(jetRaw, surf);
+  // REPRISE BICOLORE : même règle que dans le vrai lancer (voir rollDiceAnim)
+  // — la reprise peut dupliquer le dé de l'emplacement d'origine (une couleur
+  // en dessous). Le solveur doit le savoir, sinon il sous-estime le meilleur
+  // temps atteignable et fausse le calcul des médailles.
+  if (bankIdx >= 1 && nJets <= 1 && !bankFreeTurbo && hasReprise && surf !== 'roche') {
+    const originSlot = bankIdx - 1;
+    const originValue = dieValue(DS[originSlot], gear, originSlot, moveNo);
+    const repriseValue = dieValue(DS[bankIdx], gear, bankIdx, moveNo - 1);
+    if (repriseValue === originValue) bonusRange = Math.max(bonusRange, 1);
+  }
   const bankOptions = bankFreeTurbo
     ? [...new Set(DS[bankIdx])]
     : hasReprise
@@ -3415,7 +3554,7 @@ async function solveCircuit(opts) {
         // pas le Cartésien pur du DRS — cf. solverTotals. 1× par course.
         const turboOpts = (isRallye() && !tUsed && !drsNatural) ? [false, true] : [false];
         for (const useTurbo of turboOpts) {
-          for (const tot of solverTotals(g, gear, moveNo, drsNatural, useTurbo, bankFace)) {
+          for (const tot of solverTotals(g, gear, moveNo, drsNatural, useTurbo, bankFace, surfaceAt(q, r))) {
             R.inertia = inertia; R.cpTimes = maskToTimes(cpMask);
             R.leftFinishZone = !!leftF; R.gear = g;
             for (const res of getValidPaths(q, r, dir, tot, g, lap, targetLaps)) {
@@ -3513,6 +3652,13 @@ function snapshotNextGearDie() {
   const wasTurbo = !!R.turboThisMove;
   R.turboThisMove = false;              // la fenêtre se referme avec le coup
   if (R.gear < 1 || R.gear >= maxGear() || R.isWarmup) { return; }
+  // ROCHE : terrain irrégulier, aucun dé de reprise pour le tour suivant —
+  // la voiture ne peut pas mémoriser un jet "propre" sur ce sol chaotique.
+  // Testé sur la case où la voiture VIENT de s'arrêter (R.q/R.r sont déjà
+  // la position d'arrivée de ce coup à cet instant de finalizeMove). On
+  // efface aussi toute réserve DÉJÀ en poche : sinon un dé mis de côté AVANT
+  // d'entrer sur roche survivrait et contournerait la règle.
+  if (surfaceAt(R.q, R.r) === 'roche') { R.bankedDie = null; return; }
   const targetGear = R.gear + 1;
   const dieIndex = R.gear;              // le dé QUE le rapport supérieur ajoute
   const moveNo = R.turn;                // le coup qui vient de se conclure
@@ -3555,6 +3701,27 @@ function rollDiceAnim(drsFace) {
   const drsNatural = (R.grid[R.r] && R.grid[R.r][R.q] === 'D') || !!R.crossedDrs;
   const onDRS = drsNatural || turboNow;
   if (turboNow) { R.turboUsed = true; R.turboArmed = false; }
+
+  // FREIN À MAIN : activé à l'instant du lancer, pas avant — comme le turbo.
+  // -1 sur tous les dés de CE lancer ; la purge d'inertie et le déport
+  // intérieur sont appliqués plus loin, au moment de calculer les trajectoires.
+  const handbrakeNow = !!R.handbrakeArmed && !R.handbrakeUsed && surfaceAt(R.q, R.r) !== 'sable';
+  if (handbrakeNow) { R.handbrakeUsed = true; R.handbrakeArmed = false; }
+  R._handbrakeThisRoll = handbrakeNow;
+
+  // SABLE : -1 sur tous les dés de ce lancer, cumulable avec le frein à main
+  // (déjà interdit ensemble puisque le frein est bloqué sur cette surface,
+  // mais on garde les deux malus indépendants par clarté du code).
+  R._sableThisRoll = (surfaceAt(R.q, R.r) === 'sable');
+
+  // FREIN MOTEUR : montrer, SANS que le joueur n'ait rien à sélectionner
+  // avant de lancer, ce que donnerait ce même lancer freiné d'1 ou 2 rapports
+  // — exactement comme le doublé/triplé, qui n'exige aucune préparation :
+  // le joueur choisit implicitement en pointant sa case d'arrivée sur la
+  // piste. Disponible dès V2 (-1) et V3+ (-2), plafonné à 2 comme la limite
+  // de rétrogradation déjà en vigueur ailleurs dans le moteur.
+  const downshift = Math.max(0, Math.min(2, R.pendingGear - 1));
+  R._downshiftThisRoll = downshift;   // 0 = rien à freiner, 1 ou 2 sinon
 
   // Anti-spam
   R.phase = 'rolling';
@@ -3622,10 +3789,16 @@ function rollDiceAnim(drsFace) {
     fairEl.style.display = 'block';
   }
   row.innerHTML = '';
+  // Dé de reprise BICOLORE : l'emplacement bankIdx porte le dégradé
+  // origine→cible au lieu d'une seule couleur, dès lors que la reprise est
+  // "figée" (pas en turbo libre, où le choix de face rend la notion d'origine
+  // sans objet). C'est ce même dé qui peut désormais dupliquer son voisin de
+  // couleur d'origine pour ouvrir un doublé (voir plus bas, calcul du bonus).
+  const bicolorClass = (bankIdx >= 1 && !bankTurboFree) ? ('bicolor-' + bankIdx + '-' + (bankIdx + 1)) : null;
   const cubes = diceSet().map((faces, i) => {
     const c = document.createElement('div');
     c.className = 'dice-cube' + (i < nActifs ? '' : ' inactif') +
-                  (isRallye() ? ' rd' + (i + 1) : '');
+                  (isRallye() ? (i === bankIdx && bicolorClass ? ' ' + bicolorClass : ' rd' + (i + 1)) : '');
     c.textContent = '?';
     row.appendChild(c);
     return c;
@@ -3648,7 +3821,7 @@ function rollDiceAnim(drsFace) {
   const extraCubesBank = [];
   if (twinFacesBank) {
     const ec = document.createElement('div');
-    ec.className = 'dice-cube' + (isRallye() ? ' rd' + (bankIdx + 1) : '');
+    ec.className = 'dice-cube' + (isRallye() ? (bicolorClass ? ' ' + bicolorClass : ' rd' + (bankIdx + 1)) : '');
     ec.textContent = '?';
     ec.__slot = 'bank';
     cubes[bankIdx].insertAdjacentElement('afterend', ec);
@@ -3892,7 +4065,22 @@ function rollDiceAnim(drsFace) {
           : [0];
         const out = [];
         for (const j of jetOptions) for (const bkv of bankOptions) out.push(socle + j + bkv);
-        jetBonus = jetBonusRange(jetRaw);
+        jetBonus = jetBonusRange(jetRaw, surfaceAt(R.q, R.r));
+
+        // REPRISE BICOLORE : ce dé porte DEUX couleurs — celle du rapport
+        // engagé (sa couleur "cible", jamais dupliquée : il est seul de cette
+        // couleur ce coup-ci) et celle du rapport précédent (sa couleur
+        // "d'origine", partagée avec le dé de l'emplacement juste en dessous).
+        // S'ils tombent sur la même valeur, c'est un doublé — comme si deux
+        // vrais dés de la même couleur avaient été tirés. Un seul dé de
+        // reprise à la fois : jamais plus qu'un doublé par cette voie (le
+        // triplé reste réservé à dV1 rejoué 3 fois, au rapport V1 lui-même).
+        if (bankIdx >= 1 && !isV1Choice && !bankTurboFree && surfaceAt(R.q, R.r) !== 'roche') {
+          const originSlot = bankIdx - 1;
+          const originValue = dieValue(diceSet()[originSlot], R.gear, originSlot, moveNo);
+          if (R.bankedDie.value === originValue) jetBonus = Math.max(jetBonus, 1);
+        }
+
         altTotals = applyJetBonus([...new Set(out)].sort((a, b) => a - b), jetBonus);
       }
       // La reprise est consommée dès qu'on engage le rapport ciblé, qu'elle
@@ -3900,41 +4088,84 @@ function rollDiceAnim(drsFace) {
       // sera repris automatiquement au prochain coup si les conditions le permettent.
       if (bankIdx >= 0) R.bankedDie = null;
 
+      // FREIN À MAIN : -1 sur CHAQUE dé engagé ce lancer. Appliqué ici, au
+      // point où toutes les variantes (DRS, turbo, V1 choix, reprise, cas
+      // simple) convergent en distances jouables — équivalent à retirer 1 par
+      // dé puisqu'ils s'additionnent linéairement. Plancher à 1 : le budget
+      // ne peut jamais tomber à 0 (la voiture avance toujours un minimum).
+      if (R._handbrakeThisRoll) {
+        const malus = nActifs;
+        if (altTotals) altTotals = altTotals.map(t => Math.max(1, t - malus));
+        base = Math.max(1, base - malus);
+      }
+      // SABLE : même principe, -1 par dé engagé. Les deux malus ne se
+      // cumulent jamais en pratique (frein interdit sur sable), mais le
+      // code reste correct si cette règle change un jour.
+      if (R._sableThisRoll) {
+        const malus = nActifs;
+        if (altTotals) altTotals = altTotals.map(t => Math.max(1, t - malus));
+        base = Math.max(1, base - malus);
+      }
+      // FREIN MOTEUR : exactement comme le doublé/triplé — des cases EN PLUS
+      // du total normal, jamais à sa place. Aucune conséquence au-delà de ce
+      // coup : le rapport engagé au coup suivant reste celui normalement
+      // atteint, quelle que soit la case choisie ici.
+      if (R._downshiftThisRoll >= 1) {
+        const source = altTotals || [base];
+        const out = new Set(source);
+        source.forEach(t => {
+          out.add(Math.max(1, t - 1));
+          if (R._downshiftThisRoll >= 2) out.add(Math.max(1, t - 2));
+        });
+        altTotals = [...out].sort((a, b) => a - b);
+      }
+
       const bonusTag = jetBonus === 2
-        ? ' <span style="color:#ff5d5d;font-size:11px">🎲🎲🎲 TRIPLÉ · ±2 cases débloqué</span>'
+        ? ' <span style="color:#ff5d5d;font-size:11px">🎲🎲🎲 TRIPLÉ · ±1 et ±2 cases débloqués</span>'
         : jetBonus === 1
         ? ' <span style="color:#ff9f43;font-size:11px">🎲🎲 DOUBLÉ · ±1 case débloqué</span>'
+        : '';
+      const brakeTag = R._downshiftThisRoll === 2
+        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 FREIN MOTEUR · -1 ou -2 cases possibles</span>'
+        : R._downshiftThisRoll === 1
+        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 frein moteur · -1 case possible</span>'
         : '';
 
       if (drsAll) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
-          ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>';
+          ' <span style="color:#b464ff;font-size:11px">⚡ DRS · à toi de choisir</span>' +
+          brakeTag;
       } else if (turboNow) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals[0] + '–' + altTotals[altTotals.length - 1] + ' cases</span>' +
           ' <span style="color:#ff9f43;font-size:11px">🔥 TURBO · à toi de choisir</span>' +
           (R.turboThisMove && R.gear < maxGear() ? ' <span style="color:#ff9f43;font-size:11px">+ reprise V' +
             (R.gear + 1) + ' libre au tour suivant</span>' : '') +
-          bonusTag;
+          bonusTag + brakeTag;
       } else if (isV1Choice) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#39d98a;font-size:11px">🎯 V' + R.gear + ' · ' + nJets +
           ' jets, à toi de choisir</span>' +
-          bonusTag;
+          bonusTag + brakeTag;
       } else if (bankIdx >= 0 && bankTurboFree) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#ff9f43;font-size:11px">📥🔥 reprise turbo · à toi de choisir</span>' +
-          bonusTag;
+          bonusTag + brakeTag;
       } else if (bankIdx >= 0) {
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' +
           ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>' +
-          bonusTag;
+          bonusTag + brakeTag;
+      } else if (altTotals && altTotals.length > 1) {
+        // Cas SIMPLE mais avec un choix quand même : le frein moteur -2
+        // rapports dédouble le total même sans DRS/turbo/V1/reprise.
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
+          altTotals.join(' ou ') + ' cases</span>' + brakeTag;
       } else {
-        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>';
+        sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' + base + ' cases</span>' + brakeTag;
       }
 
       // Mémorise le jet TEL QU'AFFICHÉ (avant remise à zéro des styles) pour
@@ -4031,13 +4262,17 @@ function processRollResult(val, altTotals) {
   // atteindre, et son choix de trajet fixe implicitement le résultat retenu.
   R.altTotals = altTotals || null;
 
+  // Dette d'inertie purgée par le frein à main, à convertir en déport
+  // intérieur dans getValidPaths (0 si le frein n'a pas été utilisé ce coup).
+  const hbDrift = R._handbrakeThisRoll ? Math.max(0, R.inertia || 0) : 0;
+
   if (altTotals && altTotals.length) {
     R.results = [];
     for (const t of altTotals) {
       const rs = getValidPaths(
         R.q, R.r, R.dir,
         t, R.gear,
-        R.isWarmup ? 0 : R.lapCount, R.targetLaps
+        R.isWarmup ? 0 : R.lapCount, R.targetLaps, hbDrift
       ) || [];
       // On mémorise le budget de chaque trajectoire : il sert à recalculer la
       // vitesse réelle une fois le trajet choisi.
@@ -4048,7 +4283,7 @@ function processRollResult(val, altTotals) {
     R.results = getValidPaths(
       R.q, R.r, R.dir,
       R.budget, R.gear,
-      R.isWarmup ? 0 : R.lapCount, R.targetLaps
+      R.isWarmup ? 0 : R.lapCount, R.targetLaps, hbDrift
     );
     for (const r of R.results) r.budgetUsed = R.budget;
   }
@@ -4595,7 +4830,7 @@ function openDiceGrid() {
   // dédié) — jamais de R.mode, qui appartient à une course éventuellement
   // en cours ou terminée, pas au circuit qu'on est en train d'éditer.
   const modeSel = document.getElementById('c-mode');
-  const mode = (modeSel && modeSel.value) || 'f1';
+  const mode = (modeSel && modeSel.value) || 'rallye';
   renderDiceGrid(seed, mode);
   document.getElementById('dice-grid-modal').style.display = 'flex';
 }
@@ -4691,7 +4926,7 @@ function downloadDiceGrid(seed, mode) {
   const payload = {
     circuit: (E && E.name) || null,
     seed: seed,
-    mode: mode === 'rallye' ? 'rallye' : 'f1',
+    mode: 'rallye',
     w: EW, h: EH,
     rows: (E && E.grid) ? E.grid.map(r => r.join('')) : null,
     start: (E && E.carPos) ? { x: E.carPos.q, y: E.carPos.r, dir: E.carDir || 0 } : null,
@@ -4865,6 +5100,7 @@ function snapshotForUndo() {
     lastCP: R.lastCP ? { ...R.lastCP } : null,
     turnPositions: (R.turnPositions || []).map(p => ({ ...p })),
     drsUsed: R.drsUsed, turboUsed: R.turboUsed,
+    handbrakeUsed: R.handbrakeUsed,
     reprise: R.reprise ? { ...R.reprise } : null,
     trail: (R.trail || []).map(p => ({ ...p })),
     fullTrail: (R.fullTrail || []).map(p => ({ ...p }))
@@ -4882,6 +5118,7 @@ function undoLastMove() {
   R.lastCP = s.lastCP ? { ...s.lastCP } : null;
   R.turnPositions = s.turnPositions.map(p => ({ ...p }));
   R.drsUsed = s.drsUsed; R.turboUsed = s.turboUsed;
+  R.handbrakeUsed = s.handbrakeUsed;
   R.reprise = s.reprise ? { ...s.reprise } : null;
   R.trail = s.trail.map(p => ({ ...p }));
   R.fullTrail = s.fullTrail.map(p => ({ ...p }));
@@ -5820,8 +6057,52 @@ function drawRace() {
       hexPath(cctx, pt.x, pt.y, hexSize * 0.98);
       if (t === 'T')      cctx.fillStyle = 'rgb(' + (92 + v) + ',' + (64 + v) + ',' + (51 + v) + ')';
       else if (t === 'N') cctx.fillStyle = 'rgb(' + (220 + v) + ',' + (238 + v) + ',' + (255 + v) + ')';
+      else if (t === 'B') cctx.fillStyle = 'rgb(' + (212 + v) + ',' + (176 + v) + ',' + (106 + v) + ')';
+      else if (t === 'K') cctx.fillStyle = 'rgb(' + (107 + v) + ',' + (98 + v) + ',' + (89 + v) + ')';
       else                cctx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       cctx.fill();
+    }
+  }
+
+  // 2b) Décors (arbre/maison/rivière/montagne) : infranchissables comme un
+  // mur, donc ABSENTS de la boucle "piste" ci-dessus — rendus à part, avec
+  // une teinte de fond ET un pictogramme, pour bien se distinguer de l'herbe
+  // nue (qui, elle, n'affiche jamais rien : c'est juste le fond qui transparaît).
+  // (DECOR_STYLE est global — partagé avec le rendu de l'éditeur.)
+  for (let r = vis.minR; r <= vis.maxR; r++) {
+    for (let q = vis.minQ; q <= vis.maxQ; q++) {
+      const t = R.grid[r] ? R.grid[r][q] : null;
+      const ds = DECOR_STYLE[t];
+      if (!ds) continue;
+      const pt = axialToPixel(q, r, hexSize);
+      hexPath(cctx, pt.x, pt.y, hexSize * 0.98);
+      cctx.fillStyle = ds.bg;
+      cctx.fill();
+      cctx.font = Math.round(hexSize * 1.1) + 'px sans-serif';
+      cctx.textAlign = 'center';
+      cctx.textBaseline = 'middle';
+      cctx.fillText(ds.icon, pt.x, pt.y);
+    }
+  }
+
+  // 2c) Dénivelé (montée/descente) : ROULABLE, contrairement aux décors —
+  // la texture de piste normale (asphalte par défaut) est déjà posée par la
+  // boucle du dessus. On ajoute juste une bordure colorée + pictogramme,
+  // pour ne jamais le confondre visuellement avec un obstacle infranchissable.
+  for (let r = vis.minR; r <= vis.maxR; r++) {
+    for (let q = vis.minQ; q <= vis.maxQ; q++) {
+      const t = R.gradeGrid && R.gradeGrid[r] ? R.gradeGrid[r][q] : null;
+      const gs = GRADE_STYLE[t];
+      if (!gs) continue;
+      const pt = axialToPixel(q, r, hexSize);
+      hexPath(cctx, pt.x, pt.y, hexSize * 0.98);
+      cctx.strokeStyle = gs.border;
+      cctx.lineWidth = 2.5;
+      cctx.stroke();
+      cctx.font = Math.round(hexSize * 0.85) + 'px sans-serif';
+      cctx.textAlign = 'center';
+      cctx.textBaseline = 'middle';
+      cctx.fillText(gs.icon, pt.x, pt.y);
     }
   }
 
@@ -5968,6 +6249,48 @@ function drawRace() {
 
         const pt = axialToPixel(q, r, hexSize);
         hexPath(cctx, pt.x, pt.y, hexSize * 0.9);
+        cctx.stroke();
+      }
+    }
+  }
+
+  // 7b) Aperçu FREIN À MAIN : pendant le choix du rapport (avant de lancer les
+  // dés), si le jeton est encore disponible, montre en bleu les cases que SEUL
+  // son usage rendrait atteignables — comparaison au meilleur cas possible
+  // (budget maximal du rapport visé), puisque les dés ne sont pas encore
+  // tirés à ce stade. Aide à décider si ça vaut le coup de l'activer ce tour.
+  if (R.phase === 'gear' && !R.handbrakeUsed && R.pendingGear >= 1 &&
+      surfaceAt(R.q, R.r) !== 'sable' && isRallye()) {
+    const debt = Math.max(0, R.inertia || 0);
+    const sig = R.q + ',' + R.r + ',' + R.dir + ',' + R.pendingGear + ',' + debt;
+    if (R._hbPreviewSig !== sig) {
+      R._hbPreviewSig = sig;
+      const DB = diceBounds();
+      const maxBudget = (DB[R.pendingGear] && DB[R.pendingGear][1]) || 0;
+      let nouvelles = new Set();
+      if (maxBudget > 0 && debt > 0) {
+        const sansFrein = getValidPaths(R.q, R.r, R.dir, maxBudget, R.pendingGear,
+          R.isWarmup ? 0 : R.lapCount, R.targetLaps, 0) || [];
+        const avecFrein = getValidPaths(R.q, R.r, R.dir, maxBudget, R.pendingGear,
+          R.isWarmup ? 0 : R.lapCount, R.targetLaps, debt) || [];
+        const sansSet = new Set(sansFrein.filter(p => !p.crash).map(p => p.q + ',' + p.r));
+        for (const p of avecFrein) {
+          if (p.crash) continue;
+          const k = p.q + ',' + p.r;
+          if (!sansSet.has(k)) nouvelles.add(k);
+        }
+      }
+      R._hbPreviewCells = nouvelles;
+    }
+    if (R._hbPreviewCells && R._hbPreviewCells.size) {
+      cctx.fillStyle = 'rgba(74,163,255,0.28)';
+      cctx.strokeStyle = 'rgba(74,163,255,0.75)';
+      cctx.lineWidth = 1.5;
+      for (const k of R._hbPreviewCells) {
+        const [nq, nr] = k.split(',').map(Number);
+        const pt = axialToPixel(nq, nr, hexSize);
+        hexPath(cctx, pt.x, pt.y, hexSize * 0.82);
+        cctx.fill();
         cctx.stroke();
       }
     }
@@ -6304,6 +6627,18 @@ function drawMinimap(vp) {
         mctx.fillStyle = '#5c4033';
       } else if (R.grid[r][q] === 'N') {
         mctx.fillStyle = '#dceeff';
+      } else if (R.grid[r][q] === 'B') {
+        mctx.fillStyle = '#d4b06a';
+      } else if (R.grid[r][q] === 'K') {
+        mctx.fillStyle = '#6b6259';
+      } else if (R.grid[r][q] === 'A') {
+        mctx.fillStyle = '#2d6a4f';
+      } else if (R.grid[r][q] === 'H') {
+        mctx.fillStyle = '#a94442';
+      } else if (R.grid[r][q] === 'V') {
+        mctx.fillStyle = '#2980b9';
+      } else if (R.grid[r][q] === 'M') {
+        mctx.fillStyle = '#5d5d6b';
       } else {
         mctx.fillStyle = '#4a505a';
       }
@@ -6314,6 +6649,20 @@ function drawMinimap(vp) {
         Math.max(1.5, scale * SQRT3),
         Math.max(1.5, scale * 1.5)
       );
+
+      // Dénivelé : petit liseré par-dessus, indépendant de la couleur de
+      // terrain déjà posée juste au-dessus — lu depuis le calque à part.
+      const grd = R.gradeGrid && R.gradeGrid[r] ? R.gradeGrid[r][q] : null;
+      if (grd === 'U' || grd === 'E') {
+        mctx.strokeStyle = grd === 'U' ? '#ff9f43' : '#4aa3ff';
+        mctx.lineWidth = 1;
+        mctx.strokeRect(
+          offX + pt.x,
+          offY + pt.y,
+          Math.max(1.5, scale * SQRT3),
+          Math.max(1.5, scale * 1.5)
+        );
+      }
     }
   }
 
@@ -6435,6 +6784,127 @@ const E = {
 function emptyGrid() {
   return Array.from({ length: EH }, () => Array(EW).fill('#'));
 }
+// DÉNIVELÉ : calque INDÉPENDANT du terrain — permet une côte enneigée, une
+// descente en sable, etc. null = plat, 'U' = montée, 'E' = descente.
+// Jamais écrit dans E.grid : les deux structures cohabitent sans se gêner.
+function emptyGradeGrid() {
+  return Array.from({ length: EH }, () => Array(EW).fill(null));
+}
+
+// DAKAR : carte ouverte, pas de piste tracée — le joueur roule librement sur
+// tout le terrain et doit franchir tous les checkpoints, DANS N'IMPORTE QUEL
+// ORDRE, avant que la ligne d'arrivée ne compte. Cette dernière règle n'est
+// PAS nouvelle : cpAllDone (moteur de course) compare déjà des masques par
+// égalité, sans jamais imposer d'ordre — Dakar en hérite sans rien changer
+// au pathfinding, seule la FORME du terrain diffère du rallye.
+function generateDakarMap() {
+  const nbCp = parseInt((document.getElementById('c-checkpoints') || {}).value);
+  const nCp = Number.isFinite(nbCp) ? Math.max(1, Math.min(6, nbCp)) : 3;
+  const surfMix = normalizeMix({ ...SURFMIX });
+
+  // Zone ouverte : toute la grille sauf une bordure d'1 case (mur de sécurité,
+  // pour que le joueur ne sorte jamais de la carte visible).
+  const marge = 1;
+  const grid = emptyGrid();
+  for (let r = marge; r < EH - marge; r++)
+    for (let q = marge; q < EW - marge; q++)
+      grid[r][q] = '.';
+
+  // Mélange de surfaces en TACHES plutôt qu'en secteurs (terrain ouvert, pas
+  // de sens de parcours à respecter) : quelques foyers aléatoires par surface
+  // non-asphalte, propagés sur un petit rayon.
+  const surfs = Object.keys(surfMix).filter(k => k !== 'asphalte' && surfMix[k] > 0);
+  const SURF_LETTER = { terre: 'T', neige: 'N', sable: 'B', roche: 'K' };
+  surfs.forEach(surf => {
+    const nTaches = Math.max(1, Math.round((surfMix[surf] / 100) * 10));
+    for (let t = 0; t < nTaches; t++) {
+      const cq = marge + Math.floor(Math.random() * (EW - 2 * marge));
+      const cr = marge + Math.floor(Math.random() * (EH - 2 * marge));
+      const rad = 2 + Math.floor(Math.random() * 3);
+      for (let dq = -rad; dq <= rad; dq++) for (let dr = -rad; dr <= rad; dr++) {
+        const q = cq + dq, r = cr + dr;
+        if (q < marge || q >= EW - marge || r < marge || r >= EH - marge) continue;
+        if (Math.hypot(dq, dr) > rad) continue;
+        if (grid[r][q] === '.') grid[r][q] = SURF_LETTER[surf];
+      }
+    }
+  });
+
+  // Départ dans un coin, arrivée dans le coin opposé — la distance à parcourir
+  // à vol d'oiseau force à traverser la carte, quel que soit l'ordre choisi
+  // pour les checkpoints entre les deux.
+  const depart = { q: marge + 1, r: marge + 1 };
+  const arrivee = { q: EW - marge - 2, r: EH - marge - 2 };
+  grid[depart.r][depart.q] = '.';
+  for (let dq = -1; dq <= 1; dq++) for (let dr = -1; dr <= 1; dr++) {
+    const q = arrivee.q + dq, r = arrivee.r + dr;
+    if (q >= marge && q < EW - marge && r >= marge && r < EH - marge) grid[r][q] = 'F';
+  }
+
+  // Checkpoints dispersés sur le reste de la carte, espacés les uns des
+  // autres ET du départ/arrivée pour éviter un groupement inutile.
+  const poses = [depart, arrivee];
+  const minEcart = Math.max(4, Math.floor(Math.min(EW, EH) / 6));
+  let placed = 0, essais = 0;
+  while (placed < nCp && essais < 400) {
+    essais++;
+    const q = marge + Math.floor(Math.random() * (EW - 2 * marge));
+    const r = marge + Math.floor(Math.random() * (EH - 2 * marge));
+    if (grid[r][q] === '#' || grid[r][q] === 'F') continue;
+    const tropPres = poses.some(p => Math.hypot(p.q - q, p.r - r) < minEcart);
+    if (tropPres) continue;
+    grid[r][q] = 'C';
+    poses.push({ q, r });
+    placed++;
+  }
+
+  E.grid = grid;
+  E.grade = emptyGradeGrid();   // Dakar : dénivelé posé à la main ensuite, pas généré
+  // COUP PARFAIT en Dakar : pas de tracé à suivre, mais la distance minimale
+  // reste calculable — départ → tous les checkpoints (dans le MEILLEUR ordre
+  // possible, l'ordre étant libre) → arrivée. Même principe que le rallye
+  // (bestCasesForGear = meilleur jet possible), appliqué à un vrai plus court
+  // chemin plutôt qu'à la longueur d'un ruban.
+  const arretsMc = poses.slice(1);   // tous les checkpoints (poses[0] = départ)
+  function distanceOptimale(depart, arrets, arrivee) {
+    if (arrets.length === 0) return hexDistF(depart.q, depart.r, arrivee.q, arrivee.r);
+    // 6 checkpoints max → 720 permutations, largement gérable en une génération
+    let meilleure = Infinity;
+    const perm = (reste, courant, dist) => {
+      if (dist >= meilleure) return;   // élague les branches déjà pires
+      if (reste.length === 0) {
+        meilleure = Math.min(meilleure, dist + hexDistF(courant.q, courant.r, arrivee.q, arrivee.r));
+        return;
+      }
+      for (let i = 0; i < reste.length; i++) {
+        const suivant = reste[i];
+        const nReste = reste.slice(0, i).concat(reste.slice(i + 1));
+        perm(nReste, suivant, dist + hexDistF(courant.q, courant.r, suivant.q, suivant.r));
+      }
+    };
+    perm(arrets, depart, 0);
+    return meilleure;
+  }
+  const distMin = distanceOptimale(depart, arretsMc, arrivee);
+  // Distance franchissable par coup au meilleur jet, mix de rapports équilibré
+  // (aucune répartition V1-V4 n'est demandée à l'admin en Dakar : on prend une
+  // moyenne raisonnable, cohérente avec le mix par défaut du rallye).
+  let parCoup = 0;
+  [1, 2, 3, 4].forEach(g => { parCoup += 0.25 * bestCasesForGear(g, true); });
+  const tDakar = Math.max(1, Math.round(distMin / Math.max(1, parCoup)));
+  E.targetMoves = tDakar;
+  writeMedals(medalsFromTarget(tDakar));
+  E.carPos = { q: depart.q, r: depart.r };
+  E.carDir = hexDirectionBetween(depart, arrivee);
+  E.undoStack = [];
+
+  document.getElementById('car-rotate').classList.add('on');
+  requestAnimationFrame(() => centerOnCircuit());
+
+  let cells = 0;
+  for (let r = 0; r < EH; r++) for (let q = 0; q < EW; q++) if (grid[r][q] !== '#') cells++;
+  toast('🧭 Dakar · ' + cells + ' cases ouvertes · ' + placed + ' checkpoints (tout ordre) · ' + tDakar + ' coups au parfait');
+}
 
 const params = new URLSearchParams(location.search);
 if (params.get('edit') === '1') {
@@ -6467,7 +6937,9 @@ document.getElementById('gate-btn').onclick = async () => {
     E.adminPw = pw;
     document.getElementById('editor-gate').style.display = 'none';
     document.getElementById('editor-main').style.display = 'flex';
-    newCircuit();
+    // La liste des circuits ne doit JAMAIS dépendre du succès de newCircuit() :
+    // une erreur dans la remise à zéro du formulaire masquait toute la liste.
+    try { newCircuit(); } catch (err) { console.error('newCircuit:', err); }
     loadAdminList();
   } catch (e) {
     document.getElementById('gate-err').textContent = e.message;
@@ -6494,6 +6966,7 @@ function updateTestLinkBtn() {
 
 function newCircuit() {
   E.grid = emptyGrid();
+  E.grade = emptyGradeGrid();
   E.carPos = null;
   E.carDir = 0;
   E.editingId = null;
@@ -6504,10 +6977,14 @@ function newCircuit() {
   document.getElementById('c-name').value = '';
   document.getElementById('c-laps').value = 1;
   const modeSel0 = document.getElementById('c-mode');
-  if (modeSel0) { modeSel0.value = 'f1'; syncModeUI(); }
+  if (modeSel0) { modeSel0.value = 'rallye'; syncModeUI(); }
+  E.mode = 'rallye';
   document.getElementById('c-attempts').value = 3;
   document.getElementById('c-width').value = 3;
-  document.getElementById('c-turns').value = 6;
+  // 'c-turns' n'existe plus depuis la refonte du générateur (remplacé par
+  // 'c-moves' + la répartition des rapports). L'ancien accès direct plantait
+  // ici et interrompait newCircuit() AVANT le chargement de la liste des circuits.
+  const _cmv = document.getElementById('c-moves'); if (_cmv) _cmv.value = 12;
   document.getElementById('c-warmup').checked = false;
   document.getElementById('c-undo').checked = false;
   E.targetMoves = 0;
@@ -6571,12 +7048,11 @@ async function loadAdminList() {
 //    du mauvais mode : dès que l'API ne renvoie pas `mode` ET que le navigateur
 //    n'a pas mémorisé ce circuit (autre appareil, cache vidé…), l'ancien code
 //    retombait silencieusement sur Formula même pour un rallye.
+// Devine le mode d'un circuit : 'dakar' si le champ le dit explicitement,
+// 'rallye' sinon (valeur par défaut ET seul mode qui existait avant Dakar —
+// donc le bon repli pour tout circuit créé avant l'ajout de ce champ).
 function detectCircuitMode(c) {
-  if (c && c.mode) return c.mode;
-  const remembered = recallMode(c && c.id);
-  if (remembered) return remembered;
-  if (c && Array.isArray(c.rows) && c.rows.some(r => r.includes('S'))) return 'rallye';
-  return 'f1';
+  return (c && c.mode === 'dakar') ? 'dakar' : 'rallye';
 }
 
 async function loadForEdit(id) {
@@ -6584,6 +7060,9 @@ async function loadForEdit(id) {
     const c = await api('/api/formula/circuit/' + id);
 
     E.grid = c.rows.map(r => r.split(''));
+    E.grade = Array.isArray(c.gradeRows)
+      ? c.gradeRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
+      : emptyGradeGrid();
     E.carPos = { q: c.start.x, r: c.start.y };
     E.carDir = c.start.dir || 0;
     E.editingId = c.id;
@@ -6606,6 +7085,19 @@ async function loadForEdit(id) {
     document.getElementById('c-warmup').checked = !!(c.freePractice || c.warmup);
   const _rgd2 = document.getElementById('c-regen-dice'); if (_rgd2) _rgd2.checked = false;
     document.getElementById('c-mult').value = c.pointsMultiplier || 10;
+    // Ces trois réglages n'étaient PAS rechargés : les seuils de médailles
+    // repartaient donc à leurs valeurs par défaut à chaque ouverture, et
+    // toute sauvegarde ultérieure les écrasait silencieusement.
+    const _cu = document.getElementById('c-undo');
+    if (_cu) _cu.checked = (c.undoEnabled === true);
+    E.targetMoves = c.targetMoves || 0;
+    const _cm = document.getElementById('c-moves');
+    if (_cm && c.targetMoves) _cm.value = c.targetMoves;
+    writeMedals(
+      (c.medals && c.medals.diamant)
+        ? c.medals
+        : medalsFromTarget(c.targetMoves || 12)
+    );
     document.getElementById('btn-delete').style.display = 'block';
     document.getElementById('btn-unpublish').style.display = E.published ? 'block' : 'none';
     updateTestLinkBtn();
@@ -6719,24 +7211,31 @@ document.getElementById('btn-reload-scores').onclick = loadScores;
 function syncModeUI() {
   const sel = document.getElementById('c-mode');
   if (!sel) return;
-  const rallye = sel.value === 'rallye';
+  const dakar = sel.value === 'dakar';
   const lapsEl = document.getElementById('c-laps');
   if (lapsEl) {
-    lapsEl.value = rallye ? 1 : lapsEl.value;
-    lapsEl.disabled = rallye;
+    lapsEl.value = 1;              // Rallye ET Dakar sont tous deux point-à-point, 1 seul "tour"
+    lapsEl.disabled = true;
     const f = lapsEl.closest('.field');
-    if (f) f.style.opacity = rallye ? 0.4 : 1;
+    if (f) f.style.opacity = 0.4;
   }
-  const copEl = document.getElementById('c-copilot');
-  if (copEl && copEl.closest('.row')) copEl.closest('.row').style.display = rallye ? '' : 'none';
-  document.querySelectorAll('[data-tool="terre"],[data-tool="neige"],[data-tool="depart"]').forEach(el => {
-    el.style.display = rallye ? '' : 'none';
+  // Outils de surface et de départ : utiles dans LES DEUX modes (Dakar a
+  // aussi du terrain varié et un point de départ à poser à la main si besoin).
+  document.querySelectorAll('[data-tool="terre"],[data-tool="neige"],[data-tool="sable"],[data-tool="roche"],[data-tool="depart"]').forEach(el => {
+    el.style.display = '';
   });
-  document.querySelectorAll('[data-tool="drs"]').forEach(el => {
-    el.style.display = rallye ? 'none' : '';   // pas de DRS en rallye
+  // DRS : mécanique F1, supprimée — jamais affichée, quel que soit le mode.
+  document.querySelectorAll('[data-tool="drs"]').forEach(el => { el.style.display = 'none'; });
+  if (sel.value !== 'dakar' && sel.value !== 'rallye') sel.value = 'rallye';
+  if (E.tool === 'drs') E.tool = 'piste';
+
+  // Champs propres à la géométrie du ruban rallye : sans objet sur une carte
+  // ouverte, où le générateur ne trace aucun tracé à suivre.
+  ['c-width', 'c-moves', 'c-surf-alt'].forEach(id => {
+    const el = document.getElementById(id);
+    const f = el && el.closest('.field');
+    if (f) f.style.display = dakar ? 'none' : '';
   });
-  if (rallye && (E.tool === 'drs')) E.tool = 'piste';
-  if (!rallye && (E.tool === 'terre' || E.tool === 'neige' || E.tool === 'depart')) E.tool = 'piste';
 }
 const modeSelEl = document.getElementById('c-mode');
 if (modeSelEl) {
@@ -6780,9 +7279,8 @@ function isSolvable(grid, sq, sr, sd) {
   let steps = 0;
   const MIN_AWAY = 4; // distance minimale à parcourir avant de pouvoir valider
 
-  function hexDist(aq, ar, bq, br) {
-    return (Math.abs(aq - bq) + Math.abs(ar - br) + Math.abs((aq + ar) - (bq + br))) / 2;
-  }
+  // Note : hexDistF() (plus bas dans le fichier) fait exactement le même
+  // calcul en portée globale — pas besoin d'une version locale ici.
 
   while (queue.length > 0 && steps < 40000) {
     steps++;
@@ -6791,7 +7289,7 @@ function isSolvable(grid, sq, sr, sd) {
     if (visited.has(key)) continue;
     visited.add(key);
 
-    const away = hexDist(cur.q, cur.r, sq, sr) >= MIN_AWAY;
+    const away = hexDistF(cur.q, cur.r, sq, sr) >= MIN_AWAY;
     const left = cur.left || away;
 
     // Valider si, après s'être éloigné du départ, on atteint une case F
@@ -7045,7 +7543,7 @@ function centerOnCircuit() {
    RÉPARTITIONS (rapports & surfaces) — curseurs normalisés à 100 %
    ================================================================ */
 const GEARMIX = { 1: 20, 2: 30, 3: 30, 4: 20 };
-const SURFMIX = { asphalte: 100, terre: 0, neige: 0 };
+const SURFMIX = { asphalte: 100, terre: 0, neige: 0, sable: 0, roche: 0 };
 
 function mixRow(label, color, key, val, oninput) {
   return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
@@ -7067,8 +7565,8 @@ function renderGearMix() {
 function renderSurfMix() {
   const box = document.getElementById('surfmix-rows');
   if (!box) return;
-  const cols = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff' };
-  const noms = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige' };
+  const cols = { asphalte: '#9aa4b2', terre: '#c08552', neige: '#cfe8ff', sable: '#e0c988', roche: '#7a7268' };
+  const noms = { asphalte: '🏎️ Asphalte', terre: '🟫 Terre', neige: '❄️ Neige', sable: '🏜️ Sable', roche: '🪨 Roche' };
   box.innerHTML = Object.keys(SURFMIX).map(k => mixRow(noms[k], cols[k], k, SURFMIX[k], 'setSurfMix')).join('');
   updateMixSum('surf');
 }
@@ -7153,12 +7651,19 @@ function buildSpineFromGearMix(moves, gearMix, rallye, boucle) {
   const biaisBoucle = boucle ? (Math.PI * 2) / seq.length : 0;
   seq.forEach(g => {
     const dist = bestCasesForGear(g, rallye) * SQRT3;   // en pixels visuels
-    // Plus le rapport est haut, plus la courbe est douce (inertie élevée)
-    const maxTurn = Math.PI / (1.6 + inert[g] * 1.5);
+    // Amplitude autorisée : un petit rapport peut pivoter sec, un grand doit
+    // décrire une longue courbe (c'est l'inertie qui l'impose).
+    const maxTurn = Math.PI / (1.15 + inert[g] * 1.6);
     const turn = biaisBoucle + (Math.random() - 0.5) * 2 * Math.min(maxTurn, boucle ? maxTurn * 0.6 : maxTurn);
     const nSub = Math.max(2, Math.round(dist / SQRT3));
+
+    // Le virage se CONCENTRE au début du segment, puis on file droit.
+    // Avant, il était étalé sur toute la longueur : même en V1 le tracé
+    // ne faisait que de longues courbes molles, jamais d'épingle.
+    const nVirage = Math.max(1, Math.min(nSub - 1, 1 + inert[g]));
     for (let k = 1; k <= nSub; k++) {
-      const a = ang + turn * (k / nSub);
+      const avance = Math.min(1, k / nVirage);          // 1 dès la sortie du virage
+      const a = ang + turn * avance;
       x += (dist / nSub) * Math.cos(a);
       y += (dist / nSub) * Math.sin(a);
       pts.push({ x, y });
@@ -7238,7 +7743,8 @@ function paintSurfaces(grid, spine, trackW, surfMix, alterne) {
     const n = Math.round(spine.length * poids[i] / somme);
     const fin = (i === secteurs.length - 1) ? spine.length : Math.min(spine.length, idx + n);
     if (surf !== 'asphalte') {
-      const ch = surf === 'terre' ? 'T' : 'N';
+      const SURF_LETTER = { terre: 'T', neige: 'N', sable: 'B', roche: 'K' };
+      const ch = SURF_LETTER[surf] || 'T';
       for (let j = idx; j < fin; j++) {
         const c = spine[j];
         for (let dq = -trackW; dq <= trackW; dq++) {
@@ -7322,6 +7828,13 @@ if (_bma) _bma.onclick = () => {
 updateMedHint();
 
 document.getElementById('btn-generate').onclick = () => {
+  // DAKAR : carte ouverte, aucun tracé à suivre — chemin totalement libre.
+  // Générateur entièrement séparé de celui du rallye (piste tracée en ruban) :
+  // zéro risque de régression sur l'un en touchant l'autre.
+  // NOTE : on teste E.mode ici (état de l'ÉDITEUR), PAS isDakar() qui lit
+  // R.mode (état de la COURSE en cours) — deux objets distincts.
+  if (E.mode === 'dakar') { generateDakarMap(); return; }
+
   const rallye  = (E.mode === 'rallye');
   const trackW  = parseInt(document.getElementById('c-width').value) || 3;
   const moves   = Math.max(5, Math.min(40, parseInt(document.getElementById('c-moves').value) || 12));
@@ -7399,6 +7912,7 @@ document.getElementById('btn-generate').onclick = () => {
   }
 
   E.grid = grid;
+  E.grade = emptyGradeGrid();   // dénivelé posé à la main ensuite, pas généré
   // Référence de chrono du circuit : le nombre de coups d'un tour sans faute.
   // C'est elle qui déterminera les médailles du joueur (et non le classement).
   E.targetMoves = moves;
@@ -7866,6 +8380,7 @@ document.getElementById('btn-import-confirm').onclick = () => {
   }
 
   E.grid = g;
+  E.grade = emptyGradeGrid();
   E.carPos = null;
   E.carDir = 0;
 
@@ -7920,6 +8435,7 @@ function largestComponent(g) {
 function pushUndo() {
   E.undoStack.push({
     grid: E.grid.map(r => [...r]),
+    grade: (E.grade || emptyGradeGrid()).map(r => [...r]),
     carPos: E.carPos ? { ...E.carPos } : null,
     carDir: E.carDir
   });
@@ -7937,6 +8453,7 @@ function doUndo() {
 
   const state = E.undoStack.pop();
   E.grid = state.grid;
+  E.grade = state.grade || emptyGradeGrid();
   E.carPos = state.carPos;
   E.carDir = state.carDir;
 
@@ -7981,12 +8498,13 @@ document.getElementById('btn-test-mode').onclick = () => {
     w: EW,
     h: EH,
     rows: E.grid.map(r => r.join('')),
+    gradeRows: (E.grade || emptyGradeGrid()).map(r => r.map(c => c || '.').join('')),
     start: {
       x: E.carPos.q,
       y: E.carPos.r,
       dir: E.carDir
     },
-    mode: (document.getElementById('c-mode') || {}).value || 'f1',
+    mode: (document.getElementById('c-mode') || {}).value || 'rallye',
     copilot: (document.getElementById('c-copilot') || { checked: true }).checked,
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: 99,
@@ -8059,7 +8577,7 @@ function drawEditor() {
 
     for (let q = minQ; q < maxQ; q++) {
       const t = E.grid[r][q];
-      if (t === '#') continue;
+      if (t === '#' || DECOR_LETTERS.includes(t)) continue;
 
       const pt = axialToPixel(q, r, hs);
       const v = ((q * 3 + r * 7) % 6) - 3;
@@ -8068,6 +8586,8 @@ function drawEditor() {
       hexPath(ectx, pt.x, pt.y, hs * 0.98);
       if (t === 'T')      ectx.fillStyle = 'rgb(' + (92 + v) + ',' + (64 + v) + ',' + (51 + v) + ')';
       else if (t === 'N') ectx.fillStyle = 'rgb(' + (220 + v) + ',' + (238 + v) + ',' + (255 + v) + ')';
+      else if (t === 'B') ectx.fillStyle = 'rgb(' + (212 + v) + ',' + (176 + v) + ',' + (106 + v) + ')';
+      else if (t === 'K') ectx.fillStyle = 'rgb(' + (107 + v) + ',' + (98 + v) + ',' + (89 + v) + ')';
       else                ectx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       ectx.fill();
 
@@ -8133,13 +8653,57 @@ function drawEditor() {
         const isWall = (
           nq < 0 || nq >= EW ||
           nr < 0 || nr >= EH ||
-          E.grid[nr][nq] === '#'
+          E.grid[nr][nq] === '#' ||
+          DECOR_LETTERS.includes(E.grid[nr][nq])
         );
 
         if (!isWall) continue;
 
         drawKerbEdge(ectx, pt, hs, d, q, r);
       }
+    }
+  }
+
+  // Décors (arbre/maison/rivière/montagne) : rendus à part, comme dans la
+  // course — teinte de fond + pictogramme, absents de la boucle "piste"
+  // ci-dessus puisqu'ils ne sont pas roulables.
+  for (let r = minR; r < maxR; r++) {
+    const minQ = Math.max(0, Math.floor(vl / (hs * SQRT3) - r / 2) - 3);
+    const maxQ = Math.min(EW, Math.ceil(vr / (hs * SQRT3) - r / 2) + 3);
+    for (let q = minQ; q < maxQ; q++) {
+      const t = E.grid[r][q];
+      const ds = DECOR_STYLE[t];
+      if (!ds) continue;
+      const pt = axialToPixel(q, r, hs);
+      hexPath(ectx, pt.x, pt.y, hs * 0.98);
+      ectx.fillStyle = ds.bg;
+      ectx.fill();
+      ectx.font = Math.round(hs * 1.1) + 'px sans-serif';
+      ectx.textAlign = 'center';
+      ectx.textBaseline = 'middle';
+      ectx.fillText(ds.icon, pt.x, pt.y);
+    }
+  }
+
+  // Dénivelé (montée/descente) : ROULABLE, contrairement aux décors — la
+  // texture de piste normale est déjà posée par la boucle du dessus. On
+  // ajoute juste une bordure colorée + pictogramme par-dessus.
+  for (let r = minR; r < maxR; r++) {
+    const minQ = Math.max(0, Math.floor(vl / (hs * SQRT3) - r / 2) - 3);
+    const maxQ = Math.min(EW, Math.ceil(vr / (hs * SQRT3) - r / 2) + 3);
+    for (let q = minQ; q < maxQ; q++) {
+      const t = E.grade && E.grade[r] ? E.grade[r][q] : null;
+      const gs = GRADE_STYLE[t];
+      if (!gs) continue;
+      const pt = axialToPixel(q, r, hs);
+      hexPath(ectx, pt.x, pt.y, hs * 0.98);
+      ectx.strokeStyle = gs.border;
+      ectx.lineWidth = 2.5;
+      ectx.stroke();
+      ectx.font = Math.round(hs * 0.85) + 'px sans-serif';
+      ectx.textAlign = 'center';
+      ectx.textBaseline = 'middle';
+      ectx.fillText(gs.icon, pt.x, pt.y);
     }
   }
 
@@ -8256,6 +8820,26 @@ function paintAt(q, r) {
     E.grid[r][q] = 'T';
   } else if (E.tool === 'neige') {
     E.grid[r][q] = 'N';
+  } else if (E.tool === 'sable') {
+    E.grid[r][q] = 'B';
+  } else if (E.tool === 'roche') {
+    E.grid[r][q] = 'K';
+  } else if (E.tool === 'arbre') {
+    E.grid[r][q] = 'A';
+  } else if (E.tool === 'maison') {
+    E.grid[r][q] = 'H';
+  } else if (E.tool === 'riviere') {
+    E.grid[r][q] = 'V';
+  } else if (E.tool === 'montagne') {
+    E.grid[r][q] = 'M';
+  } else if (E.tool === 'montee') {
+    if (!E.grade) E.grade = emptyGradeGrid();
+    if (E.grid[r][q] === '#') E.grid[r][q] = '.';   // une montée doit être sur piste roulable
+    E.grade[r][q] = (E.grade[r][q] === 'U') ? null : 'U';   // re-clic = efface
+  } else if (E.tool === 'descente') {
+    if (!E.grade) E.grade = emptyGradeGrid();
+    if (E.grid[r][q] === '#') E.grid[r][q] = '.';
+    E.grade[r][q] = (E.grade[r][q] === 'E') ? null : 'E';   // re-clic = efface
   } else if (E.tool === 'car') {
     if (E.grid[r][q] === '#') E.grid[r][q] = '.';
     E.carPos = { q: q, r: r };
@@ -8374,7 +8958,7 @@ async function saveCircuit(publish) {
     return;
   }
 
-  const modeVal = (document.getElementById('c-mode') || {}).value || 'f1';
+  const modeVal = (document.getElementById('c-mode') || {}).value || 'rallye';
   if (modeVal === 'rallye' && !rows.some(r => r.includes('S'))) {
     toast('Place une ligne de départ 🚦 (spéciale rallye = point à point)');
     return;
@@ -8387,12 +8971,13 @@ async function saveCircuit(publish) {
     w: EW,
     h: EH,
     rows: rows,
+    gradeRows: (E.grade || emptyGradeGrid()).map(r => r.map(c => c || '.').join('')),
     start: {
       x: E.carPos.q,
       y: E.carPos.r,
       dir: E.carDir
     },
-    mode: (document.getElementById('c-mode') || {}).value || 'f1',
+    mode: (document.getElementById('c-mode') || {}).value || 'rallye',
     copilot: (document.getElementById('c-copilot') || { checked: true }).checked,
     laps: parseInt(document.getElementById('c-laps').value) || 1,
     attempts: parseInt(document.getElementById('c-attempts').value) || 3,
@@ -8443,7 +9028,7 @@ document.getElementById('btn-solve').onclick = async () => {
   // lancer de partie : le solveur appelle le vrai moteur, il lui faut donc le
   // même contexte qu'une course réelle.
   const bak = {
-    grid: R.grid, W: R.W, H: R.H, diceSeed: R.diceSeed, targetLaps: R.targetLaps,
+    grid: R.grid, gradeGrid: R.gradeGrid, W: R.W, H: R.H, diceSeed: R.diceSeed, targetLaps: R.targetLaps,
     checkpoints: R.checkpoints, circuit: R.circuit, mode: R.mode,
     q: R.q, r: R.r, dir: R.dir, inertia: R.inertia, cpTimes: R.cpTimes,
     isWarmup: R.isWarmup, turboUsed: R.turboUsed, leftFinishZone: R.leftFinishZone
@@ -8456,8 +9041,9 @@ document.getElementById('btn-solve').onclick = async () => {
     if (!E.carPos) throw new Error('place la voiture de départ (outil 🚗) avant de calculer');
     const rows = E.grid.map(row => row.join(''));
     const modeSel = document.getElementById('c-mode');
-    R.mode = (modeSel && modeSel.value) || 'f1';
+    R.mode = (modeSel && modeSel.value) || 'rallye';
     R.grid = rows; R.W = EW; R.H = EH;
+    R.gradeGrid = (E.grade || emptyGradeGrid()).map(row => [...row]);
     R.diceSeed = E.diceSeed || E.editingId || 'preview';
     R.attemptNo = 1;
     R.targetLaps = isRallye() ? 1 : (parseInt(document.getElementById('c-laps').value) || 1);
@@ -8466,6 +9052,7 @@ document.getElementById('btn-solve').onclick = async () => {
     R.q = start.x; R.r = start.y; R.dir = start.dir;
     R.inertia = 0; R.cpTimes = []; R.isWarmup = false;
     R.turboUsed = false; R.turboArmed = false;
+    R.handbrakeUsed = false; R.handbrakeArmed = false;
     R.leftFinishZone = isRallye() ? true : false;
     R.checkpoints = buildCheckpoints();
 
