@@ -204,7 +204,7 @@ async function saveCircuitRuns(circuitId) {
   } catch(e) { console.error('Erreur saveCircuitRuns:', e.message); }
 }
 function circuitPublicMeta(c) {
-  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, undoEnabled: c.undoEnabled === true, targetMoves: c.targetMoves || 0, medals: c.medals || null, diceSeed: c.diceSeed || null };
+  return { id: c.id, name: c.name, w: c.w, h: c.h, laps: c.laps, attempts: c.attempts, warmup: c.warmup||0, pointsMultiplier: Number.isFinite(c.pointsMultiplier) ? c.pointsMultiplier : 10, fuelCapacity: c.fuelCapacity||0, fuelEnabled: c.fuelEnabled !== false, undoEnabled: c.undoEnabled === true, mode: c.mode === 'dakar' ? 'dakar' : 'rallye', targetMoves: c.targetMoves || 0, medals: c.medals || null, diceSeed: c.diceSeed || null };
 }
 function bestRun(runs) {
   const valid = (runs || []).filter(r => !r.crashed && Number.isFinite(r.moves));
@@ -1352,7 +1352,7 @@ app.get('/api/formula/circuit/:id', (req, res) => {
 });
 
 app.post('/api/formula/circuit', async (req, res) => {
-  const { password, id, name, w, h, rows, start, laps, attempts, published } = req.body;
+  const { password, id, name, w, h, rows, gradeRows, start, laps, attempts, published } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'Nom du circuit obligatoire' });
   if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'Circuit vide' });
@@ -1363,6 +1363,13 @@ app.post('/api/formula/circuit', async (req, res) => {
   const existingIdx = circuits.findIndex(c => c.id === circuitId);
   const data = {
     id: circuitId, name: name.trim().slice(0,60), w, h, rows,
+    // Dénivelé : calque optionnel, indépendant des lettres de terrain (une
+    // case peut être neige ET montée en même temps). Mêmes dimensions que
+    // rows exigées, sinon ignoré silencieusement plutôt que de faire planter
+    // l'enregistrement pour un champ qui reste secondaire.
+    gradeRows: (Array.isArray(gradeRows) && gradeRows.length === rows.length &&
+                gradeRows.every((r, i) => r.length === rows[i].length))
+      ? gradeRows : null,
     start: { x: start.x, y: start.y, dir: start.dir||0 },
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
@@ -1371,15 +1378,13 @@ app.post('/api/formula/circuit', async (req, res) => {
     fuelCapacity: Math.max(0, Math.min(9999, parseInt(req.body.fuelCapacity)||0)), // 0 = automatique
     fuelEnabled: req.body.fuelEnabled !== false, // false = essence illimitée
     undoEnabled: req.body.undoEnabled === true,  // retour arrière : 1 coup par essai
+    mode: (req.body.mode === 'dakar') ? 'dakar' : 'rallye',   // seules valeurs valides depuis la suppression du mode F1
     targetMoves: Math.max(0, Math.min(99, parseInt(req.body.targetMoves)||0)), // chrono de référence (coups au parfait)
     medals: (() => {                       // seuils de médailles réglés par l'organisateur
       const m = req.body.medals || {};
       const v = (x, d) => Math.max(1, Math.min(99, parseInt(x) || d));
       const dia = v(m.diamant, 12);
-      // marge mini optionnelle (cases bonus) pour décrocher le Diamant en plus du nombre
-      // de coups ; 0 = désactivée, le Diamant se comporte alors comme avant (coups seuls)
-      const diaLeft = Math.max(0, Math.min(99, parseInt(m.diamantLeft) || 0));
-      return { diamant: dia, diamantLeft: diaLeft, or: v(m.or, dia+1), argent: v(m.argent, dia+3), bronze: v(m.bronze, dia+6) };
+      return { diamant: dia, or: v(m.or, dia+1), argent: v(m.argent, dia+3), bronze: v(m.bronze, dia+6) };
     })(),
     published: !!published,
     // Le fantôme de référence survit à une réédition du circuit
