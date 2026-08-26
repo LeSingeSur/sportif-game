@@ -1352,7 +1352,7 @@ app.get('/api/formula/circuit/:id', (req, res) => {
 });
 
 app.post('/api/formula/circuit', async (req, res) => {
-  const { password, id, name, w, h, rows, gradeRows, start, laps, attempts, published } = req.body;
+  const { password, id, name, w, h, rows, gradeRows, surfRows, start, laps, attempts, published } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'Nom du circuit obligatoire' });
   if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'Circuit vide' });
@@ -1370,6 +1370,9 @@ app.post('/api/formula/circuit', async (req, res) => {
     gradeRows: (Array.isArray(gradeRows) && gradeRows.length === rows.length &&
                 gradeRows.every((r, i) => r.length === rows[i].length))
       ? gradeRows : null,
+    surfRows: (Array.isArray(surfRows) && surfRows.length === rows.length &&
+               surfRows.every((r, i) => r.length === rows[i].length))
+      ? surfRows : null,
     start: { x: start.x, y: start.y, dir: start.dir||0 },
     laps: Math.max(1, Math.min(20, parseInt(laps)||1)),
     attempts: Math.max(1, Math.min(50, parseInt(attempts)||3)),
