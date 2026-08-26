@@ -4314,9 +4314,10 @@ function processRollResult(val, altTotals) {
   // atteindre, et son choix de trajet fixe implicitement le résultat retenu.
   R.altTotals = altTotals || null;
 
-  // Dette d'inertie purgée par le frein à main, à convertir en déport
-  // intérieur dans getValidPaths (0 si le frein n'a pas été utilisé ce coup).
-  const hbDrift = R._handbrakeThisRoll ? Math.max(0, R.inertia || 0) : 0;
+  // FREIN À MAIN : simple drapeau "actif ce coup", plus lié à R.inertia
+  // (l'ancien système convertissait la dette en cases ; le nouveau ouvre un
+  // virage à 120° à coût fixe, peu importe l'inertie au moment du clic).
+  const hbDrift = R._handbrakeThisRoll ? 1 : 0;
 
   if (altTotals && altTotals.length) {
     R.results = [];
@@ -4548,7 +4549,10 @@ function buildRulesHTML() {
     'à n\'importe quel terrain — une côte peut être enneigée.<br><br>' +
     'Chaque case de montée traversée coûte <b>1 case de plus</b>, chaque descente en <b>rend 1</b>. ' +
     'L\'effet est net et obligatoire : 2 montées + 2 descentes ne changent rien, ' +
-    'mais 1 montée + 3 descentes te poussent 2 cases plus loin, que tu le veuilles ou non.') +
+    'mais 1 montée + 3 descentes te poussent 2 cases plus loin, que tu le veuilles ou non.<br><br>' +
+    '⚠️ <b style="color:#ff5d5d">Piège possible :</b> comme l\'effet est obligatoire, une descente peut te ' +
+    'pousser plus loin que prévu — y compris en plein <b>sable</b> ou sur une autre surface difficile, ' +
+    'sans que tu puisses t\'arrêter avant. Regarde ce qui suit une descente avant de t\'y engager.') +
 
   details('🛑 Frein à main',
     'Une seule fois par spéciale, réservé à <b>V2 et plus</b> (inutile en V1, l\'inertie y est toujours nulle), ' +
