@@ -4286,11 +4286,11 @@ function applyPenaltiesAndProcess() {
     if (alt) alt = alt.map(t => Math.max(1, t - m));
     base = Math.max(1, base - m);
   }
-  // FREIN À MAIN : -1 par dé engagé, seulement s'il est actif sur CE coup.
-  if (R._handbrakeThisRoll) {
-    if (alt) alt = alt.map(t => Math.max(1, t - nActifs));
-    base = Math.max(1, base - nActifs);
-  }
+  // FREIN À MAIN : AUCUN malus de distance. Son coût est purement géométrique
+  // — la dette d'inertie purgée se paie en cases de dérive vers l'intérieur
+  // (facturées au budget dans getValidPaths), et l'accès aux destinations
+  // extérieures est perdu. Ajouter un -1 par dé par-dessus faisait payer deux
+  // fois la même chose et rendait le frein systématiquement perdant.
   if (alt) alt = [...new Set(alt)].sort((a, b) => a - b);
   processRollResult(alt ? alt[alt.length - 1] : base, alt);
 }
@@ -4544,7 +4544,10 @@ function buildRulesHTML() {
     'Utilisable APRÈS le lancer : tu l\'armes, les trajectoires sont recalculées, et si ça ne te plaît pas ' +
     'tu recliques pour revenir en arrière. Le jeton n\'est dépensé que si tu valides un coup freiné.<br><br>' +
     'Effet : l\'inertie tombe à <b>0</b> (pivot immédiat possible) et se convertit en déport vers ' +
-    'l\'<b>intérieur</b> du virage. En échange, <b>−1 sur chaque dé</b> du lancer.') +
+    'l\'<b>intérieur</b> du virage.<br><br>' +
+    'Il ne t\'emmène pas plus loin — il t\'emmène <b>ailleurs</b> : tu accèdes à des cases que la ' +
+    'trajectoire normale ne peut pas atteindre, mais tu perds l\'accès à celles de l\'extérieur, ' +
+    'et chaque case de dérive est facturée sur ton lancer.') +
 
   details('🔻 Frein moteur',
     'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
