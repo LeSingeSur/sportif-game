@@ -1565,6 +1565,16 @@ header.top {
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 <div class="copilot" id="copilot" onclick="showSurfaceTable()"></div>
+<div id="crash-panel" style="display:none;position:fixed;inset:0;z-index:75;background:rgba(8,9,11,.9);
+     align-items:center;justify-content:center;padding:22px">
+  <div style="background:var(--panel);border:1px solid var(--crash);border-radius:14px;padding:20px;max-width:340px;width:100%;text-align:center">
+    <div style="font-size:44px;line-height:1">💥</div>
+    <div style="font-size:16px;font-weight:900;letter-spacing:1px;color:var(--crash);margin:6px 0 4px">SORTIE DE PISTE</div>
+    <div id="crash-msg" style="font-size:12.5px;color:var(--mute);line-height:1.5;margin-bottom:16px"></div>
+    <button class="btn" id="btn-repair" style="width:100%;padding:12px;font-size:14px;font-weight:800;margin-bottom:9px"></button>
+    <button class="btn" id="btn-restart-crash" style="width:100%;padding:10px;font-size:12.5px">🔄 Recommencer le circuit</button>
+  </div>
+</div>
 <div id="surf-table" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(8,9,11,.88);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'"></div>
 <script>
 'use strict';
@@ -1673,7 +1683,9 @@ function inertiaTable(surf) {
 // case de départ) : un coup en V4 traverse jusqu'à 20 cases et peut très bien
 // passer de l'asphalte à la neige en cours de route.
 function surfaceAt(q, r) {
-  const c = (R.grid[r] ? R.grid[r][q] : '#');
+  // Terrain masqué par un marqueur ('C', 'F'…) : on lit le calque de surface.
+  const masque = (R.surfGrid && R.surfGrid[r]) ? R.surfGrid[r][q] : null;
+  const c = masque || (R.grid[r] ? R.grid[r][q] : '#');
   if (c === 'T') return 'terre';
   if (c === 'N') return 'neige';
   if (c === 'B') return 'sable';   // 'S' déjà pris par la case Départ → 'B' (saBle)
@@ -2333,6 +2345,9 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   R.gradeGrid = Array.isArray(circuit.gradeRows)
     ? circuit.gradeRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
     : Array.from({ length: circuit.h }, () => Array(circuit.w).fill(null));
+  R.surfGrid = Array.isArray(circuit.surfRows)
+    ? circuit.surfRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
+    : Array.from({ length: circuit.h }, () => Array(circuit.w).fill(null));
 
   // Position voiture (sur la ligne F)
   R.q = circuit.start.x;
@@ -2446,6 +2461,10 @@ function startRace(circuit, pseudo, attemptsLeft, testMode, skipPractice) {
   // FREIN À MAIN : 1× par spéciale, comme le turbo. Interdit sur le sable.
   R.handbrakeUsed = false;
   R.handbrakeArmed = false;
+  R.penaltyTurns = 0;      // tours de pénalité cumulés par les réparations
+  R.crashGear = 0;
+  const _cp = document.getElementById('crash-panel');
+  if (_cp) _cp.style.display = 'none';
   R.copilotOn = (circuit.copilot !== undefined) ? !!circuit.copilot : true;
   R._copilotLast = null;
 
@@ -2630,7 +2649,7 @@ const DECOR_LETTERS = ['A', 'H', 'V', 'M'];
 const DECOR_STYLE = {
   A: { bg: 'rgba(45,106,79,.55)', icon: '🌳' },
   H: { bg: 'rgba(169,68,66,.55)', icon: '🏠' },
-  V: { bg: 'rgba(41,128,185,.55)', icon: '🌊' },
+  V: { bg: 'rgba(28,107,160,.92)', icon: '' },   // eau : texture pleine, sans pictogramme
   M: { bg: 'rgba(93,93,107,.55)', icon: '⛰️' }
 };
 // DÉNIVELÉ : U(p)/montée et E(n bas)/descente. Restent ROULABLES — ne
@@ -2824,7 +2843,17 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
       // caché : on avançait plus loin que le tirage ne le permettait, ce qui
       // récompensait les hauts rapports au lieu de les taxer.
       const driftCells = seg.length - 1;
-      const nb = b - 1 - driftCells;
+      // DÉNIVELÉ : chaque case de MONTÉE traversée coûte 1 point de dé de
+      // PLUS, chaque case de DESCENTE en REND 1. L'effet est net (2 montées
+      // + 2 descentes = neutre) et surtout OBLIGATOIRE : le budget doit être
+      // consommé exactement, donc une descente pousse forcément plus loin.
+      let gradeCost = 0;
+      for (const sc of seg) {
+        const gc = (R.gradeGrid && R.gradeGrid[sc.r]) ? R.gradeGrid[sc.r][sc.q] : null;
+        if (gc === 'U') gradeCost += 1;
+        else if (gc === 'E') gradeCost -= 1;
+      }
+      const nb = b - 1 - driftCells - gradeCost;
       if (nb < 0) continue;   // pas assez de dé pour absorber le déport
 
       anyOpen = true;
@@ -2898,13 +2927,6 @@ function renderGears() {
       reach = (g - R.gear <= 1) && (R.gear - g <= 2);
     }
 
-    // DÉNIVELÉ : en montée le moteur ne tient jamais le rapport le plus haut
-    // (perte de puissance face à la gravité) ; en descente la pente pousse la
-    // voiture, impossible de rouler aussi lentement que V1 sans frein actif.
-    const terrain = surfaceGrade(R.q, R.r);
-    if (terrain === 'montee' && g > 3) reach = false;
-    if (terrain === 'descente' && g > 0 && g < 2) reach = false;
-
     let cls = 'gear';
     if (g === R.pendingGear) cls += ' sel';
     else if (reach) cls += ' reach';
@@ -2952,14 +2974,29 @@ function renderGears() {
     const hb = document.createElement('div');
     const surIci = surfaceAt(R.q, R.r);
     const sableIci = (surIci === 'sable');
-    const hbDispo = !R.handbrakeUsed && !sableIci && R.phase === 'gear' && R.pendingGear >= 1;
+    // Disponible AVANT le lancer (phase 'gear') ET pendant le choix de
+    // trajectoire (phase 'move') : c'est là que le joueur compare les
+    // trajectoires freinées et non freinées, et peut revenir en arrière.
+    const hbDispo = !R.handbrakeUsed && !sableIci && !R.animating &&
+      ((R.phase === 'gear' && R.pendingGear >= 1) || R.phase === 'pick');
     hb.className = 'gear ' + (R.handbrakeArmed ? 'sel' : (hbDispo ? 'reach' : 'off'));
     hb.innerHTML = '<b>🛑</b><span>' + (R.handbrakeUsed ? 'utilisé' : 'FREIN À MAIN') + '</span>' +
       '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
-      (sableIci && !R.handbrakeUsed ? 'interdit ici' : (R.handbrakeUsed ? '—' : '1× / spéciale')) + '</i>';
+      (sableIci && !R.handbrakeUsed ? 'interdit ici'
+        : R.handbrakeUsed ? '—'
+        : R.handbrakeArmed ? 'ARMÉ · re-clic = annuler'
+        : '1× / spéciale') + '</i>';
     if (hbDispo) {
       hb.onclick = () => {
         R.handbrakeArmed = !R.handbrakeArmed;
+        if (R.phase === 'pick') {
+          // Le lancer est déjà fait : on recalcule les trajectoires avec ou
+          // sans frein, pour que le joueur VOIE la différence avant de choisir.
+          R._handbrakeThisRoll = R.handbrakeArmed;
+          applyPenaltiesAndProcess();
+          toast(R.handbrakeArmed ? '🛑 Frein à main ARMÉ — trajectoires recalculées'
+                                 : '🛑 Frein à main annulé');
+        }
         renderGears();
         updateSpeedometer();
       };
@@ -3702,26 +3739,25 @@ function rollDiceAnim(drsFace) {
   const onDRS = drsNatural || turboNow;
   if (turboNow) { R.turboUsed = true; R.turboArmed = false; }
 
-  // FREIN À MAIN : activé à l'instant du lancer, pas avant — comme le turbo.
-  // -1 sur tous les dés de CE lancer ; la purge d'inertie et le déport
-  // intérieur sont appliqués plus loin, au moment de calculer les trajectoires.
-  const handbrakeNow = !!R.handbrakeArmed && !R.handbrakeUsed && surfaceAt(R.q, R.r) !== 'sable';
-  if (handbrakeNow) { R.handbrakeUsed = true; R.handbrakeArmed = false; }
-  R._handbrakeThisRoll = handbrakeNow;
+  // FREIN À MAIN : NON consommé ici. Le joueur l'active/désactive APRÈS le
+  // lancer, en voyant les trajectoires changer à chaque bascule ; le jeton
+  // n'est réellement dépensé qu'au moment de valider un coup freiné
+  // (voir finalizeMove). Il démarre donc toujours inactif sur un nouveau coup.
+  R._handbrakeThisRoll = false;
+  R.handbrakeArmed = false;
 
   // SABLE : -1 sur tous les dés de ce lancer, cumulable avec le frein à main
   // (déjà interdit ensemble puisque le frein est bloqué sur cette surface,
   // mais on garde les deux malus indépendants par clarté du code).
   R._sableThisRoll = (surfaceAt(R.q, R.r) === 'sable');
 
-  // FREIN MOTEUR : montrer, SANS que le joueur n'ait rien à sélectionner
-  // avant de lancer, ce que donnerait ce même lancer freiné d'1 ou 2 rapports
-  // — exactement comme le doublé/triplé, qui n'exige aucune préparation :
-  // le joueur choisit implicitement en pointant sa case d'arrivée sur la
-  // piste. Disponible dès V2 (-1) et V3+ (-2), plafonné à 2 comme la limite
-  // de rétrogradation déjà en vigueur ailleurs dans le moteur.
-  const downshift = Math.max(0, Math.min(2, R.pendingGear - 1));
-  R._downshiftThisRoll = downshift;   // 0 = rien à freiner, 1 ou 2 sinon
+  // FREIN MOTEUR : malus de distance FIXE et OBLIGATOIRE, appliqué seulement
+  // quand le joueur rétrograde vraiment — -1 case pour 1 rapport descendu,
+  // -2 pour 2. Ce n'est pas une option à choisir : rétrograder freine.
+  // Uniquement en cas de VRAIE rétrogradation : R.gear est encore l'ancien
+  // rapport à cet instant, R.pendingGear celui qu'on engage pour ce coup.
+  const downshift = (R.gear > 0) ? Math.max(0, Math.min(2, R.gear - R.pendingGear)) : 0;
+  R._downshiftThisRoll = downshift;   // 0 = pas de rétrogradation, 1 ou 2 sinon
 
   // Anti-spam
   R.phase = 'rolling';
@@ -4088,47 +4124,23 @@ function rollDiceAnim(drsFace) {
       // sera repris automatiquement au prochain coup si les conditions le permettent.
       if (bankIdx >= 0) R.bankedDie = null;
 
-      // FREIN À MAIN : -1 sur CHAQUE dé engagé ce lancer. Appliqué ici, au
-      // point où toutes les variantes (DRS, turbo, V1 choix, reprise, cas
-      // simple) convergent en distances jouables — équivalent à retirer 1 par
-      // dé puisqu'ils s'additionnent linéairement. Plancher à 1 : le budget
-      // ne peut jamais tomber à 0 (la voiture avance toujours un minimum).
-      if (R._handbrakeThisRoll) {
-        const malus = nActifs;
-        if (altTotals) altTotals = altTotals.map(t => Math.max(1, t - malus));
-        base = Math.max(1, base - malus);
-      }
-      // SABLE : même principe, -1 par dé engagé. Les deux malus ne se
-      // cumulent jamais en pratique (frein interdit sur sable), mais le
-      // code reste correct si cette règle change un jour.
-      if (R._sableThisRoll) {
-        const malus = nActifs;
-        if (altTotals) altTotals = altTotals.map(t => Math.max(1, t - malus));
-        base = Math.max(1, base - malus);
-      }
-      // FREIN MOTEUR : exactement comme le doublé/triplé — des cases EN PLUS
-      // du total normal, jamais à sa place. Aucune conséquence au-delà de ce
-      // coup : le rapport engagé au coup suivant reste celui normalement
-      // atteint, quelle que soit la case choisie ici.
-      if (R._downshiftThisRoll >= 1) {
-        const source = altTotals || [base];
-        const out = new Set(source);
-        source.forEach(t => {
-          out.add(Math.max(1, t - 1));
-          if (R._downshiftThisRoll >= 2) out.add(Math.max(1, t - 2));
-        });
-        altTotals = [...out].sort((a, b) => a - b);
-      }
+      // On MÉMORISE les totaux bruts, avant tout malus : le frein à main est
+      // désormais réversible après le lancer (le joueur voit les trajectoires
+      // freinées, et peut revenir en arrière), donc il faut pouvoir recalculer
+      // depuis l'état d'origine autant de fois que nécessaire.
+      R._rawBase = base;
+      R._rawAlt = altTotals ? [...altTotals] : null;
+      R._nActifs = nActifs;
 
       const bonusTag = jetBonus === 2
         ? ' <span style="color:#ff5d5d;font-size:11px">🎲🎲🎲 TRIPLÉ · ±1 et ±2 cases débloqués</span>'
         : jetBonus === 1
         ? ' <span style="color:#ff9f43;font-size:11px">🎲🎲 DOUBLÉ · ±1 case débloqué</span>'
         : '';
-      const brakeTag = R._downshiftThisRoll === 2
-        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 FREIN MOTEUR · -1 ou -2 cases possibles</span>'
-        : R._downshiftThisRoll === 1
-        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 frein moteur · -1 case possible</span>'
+      const brakeTag = R._downshiftThisRoll >= 1
+        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 frein moteur · −' + R._downshiftThisRoll +
+          ' case' + (R._downshiftThisRoll > 1 ? 's' : '') + ' (rétrogradage de ' +
+          R._downshiftThisRoll + ' rapport' + (R._downshiftThisRoll > 1 ? 's' : '') + ')</span>'
         : '';
 
       if (drsAll) {
@@ -4181,7 +4193,7 @@ function rollDiceAnim(drsFace) {
       setTimeout(() => {
         ov.classList.remove('on');
         cubes.forEach(c => { c.style.borderColor = ''; c.style.opacity = ''; c.classList.remove('drs-picked', 'v1-picked', 'bank-used', 'turbo-picked', 'bank-arm'); });
-        processRollResult(altTotals ? altTotals[altTotals.length - 1] : base, altTotals);
+        applyPenaltiesAndProcess();
         renderGears();   // rafraîchit le bouton/étiquette de réserve (consommée)
         syncDash();      // la jauge DÉ devient cliquable (relecture du jet)
       }, 2000);   // 2 s : le temps de lire le total ET le message sous les dés (doublé/triplé, DRS, reprise…)
@@ -4252,6 +4264,35 @@ function scorePath(res) {
   // léger bonus si la jauge d'inertie finit basse (on pourra tourner au coup suivant)
   s -= (res.inertiaEnd || 0);
   return s;
+}
+
+// Applique TOUS les malus de distance aux totaux bruts, puis recalcule les
+// trajectoires. Rejouable à volonté : c'est ce qui permet d'activer ou de
+// retirer le frein à main APRÈS le lancer, en voyant le résultat à chaque fois.
+function applyPenaltiesAndProcess() {
+  let base = R._rawBase;
+  let alt = R._rawAlt ? [...R._rawAlt] : null;
+  const nActifs = R._nActifs || 1;
+
+  // SABLE : -1 par dé engagé (subi, lié à la case de départ du coup).
+  if (R._sableThisRoll) {
+    if (alt) alt = alt.map(t => Math.max(1, t - nActifs));
+    base = Math.max(1, base - nActifs);
+  }
+  // FREIN MOTEUR : malus FIXE et OBLIGATOIRE, uniquement en cas de vraie
+  // rétrogradation — -1 case pour 1 rapport descendu, -2 pour 2 rapports.
+  if (R._downshiftThisRoll >= 1) {
+    const m = R._downshiftThisRoll;
+    if (alt) alt = alt.map(t => Math.max(1, t - m));
+    base = Math.max(1, base - m);
+  }
+  // FREIN À MAIN : -1 par dé engagé, seulement s'il est actif sur CE coup.
+  if (R._handbrakeThisRoll) {
+    if (alt) alt = alt.map(t => Math.max(1, t - nActifs));
+    base = Math.max(1, base - nActifs);
+  }
+  if (alt) alt = [...new Set(alt)].sort((a, b) => a - b);
+  processRollResult(alt ? alt[alt.length - 1] : base, alt);
 }
 
 function processRollResult(val, altTotals) {
@@ -4346,6 +4387,27 @@ function processRollResult(val, altTotals) {
    MENU RÈGLES
    ================================================================ */
 function buildRulesHTML() {
+  // Tableau des surfaces : construit à partir des VRAIES matrices du moteur,
+  // jamais recopié à la main — impossible qu'il mente au joueur.
+  let surfRows = '';
+  [['asphalte','🏎️','Asphalte','grip maximum, référence'],
+   ['terre','🟫','Terre','glisse modérée'],
+   ['neige','❄️','Neige','glisse lourde'],
+   ['sable','🏜️','Sable','−1 sur tous les dés · turbo et frein à main interdits'],
+   ['roche','🪨','Roche','pas de dé de reprise · pas de doublé/triplé']
+  ].forEach(([key, ico, nom, note]) => {
+    const it = (typeof SURF_INERTIA !== 'undefined' && SURF_INERTIA[key]) ? SURF_INERTIA[key] : [0,0,1,2,3];
+    const dr = [1,2,3,4].map(g => driftForGear(g, key));
+    surfRows += '<tr>' +
+      '<td style="padding:5px 6px;font-weight:800;white-space:nowrap">' + ico + ' ' + nom + '</td>' +
+      '<td style="padding:5px 6px;text-align:center;font-family:ui-monospace,monospace">' +
+        [1,2,3,4].map(g => it[g] || 0).join(' / ') + '</td>' +
+      '<td style="padding:5px 6px;text-align:center;font-family:ui-monospace,monospace;color:#ff9f43">' +
+        dr.join(' / ') + '</td>' +
+      '</tr>' +
+      '<tr><td colspan="3" style="padding:0 6px 7px;color:var(--mute);font-size:11px">' + note + '</td></tr>';
+  });
+
   let rows = '';
   const top = maxGear();
   const bounds = diceBounds();
@@ -4459,9 +4521,40 @@ function buildRulesHTML() {
     '</table>' +
     '<div style="margin-top:8px">Les dés ne sont pas tous identiques : leur combinaison rend les résultats moyens plus fréquents que les extrêmes. Le nombre de dés engagés fixe aussi le niveau de recharge de l\'inertie.</div>') +
 
+  details('🏔️ Surfaces',
+    '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<tr style="font-size:10px;letter-spacing:1px;color:var(--mute);text-align:left">' +
+        '<th style="padding:5px 6px">SURFACE</th>' +
+        '<th style="padding:5px 6px;text-align:center">INERTIE V1/V2/V3/V4</th>' +
+        '<th style="padding:5px 6px;text-align:center">DÉPORT</th>' +
+      '</tr>' + surfRows +
+    '</table>' +
+    '<div style="margin-top:8px">L\'<b>inertie</b> impose d\'aller tout droit avant de pouvoir tourner. ' +
+    'Le <b>déport</b> te pousse vers l\'extérieur dans les virages, et consomme des cases.</div>') +
+
+  details('⛰️ Dénivelé',
+    'Les cases <b style="color:#ff9f43">🔺 montée</b> et <b style="color:#4aa3ff">🔻 descente</b> se superposent ' +
+    'à n\'importe quel terrain — une côte peut être enneigée.<br><br>' +
+    'Chaque case de montée traversée coûte <b>1 case de plus</b>, chaque descente en <b>rend 1</b>. ' +
+    'L\'effet est net et obligatoire : 2 montées + 2 descentes ne changent rien, ' +
+    'mais 1 montée + 3 descentes te poussent 2 cases plus loin, que tu le veuilles ou non.') +
+
+  details('🛑 Frein à main',
+    'Une seule fois par spéciale, et <b>interdit sur le sable</b>.<br><br>' +
+    'Utilisable APRÈS le lancer : tu l\'armes, les trajectoires sont recalculées, et si ça ne te plaît pas ' +
+    'tu recliques pour revenir en arrière. Le jeton n\'est dépensé que si tu valides un coup freiné.<br><br>' +
+    'Effet : l\'inertie tombe à <b>0</b> (pivot immédiat possible) et se convertit en déport vers ' +
+    'l\'<b>intérieur</b> du virage. En échange, <b>−1 sur chaque dé</b> du lancer.') +
+
+  details('🔻 Frein moteur',
+    'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
+    'Ce n\'est pas une option — c\'est le prix du rétrogradage, appliqué automatiquement.') +
+
   details('💥 Sortie de piste',
-    'Si aucune trajectoire ne reste sur la piste, tu repars du dernier checkpoint franchi, <b>à l\'arrêt</b>.<br><br>' +
-    'Les coups déjà joués restent comptés : tu perds tout ce que tu avais gagné depuis ce checkpoint.') +
+    'Si aucune trajectoire ne reste sur la piste, tu ne repars PAS d\'un checkpoint : la voiture reste où elle est.<br><br>' +
+    'Tu choisis alors — <b>réparer</b> le véhicule et repartir <b>à l\'arrêt</b>, en payant une pénalité égale ' +
+    'au rapport engagé au moment du crash (crash en V3 = <b>+3 tours</b> sur ton total final), ' +
+    'ou <b>recommencer</b> le circuit depuis le début.') +
 
   details('🔄 Recommencer la course',
     'Si tu vois que tu es trop mal parti, le bouton <b>🔄 Recommencer</b> en bas de l\'écran te renvoie à la ligne de départ.<br><br>' +
@@ -4971,6 +5064,40 @@ if (_br) _br.onclick = openRules;
 const _bra = document.getElementById('btn-rules-admin');
 if (_bra) _bra.onclick = openRules;
 const _brr = document.getElementById('btn-rules-race');
+
+// ── Panneau de crash : réparer sur place, ou recommencer le circuit ──────
+const _bRepair = document.getElementById('btn-repair');
+if (_bRepair) _bRepair.onclick = () => {
+  const panel = document.getElementById('crash-panel');
+  if (panel) panel.style.display = 'none';
+  const malus = Math.max(1, R.crashGear || 1);
+  // La pénalité est ajoutée au compteur de tours : c'est LUI le score, donc
+  // elle se répercute d'un coup sur les médailles, le classement et l'affichage.
+  R.penaltyTurns = (R.penaltyTurns || 0) + malus;
+  R.turn += malus;
+  R.crashGear = 0;
+  R.phase = 'gear';
+  R.trail = [];
+  // La trace du fantôme doit refléter la position réelle après réparation.
+  if (R.turnPositions && R.turnPositions.length) {
+    R.turnPositions[R.turnPositions.length - 1] = { q: R.q, r: R.r, dir: R.dir };
+  }
+  say('🔧 Réparé — +' + malus + ' tour' + (malus > 1 ? 's' : '') + ' de pénalité, départ arrêté');
+  copilotNote();
+  renderGears();
+  syncDash();
+  updateSpeedometer();
+  drawRace();
+};
+
+const _bRestartCrash = document.getElementById('btn-restart-crash');
+if (_bRestartCrash) _bRestartCrash.onclick = () => {
+  if (!confirm('Recommencer le circuit depuis le début ? Ce sera un nouvel essai.')) return;
+  const panel = document.getElementById('crash-panel');
+  if (panel) panel.style.display = 'none';
+  startRace(R.circuit, R.pseudo, R.attemptsLeft, R.testMode);
+};
+
 if (_brr) _brr.onclick = openRules;
 
 // Bascules d'affichage des fantômes — actives à tout moment pendant la course
@@ -5219,6 +5346,15 @@ function getAnimCarPos() {
 function finalizeMove(r) {
   R.turn++;
 
+  // FREIN À MAIN : le jeton n'est dépensé QU'ICI, quand un coup réellement
+  // freiné est validé. Tant que le joueur compare les trajectoires (et peut
+  // encore désarmer), il ne lui coûte rien.
+  if (R._handbrakeThisRoll) {
+    R.handbrakeUsed = true;
+    R._handbrakeThisRoll = false;
+  }
+  R.handbrakeArmed = false;
+
   // Dé "+1" en réserve : instantané automatique de ce que le rapport supérieur
   // aurait donné SUR CE COUP QUI VIENT DE SE CONCLURE (R.gear = celui utilisé
   // pour ce coup, pas encore réassigné pour le suivant).
@@ -5339,54 +5475,39 @@ function finalizeMove(r) {
     return;
   }
 
-  // Crash → réapparition au dernier checkpoint franchi (ou au départ), à l'arrêt.
-  // Aucun avantage : toute la distance parcourue depuis le checkpoint est perdue,
-  // les coups déjà dépensés restent comptés.
+  // CRASH : plus de retour automatique au checkpoint. Le joueur choisit —
+  // réparer sur place (départ arrêté + pénalité en tours égale au rapport
+  // engagé au moment du crash), ou recommencer le circuit depuis le début.
   if (r.crash) {
-    const cp = R.lastCP || { q: R.q, r: R.r, dir: R.dir, lapCount: 0, leftFinishZone: isRallye(), cpTimes: [], index: -1 };
+    R.crashGear = Math.max(1, R.gear || 1);   // le rapport auquel on s'est planté
+    R.phase = 'crashed';
 
-    R.q = cp.q;
-    R.r = cp.r;
-    R.dir = cp.dir;
-    R.lapCount = cp.lapCount;
-    R.leftFinishZone = cp.leftFinishZone;
-    R.cpTimes = (cp.cpTimes || []).slice();
-    R.lapMoves = (R.lapMoves || []).slice(0, cp.lapCount);
-    R.crossedDrs = false;   // aucun avantage : on repart sans le bonus du coup raté
-    R.bankedDie = null;     // le coup raté n'ouvre droit à aucun instantané de réserve
-    R.turboThisMove = false; // ni au marquage turbo du dé de rapport supérieur
-
-    // Repart à l'arrêt : vitesse 0, inertie purgée, boîte détendue
+    // La voiture ne bouge pas : elle reste là où la sortie de piste a eu lieu.
+    R.crossedDrs = false;
+    R.bankedDie = null;
+    R.turboThisMove = false;
     R.gear = 0;
     R.pendingGear = 1;
     R.inertia = 0;
     R.currentKmh = 0;
+    R.rolled = null; R.budget = null; R.results = null;
+    R.ends = null; R.endPaths = null; R.preview = null;
 
-    R.rolled = null;
-    R.budget = null;
-    R.results = null;
-    R.ends = null;
-    R.endPaths = null;
-    R.preview = null;
-    R.trail = [];
-    R.phase = 'gear';
-  copilotNote();
+    const msg = document.getElementById('crash-msg');
+    if (msg) msg.innerHTML =
+      'Tu étais en <b style="color:var(--txt)">V' + R.crashGear + '</b> au moment de la sortie.<br>' +
+      'Réparer te coûte <b style="color:var(--crash)">' + R.crashGear + ' tour' +
+      (R.crashGear > 1 ? 's' : '') + ' de pénalité</b>, ajoutés à ton total final.';
+    const rep = document.getElementById('btn-repair');
+    if (rep) rep.textContent = '🔧 Réparer le véhicule (+' + R.crashGear + ')';
+    const panel = document.getElementById('crash-panel');
+    if (panel) panel.style.display = 'flex';
 
-    // La trace du fantôme doit refléter la position APRÈS réapparition,
-    // sinon le fantôme enregistré montre un saut depuis le point de crash.
-    if (R.turnPositions.length) {
-      R.turnPositions[R.turnPositions.length - 1] = { q: R.q, r: R.r, dir: R.dir };
-    }
-
-    say(cp.index >= 0
-      ? ('💥 CRASH — retour au checkpoint ' + (cp.index + 1) + ', départ arrêté')
-      : '💥 CRASH — retour à la ligne de départ, départ arrêté', 'crash');
+    say('💥 CRASH — répare ou recommence', 'crash');
     radio('crash');
-
     renderGears();
     syncDash();
     updateSpeedometer();
-    if (!R.userPanned) { R.panOffsetX = 0; R.panOffsetY = 0; }
     drawRace();
     return;
   }
@@ -6790,6 +6911,13 @@ function emptyGrid() {
 function emptyGradeGrid() {
   return Array.from({ length: EH }, () => Array(EW).fill(null));
 }
+// SURFACE MASQUÉE : certains marqueurs ('C' checkpoint, 'F' arrivée…) occupent
+// la case dans E.grid et effacent la lettre de terrain. Ce calque conserve le
+// terrain réel sous ces marqueurs, pour qu'un checkpoint puisse être posé sur
+// n'importe quelle surface. null = rien de masqué (terrain lu dans E.grid).
+function emptySurfGrid() {
+  return Array.from({ length: EH }, () => Array(EW).fill(null));
+}
 
 // DAKAR : carte ouverte, pas de piste tracée — le joueur roule librement sur
 // tout le terrain et doit franchir tous les checkpoints, DANS N'IMPORTE QUEL
@@ -6860,6 +6988,7 @@ function generateDakarMap() {
 
   E.grid = grid;
   E.grade = emptyGradeGrid();   // Dakar : dénivelé posé à la main ensuite, pas généré
+  E.surf = emptySurfGrid();
   // COUP PARFAIT en Dakar : pas de tracé à suivre, mais la distance minimale
   // reste calculable — départ → tous les checkpoints (dans le MEILLEUR ordre
   // possible, l'ordre étant libre) → arrivée. Même principe que le rallye
@@ -6967,6 +7096,7 @@ function updateTestLinkBtn() {
 function newCircuit() {
   E.grid = emptyGrid();
   E.grade = emptyGradeGrid();
+  E.surf = emptySurfGrid();
   E.carPos = null;
   E.carDir = 0;
   E.editingId = null;
@@ -7063,6 +7193,9 @@ async function loadForEdit(id) {
     E.grade = Array.isArray(c.gradeRows)
       ? c.gradeRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
       : emptyGradeGrid();
+    E.surf = Array.isArray(c.surfRows)
+      ? c.surfRows.map(r => r.split('').map(ch => ch === '.' ? null : ch))
+      : emptySurfGrid();
     E.carPos = { q: c.start.x, r: c.start.y };
     E.carDir = c.start.dir || 0;
     E.editingId = c.id;
@@ -7913,6 +8046,7 @@ document.getElementById('btn-generate').onclick = () => {
 
   E.grid = grid;
   E.grade = emptyGradeGrid();   // dénivelé posé à la main ensuite, pas généré
+  E.surf = emptySurfGrid();
   // Référence de chrono du circuit : le nombre de coups d'un tour sans faute.
   // C'est elle qui déterminera les médailles du joueur (et non le classement).
   E.targetMoves = moves;
@@ -8381,6 +8515,7 @@ document.getElementById('btn-import-confirm').onclick = () => {
 
   E.grid = g;
   E.grade = emptyGradeGrid();
+  E.surf = emptySurfGrid();
   E.carPos = null;
   E.carDir = 0;
 
@@ -8436,6 +8571,7 @@ function pushUndo() {
   E.undoStack.push({
     grid: E.grid.map(r => [...r]),
     grade: (E.grade || emptyGradeGrid()).map(r => [...r]),
+    surf: (E.surf || emptySurfGrid()).map(r => [...r]),
     carPos: E.carPos ? { ...E.carPos } : null,
     carDir: E.carDir
   });
@@ -8454,6 +8590,7 @@ function doUndo() {
   const state = E.undoStack.pop();
   E.grid = state.grid;
   E.grade = state.grade || emptyGradeGrid();
+  E.surf = state.surf || emptySurfGrid();
   E.carPos = state.carPos;
   E.carDir = state.carDir;
 
@@ -8499,6 +8636,7 @@ document.getElementById('btn-test-mode').onclick = () => {
     h: EH,
     rows: E.grid.map(r => r.join('')),
     gradeRows: (E.grade || emptyGradeGrid()).map(r => r.map(c => c || '.').join('')),
+    surfRows: (E.surf || emptySurfGrid()).map(r => r.map(c => c || '.').join('')),
     start: {
       x: E.carPos.q,
       y: E.carPos.r,
@@ -8807,6 +8945,13 @@ function paintAt(q, r) {
   } else if (E.tool === 'finish') {
     E.grid[r][q] = 'F';
   } else if (E.tool === 'checkpoint') {
+    // Le checkpoint MASQUE la lettre de terrain dans E.grid ('C' prend la
+    // place de 'N', 'T'…). On mémorise donc le terrain d'origine dans un
+    // calque à part, pour qu'un checkpoint puisse être posé sur n'importe
+    // quelle surface sans la perdre (même principe que le dénivelé).
+    if (!E.surf) E.surf = emptySurfGrid();
+    const dessous = E.grid[r][q];
+    if ('TNBK.'.includes(dessous)) E.surf[r][q] = (dessous === '.') ? null : dessous;
     E.grid[r][q] = 'C';
   } else if (E.tool === 'drs') {
     // Zone DRS : réservée aux lignes droites — franchir une case DRS (au départ
@@ -8816,14 +8961,18 @@ function paintAt(q, r) {
     // implicitement la face utilisée. Cellule normale pour tout le reste
     // (pathfinding, générateur…).
     E.grid[r][q] = 'D';
-  } else if (E.tool === 'terre') {
-    E.grid[r][q] = 'T';
-  } else if (E.tool === 'neige') {
-    E.grid[r][q] = 'N';
-  } else if (E.tool === 'sable') {
-    E.grid[r][q] = 'B';
-  } else if (E.tool === 'roche') {
-    E.grid[r][q] = 'K';
+  } else if (['terre','neige','sable','roche'].includes(E.tool)) {
+    const LETTRE = { terre: 'T', neige: 'N', sable: 'B', roche: 'K' };
+    const ch = LETTRE[E.tool];
+    // Peindre une surface SUR un checkpoint ne doit pas le détruire : dans ce
+    // cas la surface va dans le calque, et 'C' reste dans la grille.
+    if (E.grid[r][q] === 'C') {
+      if (!E.surf) E.surf = emptySurfGrid();
+      E.surf[r][q] = ch;
+    } else {
+      E.grid[r][q] = ch;
+      if (E.surf && E.surf[r]) E.surf[r][q] = null;   // plus de terrain masqué ici
+    }
   } else if (E.tool === 'arbre') {
     E.grid[r][q] = 'A';
   } else if (E.tool === 'maison') {
@@ -9028,7 +9177,7 @@ document.getElementById('btn-solve').onclick = async () => {
   // lancer de partie : le solveur appelle le vrai moteur, il lui faut donc le
   // même contexte qu'une course réelle.
   const bak = {
-    grid: R.grid, gradeGrid: R.gradeGrid, W: R.W, H: R.H, diceSeed: R.diceSeed, targetLaps: R.targetLaps,
+    grid: R.grid, gradeGrid: R.gradeGrid, surfGrid: R.surfGrid, W: R.W, H: R.H, diceSeed: R.diceSeed, targetLaps: R.targetLaps,
     checkpoints: R.checkpoints, circuit: R.circuit, mode: R.mode,
     q: R.q, r: R.r, dir: R.dir, inertia: R.inertia, cpTimes: R.cpTimes,
     isWarmup: R.isWarmup, turboUsed: R.turboUsed, leftFinishZone: R.leftFinishZone
@@ -9044,6 +9193,7 @@ document.getElementById('btn-solve').onclick = async () => {
     R.mode = (modeSel && modeSel.value) || 'rallye';
     R.grid = rows; R.W = EW; R.H = EH;
     R.gradeGrid = (E.grade || emptyGradeGrid()).map(row => [...row]);
+    R.surfGrid = (E.surf || emptySurfGrid()).map(row => [...row]);
     R.diceSeed = E.diceSeed || E.editingId || 'preview';
     R.attemptNo = 1;
     R.targetLaps = isRallye() ? 1 : (parseInt(document.getElementById('c-laps').value) || 1);
