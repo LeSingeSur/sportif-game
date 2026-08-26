@@ -2743,11 +2743,12 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
   // - Chaque case coûte 1 de budget : le jet de dés sert entièrement à avancer.
   const INERT = inertiaTable(surfaceAt(q0, r0));
   const reload = INERT[gear] != null ? INERT[gear] : Math.max(0, (gear||1) - 1);  // V1=0 (braquage libre), V2=1 … V6=5
-  // FREIN À MAIN : purge intégralement la jauge d'inertie (pivot immédiat
-  // possible dès ce coup), et convertit la dette purgée en déport vers
-  // L'INTÉRIEUR du virage — l'inverse du déport centrifuge habituel.
+  // FREIN À MAIN : purge la jauge d'inertie (pivot immédiat possible dès ce
+  // coup, comme avant), et rend disponible le virage à 120° (voir plus bas,
+  // gear >= 2). La disponibilité du 120° NE dépend PAS du niveau d'inertie
+  // actuel — sinon un joueur déjà à 0 n'aurait jamais l'option, alors que le
+  // frein reste utile même sans dette à purger.
   const handbrakeActive = !!handbrakeDrift;
-  const purgedInertia = handbrakeActive ? Math.max(0, R.inertia || 0) : 0;
   const startInertia = handbrakeActive ? 0 : Math.max(0, R.inertia || 0);
   const results = [];
   const memo = new Set();
@@ -2787,6 +2788,14 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
     if (inertia === 0) {
       opts.push({ d: rotHex(dir, -1), turn: true });
       opts.push({ d: rotHex(dir, 1), turn: true });
+      // FREIN À MAIN : virage à 120° (deux crans au lieu d'un seul), possible
+      // dès V2 — pas d'intérêt en V1, l'inertie y est toujours nulle. Coût
+      // fixe (rapport-1) prélevé plus bas ; PAS de déport centrifuge sur ce
+      // virage précis, le malus fixe le remplace (sinon double facturation).
+      if (hbLeft && gear >= 2) {
+        opts.push({ d: rotHex(dir, -2), turn: true, hb120: true });
+        opts.push({ d: rotHex(dir, 2), turn: true, hb120: true });
+      }
     }
 
     let anyOpen = false;
@@ -2808,10 +2817,12 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
 
       if (!onTrackR(nq, nr)) continue;
 
-      const seg = [{ q: nq, r: nr, dir: o.d, turn: o.turn }];
+      const seg = [{ q: nq, r: nr, dir: o.d, turn: o.turn, hb120: !!o.hb120 }];
 
       let driftOk = true;
-      if (o.turn && driftN > 0) {
+      // Le déport centrifuge normal ne s'applique PAS sur un virage à 120° :
+      // le malus fixe du frein à main le remplace, il ne s'y ajoute pas.
+      if (o.turn && driftN > 0 && !o.hb120) {
         const oldDir = HEX_DIRS[dir];   // l'ancien cap, pas le nouveau : la
                                          // voiture "continue tout droit" avant
                                          // de vraiment prendre le virage.
@@ -2822,19 +2833,12 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
           seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true });
         }
       }
-      // FREIN À MAIN : au tout premier virage du coup, la dette d'inertie
-      // purgée se convertit en déport vers l'INTÉRIEUR — la voiture coupe la
-      // corde au lieu de glisser large. Ne s'applique qu'une fois par coup.
+      // FREIN À MAIN : virage à 120° au lieu de 60°. Consomme le jeton dès
+      // qu'un tel virage est pris (une fois par coup). Aucune case de plus
+      // n'est ajoutée au trajet — le coût est un malus fixe sur le budget,
+      // prélevé plus bas (voir handbrakePenalty).
       let hbUsedHere = false;
-      if (driftOk && o.turn && hbLeft > 0) {
-        for (let k = 0; k < hbLeft; k++) {
-          nq += dr.q;
-          nr += dr.r;
-          if (!onTrackR(nq, nr)) { driftOk = false; break; }
-          seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true, inside: true });
-        }
-        hbUsedHere = true;
-      }
+      if (o.hb120) hbUsedHere = true;
       if (!driftOk) continue;   // le déport sort de la piste : ce virage est
                                  // impraticable à ce rapport, comme une case
                                  // hors piste classique.
@@ -2855,6 +2859,13 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
       }
       const nb = b - 1 - driftCells - gradeCost;
       if (nb < 0) continue;   // pas assez de dé pour absorber le déport
+
+      // FREIN À MAIN : malus FIXE (rapport - 1), prélevé au moment où le
+      // virage à 120° est effectivement pris. Remplace le déport normal,
+      // ne s'y ajoute pas — voir la suspension de driftN plus haut.
+      const hbPenalty = o.hb120 ? Math.max(0, gear - 1) : 0;
+      const nb2 = nb - hbPenalty;
+      if (nb2 < 0) continue;   // pas assez de dé pour ce virage serré
 
       anyOpen = true;
 
@@ -2877,19 +2888,19 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
         if (lapNum >= targetLaps) {
           results.push({
             path: path.slice(), q: nq, r: nr, dir: o.d,
-            crash: false, finish: true, left: nb, lapsGained: 1,
+            crash: false, finish: true, left: nb2, lapsGained: 1,
             inertiaEnd: nInertia, cpMask: nCpMask
           });
           for (const s of seg) path.pop();
           continue;
         } else {
-          dfs(nq, nr, o.d, nb, nInertia, true, path, nCpMask, hbUsedHere ? 0 : hbLeft);
+          dfs(nq, nr, o.d, nb2, nInertia, true, path, nCpMask, hbUsedHere ? 0 : hbLeft);
           for (const s of seg) path.pop();
           continue;
         }
       }
 
-      dfs(nq, nr, o.d, nb, nInertia, crossed, path, nCpMask, hbUsedHere ? 0 : hbLeft);
+      dfs(nq, nr, o.d, nb2, nInertia, crossed, path, nCpMask, hbUsedHere ? 0 : hbLeft);
       for (const s of seg) path.pop();
     }
 
@@ -2902,7 +2913,7 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
     }
   }
 
-  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask, purgedInertia);
+  dfs(q0, r0, dir0, budget, startInertia, false, [], cpStartMask, handbrakeActive);
   return results;
 }
 
@@ -4540,14 +4551,16 @@ function buildRulesHTML() {
     'mais 1 montée + 3 descentes te poussent 2 cases plus loin, que tu le veuilles ou non.') +
 
   details('🛑 Frein à main',
-    'Une seule fois par spéciale, et <b>interdit sur le sable</b>.<br><br>' +
+    'Une seule fois par spéciale, réservé à <b>V2 et plus</b> (inutile en V1, l\'inertie y est toujours nulle), ' +
+    'et <b>interdit sur le sable</b>.<br><br>' +
     'Utilisable APRÈS le lancer : tu l\'armes, les trajectoires sont recalculées, et si ça ne te plaît pas ' +
     'tu recliques pour revenir en arrière. Le jeton n\'est dépensé que si tu valides un coup freiné.<br><br>' +
-    'Effet : l\'inertie tombe à <b>0</b> (pivot immédiat possible) et se convertit en déport vers ' +
-    'l\'<b>intérieur</b> du virage.<br><br>' +
-    'Il ne t\'emmène pas plus loin — il t\'emmène <b>ailleurs</b> : tu accèdes à des cases que la ' +
-    'trajectoire normale ne peut pas atteindre, mais tu perds l\'accès à celles de l\'extérieur, ' +
-    'et chaque case de dérive est facturée sur ton lancer.') +
+    'Effet : au lieu du virage normal de 60°, tu peux pivoter de <b>120°</b> d\'un coup — un vrai ' +
+    'demi-tour serré, impossible autrement en un seul coup. Le déport centrifuge normal de la surface ' +
+    'ne s\'applique pas sur ce virage : il est remplacé par un <b>malus fixe de (rapport − 1) cases</b> ' +
+    '(V2 = −1, V3 = −2, V4 = −3), prélevé sur ton lancer.<br><br>' +
+    'Comparé à tourner normalement en deux coups séparés, le frein est toujours au moins aussi rentable, ' +
+    'et franchement avantageux sur terre et neige où le déport normal coûte cher.') +
 
   details('🔻 Frein moteur',
     'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
