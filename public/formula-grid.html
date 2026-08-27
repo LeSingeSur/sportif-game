@@ -3002,7 +3002,9 @@ function renderGears() {
     // trajectoire (phase 'move') : c'est là que le joueur compare les
     // trajectoires freinées et non freinées, et peut revenir en arrière.
     const hbDispo = !R.handbrakeUsed && !sableIci && !R.animating &&
-      ((R.phase === 'gear' && R.pendingGear >= 1) || R.phase === 'pick');
+      // gear>=2 : en V1 l'inertie est toujours nulle, aucun virage freiné
+      // n'existe — armer le frein viderait l'affichage sans rien à choisir.
+      ((R.phase === 'gear' && R.pendingGear >= 2) || (R.phase === 'pick' && R.gear >= 2));
     hb.className = 'gear ' + (R.handbrakeArmed ? 'sel' : (hbDispo ? 'reach' : 'off'));
     hb.innerHTML = '<b>🛑</b><span>' + (R.handbrakeUsed ? 'utilisé' : 'FREIN À MAIN') + '</span>' +
       '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
@@ -4354,10 +4356,17 @@ function processRollResult(val, altTotals) {
     for (const r of R.results) r.budgetUsed = R.budget;
   }
 
+  // Frein à main ARMÉ : n'afficher QUE les trajectoires qui l'utilisent
+  // réellement — sinon le joueur doit trier lui-même les cases normales
+  // (déjà visibles sans frein) des cases nouvellement débloquées.
+  const resultsToShow = R.handbrakeArmed
+    ? R.results.filter(r => r.path.some(s => s.hbTurn))
+    : R.results;
+
   // Regrouper par case d'arrivée, en CONSERVANT toutes les trajectoires alternatives,
   // triées de la meilleure à la moins bonne (sens du circuit d'abord).
   const byCell = new Map();
-  for (const r of R.results) {
+  for (const r of resultsToShow) {
     const k = r.q + ',' + r.r;
     if (!byCell.has(k)) byCell.set(k, []);
     byCell.get(k).push(r);
@@ -4379,6 +4388,28 @@ function processRollResult(val, altTotals) {
     }
     R.endPaths.set(k, uniq);
     R.ends.set(k, uniq[0]);
+  }
+
+  // FREIN À MAIN ARMÉ : n'afficher QUE les destinations qui l'utilisent
+  // réellement — sinon le joueur doit repérer les cases freinées au milieu
+  // de toutes les autres, déjà accessibles sans lui. Une case reste montrée
+  // si AU MOINS un de ses trajets utilise le frein ; dans ce cas, ce
+  // trajet-là devient le choix par défaut pour cette case (pas un trajet
+  // normal qui l'aurait doublé en score).
+  if (R.handbrakeArmed) {
+    const filtered = new Map();
+    for (const [k, list] of R.endPaths.entries()) {
+      const hbPaths = list.filter(r => r.path.some(s => s.hbTurn));
+      if (hbPaths.length > 0) filtered.set(k, hbPaths);
+    }
+    // Filet de sécurité : si ce lancer précis n'ouvre aucune destination
+    // freinée (géométrie défavorable), ne JAMAIS vider l'affichage — le
+    // joueur verrait à tort le message de crash. On retombe sur la liste
+    // complète, comme si le frein n'avait pas filtré.
+    if (filtered.size > 0) {
+      R.endPaths = filtered;
+      R.ends = new Map([...filtered].map(([k, list]) => [k, list[0]]));
+    }
   }
 
   R.preview = null;   // aucune trajectoire prévisualisée au départ
@@ -4575,8 +4606,10 @@ function buildRulesHTML() {
     'La voiture survire — l\'arrière décroche vers l\'<b>extérieur</b> du virage. Le déport se calcule ' +
     'ainsi : <b>(inertie actuelle − 1) + (déport normal de la surface − 1)</b>. Exemple : V4 sur neige, ' +
     '3 d\'inertie → (3−1)+(3−1) = 4 cases — le pire cas possible, jamais dépassé.<br><br>' +
-    'Après le virage, l\'inertie retombe à 0, et <b>le rapport rétrograde automatiquement d\'1</b> à la ' +
-    'sortie — un vrai coup de frein a des conséquences, pas seulement ce virage.') +
+    '<b>Seul le virage à 120°</b> — le vrai geste de survirage — fait rétrograder le rapport d\'1 à la ' +
+    'sortie, réellement, pas juste pour ce coup. Un simple 60° sous frein n\'a aucune suite : il t\'a juste ' +
+    'évité d\'attendre. Utilise le 60° pour te débloquer sans frais, garde le 120° pour les virages qu\'un ' +
+    '60° ne peut pas négocier — c\'est là qu\'il vaut largement son coût.') +
 
   details('🔻 Frein moteur',
     'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
@@ -5392,12 +5425,16 @@ function finalizeMove(r) {
   // pour ce coup, pas encore réassigné pour le suivant).
   snapshotNextGearDie();
 
-  // FREIN À MAIN : si le trajet choisi a utilisé un virage freiné (60° ou
-  // 120°), le rapport rétrograde automatiquement d'1 à la sortie du virage —
-  // réel, pas juste pour ce coup. Appliqué APRÈS snapshotNextGearDie() pour
-  // les mêmes raisons que le reste : la reprise se calcule sur le rapport
-  // auquel le coup a VRAIMENT été joué.
-  if (r.path && r.path.some(s => s.hbTurn)) {
+  // FREIN À MAIN : le rétrogradage automatique ne s'applique QUE sur un
+  // virage à 120° — le vrai geste de survirage qui justifie la perte de
+  // vitesse. Un simple virage à 60° sous frein ne fait que contourner la
+  // dette d'inertie, sans la glissade franche qui coûterait un rapport :
+  // aucune conséquence après. Sans cette distinction, le rétrogradage
+  // (qui reste tant que le joueur ne remonte pas manuellement, ~5-6 cases
+  // de moins par coup suivant) écrasait systématiquement le bénéfice du
+  // virage sur la durée d'une spéciale — vérifié : le frein ne faisait
+  // alors jamais mieux que ne pas l'utiliser du tout.
+  if (r.path && r.path.some(s => s.hb120)) {
     R.gear = Math.max(1, R.gear - 1);
     R.pendingGear = R.gear;
   }
