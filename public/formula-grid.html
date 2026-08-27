@@ -2074,53 +2074,11 @@ let grassPattern = null;
   gc.height = 256;
   const g = gc.getContext('2d');
 
-  // Base verte plus vive (l'ancienne était trop sombre/olive, terne à côté
-  // de la piste) — vraie couleur "pelouse", pas "marécage".
-  g.fillStyle = '#3d7a1e';
+  // Aplat propre, comme la piste : une seule teinte pleine, sans motif.
+  // L'herbe est un simple fond, elle ne doit jamais attirer l'oeil plus que
+  // la piste elle-même.
+  g.fillStyle = '#356b1c';
   g.fillRect(0, 0, 256, 256);
-
-  // Bandes de tonte alternées, plus larges (24px) pour un motif net qui se
-  // lit bien même dézoomé, au lieu du fin quadrillage précédent qui tournait
-  // au moiré à distance.
-  for (let y = 0; y < 256; y += 24) {
-    g.fillStyle = (Math.floor(y / 24) % 2 === 0)
-      ? 'rgba(255,255,255,0.05)'
-      : 'rgba(0,0,0,0.09)';
-    g.fillRect(0, y, 256, 24);
-  }
-
-  // Brins d'herbe : petits traits orientés plutôt que des taches floues —
-  // beaucoup plus "herbe", moins "boue". Semés indépendamment de la bande de
-  // tonte pour casser toute régularité.
-  for (let i = 0; i < 900; i++) {
-    const x = Math.random() * 256;
-    const y = Math.random() * 256;
-    const len = 3 + Math.random() * 5;
-    const lean = (Math.random() - 0.5) * 1.4;
-    const shade = Math.random();
-    g.strokeStyle = shade > 0.66
-      ? 'rgba(120,190,70,0.35)'   // brin clair, au soleil
-      : shade > 0.33
-      ? 'rgba(30,60,14,0.35)'     // brin sombre, à l'ombre
-      : 'rgba(70,130,40,0.3)';    // brin moyen
-    g.lineWidth = 1;
-    g.beginPath();
-    g.moveTo(x, y);
-    g.lineTo(x + lean, y - len);
-    g.stroke();
-  }
-
-  // Quelques imperfections plus larges (terre, ombre) pour casser l'uniformité
-  // sans revenir à l'effet "taches de boue" d'origine.
-  for (let i = 0; i < 40; i++) {
-    const x = Math.random() * 256;
-    const y = Math.random() * 256;
-    const s = 4 + Math.random() * 7;
-    g.fillStyle = 'rgba(25,50,12,0.18)';
-    g.beginPath();
-    g.ellipse(x, y, s, s * 0.55, Math.random() * Math.PI, 0, Math.PI * 2);
-    g.fill();
-  }
 
   grassPattern = gc;
 })();
