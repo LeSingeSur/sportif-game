@@ -2798,9 +2798,9 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
     // N'importe lequel de ces virages peut devenir "le" virage freiné.
     // gear >= 1 : le 120° est un pivot, pas une purge de dette — il reste
     // utile même en V1 où l'inertie est nulle.
+    // FREIN À MAIN : réservé au 120° — un virage à 60° se négocie normalement,
+    // en levant le pied, pas au frein à main.
     if (hbLeft && gear >= 1) {
-      opts.push({ d: rotHex(dir, -1), turn: true, hbTurn: true });
-      opts.push({ d: rotHex(dir, 1), turn: true, hbTurn: true });
       opts.push({ d: rotHex(dir, -2), turn: true, hbTurn: true, hb120: true });
       opts.push({ d: rotHex(dir, 2), turn: true, hbTurn: true, hb120: true });
     }
@@ -2848,10 +2848,10 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
       const effectiveDrift = o.hbTurn
         ? Math.max(0, hbInert) + Math.max(0, driftForGear(hbGear, hbSurf))
         : driftN;
+      const oldDir = HEX_DIRS[dir];   // l'ancien cap, pas le nouveau : la
+                                       // voiture "continue tout droit" avant
+                                       // de vraiment prendre le virage.
       if (o.turn && effectiveDrift > 0) {
-        const oldDir = HEX_DIRS[dir];   // l'ancien cap, pas le nouveau : la
-                                         // voiture "continue tout droit" avant
-                                         // de vraiment prendre le virage.
         for (let k = 0; k < effectiveDrift; k++) {
           nq += oldDir.q;
           nr += oldDir.r;
@@ -2859,9 +2859,8 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
           seg.push({ q: nq, r: nr, dir: o.d, turn: false, drift: true, hb: !!o.hbTurn });
         }
       }
-      // FREIN À MAIN : consomme le jeton dès qu'un virage freiné (60° OU
-      // 120°) est effectivement pris — une fois par coup, quel que soit
-      // lequel des deux devient "le" virage freiné.
+      // FREIN À MAIN : consomme le jeton dès qu'un virage freiné (120°) est
+      // effectivement pris — une fois par coup.
       let hbUsedHere = false;
       if (o.hbTurn) hbUsedHere = true;
       if (!driftOk) continue;   // le déport sort de la piste : ce virage est
@@ -3683,7 +3682,7 @@ async function solveCircuit(opts) {
               const nTUsed = useTurbo ? 1 : tUsed;
               // Rétrogradage automatique : le rapport qui sert de référence au
               // coup SUIVANT est celui de sortie, pas celui utilisé ici.
-              const nGear = hbTaken ? Math.max(1, g - 1) : g;
+              const nGear = g;   // FREIN À MAIN : plus de rétrogradage.
               const nHbLeft = hbTaken ? hbLeft - 1 : hbLeft;
               // Prochaine reprise (dé du rapport g+1) : si CE coup est en
               // turbo et qu'un rapport supérieur existe, elle est marquée
@@ -3745,7 +3744,7 @@ async function solveCircuit(opts) {
       const nDrs = (res.path.some(p => (R.grid[p.r] || '')[p.q] === 'D') || cell === 'D') ? 1 : 0;
       const nTUsed = st.turbo ? 1 : Number(st.key.split('|')[9]);
       const k = enc([res.q, res.r, res.dir, res.inertiaEnd,
-                     hbTaken ? Math.max(1, st.gear - 1) : st.gear, lap + res.lapsGained,
+                     st.gear, lap + res.lapsGained,
                      nLeftF, res.cpMask, nDrs, nTUsed, nbf, hbTaken ? hbLeftHere - 1 : hbLeftHere]);
       if (k === nextKey) { chosen = res; break; }
     }
@@ -3753,7 +3752,8 @@ async function solveCircuit(opts) {
       n: i + 1, gear: st.gear, total: st.tot, turbo: !!st.turbo, hb: !!st.hb,
       from: { q: q, r: r }, to: chosen ? { q: chosen.q, r: chosen.r } : null,
       left: chosen ? chosen.left : null,
-      path: chosen ? chosen.path.map(p => ({ q: p.q, r: p.r, drift: !!p.drift, hb: !!p.hb })) : []
+      path: chosen ? chosen.path.map(p => ({ q: p.q, r: p.r, drift: !!p.drift, hb: !!p.hb,
+                                              turn: !!p.turn, hbTurn: !!p.hbTurn, hb120: !!p.hb120 })) : []
     });
   }
 
@@ -4682,15 +4682,14 @@ function buildRulesHTML() {
     'Nombre d\'utilisations par spéciale fixé par l\'organisateur (1 par défaut) · <b>interdit sur le sable</b>.<br><br>' +
     'Utilisable APRÈS le lancer : tu l\'armes, les trajectoires sont recalculées, et si ça ne te plaît pas ' +
     'tu recliques pour revenir en arrière. Le jeton n\'est dépensé que si tu valides un coup freiné.<br><br>' +
-    'Effet : tu peux tourner MÊME avec de la dette d\'inertie non purgée, à <b>60° ou 120°</b> au choix. ' +
-    'L\'inertie n\'est pas effacée : elle est <b>convertie en glisse</b>. La voiture survire — l\'arrière ' +
-    'décroche vers l\'<b>extérieur</b> du virage. La jauge d\'inertie se recharge ensuite normalement, ' +
-    'comme après tout virage : un seul pivot par jeton.<br><br>' +
+    'Effet : tu peux tourner à <b>120°</b> MÊME avec de la dette d\'inertie non purgée — un 60° se négocie ' +
+    'normalement, en levant le pied, pas au frein à main. L\'inertie n\'est pas effacée : elle est ' +
+    '<b>convertie en glisse</b>. La voiture survire — l\'arrière décroche vers l\'<b>extérieur</b> du virage. ' +
+    'La jauge d\'inertie se recharge ensuite normalement, comme après tout virage : un seul pivot par jeton.<br><br>' +
     'Déport = <b>inertie(V) + déport(V−1)</b>, sur la surface de la case où tu braques : tu <b>arrives</b> ' +
     'au rapport V — c\'est cette énergie qui fait décrocher l\'arrière — et tu <b>repars</b> en glisse au ' +
     'rapport V−1. Exemples : V2 asphalte → 1 + 0 = <b>1 case</b> · V3 asphalte → 2 + 0 = <b>2 cases</b> · ' +
-    'V4 neige → 3 + 2 = <b>5 cases</b>. Si ces cases sortent de la piste, le virage est impraticable à ce rapport.<br><br>' +
-    'Après le coup, <b>60° comme 120°</b> font <b>rétrograder d\'1 rapport</b> : tirer le frein casse la vitesse.') +
+    'V4 neige → 3 + 2 = <b>5 cases</b>. Si ces cases sortent de la piste, le virage est impraticable à ce rapport.') +
 
   details('🔻 Frein moteur',
     'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
@@ -5509,14 +5508,6 @@ function finalizeMove(r) {
   // aurait donné SUR CE COUP QUI VIENT DE SE CONCLURE (R.gear = celui utilisé
   // pour ce coup, pas encore réassigné pour le suivant).
   snapshotNextGearDie();
-
-  // FREIN À MAIN : rétrogradage automatique d'1 rapport après TOUT coup
-  // freiné (60° comme 120°) — tirer le frein casse la vitesse, point.
-  // C'est le vrai coût de la manœuvre, avec la rareté du jeton.
-  if (hbTaken) {
-    R.gear = Math.max(1, R.gear - 1);
-    R.pendingGear = R.gear;
-  }
 
   // Zone DRS : compte si une case du trajet qu'on VIENT de parcourir touche une
   // case DRS — pas seulement la case d'arrivée. Sinon, à haute vitesse, un coup
@@ -8985,20 +8976,49 @@ function drawEditor() {
   // numérotée marque la case d'arrêt de chaque coup avec son rapport.
   if (E.solveMoves && E.solveMoves.length) {
     const N = E.solveMoves.length;
+    // Rouge fixe pour tout ce qui vient du frein à main — INDÉPENDANT du
+    // dégradé vert->rouge (qui n'indique que l'ordre des coups, rien à voir
+    // avec le frein). Sans ça, un virage freiné pris tard dans le tracé (déjà
+    // rouge par le dégradé) était invisible : indiscernable d'un coup normal.
+    const HB_RED = '#ff2d2d';
     E.solveMoves.forEach((mv, mi) => {
       const teinte = 120 - (120 * mi / Math.max(1, N - 1));   // 120=vert -> 0=rouge
       const col = 'hsl(' + teinte + ',85%,55%)';
       const pts = [mv.from].concat(mv.path);
-      ectx.strokeStyle = col;
       ectx.lineWidth = Math.max(2, hs * 0.16);
       ectx.lineJoin = 'round'; ectx.lineCap = 'round';
       for (let i = 1; i < pts.length; i++) {
         const a = axialToPixel(pts[i - 1].q, pts[i - 1].r, hs);
         const b = axialToPixel(pts[i].q, pts[i].r, hs);
+        // Segment de glisse freinée = rouge fixe et trait plus épais ;
+        // segment normal (freiné ou pas) = couleur du dégradé habituel.
+        const segHb = !!(pts[i].hb || pts[i].hbTurn);
+        ectx.strokeStyle = segHb ? HB_RED : col;
+        ectx.lineWidth = Math.max(2, hs * (segHb ? 0.22 : 0.16));
         ectx.setLineDash(pts[i].drift ? [hs * 0.2, hs * 0.16] : []);
         ectx.beginPath(); ectx.moveTo(a.x, a.y); ectx.lineTo(b.x, b.y); ectx.stroke();
       }
       ectx.setLineDash([]);
+
+      // Pivot freiné : marqueur rouge à part, avec l'angle (60/120), posé
+      // AVANT le rond d'arrivée standard pour rester visible dessous s'ils
+      // se chevauchent sur une case très courte.
+      for (const pc of mv.path) {
+        if (!pc.hbTurn) continue;
+        const pp = axialToPixel(pc.q, pc.r, hs);
+        ectx.beginPath();
+        ectx.arc(pp.x, pp.y, hs * 0.34, 0, Math.PI * 2);
+        ectx.fillStyle = HB_RED;
+        ectx.fill();
+        ectx.strokeStyle = '#ffe08a';
+        ectx.lineWidth = Math.max(2, hs * 0.08);
+        ectx.stroke();
+        ectx.fillStyle = '#14161a';
+        ectx.font = 'bold ' + Math.max(7, hs * 0.26) + 'px sans-serif';
+        ectx.textAlign = 'center'; ectx.textBaseline = 'middle';
+        ectx.fillText(pc.hb120 ? '120' : '60', pp.x, pp.y);
+      }
+
       if (mv.to) {
         const e = axialToPixel(mv.to.q, mv.to.r, hs);
         ectx.beginPath(); ectx.arc(e.x, e.y, hs * 0.42, 0, Math.PI * 2);
@@ -9007,7 +9027,7 @@ function drawEditor() {
         ectx.fillStyle = col;
         ectx.font = 'bold ' + Math.max(7, hs * 0.42) + 'px sans-serif';
         ectx.textAlign = 'center'; ectx.textBaseline = 'middle';
-        ectx.fillText('V' + mv.gear, e.x, e.y);
+        ectx.fillText('V' + mv.gear + (mv.hb ? ' 🛑' : ''), e.x, e.y);
       }
     });
   }
