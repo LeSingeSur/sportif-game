@@ -2838,15 +2838,15 @@ function getValidPaths(q0, r0, dir0, budget, gear, lapCount, targetLaps, handbra
       // Surface lue sur la case où la voiture braque, PAS sur celle de départ :
       // partir sur asphalte et tirer le frein une fois sur la glace applique
       // bien les valeurs de la glace.
+      // Sans rétrogradage forcé, la voiture reste au MÊME rapport avant et
+      // après le virage — inertie et déport se lisent donc tous les deux à V,
+      // pas à V-1 : plus de raison de traiter le "repart" séparément de
+      // l"arrive" puisqu'il n'y a plus de changement de rapport entre les deux.
       const hbSurf = surfaceAt(q, r);
-      const hbGear = Math.max(0, (gear || 1) - 1);   // rapport de SORTIE (V-1)
       const hbTable = inertiaTable(hbSurf);
-      // Inertie au rapport d'ENTRÉE (V) : la voiture arrive à V, c'est cette
-      // énergie-là qui fait décrocher l'arrière. Drift au rapport de SORTIE
-      // (V-1) : la glisse, elle, se fait au rapport sur lequel on repart.
       const hbInert = (hbTable[gear] != null) ? hbTable[gear] : Math.max(0, (gear || 1) - 1);
       const effectiveDrift = o.hbTurn
-        ? Math.max(0, hbInert) + Math.max(0, driftForGear(hbGear, hbSurf))
+        ? Math.max(0, hbInert) + Math.max(0, driftForGear(gear, hbSurf))
         : driftN;
       const oldDir = HEX_DIRS[dir];   // l'ancien cap, pas le nouveau : la
                                        // voiture "continue tout droit" avant
@@ -3682,7 +3682,7 @@ async function solveCircuit(opts) {
               const nTUsed = useTurbo ? 1 : tUsed;
               // Rétrogradage automatique : le rapport qui sert de référence au
               // coup SUIVANT est celui de sortie, pas celui utilisé ici.
-              const nGear = g;   // FREIN À MAIN : plus de rétrogradage.
+              const nGear = g;
               const nHbLeft = hbTaken ? hbLeft - 1 : hbLeft;
               // Prochaine reprise (dé du rapport g+1) : si CE coup est en
               // turbo et qu'un rapport supérieur existe, elle est marquée
@@ -4686,10 +4686,10 @@ function buildRulesHTML() {
     'normalement, en levant le pied, pas au frein à main. L\'inertie n\'est pas effacée : elle est ' +
     '<b>convertie en glisse</b>. La voiture survire — l\'arrière décroche vers l\'<b>extérieur</b> du virage. ' +
     'La jauge d\'inertie se recharge ensuite normalement, comme après tout virage : un seul pivot par jeton.<br><br>' +
-    'Déport = <b>inertie(V) + déport(V−1)</b>, sur la surface de la case où tu braques : tu <b>arrives</b> ' +
-    'au rapport V — c\'est cette énergie qui fait décrocher l\'arrière — et tu <b>repars</b> en glisse au ' +
-    'rapport V−1. Exemples : V2 asphalte → 1 + 0 = <b>1 case</b> · V3 asphalte → 2 + 0 = <b>2 cases</b> · ' +
-    'V4 neige → 3 + 2 = <b>5 cases</b>. Si ces cases sortent de la piste, le virage est impraticable à ce rapport.') +
+    'Déport = <b>inertie(V) + déport(V)</b>, sur la surface de la case où tu braques — pas de rétrogradage ' +
+    'forcé, donc pas de rapport de \'sortie\' distinct : tout se lit au même rapport. Exemples : V2 asphalte ' +
+    '→ 1 + 0 = <b>1 case</b> · V3 asphalte → 2 + 0 = <b>2 cases</b> · V4 neige → 3 + 3 = <b>6 cases</b>. ' +
+    'Si ces cases sortent de la piste, le virage est impraticable à ce rapport.') +
 
   details('🔻 Frein moteur',
     'Rétrograder freine la voiture : <b>−1 case</b> si tu descends d\'un rapport, <b>−2 cases</b> si tu en descends deux. ' +
@@ -5446,7 +5446,7 @@ function animStep() {
   }
 
   const speed = Math.max(2, 8 - R.gear);
-  R.animT += speed * 0.06;
+  R.animT += speed * 0.05;   // légèrement ralenti, la voiture filait trop vite à l'écran
 
   if (R.animT >= 1) {
     R.animT = 0;
