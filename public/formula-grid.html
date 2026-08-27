@@ -2068,36 +2068,6 @@ function perpInPixel(q0, r0, q1, r1) {
    ================================================================ */
 let grassPattern = null;
 
-// Grain par surface : purement décoratif, appliqué EN PLUS de la couleur qui
-// encode déjà la surface (asphalte/terre/neige/sable/roche) — jamais à la
-// place. Ces canevas restent en noir/blanc translucide (comme les brins
-// d'herbe) pour ne jamais modifier la teinte que le joueur lit ; ils ajoutent
-// juste du grain, sans toucher aux overlays posés au-dessus (drift, kerbs,
-// dénivelé, frein à main…) qui restent identiques.
-function makeGrain(size, count, minR, maxR, alphaLight, alphaDark, elongate) {
-  const c = document.createElement('canvas');
-  c.width = size; c.height = size;
-  const g = c.getContext('2d');
-  for (let i = 0; i < count; i++) {
-    const x = Math.random() * size, y = Math.random() * size;
-    const rr = minR + Math.random() * (maxR - minR);
-    const light = Math.random() > 0.5;
-    g.fillStyle = light ? 'rgba(255,255,255,' + alphaLight + ')' : 'rgba(0,0,0,' + alphaDark + ')';
-    g.beginPath();
-    if (elongate) g.ellipse(x, y, rr * 1.8, rr * 0.55, Math.random() * Math.PI, 0, Math.PI * 2);
-    else g.arc(x, y, rr, 0, Math.PI * 2);
-    g.fill();
-  }
-  return c;
-}
-const SURF_GRAIN = {
-  asphalte: makeGrain(64, 200, 0.4, 1.1, 0.05, 0.11, false),  // grain minéral fin
-  terre:    makeGrain(64, 130, 0.6, 1.9, 0.06, 0.13, false),  // grain plus grossier, cailloux
-  neige:    makeGrain(64, 90,  0.5, 1.3, 0.11, 0.03, false),  // scintille plus qu'elle n'ombre
-  sable:    makeGrain(64, 240, 0.4, 1.0, 0.05, 0.08, true),   // grains allongés, ridés par le vent
-  roche:    makeGrain(64, 90,  0.8, 2.4, 0.06, 0.15, true)    // aspérités marquées
-};
-
 (function generateGrass() {
   const gc = document.createElement('canvas');
   gc.width = 256;
@@ -6382,15 +6352,6 @@ function drawRace() {
 
   const vis = getVisibleRange(hexSize, centerOff, Math.max(cw, ch));
 
-  // Patterns de grain recréés une fois par frame (pas par case) : 5 appels,
-  // pas des centaines — même logique que le pattern d'herbe existant.
-  const grainFillRace = {
-    T: cctx.createPattern(SURF_GRAIN.terre, 'repeat'),
-    N: cctx.createPattern(SURF_GRAIN.neige, 'repeat'),
-    B: cctx.createPattern(SURF_GRAIN.sable, 'repeat'),
-    K: cctx.createPattern(SURF_GRAIN.roche, 'repeat'),
-    _: cctx.createPattern(SURF_GRAIN.asphalte, 'repeat')
-  };
   // 2) Asphalte (ruban lisse)
   for (let r = vis.minR; r <= vis.maxR; r++) {
     for (let q = vis.minQ; q <= vis.maxQ; q++) {
@@ -6407,15 +6368,6 @@ function drawRace() {
       else if (t === 'K') cctx.fillStyle = 'rgb(' + (107 + v) + ',' + (98 + v) + ',' + (89 + v) + ')';
       else                cctx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       cctx.fill();
-
-      // Grain, clippé à la case : posé APRÈS la couleur pleine, jamais à sa
-      // place — la teinte qui identifie la surface reste intacte.
-      cctx.save();
-      hexPath(cctx, pt.x, pt.y, hexSize * 0.98);
-      cctx.clip();
-      cctx.fillStyle = grainFillRace[t] || grainFillRace._;
-      cctx.fillRect(pt.x - hexSize, pt.y - hexSize, hexSize * 2, hexSize * 2);
-      cctx.restore();
     }
   }
 
@@ -8967,14 +8919,6 @@ function drawEditor() {
   const minR = Math.max(0, Math.floor(vt / (hs * 1.5)) - 3);
   const maxR = Math.min(EH, Math.ceil(vb / (hs * 1.5)) + 3);
 
-  const grainFillEdit = {
-    T: ectx.createPattern(SURF_GRAIN.terre, 'repeat'),
-    N: ectx.createPattern(SURF_GRAIN.neige, 'repeat'),
-    B: ectx.createPattern(SURF_GRAIN.sable, 'repeat'),
-    K: ectx.createPattern(SURF_GRAIN.roche, 'repeat'),
-    _: ectx.createPattern(SURF_GRAIN.asphalte, 'repeat')
-  };
-
   for (let r = minR; r < maxR; r++) {
     const minQ = Math.max(0, Math.floor(vl / (hs * SQRT3) - r / 2) - 3);
     const maxQ = Math.min(EW, Math.ceil(vr / (hs * SQRT3) - r / 2) + 3);
@@ -8994,13 +8938,6 @@ function drawEditor() {
       else if (t === 'K') ectx.fillStyle = 'rgb(' + (107 + v) + ',' + (98 + v) + ',' + (89 + v) + ')';
       else                ectx.fillStyle = 'rgb(' + (55 + v) + ',' + (60 + v) + ',' + (68 + v) + ')';
       ectx.fill();
-
-      ectx.save();
-      hexPath(ectx, pt.x, pt.y, hs * 0.98);
-      ectx.clip();
-      ectx.fillStyle = grainFillEdit[t] || grainFillEdit._;
-      ectx.fillRect(pt.x - hs, pt.y - hs, hs * 2, hs * 2);
-      ectx.restore();
 
       // Grille fantôme
       ectx.strokeStyle = 'rgba(255,255,255,0.06)';
