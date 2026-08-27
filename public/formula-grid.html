@@ -3029,13 +3029,10 @@ function renderGears() {
     const hb = document.createElement('div');
     const surIci = surfaceAt(R.q, R.r);
     const sableIci = (surIci === 'sable');
-    // Disponible AVANT le lancer (phase 'gear') ET pendant le choix de
-    // trajectoire (phase 'move') : c'est là que le joueur compare les
-    // trajectoires freinées et non freinées, et peut revenir en arrière.
+    // Disponible UNIQUEMENT après le lancer (phase 'pick') : c'est le seul
+    // moment où l'armer a un effet réel — voir le commentaire ci-dessus.
     const hbDispo = !R.handbrakeUsed && !sableIci && !R.animating &&
-      // Dès la V1 : même sans dette d'inertie à purger, le virage à 120°
-      // reste une manœuvre que le frein est seul à autoriser.
-      ((R.phase === 'gear' && R.pendingGear >= 1) || (R.phase === 'pick' && R.gear >= 1));
+      (R.phase === 'pick' && R.gear >= 1);
     hb.className = 'gear ' + (R.handbrakeArmed ? 'sel' : (hbDispo ? 'reach' : 'off'));
     hb.innerHTML = '<b>🛑</b><span>' + (R.handbrakeUsed ? 'utilisé' : 'FREIN À MAIN') + '</span>' +
       '<i style="font-style:normal;font-size:8px;opacity:.65;margin-top:1px">' +
@@ -3046,17 +3043,15 @@ function renderGears() {
     if (hbDispo) {
       hb.onclick = () => {
         R.handbrakeArmed = !R.handbrakeArmed;
-        if (R.phase === 'pick') {
-          // Le lancer est déjà fait : on recalcule les trajectoires avec ou
-          // sans frein, pour que le joueur VOIE la différence avant de choisir.
-          R._handbrakeThisRoll = R.handbrakeArmed;
-          applyPenaltiesAndProcess();
-          toast(R.handbrakeArmed ? '🛑 Frein à main ARMÉ — trajectoires recalculées'
-                                 : '🛑 Frein à main annulé');
-        }
+        // Le lancer est déjà fait (seule fenêtre où ce bouton est cliquable) :
+        // on recalcule les trajectoires avec ou sans frein, pour que le
+        // joueur VOIE la différence avant de choisir.
+        R._handbrakeThisRoll = R.handbrakeArmed;
+        applyPenaltiesAndProcess();
+        toast(R.handbrakeArmed ? '🛑 Frein à main ARMÉ — trajectoires recalculées'
+                               : '🛑 Frein à main annulé');
         renderGears();
         updateSpeedometer();
-        drawRace();   // l'aperçu bleu suit l'état du bouton, sans attendre
       };
     }
     hg.appendChild(hb);
@@ -3503,6 +3498,13 @@ function executeDiceRoll(gear) {
 // reprise mais ouvre le libre choix de face (sauf sur la reprise elle-même).
 function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace, surf) {
   const DS = diceSet();
+  // SABLE : le vrai lancer retire 1 case par dé engagé (nActifs = gear ici,
+  // le pool d'un rapport = ses g premiers dés). Le solveur l'ignorait
+  // entièrement, ce qui rendait son "temps parfait" trop optimiste sur les
+  // spéciales sablonneuses. Appliqué APRÈS coup sur les totaux finaux, comme
+  // le fait le vrai jeu dans applyPenaltiesAndProcess (donc après le bonus de
+  // doublé/triplé quand il y en a un).
+  const applySable = (arr) => (surf === 'sable') ? arr.map(t => Math.max(1, t - gear)) : arr;
   const nJets = isRallye() ? Math.max(1, 4 - gear) : (gear === 1 ? 2 : 1);
   const KEYS = [0, 'v1b', 'v1c'];
   const top = maxGear();
@@ -3526,7 +3528,7 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace, su
       for (const s of sums) for (const f of faces) next.push(s + f);
       sums = next;
     }
-    return [...new Set(sums)].sort((a, b) => a - b);
+    return applySable([...new Set(sums)].sort((a, b) => a - b));
   }
 
   if (turboNow) {
@@ -3560,7 +3562,7 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace, su
         for (const bkv of bankOptions) out.add(fixed + v1v + bkv);
       }
     }
-    return [...out].filter(t => t >= 1).sort((a, b) => a - b);
+    return applySable([...out].filter(t => t >= 1).sort((a, b) => a - b));
   }
 
   // Lancer normal : deux réserves indépendantes, sur deux dés différents : les
@@ -3598,7 +3600,7 @@ function solverTotals(gear, prevGear, moveNo, drsNatural, turboNow, bankFace, su
     : [0];
   const out = [];
   for (const j of jetOptions) for (const bkv of bankOptions) out.push(base + j + bkv);
-  return applyJetBonus([...new Set(out)].sort((a, b) => a - b), bonusRange);
+  return applySable(applyJetBonus([...new Set(out)].sort((a, b) => a - b), bonusRange));
 }
 
 function solverGears(prevGear) {
@@ -3838,7 +3840,12 @@ function rollDiceAnim(drsFace) {
   // Uniquement en cas de VRAIE rétrogradation : R.gear est encore l'ancien
   // rapport à cet instant, R.pendingGear celui qu'on engage pour ce coup.
   const downshift = (R.gear > 0) ? Math.max(0, Math.min(2, R.gear - R.pendingGear)) : 0;
-  R._downshiftThisRoll = downshift;   // 0 = pas de rétrogradation, 1 ou 2 sinon
+  // FREIN MOTEUR : ni forcé, ni un bouton à part — les DEUX trajectoires
+  // (avec et sans le malus de rétrogradation) sont proposées comme des
+  // destinations différentes, exactement comme le fait déjà le DRS ou le
+  // dé de reprise. Le joueur choisit sa case d'arrivée ; ce choix décide
+  // implicitement s'il a freiné au moteur ou laissé filer.
+  R._downshiftThisRoll = downshift;
 
   // Anti-spam
   R.phase = 'rolling';
@@ -4219,9 +4226,7 @@ function rollDiceAnim(drsFace) {
         ? ' <span style="color:#ff9f43;font-size:11px">🎲🎲 DOUBLÉ · ±1 case débloqué</span>'
         : '';
       const brakeTag = R._downshiftThisRoll >= 1
-        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 frein moteur · −' + R._downshiftThisRoll +
-          ' case' + (R._downshiftThisRoll > 1 ? 's' : '') + ' (rétrogradage de ' +
-          R._downshiftThisRoll + ' rapport' + (R._downshiftThisRoll > 1 ? 's' : '') + ')</span>'
+        ? ' <span style="color:#4aa3ff;font-size:11px">🔻 frein moteur en option · deux trajectoires possibles</span>'
         : '';
 
       if (drsAll) {
@@ -4253,8 +4258,8 @@ function rollDiceAnim(drsFace) {
           ' <span style="color:#4aa3ff;font-size:11px">📥 reprise vs frais · à toi de choisir</span>' +
           bonusTag + brakeTag;
       } else if (altTotals && altTotals.length > 1) {
-        // Cas SIMPLE mais avec un choix quand même : le frein moteur -2
-        // rapports dédouble le total même sans DRS/turbo/V1/reprise.
+        // Cas SIMPLE mais avec un choix quand même : le frein moteur dédouble
+        // le total (avec/sans) même sans DRS/turbo/V1/reprise.
         sumEl.innerHTML = '<span style="color:var(--line);font-size:20px">Σ ' +
           altTotals.join(' ou ') + ' cases</span>' + brakeTag;
       } else {
@@ -4360,12 +4365,21 @@ function applyPenaltiesAndProcess() {
     if (alt) alt = alt.map(t => Math.max(1, t - nActifs));
     base = Math.max(1, base - nActifs);
   }
-  // FREIN MOTEUR : malus FIXE et OBLIGATOIRE, uniquement en cas de vraie
-  // rétrogradation — -1 case pour 1 rapport descendu, -2 pour 2 rapports.
+  // FREIN MOTEUR : optionnel — en cas de vraie rétrogradation, on propose
+  // à la fois le total BRUT (pas de frein moteur, on laisse filer) ET le
+  // total AMPUTÉ du malus (-1 case pour 1 rapport descendu, -2 pour 2), en
+  // les fusionnant dans les totaux alternatifs. Le joueur choisit sa
+  // destination ; le total qui l'explique fixe implicitement s'il a freiné
+  // au moteur ou non — jamais un bouton séparé à armer à l'avance.
   if (R._downshiftThisRoll >= 1) {
     const m = R._downshiftThisRoll;
-    if (alt) alt = alt.map(t => Math.max(1, t - m));
-    base = Math.max(1, base - m);
+    if (alt) {
+      const merged = new Set(alt);
+      for (const t of alt) merged.add(Math.max(1, t - m));
+      alt = [...merged];
+    } else {
+      alt = [...new Set([base, Math.max(1, base - m)])];
+    }
   }
   // FREIN À MAIN : AUCUN malus de distance. Son coût est purement géométrique
   // — la dette d'inertie purgée se paie en cases de dérive vers l'intérieur
@@ -6524,53 +6538,6 @@ function drawRace() {
   // son usage rendrait atteignables — comparaison au meilleur cas possible
   // (budget maximal du rapport visé), puisque les dés ne sont pas encore
   // tirés à ce stade. Aide à décider si ça vaut le coup de l'activer ce tour.
-  // N'APPARAÎT QUE SI LE FREIN EST ARMÉ : affiché en permanence, l'aperçu
-  // constellait l'écran de bleu à chaque coup (le 120° ouvre des cases dans
-  // presque toutes les directions) et rendait la carte illisible.
-  if (R.phase === 'gear' && R.handbrakeArmed && !R.handbrakeUsed && R.pendingGear >= 1 &&
-      surfaceAt(R.q, R.r) !== 'sable' && isRallye()) {
-    const debt = Math.max(0, R.inertia || 0);
-    const sig = R.q + ',' + R.r + ',' + R.dir + ',' + R.pendingGear + ',' + debt;
-    if (R._hbPreviewSig !== sig) {
-      R._hbPreviewSig = sig;
-      const DB = diceBounds();
-      const maxBudget = (DB[R.pendingGear] && DB[R.pendingGear][1]) || 0;
-      let nouvelles = new Set();
-      // Plus de condition debt > 0 : même sans dette, le frein ouvre le 120°.
-      if (maxBudget > 0) {
-        const sansFrein = getValidPaths(R.q, R.r, R.dir, maxBudget, R.pendingGear,
-          R.isWarmup ? 0 : R.lapCount, R.targetLaps, 0) || [];
-        const avecFrein = getValidPaths(R.q, R.r, R.dir, maxBudget, R.pendingGear,
-          // 1 = frein actif (drapeau, pas une quantité) : passer `debt` ici
-          // désactivait purement et simplement l'aperçu quand la dette valait 0.
-          R.isWarmup ? 0 : R.lapCount, R.targetLaps, 1) || [];
-        const sansSet = new Set(sansFrein.filter(p => !p.crash).map(p => p.q + ',' + p.r));
-        for (const p of avecFrein) {
-          if (p.crash) continue;
-          const k = p.q + ',' + p.r;
-          if (!sansSet.has(k)) nouvelles.add(k);
-        }
-      }
-      R._hbPreviewCells = nouvelles;
-    }
-    if (R._hbPreviewCells && R._hbPreviewCells.size) {
-      cctx.fillStyle = 'rgba(74,163,255,0.28)';
-      cctx.strokeStyle = 'rgba(74,163,255,0.75)';
-      cctx.lineWidth = 1.5;
-      for (const k of R._hbPreviewCells) {
-        const [nq, nr] = k.split(',').map(Number);
-        const pt = axialToPixel(nq, nr, hexSize);
-        hexPath(cctx, pt.x, pt.y, hexSize * 0.82);
-        cctx.fill();
-        cctx.stroke();
-      }
-    }
-  } else if (R._hbPreviewCells) {
-    // Frein désarmé (ou phase terminée) : on jette l'aperçu ET sa signature,
-    // sinon il resterait affiché tel quel au prochain armement.
-    R._hbPreviewCells = null;
-    R._hbPreviewSig = null;
-  }
 
   // 8) Destinations cliquables + trajectoire prévisualisée
   if (R.phase === 'pick' && R.ends) {
