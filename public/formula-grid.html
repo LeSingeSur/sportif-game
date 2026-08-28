@@ -2608,6 +2608,17 @@ function setupRaceControls() {
       R._p0 = null;
     }
   };
+
+  // Molette (PC uniquement) : la même plage de zoom que le pinch tactile,
+  // n'ajoute rien côté mobile — 'wheel' ne se déclenche jamais au doigt.
+  cv.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.12);
+    R.zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, R.zoomLevel * zoomFactor));
+    R.userPanned = true;
+    updateZoomIndicator();
+    drawRace();
+  }, { passive: false });
 }
 
 // Centrer la vue sur la voiture
@@ -3243,12 +3254,51 @@ function showLapFlag(text, sub) {
 function showGhostRef() { return localStorage.getItem('fg_hide_ghost_ref') !== '1'; }
 function showGhostOwn() { return localStorage.getItem('fg_hide_ghost_own') !== '1'; }
 
-// Dessine un fantôme à sa position au coup courant
+// Dessine un fantôme à sa position au coup courant, PLUS le chemin déjà
+// parcouru (un point par coup — pas le détail case par case d'un coup,
+// simplement la trace reliant les points d'arrivée déjà atteints, comme un
+// sillage). Se redessine à chaque frame en fonction de R.turn : le sillage
+// grandit au fil de la course, jamais plus loin que là où le fantôme en est.
 function drawGhost(ghost, enabled, color, hexSize) {
   if (!enabled || !ghost || !ghost.turns || !ghost.turns.length) return;
   const gi = Math.min(R.turn, ghost.turns.length - 1);
   const g = ghost.turns[gi];
   if (!g) return;
+
+  // Sillage : relie tous les points d'arrivée déjà atteints par le fantôme,
+  // du départ jusqu'à sa position actuelle.
+  if (gi > 0) {
+    cctx.save();
+    cctx.globalAlpha = 0.35;
+    cctx.strokeStyle = color;
+    cctx.lineWidth = Math.max(1.5, hexSize * 0.08);
+    cctx.lineJoin = 'round'; cctx.lineCap = 'round';
+    cctx.beginPath();
+    for (let i = 0; i <= gi; i++) {
+      const p = ghost.turns[i];
+      if (!p) continue;
+      const pt = axialToPixel(p.q, p.r, hexSize);
+      if (i === 0) cctx.moveTo(pt.x, pt.y);
+      else cctx.lineTo(pt.x, pt.y);
+    }
+    cctx.stroke();
+    cctx.restore();
+
+    // Petit repère à chaque point d'arrivée intermédiaire, pour distinguer
+    // les coups les uns des autres sur le sillage.
+    cctx.save();
+    cctx.globalAlpha = 0.5;
+    cctx.fillStyle = color;
+    for (let i = 0; i < gi; i++) {
+      const p = ghost.turns[i];
+      if (!p) continue;
+      const pt = axialToPixel(p.q, p.r, hexSize);
+      cctx.beginPath();
+      cctx.arc(pt.x, pt.y, hexSize * 0.12, 0, Math.PI * 2);
+      cctx.fill();
+    }
+    cctx.restore();
+  }
 
   const gp = axialToPixel(g.q, g.r, hexSize);
   cctx.save();
