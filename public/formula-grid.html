@@ -9445,6 +9445,112 @@ async function saveCircuit(publish) {
 }
 
 // ── Bouton admin : calcul du score parfait du circuit en cours d'édition ──
+// ═══════════════════════════════════════════════════════════════════════
+// SOLVEUR EN WEB WORKER
+// L'analyse exhaustive peut prendre plusieurs minutes sur un terrain ouvert
+// (beaucoup de cases roulables, peu de murs pour élaguer) : exécutée dans le
+// thread principal, elle gelait l'onglet au point de paraître plantée. On la
+// déplace donc dans un Worker — même calcul, mêmes résultats, mais l'interface
+// reste vivante et l'analyse est annulable.
+//
+// Le Worker n'a accès ni au DOM ni aux variables de la page : on lui envoie
+// une copie du moteur, construite en sérialisant les fonctions et constantes
+// dont le solveur dépend (fn.toString()). Aucune duplication de code source —
+// c'est le MÊME code qui part dans le Worker, donc pas de risque de divergence
+// entre les deux si le moteur évolue.
+// ═══════════════════════════════════════════════════════════════════════
+let SOLVE_WORKER = null;
+
+function buildSolverWorkerSource() {
+  const consts = {
+    HEX_DIRS, DICE_SET, RALLYE_DICE_SET, DICE_POOLS, RALLYE_POOLS,
+    DICE, RALLYE_DICE, RALLYE_DRIFT, F1_DRIFT, SURF_INERTIA,
+    RALLYE_INERTIA, INERTIA, DECOR_LETTERS
+  };
+  let src = "'use strict';\n";
+  for (const k of Object.keys(consts)) {
+    src += 'const ' + k + ' = ' + JSON.stringify(consts[k]) + ';\n';
+  }
+  src += 'let R = {};\n';
+  const fns = [
+    diceHash, gridDieValue, dieValue, jetBonusRange, applyJetBonus,
+    isRallye, isDakar, maxGear, diceSet, dicePools, diceBounds,
+    inertiaTable, surfaceAt, surfaceGrade, driftForGear, rotHex, onTrackR,
+    passableCheckpointIndexes, requiredCheckpointMask, doneCheckpointMask,
+    checkpointsRemaining, getValidPaths, solverTotals, solverGears, solveCircuit
+  ];
+  for (const f of fns) src += f.toString() + '\n';
+  src += [
+    'self.onmessage = async (e) => {',
+    '  if (e.data && e.data.type === "solve") {',
+    '    R = e.data.R;',
+    '    try {',
+    '      const res = await solveCircuit({',
+    '        maxTurns: e.data.maxTurns,',
+    '        onProgress: (t, n, brut) => self.postMessage({ type: "progress", t, n, brut })',
+    '      });',
+    '      self.postMessage({ type: "done", res });',
+    '    } catch (err) {',
+    '      self.postMessage({ type: "error", message: String(err && err.message || err) });',
+    '    }',
+    '  }',
+    '};'
+  ].join('\n');
+  return src;
+}
+
+// Copie transférable de l'état de course : uniquement des données brutes
+// (pas de fonctions, pas de références DOM), sinon structuredClone échoue.
+function solverStatePayload() {
+  return {
+    grid: R.grid, gradeGrid: R.gradeGrid, surfGrid: R.surfGrid,
+    W: R.W, H: R.H, mode: R.mode,
+    diceSeed: R.diceSeed, attemptNo: R.attemptNo, targetLaps: R.targetLaps,
+    checkpoints: JSON.parse(JSON.stringify(R.checkpoints || [])),
+    circuit: { start: (R.circuit && R.circuit.start) || { x: R.q, y: R.r, dir: R.dir },
+               id: (R.circuit && R.circuit.id) || 'preview' },
+    q: R.q, r: R.r, dir: R.dir, inertia: R.inertia, gear: R.gear,
+    cpTimes: (R.cpTimes || []).slice(), isWarmup: R.isWarmup,
+    turboUsed: R.turboUsed, leftFinishZone: R.leftFinishZone,
+    lapCount: R.lapCount, bankedDie: R.bankedDie, crossedDrs: R.crossedDrs,
+    handbrakeMax: R.handbrakeMax, handbrakeLeft: R.handbrakeLeft,
+    handbrakeUsed: R.handbrakeUsed, handbrakeArmed: R.handbrakeArmed
+  };
+}
+
+// Lance l'analyse dans le Worker. Repli automatique sur le calcul en ligne si
+// les Workers ne sont pas disponibles (contexte restreint, vieux navigateur).
+function solveInWorker(onProgress) {
+  return new Promise((resolve, reject) => {
+    let w;
+    try {
+      const blob = new Blob([buildSolverWorkerSource()], { type: 'application/javascript' });
+      w = new Worker(URL.createObjectURL(blob));
+    } catch (err) {
+      // Pas de Worker possible : on retombe sur l'ancien comportement.
+      solveCircuit({ onProgress }).then(resolve, reject);
+      return;
+    }
+    SOLVE_WORKER = w;
+    w.onmessage = (e) => {
+      const d = e.data || {};
+      if (d.type === 'progress') { if (onProgress) onProgress(d.t, d.n, d.brut); return; }
+      if (d.type === 'done') { w.terminate(); SOLVE_WORKER = null; resolve(d.res); return; }
+      if (d.type === 'error') { w.terminate(); SOLVE_WORKER = null; reject(new Error(d.message)); }
+    };
+    w.onerror = (err) => {
+      w.terminate(); SOLVE_WORKER = null;
+      reject(new Error(err.message || 'erreur dans le worker d\'analyse'));
+    };
+    w.postMessage({ type: 'solve', R: solverStatePayload(), maxTurns: 40 });
+  });
+}
+
+function cancelSolveWorker() {
+  if (SOLVE_WORKER) { SOLVE_WORKER.terminate(); SOLVE_WORKER = null; return true; }
+  return false;
+}
+
 document.getElementById('btn-solve').onclick = async () => {
   const out = document.getElementById('solve-out');
   const btn = document.getElementById('btn-solve');
@@ -9494,12 +9600,24 @@ document.getElementById('btn-solve').onclick = async () => {
     R.leftFinishZone = isRallye() ? true : false;
     R.checkpoints = buildCheckpoints();
 
-    const res = await solveCircuit({
-      onProgress: (t, n, brut) => {
-        out.innerHTML = 'Analyse… coup ' + t + ' — ' + n + ' états utiles' +
-          (brut && brut > n ? ' <span style="color:#6e7b8a">(' + brut + ' avant élagage)</span>' : '');
-      }
+    const tSolve = Date.now();
+    const res = await solveInWorker((t, n, brut) => {
+      const sec = Math.round((Date.now() - tSolve) / 1000);
+      out.innerHTML = 'Analyse… coup ' + t + ' — ' + n + ' états utiles' +
+        (brut && brut > n ? ' <span style="color:#6e7b8a">(' + brut + ' avant élagage)</span>' : '') +
+        ' <span style="color:#6e7b8a">· ' + sec + ' s</span>' +
+        '<br><button id="btn-solve-cancel" style="margin-top:6px;font-size:11px;padding:3px 9px;' +
+        'background:#2a1a1a;border:1px solid #ff5d5d;border-radius:6px;color:#ff5d5d;cursor:pointer">' +
+        '✖ Annuler l\'analyse</button>';
+      const cb = document.getElementById('btn-solve-cancel');
+      if (cb) cb.onclick = () => {
+        if (cancelSolveWorker()) {
+          out.innerHTML = '<span style="color:#8b98a5">Analyse annulée.</span>';
+          document.getElementById('btn-solve').disabled = false;
+        }
+      };
     });
+    if (res === undefined) return;   // annulée : le worker a été terminé
 
     if (!res) {
       out.innerHTML = '<b style="color:#ff5d5d">⚠️ Circuit INFINISSABLE</b><br>' +
