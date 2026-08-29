@@ -3265,34 +3265,45 @@ function drawGhost(ghost, enabled, color, hexSize) {
   const g = ghost.turns[gi];
   if (!g) return;
 
-  // Sillage : relie tous les points d'arrivée déjà atteints par le fantôme,
-  // du départ jusqu'à sa position actuelle.
+  // Sillage : le VRAI trajet suivi, case par case. On utilise le chemin
+  // complet enregistré pour chaque coup ; les anciens fantômes (enregistrés
+  // avant, sans chemin) retombent sur les seuls points d'arrivée — d'où le
+  // repli sur turns[i] quand path est absent.
   if (gi > 0) {
+    const pts = [];
+    for (let i = 0; i <= gi; i++) {
+      const t = ghost.turns[i];
+      if (!t) continue;
+      if (i === 0) { pts.push({ q: t.q, r: t.r }); continue; }
+      if (t.path && t.path.length) {
+        for (const c of t.path) pts.push({ q: c.q, r: c.r, drift: !!c.drift, hb: !!c.hb });
+      } else {
+        pts.push({ q: t.q, r: t.r });   // fantôme d'une version antérieure
+      }
+    }
     cctx.save();
     cctx.globalAlpha = 0.35;
-    cctx.strokeStyle = color;
     cctx.lineWidth = Math.max(1.5, hexSize * 0.08);
     cctx.lineJoin = 'round'; cctx.lineCap = 'round';
-    cctx.beginPath();
-    for (let i = 0; i <= gi; i++) {
-      const p = ghost.turns[i];
-      if (!p) continue;
-      const pt = axialToPixel(p.q, p.r, hexSize);
-      if (i === 0) cctx.moveTo(pt.x, pt.y);
-      else cctx.lineTo(pt.x, pt.y);
+    for (let i = 1; i < pts.length; i++) {
+      const a = axialToPixel(pts[i - 1].q, pts[i - 1].r, hexSize);
+      const b = axialToPixel(pts[i].q, pts[i].r, hexSize);
+      cctx.strokeStyle = color;
+      // Les cases de glisse restent lisibles comme telles sur le tracé.
+      cctx.setLineDash(pts[i].drift ? [hexSize * 0.2, hexSize * 0.16] : []);
+      cctx.beginPath(); cctx.moveTo(a.x, a.y); cctx.lineTo(b.x, b.y); cctx.stroke();
     }
-    cctx.stroke();
+    cctx.setLineDash([]);
     cctx.restore();
 
-    // Petit repère à chaque point d'arrivée intermédiaire, pour distinguer
-    // les coups les uns des autres sur le sillage.
+    // Repère à chaque FIN de coup, pour distinguer les coups sur le sillage.
     cctx.save();
     cctx.globalAlpha = 0.5;
     cctx.fillStyle = color;
     for (let i = 0; i < gi; i++) {
-      const p = ghost.turns[i];
-      if (!p) continue;
-      const pt = axialToPixel(p.q, p.r, hexSize);
+      const t = ghost.turns[i];
+      if (!t) continue;
+      const pt = axialToPixel(t.q, t.r, hexSize);
       cctx.beginPath();
       cctx.arc(pt.x, pt.y, hexSize * 0.12, 0, Math.PI * 2);
       cctx.fill();
@@ -3694,6 +3705,61 @@ async function solveCircuit(opts) {
   const layers = [layer];
   let best = null, finishes = [];
 
+  // ÉLAGAGE PAR DOMINANCE — remplace les anciennes limites de temps et
+  // d'états, qui tronquaient la recherche (donc pouvaient rater l'optimum).
+  // Ici on ne jette QUE des états inutiles : à même position, même cap, même
+  // rapport, même tour et même statut de ligne d'arrivée, un état A domine B
+  // si TOUTES ses ressources sont au moins aussi bonnes —
+  //   · checkpoints franchis : sur-ensemble        (cpMask)
+  //   · dette d'inertie : plus faible              (inertia)
+  //   · DRS armé, turbo encore dispo, jetons de frein restants, reprise libre
+  // Un état dominé ne peut jamais produire une fin STRICTEMENT meilleure que
+  // son dominant : le supprimer ne change pas l'optimum, ça retire seulement
+  // du travail redondant. C'est ce qui fait exploser les terrains ouverts —
+  // des milliers de variantes équivalentes du même point de piste.
+  function pruneDominated(map) {
+    const buckets = new Map();
+    for (const [k, v] of map) {
+      const p = k.split('|');
+      // regroupement : q|r|dir|gear|lap|leftF (le reste = ressources comparées)
+      const bk = p[0]+'|'+p[1]+'|'+p[2]+'|'+p[4]+'|'+p[5]+'|'+p[6];
+      if (!buckets.has(bk)) buckets.set(bk, []);
+      buckets.get(bk).push({ k, v, cp:+p[7], inertia:+p[3], drs:+p[8], tUsed:+p[9], bank:+p[10], hb:+p[11] });
+    }
+    const kept = new Map();
+    for (const arr of buckets.values()) {
+      for (let i = 0; i < arr.length; i++) {
+        const a = arr[i];
+        let dominated = false;
+        for (let j = 0; j < arr.length && !dominated; j++) {
+          if (i === j) continue;
+          const b = arr[j];
+          // b domine a ? (toutes ressources >= et au moins une meilleure,
+          // ou strictement identiques mais j < i pour n'en garder qu'un)
+          const cpOk    = ((b.cp & a.cp) === a.cp);          // b a tous les cp de a
+          const inOk    = (b.inertia <= a.inertia);
+          const tOk     = (b.tUsed <= a.tUsed);
+          const hbOk    = (b.hb >= a.hb);
+          // DRS et reprise-turbo : comparés à l'IDENTIQUE, jamais comme un
+          // "mieux". Ils changent la FORME de l'ensemble des totaux, pas
+          // seulement son étendue : le bonus doublé/triplé (±1, ±2) et le
+          // bonus de reprise bicolore produisent des totaux que le Cartésien
+          // du DRS ne contient pas. Un état DRS n'inclut donc pas forcément
+          // tout ce qu'un état non-DRS permet — les traiter comme dominants
+          // pourrait supprimer la vraie meilleure ligne.
+          const drsOk   = (b.drs === a.drs);
+          const bankOk  = (b.bank === a.bank);
+          if (!(cpOk && inOk && drsOk && tOk && bankOk && hbOk)) continue;
+          const strictlyBetter = (b.cp !== a.cp) || (b.inertia < a.inertia) ||
+                                 (b.tUsed < a.tUsed) || (b.hb > a.hb);
+          if (strictlyBetter || j < i) dominated = true;
+        }
+        if (!dominated) kept.set(a.k, a.v);
+      }
+    }
+    return kept;
+  }
+
   for (let turn = 0; turn < MAXT && !best; turn++) {
     const moveNo = turn + 1;
     const next = new Map();
@@ -3750,9 +3816,10 @@ async function solveCircuit(opts) {
         }
       }
     }
-    if (opts.onProgress) { opts.onProgress(turn + 1, next.size); await new Promise(r2 => setTimeout(r2, 0)); }
+    const pruned = pruneDominated(next);
+    if (opts.onProgress) { opts.onProgress(turn + 1, pruned.size, next.size); await new Promise(r2 => setTimeout(r2, 0)); }
     if (best) break;
-    layer = next;
+    layer = pruned;
     layers.push(layer);
     if (!layer.size) break;
   }
@@ -5609,8 +5676,14 @@ function finalizeMove(r) {
   // Temps du tour complet (course uniquement, pas si le coup se termine en crash)
   if (r.lapsGained && !R.isWarmup && !r.crash) R.lapMoves[R.lapCount - 1] = R.turn;
 
-  // Trace par coup (pour le fantôme du prochain essai)
-  R.turnPositions.push({ q: R.q, r: R.r, dir: R.dir });
+  // Trace par coup (pour le fantôme du prochain essai). On enregistre le
+  // CHEMIN COMPLET (chaque case traversée, drift compris), pas seulement le
+  // point d'arrivée : relier les arrivées en ligne droite donnait un tracé
+  // qui ne correspondait pas du tout au trajet réellement suivi.
+  R.turnPositions.push({
+    q: R.q, r: R.r, dir: R.dir,
+    path: (r.path || []).map(p => ({ q: p.q, r: p.r, drift: !!p.drift, hb: !!p.hb }))
+  });
   R.cells += (r.path ? r.path.length : 0);
 
   // Gestion leftFinishZone
@@ -9422,7 +9495,10 @@ document.getElementById('btn-solve').onclick = async () => {
     R.checkpoints = buildCheckpoints();
 
     const res = await solveCircuit({
-      onProgress: (t, n) => { out.innerHTML = 'Analyse… coup ' + t + ' — ' + n + ' états explorés'; }
+      onProgress: (t, n, brut) => {
+        out.innerHTML = 'Analyse… coup ' + t + ' — ' + n + ' états utiles' +
+          (brut && brut > n ? ' <span style="color:#6e7b8a">(' + brut + ' avant élagage)</span>' : '');
+      }
     });
 
     if (!res) {
