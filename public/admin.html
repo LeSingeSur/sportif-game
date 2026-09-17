@@ -1251,8 +1251,10 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 
         <div id="ai-gen-on" style="display:none">
           <div class="field">
-            <label>Thème / sujet des questions</label>
-            <input type="text" id="ai-gen-theme" placeholder="Ex: Les gardiens de but de l'équipe de France" autocomplete="off">
+            <label id="ai-gen-theme-label">Thème / sujet des questions</label>
+            <input type="text" id="ai-gen-theme" placeholder="Ex : Les gardiens de but de l'équipe de France" autocomplete="off">
+            <span class="hint" id="ai-gen-theme-hint"></span>
+            <div id="ai-gen-examples" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px"></div>
           </div>
           <div style="display:flex;gap:8px">
             <div class="field" style="flex:0 0 100px">
@@ -1523,10 +1525,11 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         ⚠️ Relis toujours les questions générées : une IA peut se tromper sur une date, un score ou un palmarès.
       </div>
       <div style="font-size:12px;color:var(--mute);line-height:1.6;margin-top:10px">
-        <strong style="color:var(--txt)">24 défis sur 30</strong> sont gérés par l'IA : Badminton, Trappe, RVLF, Maillon Faible,
-        Haltéro, Bowling, Juste Prix, Texte, Image, Roulette, APOL, Trivial Pursuit, The Chase, L'Alpe d'Huez, Réplique, Buzz,
-        Sportus, Scout, Escalade, Plongée, Saut en hauteur, Méli-Mélo, Démineur et VAR.<br>
-        Restent en saisie manuelle : Blackjack, Biathlon, Tir à l'Arc, Natation synchronisée, Assaut et Équitation.
+        <strong style="color:var(--txt)">Les 30 défis sont gérés par l'IA</strong>, chacun avec ses règles : Badminton, Trappe, RVLF,
+        Maillon Faible, Haltéro, Bowling, Juste Prix, Texte, Image, Roulette, APOL, Trivial Pursuit, The Chase, L'Alpe d'Huez,
+        Réplique, Buzz, Sportus, Scout, Escalade, Plongée, Saut en hauteur, Méli-Mélo, Démineur, VAR, Blackjack, Biathlon,
+        Tir à l'Arc, Natation synchronisée, Assaut et Équitation.<br>
+        Deux défis gardent une saisie manuelle complémentaire : l'<strong>Image</strong> (la photo) et l'<strong>Haltéro</strong> (l'Arraché).
       </div>
     </div>
   </div>
@@ -4639,23 +4642,27 @@ const AI_TYPE_MODES = {
   demineur:'mines',
   chase:'liste', grimpe:'liste',
   replique:'citation',
-  buzz:'indices', sportus:'indices', scout:'indices', roulette:'indices',
+  buzz:'buzzTexte', sportus:'sportus', scout:'scout', roulette:'rouletteTexte',
   escalade:'escalade',
   plongee:'paliers',
   saut:'motIndices',
   melimelo:'anagramme',
-  var:'paragraphe'
+  var:'paragraphe',
+  blackjack:'valeurs', biathlon:'biathlonComplet', tirarlarc:'cibles',
+  nagesync:'nage', assaut:'escrime', equitation:'equitation'
 };
 
 // Types dont le nombre d'éléments est imposé par les règles du jeu
 const AI_TYPE_FIXED = {
-  prix:1, text:1, image:1, roulette:1, replique:1, buzz:1, sportus:1, scout:1,
+  prix:1, text:1, image:1, replique:1,
   var:1, chase:1, demineur:1, grimpe:1,
+  blackjack:1, biathlon:1, tirarlarc:1, nagesync:1, equitation:1,
   trivpursuit:12, escalade:8, rvlf:10, bowling:12,
   plongee:5, saut:5
 };
 const AI_TYPE_DEFAULT_COUNT = {
-  badminton:10, trappe:5, maillonfaible:10, haltero:5, apol:5, melimelo:5
+  badminton:10, trappe:5, maillonfaible:10, haltero:5, apol:5, melimelo:5,
+  buzz:1, sportus:1, scout:1, roulette:1, assaut:5
 };
 
 // Noms lisibles, transmis au modèle comme contexte de la discussion
@@ -4666,7 +4673,138 @@ const AI_TYPE_LABELS = {
   demineur:'Le Démineur', chase:'The Chase', grimpe:"L'Alpe d'Huez (grimpe)",
   replique:'Réplique Culte', buzz:'Buzz', sportus:'Sportus', scout:'Le Scout',
   roulette:'Roulette Russe', escalade:'Escalade', plongee:'Plongée', saut:'Saut en hauteur',
-  melimelo:'Méli-Mélo', var:'VAR (texte à erreur)'
+  melimelo:'Méli-Mélo', var:'VAR (texte à erreur)',
+  blackjack:'Blackjack', biathlon:'Biathlon', tirarlarc:'Tir à l\'Arc',
+  nagesync:'Natation synchronisée', assaut:'Assaut (escrime)', equitation:'Équitation CSO'
+};
+
+// ── Ce que chaque défi attend comme point de départ ───────────────────────
+// Le champ d'entrée s'adapte au jeu : tantôt un thème, tantôt un sportif
+// précis, tantôt une consigne. Les puces sont des exemples cliquables.
+const AI_TYPE_INPUT = {
+  __default: { label:'Thème / sujet', placeholder:'Ex : les légendes du tennis',
+               hint:'', examples:['Les légendes du tennis','Le Tour de France','Les JO d\'hiver'] },
+
+  buzz: { label:'Sportif à deviner (ou thème libre)',
+          placeholder:'Ex : Rafael Nadal — ou un thème : « le tennis des années 90 »',
+          hint:'Le texte parlera de ce sportif sans jamais le nommer. Un thème large marche aussi : le modèle choisira lui-même un sportif.',
+          examples:['Rafael Nadal','Zinédine Zidane','Le tennis des années 90'] },
+
+  sportus: { label:'Sportif à deviner', placeholder:'Ex : Rafael Nadal',
+             hint:'Son nom est masqué lettre par lettre ; les indices l\'aident sans le donner.',
+             examples:['Rafael Nadal','Serena Williams','Tadej Pogacar'] },
+
+  scout: { label:'Sportif à deviner', placeholder:'Ex : Kylian Mbappé',
+           hint:'Les 4 tiroirs (Identité, Carrière, Palmarès, Mystère) parlent de lui sans le nommer.',
+           examples:['Kylian Mbappé','Teddy Riner','Lewis Hamilton'] },
+
+  roulette: { label:'Sportif à deviner', placeholder:'Ex : Michael Jordan',
+              hint:'Le texte est révélé mot à mot ; la réponse attendue est son nom.',
+              examples:['Michael Jordan','Marie-José Pérec','Rafael Nadal'] },
+
+  image: { label:'Sportif à deviner', placeholder:'Ex : Kylian Mbappé',
+           hint:"Seules la question et la réponse sont générées : l'image reste à fournir.",
+           examples:['Kylian Mbappé','Novak Djokovic','Clarisse Agbegnenou'] },
+
+  prix: { label:'Sportif et statistique à deviner', placeholder:'Ex : Rafael Nadal — nombre de Grands Chelems',
+          hint:'Le modèle produit la question et la valeur exacte à deviner.',
+          examples:['Rafael Nadal — Grands Chelems','Usain Bolt — record du 100 m','Kylian Mbappé — buts en équipe de France'] },
+
+  text: { label:'Sujet de la question', placeholder:'Ex : les gardiens de but de l\'équipe de France',
+          hint:'Le joueur doit retrouver le nom : question et réponse sont générées.',
+          examples:['Les gardiens de but français','Les champions olympiques français','Les vainqueurs de Roland-Garros'] },
+
+  badminton: { label:'Thème des questions', placeholder:'Ex : le badminton asiatique',
+               hint:'QCM à 3 choix, 10 questions par défaut.',
+               examples:['Le badminton asiatique','Les JO de badminton','Les légendes du badminton'] },
+
+  trappe: { label:'Thème des questions', placeholder:'Ex : la Coupe du monde 1998',
+            hint:'QCM à 3 choix ; 5 questions par défaut.',
+            examples:['La Coupe du monde 1998','Les JO d\'hiver','La Formule 1 des années 90'] },
+
+  rvlf: { label:'Thème des questions', placeholder:'Ex : les records du sport',
+          hint:'10 questions, 1 bonne et 1 fausse réponse : le leurre doit rester crédible.',
+          examples:['Les records du sport','Les légendes du tennis','Les Bleus de 1998'] },
+
+  maillonfaible: { label:'Thème des affirmations', placeholder:'Ex : les records olympiques',
+                   hint:'10 affirmations Vrai/Faux, avec les deux cas alternés.',
+                   examples:['Les records olympiques','Le football français','Les Jeux d\'hiver'] },
+
+  haltero: { label:'Thème de la finale (Épaulé-Jeté)', placeholder:'Ex : les légendes du tennis masculin',
+             hint:"4 QCM progressifs + la question finale. L'Arraché (les 2 sportifs à comparer) reste à saisir.",
+             examples:['Les légendes du tennis masculin','Les rois du sprint','Les géants du basket'] },
+
+  bowling: { label:'Thème des questions numériques', placeholder:'Ex : les statistiques du football',
+             hint:'12 réponses numériques : un chiffre exact par question.',
+             examples:['Statistiques du football','Records d\'athlétisme','Palmarès de Formule 1'] },
+
+  apol: { label:'Thème des 5 questions', placeholder:'Ex : le palmarès des Bleus',
+          hint:'Réponses courtes, difficulté croissante.',
+          examples:['Le palmarès des Bleus','Les transferts records','Les championnats du monde'] },
+
+  trivpursuit: { label:'Thème général du plateau', placeholder:'Ex : le sport en 6 familles',
+                 hint:'Le modèle crée 6 sous-thèmes et 12 questions (2 par camembert).',
+                 examples:['Le sport en 6 familles','La Coupe du monde 2022','Les sports olympiques'] },
+
+  demineur: { label:'Consigne affichée au joueur', placeholder:'Ex : trouve les 2 faux champions du monde 1998',
+              hint:'12 cases dont exactement 2 fausses (les mines).',
+              examples:['Trouve les 2 faux champions du monde 1998','Repère les 2 joueurs qui n\'ont jamais gagné Roland-Garros'] },
+
+  chase: { label:'Consigne de la liste', placeholder:'Ex : citez 10 joueurs français passés par la Premier League',
+           hint:'La liste des réponses valides est générée ; indique le nombre attendu dans la consigne.',
+           examples:['Citez 10 joueurs français passés par la Premier League','Citez 10 vainqueurs du Tour de France','Citez 10 champions du monde de F1'] },
+
+  grimpe: { label:'Thème du col + liste de réponses', placeholder:'Ex : le col du Tourmalet — identifie ces coureurs',
+            hint:'Une liste de réponses acceptées pour gravir le col.',
+            examples:['Le col du Tourmalet — identifie ces coureurs','Les vainqueurs d\'étapes du Tour','Les maillots jaunes des années 2000'] },
+
+  replique: { label:'Film, sportif ou match', placeholder:'Ex : les répliques des films de boxe',
+              hint:'La citation, son amorce, 4 fins possibles et son auteur sont générés.',
+              examples:['Les films de boxe','Zinédine Zidane','Les grandes déclarations du Tour'] },
+
+  escalade: { label:'Thème des questions', placeholder:'Ex : le Tour de France',
+              hint:'8 questions, chacune en version facile ET difficile sur le même sujet.',
+              examples:['Le Tour de France','Les Jeux d\'hiver','Le tennis'] },
+
+  plongee: { label:'Thème des questions', placeholder:'Ex : la plongée sous-marine',
+             hint:'5 paliers de difficulté croissante = 10 questions (descente + remontée).',
+             examples:['La plongée sous-marine','Les sports nautiques','Les JO aquatiques'] },
+
+  saut: { label:'Thème des mots à deviner', placeholder:'Ex : les légendes du cyclisme',
+          hint:'5 mots de difficulté croissante, 3 indices chacun (du plus dur au plus facile).',
+          examples:['Les légendes du cyclisme','Les champions olympiques','Les stars du football'] },
+
+  melimelo: { label:'Thème des mots', placeholder:'Ex : les footballeurs brésiliens',
+              hint:'5 mots courts à recomposer (noms propres ou termes sportifs).',
+              examples:['Les footballeurs brésiliens','Les basketteurs NBA','Les disciplines olympiques'] },
+
+  var: { label:'Thème du paragraphe à erreur', placeholder:'Ex : la finale de 1998',
+         hint:'Un paragraphe journalistique contenant UNE erreur factuelle à repérer.',
+         examples:['La finale de 1998','Le record du 100 m','Les JO de Paris 2024'] },
+
+  blackjack: { label:'Consigne de la partie', placeholder:'Ex : cumulez les buts de ces joueurs en équipe de France',
+               hint:'Le modèle produit 12 à 20 entrées « nom=valeur » et le plafond à ne pas dépasser.',
+               examples:['Cumulez les buts de ces joueurs en équipe de France','Cumulez les titres du Grand Chelem de ces joueurs','Cumulez les médailles olympiques de ces athlètes'] },
+
+  biathlon: { label:'Thème du biathlon', placeholder:'Ex : les légendes du tennis',
+              hint:'Trois phases générées ensemble : sprint (liste de réponses), stand de tir (3 QCM à 4 choix), remise en ordre.',
+              examples:['Les légendes du tennis','Les champions du monde de F1','Les rois du sprint'] },
+
+  tirarlarc: { label:'Thème des 3 cibles', placeholder:'Ex : les statistiques de Kylian Mbappé',
+               hint:'3 statistiques chiffrées avec leur valeur exacte et l\'écart accepté par distance.',
+               examples:['Les statistiques de Kylian Mbappé','Les records de Rafael Nadal','Les chiffres de la Formule 1'] },
+
+  nagesync: { label:'Thème de la grille', placeholder:'Ex : les champions olympiques français',
+              hint:'5 couloirs thématiques + 5 à 8 sportifs à placer dans le bon couloir.',
+              examples:['Les champions olympiques français','Les stars du football mondial','Les légendes du tennis'] },
+
+  assaut: { label:'Thème des questions', placeholder:'Ex : les règles de l\'escrime',
+            hint:'Chaque question a 3 réponses : la touche (juste), le contre (faux) et la feinte (piège crédible).',
+            examples:['Les règles de l\'escrime','Les champions olympiques','Les sports de combat'] },
+
+  equitation: { label:'Thème du parcours', placeholder:'Ex : l\'équitation de haut niveau',
+                hint:'4 obstacles générés ensemble : mot fléché (4 mots), rivière chiffrée, triple Vrai/Faux, grille de mots.',
+                examples:['L\'équitation de haut niveau','Les sports équestres','Les records du sport'] }
 };
 
 function aiEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -4812,6 +4950,26 @@ async function aiLoadModels(){
 }
 
 /* ── Panneau de génération dans l'éditeur de défi ───────────────────────── */
+// Exemples cliquables qui montrent ce que CE jeu attend comme point de départ
+function aiRenderExamples(list){
+  const box=document.getElementById('ai-gen-examples'); if(!box) return;
+  box.innerHTML='';
+  const mk=(txt,label,title)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='btn btn-sm btn-s';
+    b.style.margin='0'; b.style.fontSize='11px'; b.style.padding='5px 10px';
+    b.textContent=label||txt;
+    if(title) b.title=title;
+    b.onclick=()=>{
+      const ti=document.getElementById('ai-gen-theme');
+      ti.value=txt; ti.focus();
+    };
+    box.appendChild(b);
+  };
+  (list||[]).forEach(x=>mk(x,x));
+  mk('','🎲 Surprends-moi','Laisse le champ vide : le modèle choisit lui-même un sujet varié');
+}
+
 function updateAiPanel(){
   const panel=document.getElementById('ai-gen-panel'); if(!panel) return;
   const on=document.getElementById('ai-gen-on'), off=document.getElementById('ai-gen-off');
@@ -4850,9 +5008,26 @@ function updateAiPanel(){
     if(type==='plongee') info+=' · 5 paliers = 10 questions (descente + remontée)';
     if(type==='saut') info+=' · 5 mots, indices du plus dur au plus facile (les barres 2m10→2m50 sont décoratives)';
     if(type==='grimpe') info+=' · remplit le thème du col et la liste des réponses';
+    if(type==='buzz') info+=' · un seul texte « je suis, je suis… » (110-130 mots), révélé mot à mot';
+    if(type==='sportus') info+=' · indice gratuit + 2 indices payants (−20 pts)';
+    if(type==='scout') info+=' · un tiroir par section : Identité, Carrière, Palmarès, Mystère';
+    if(type==='roulette') info+=' · texte masqué de 80 à 120 mots + indice + réponse';
     if(type==='var') info+=" · vérifie que le segment souligné est bien l'erreur";
+    if(type==='blackjack') info+=' · 12-20 entrées « nom=valeur » + le plafond à ne pas dépasser';
+    if(type==='biathlon') info+=' · 3 phases : sprint (liste) + 3 QCM + remise en ordre';
+    if(type==='tirarlarc') info+=' · 3 cibles chiffrées, écart accepté par distance';
+    if(type==='nagesync') info+=' · 5 couloirs + les sportifs à placer';
+    if(type==='assaut') info+=' · touche / contre / feinte sur chaque question';
+    if(type==='equitation') info+=' · 4 obstacles : mot fléché, rivière, triple Vrai-Faux, grille';
     lbl.textContent=info;
   }
+
+  // Le champ d'entrée s'adapte au jeu : thème, sportif précis, consigne…
+  const inp=AI_TYPE_INPUT[type]||AI_TYPE_INPUT.__default;
+  const lEl=document.getElementById('ai-gen-theme-label'); if(lEl) lEl.textContent=inp.label||'Thème / sujet';
+  const tEl=document.getElementById('ai-gen-theme');       if(tEl) tEl.placeholder=inp.placeholder||'';
+  const hEl=document.getElementById('ai-gen-theme-hint');  if(hEl) hEl.textContent=inp.hint||'';
+  aiRenderExamples(inp.examples);
   const mb=document.getElementById('ai-gen-model');
   if(mb) mb.textContent=(aiCfg.model||'')+(aiCfg.source==='env'?' (env)':'');
 
@@ -4883,6 +5058,13 @@ function aiRenderPreview(){
     let html='<div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-bottom:4px">'+(i+1)+' · '+aiEsc(q.theme||'')+'</div>';
     if(q.question) html+='<div style="font-size:13px;font-weight:700;line-height:1.4">'+aiEsc(q.question)+'</div>';
     if(q.text)     html+='<div style="font-size:12px;color:#c8c8e0;line-height:1.5">'+aiEsc(q.text)+'</div>';
+    if(q.texte)    html+='<div style="font-size:12px;color:#c8c8e0;line-height:1.5">'+aiEsc(q.texte)+'</div>';
+    if(q.mots){
+      const dec=(typeof buzzDecrement!=='undefined'?buzzDecrement:2);
+      const secs=Math.round(100/dec), ideal=Math.round(secs/0.22*0.5), max=Math.round(secs/0.22);
+      html+='<div style="font-size:10px;color:var(--cyan);margin-top:4px">📝 '+q.mots+' mots · idéal ~'+ideal+' · max ~'+max+' pour −'+dec+'/s'+
+            (q.mots<ideal*0.7?' ⚠️ un peu court':'')+'</div>';
+    }
     if(q.consigne) html+='<div style="font-size:12px;color:#c8c8e0;line-height:1.5">'+aiEsc(q.consigne)+'</div>';
     if(q.quote)    html+='<div style="font-size:12px;font-style:italic;color:#c8c8e0;line-height:1.5">« '+aiEsc(q.quote)+' »</div>';
     if(q.answer!=null && q.answer!=='')
@@ -4892,6 +5074,30 @@ function aiRenderPreview(){
     if(q.wrongAuthor) html+='<div style="font-size:11px;color:var(--red);margin-top:2px">❌ auteur : '+aiEsc(q.wrongAuthor)+'</div>';
     if(q.clues && q.clues.length)
       html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">💡 '+q.clues.map(aiEsc).join(' · ')+'</div>';
+    if(q.indiceGratuit) html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🎁 Indice gratuit : '+aiEsc(q.indiceGratuit)+'</div>';
+    if(q.indice1)  html+='<div style="font-size:11px;color:var(--orange);margin-top:2px">💡 −20 pts : '+aiEsc(q.indice1)+'</div>';
+    if(q.indice2)  html+='<div style="font-size:11px;color:var(--orange);margin-top:2px">💡 −20 pts : '+aiEsc(q.indice2)+'</div>';
+    if(q.lettres)  html+='<div style="font-size:11px;color:var(--mute);margin-top:2px">🔤 Lettres révélées : '+aiEsc(q.lettres)+'</div>';
+    if(q.identite) html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🌍 Identité : '+aiEsc(q.identite)+'</div>';
+    if(q.carriere) html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🔄 Carrière : '+aiEsc(q.carriere)+'</div>';
+    if(q.palmares) html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🏅 Palmarès : '+aiEsc(q.palmares)+'</div>';
+    if(q.mystere)  html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🕵️ Mystère : '+aiEsc(q.mystere)+'</div>';
+    if(q.indice)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">💡 Indice : '+aiEsc(q.indice)+'</div>';
+    // ── Défis composites (Blackjack, Biathlon, Tir à l'arc, Natation, Assaut, Équitation)
+    if(q.touche)   html+='<div style="font-size:12px;color:var(--neon);margin-top:4px">🤺 Touche : '+aiEsc(q.touche)+'</div>';
+    if(q.contre)   html+='<div style="font-size:11px;color:var(--red);margin-top:2px">⚔️ Contre : '+aiEsc(q.contre)+'</div>';
+    if(q.feinte)   html+='<div style="font-size:11px;color:var(--orange);margin-top:2px">🎭 Feinte : '+aiEsc(q.feinte)+'</div>';
+    if(q.cible!==undefined && q.entrees) html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🎯 Plafond '+aiEsc(q.cible)+' · '+q.entrees.length+' entrées : '+aiEsc(q.entrees.slice(0,12).map(e=>e.nom+'='+e.valeur).join(' · '))+'</div>';
+    if(q.sprint)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🎿 Sprint : '+aiEsc((q.sprint.reponses||[]).slice(0,12).join(' · '))+'</div>';
+    if(q.qcm)      html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🎯 '+q.qcm.length+' QCM : '+aiEsc(q.qcm.map(x=>x.answer).join(' · '))+'</div>';
+    if(q.ordre)    html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🔢 Ordre : '+aiEsc((q.ordre.items||[]).join(' → '))+'</div>';
+    if(q.cibles)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🎯 '+q.cibles.map(c=>aiEsc(c.stat)+' = '+aiEsc(c.value)).join(' · ')+'</div>';
+    if(q.couloirs) html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🏊 Couloirs : '+aiEsc(q.couloirs.join(' · '))+'</div>';
+    if(q.sportifs) html+='<div style="font-size:11px;color:var(--mute);margin-top:2px">👤 '+aiEsc(q.sportifs.map(s=>s.nom+' → couloir '+s.couloir).join(' · '))+'</div>';
+    if(q.fleche)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🏹 Mot fléché : '+aiEsc(q.fleche.mots.join(' · '))+'</div>';
+    if(q.riviere)  html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">〜 Rivière : '+aiEsc(q.riviere.question)+' = '+aiEsc(q.riviere.answer)+'</div>';
+    if(q.vraiFaux) html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">✓✗ '+aiEsc(q.vraiFaux.map(v=>v.answer).join(' · '))+'</div>';
+    if(q.grille)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:2px">🔤 Grille : '+aiEsc(q.grille.answer)+' ('+aiEsc(q.grille.indice)+')'+(q.grille.pieges&&q.grille.pieges.length?' · pièges : '+aiEsc(q.grille.pieges.join(', ')):'')+'</div>';
     if(q.answers && q.answers.length)
       html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">📋 '+aiEsc(q.answers.slice(0,25).join(' · '))+'</div>';
     if(q.items && q.items.length)
@@ -4921,6 +5127,8 @@ function aiCollectExisting(type){
     if(type==='escalade')      return escaladeQuestions.map(q=>q.qFacile);
     if(type==='text')          return [document.getElementById('clue-in').value.trim()];
     if(type==='prix')          return [document.getElementById('prix-question-in').value.trim()];
+    if(type==='buzz'||type==='sportus'||type==='scout') return [document.getElementById('answer-in').value.trim()].filter(Boolean);
+    if(type==='roulette')      return [document.getElementById('roulette-answer').value.trim()].filter(Boolean);
   }catch(e){}
   return [];
 }
@@ -4929,12 +5137,8 @@ async function aiGenerate(){
   if(aiBusy) return;
   const type=currentType, mode=AI_TYPE_MODES[type];
   if(!mode){ aiMsg('ai-gen-status','err','❌ Ce type de défi n\'est pas géré par l\'IA.'); return; }
-  const theme=document.getElementById('ai-gen-theme').value.trim();
-  if(!theme){
-    aiMsg('ai-gen-status','err','❌ Indique un thème (ex: « Les gardiens de but français »).');
-    document.getElementById('ai-gen-theme').focus();
-    return;
-  }
+  const theme=document.getElementById('ai-gen-theme').value.trim();   // vide = sujet libre
+  const inp=AI_TYPE_INPUT[type]||AI_TYPE_INPUT.__default;
   const spec=(aiCfg.modes||{})[mode]||{};
   let count = AI_TYPE_FIXED[type] || (parseInt(document.getElementById('ai-gen-count').value,10)||8);
   if(spec.max) count=Math.min(count,spec.max);
@@ -4943,12 +5147,13 @@ async function aiGenerate(){
   aiBusy=true;
   const btn=document.getElementById('ai-gen-btn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Le modèle rédige…';}
-  aiMsg('ai-gen-status','ok','⏳ Génération de '+count+' question(s) sur « '+theme+' » — 10 à 40 s…');
+  aiMsg('ai-gen-status','ok','⏳ Génération de '+count+' question(s)'+(theme?(' sur « '+theme+' »'):' — 🎲 sujet libre')+' — 10 à 40 s…');
   try{
     const r=await fetch('/api/admin/ai-generate',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         password:adminPw, mode, theme, count,
+        subjectLabel:inp.label||'',
         difficulty:document.getElementById('ai-gen-diff').value,
         extra:document.getElementById('ai-gen-extra').value.trim(),
         avoid:aiCollectExisting(type)
@@ -4977,7 +5182,12 @@ function aiInsert(){
     const r=fn(aiResults);
     if(r===false){ aiMsg('ai-gen-status','err','❌ Questions incomplètes pour ce défi — relance une génération.'); return; }
     if(typeof checkReady==='function') checkReady();
-    aiMsg('ai-gen-status','ok','✅ '+aiResults.length+' élément(s) inséré(s) dans le formulaire — vérifie la mise en forme puis publie le défi.');
+    let extra='';
+    if(currentType==='buzz'){
+      const mots=aiResults.map(q=>q.mots).filter(Boolean);
+      if(mots.length) extra=' — '+mots.join(' / ')+' mots (le jeu révèle le texte mot à mot)';
+    }
+    aiMsg('ai-gen-status','ok','✅ '+aiResults.length+' élément(s) inséré(s) dans le formulaire'+extra+' — vérifie la mise en forme puis publie le défi.');
   }catch(e){
     aiMsg('ai-gen-status','err','❌ Erreur pendant l\'insertion : '+e.message);
   }
@@ -4989,7 +5199,8 @@ function aiBrief(){
     const theme=(document.getElementById('ai-gen-theme').value||'').trim();
     const diff=(document.getElementById('ai-gen-diff').value||'').trim();
     const extra=(document.getElementById('ai-gen-extra').value||'').trim();
-    let b='Thème : '+(theme||'—')+' · difficulté : '+(diff||'moyenne');
+    const inp=AI_TYPE_INPUT[currentType]||AI_TYPE_INPUT.__default;
+    let b=inp.label+' : '+(theme||'(sujet libre — choisi par le modèle)')+' · difficulté : '+(diff||'moyenne');
     if(extra) b+=' · précisions : '+extra;
     return b;
   }catch(e){ return ''; }
@@ -5169,8 +5380,8 @@ const AI_APPLIERS = {
   roulette(qs){
     const q=qs[0]; if(!q) return false;
     aiSetVal('roulette-answer',q.answer);
-    aiSetVal('roulette-text',(q.clues||[]).join(' '));
-    aiSetVal('roulette-hint',(q.clues||[])[0]||'');
+    aiSetVal('roulette-text',q.texte||'');
+    aiSetVal('roulette-hint',q.indice||'');
     if(typeof roulettePreview==='function') roulettePreview();
   },
   apol(qs){
@@ -5208,25 +5419,35 @@ const AI_APPLIERS = {
     aiSetVal('rq-author-choices-in',q.wrongAuthor||'');
   },
   buzz(qs){
-    const q=qs[0]; if(!q) return false;
-    aiSetVal('answer-in',q.answer);
-    buzzClues=(q.clues||[]).slice();
-    renderBuzzClues(); updateAliases();
+    // Un Buzz = un texte long révélé mot à mot (« je suis, je suis… »)
+    const textes=qs.map(q=>q.texte).filter(Boolean);
+    if(!textes.length) return false;
+    aiSetVal('answer-in', qs[0].answer);
+    buzzClues=textes;
+    renderBuzzClues();
+    aiSetVal('buzz-new-clue','');
+    updateAliases();
   },
   sportus(qs){
     const q=qs[0]; if(!q) return false;
-    aiSetVal('answer-in',q.answer);
-    const c=q.clues||[];
-    aiSetVal('sportus-hint0-in',c[0]||'');
-    aiSetVal('sportus-hint1-in',c[1]||'');
-    aiSetVal('sportus-hint2-in',c[2]||'');
+    aiSetVal('answer-in', q.answer);
+    aiSetVal('sportus-hint0-in', q.indiceGratuit||'');
+    aiSetVal('sportus-hint1-in', q.indice1||'');
+    aiSetVal('sportus-hint2-in', q.indice2||'');
+    if(q.lettres){
+      aiSetVal('sportus-revealed-in', q.lettres);
+      const el=document.getElementById('sportus-revealed-in');
+      if(el) el.dispatchEvent(new Event('input',{bubbles:true}));
+    }
     updateAliases();
   },
   scout(qs){
     const q=qs[0]; if(!q) return false;
-    aiSetVal('answer-in',q.answer);
-    const c=q.clues||[];
-    [0,1,2,3].forEach(i=>aiSetVal('scout-'+i+'-in',c[i]||''));
+    aiSetVal('answer-in', q.answer);
+    aiSetVal('scout-0-in', q.identite||'');
+    aiSetVal('scout-1-in', q.carriere||'');
+    aiSetVal('scout-2-in', q.palmares||'');
+    aiSetVal('scout-3-in', q.mystere||'');
     updateAliases();
   },
   melimelo(qs){
@@ -5304,6 +5525,70 @@ const AI_APPLIERS = {
       varChipClick(run.start); varChipClick(run.start);
     }
     aiSetVal('var-correct-in',q.correct);
+  },
+  blackjack(qs){
+    const q=qs[0]; if(!q || !q.entrees || !q.entrees.length) return false;
+    aiSetVal('bj-theme-in', q.consigne||'');
+    aiSetVal('bj-target-in', q.cible);
+    aiSetVal('bj-answers-in', q.entrees.map(e=>e.nom+'='+e.valeur).join('\n'));
+    const el=document.getElementById('bj-answers-in');
+    if(el) el.dispatchEvent(new Event('input',{bubbles:true}));
+  },
+  biathlon(qs){
+    const q=qs[0]; if(!q || !q.sprint || !q.qcm || !q.ordre) return false;
+    const th=document.getElementById('biat-theme-in');
+    if(th && !th.value.trim()) th.value=q.theme||'';
+    biatSprintItems=(q.sprint.reponses||[]).slice();
+    biatQCMItems=(q.qcm||[]).map(x=>({
+      question:x.question, answer:x.answer,
+      wrong:(x.wrong||[]).slice(0,3).concat(['','','']).slice(0,3)
+    }));
+    biatOrderItems=(q.ordre.items||[]).slice();
+    aiSetVal('biat-order-question-in', q.ordre.question||'');
+    renderBiatSprint(); renderBiatQCM(); renderBiatOrder();
+  },
+  tirarlarc(qs){
+    const q=qs[0]; if(!q || !q.cibles || q.cibles.length<3) return false;
+    arcCibles=q.cibles.slice(0,3).map(c=>({
+      stat:c.stat, value:c.value, max:(c.max||c.value*2),
+      tol11:null, tol22:null, tol33:null
+    }));
+    renderArcCibles();
+  },
+  nagesync(qs){
+    const q=qs[0]; if(!q || !q.couloirs || !q.sportifs) return false;
+    nsCouloirs=q.couloirs.map(l=>({label:l}));
+    // Le modèle donne un numéro 1-based : l'admin attend un index 0-based
+    nsSportifs=q.sportifs.map(s=>({nom:s.nom, correct:Math.max(0,(parseInt(s.couloir,10)||1)-1)}));
+    renderNsCouloirs(); renderNsSportifs();
+  },
+  assaut(qs){
+    if(!qs.length) return false;
+    assautP1=qs.slice(0,6).map(q=>({q:q.question, a:q.touche, w:q.contre, p:q.feinte}));
+    renderAssautP1();
+  },
+  equitation(qs){
+    const q=qs[0]; if(!q || !q.fleche || !q.riviere || !q.vraiFaux || !q.grille) return false;
+    const vf=q.vraiFaux;
+    const contenu={
+      fleche:{type:'fleche',
+        question:q.fleche.indices[0], answer:q.fleche.mots[0],
+        question2:q.fleche.indices[1], answer2:q.fleche.mots[1],
+        question3:q.fleche.indices[2], answer3:q.fleche.mots[2],
+        question4:q.fleche.indices[3], answer4:q.fleche.mots[3]},
+      riviere:{type:'riviere', question:q.riviere.question, answer:q.riviere.answer,
+        multiplier:q.riviere.multiplier||2},
+      vf:{type:'vf',
+        question:(vf[0]||{}).affirmation||'', answer:(vf[0]||{}).answer||'vrai',
+        question2:(vf[1]||{}).affirmation||'', answer2:(vf[1]||{}).answer||'vrai',
+        question3:(vf[2]||{}).affirmation||'', answer3:(vf[2]||{}).answer||'vrai'},
+      mots:{type:'mots', question:q.grille.indice||'', answer:q.grille.answer,
+        gridSize:q.grille.size||0, trapWords:(q.grille.pieges||[]).slice(0,4)}
+    };
+    // On respecte les types déjà en place, obstacle par obstacle
+    equiObstacles=equiObstacles.map(o=>(contenu[o.type] ? contenu[o.type] : o));
+    equiAdminRender();
+    equiObstacles.forEach((o,i)=>{ if(o.type==='mots' && o.answer && typeof equiRegenerateGridPreview==='function') equiRegenerateGridPreview(i); });
   }
 };
 
