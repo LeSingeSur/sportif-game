@@ -2568,6 +2568,56 @@ const AI_MODES = {
     label: 'Mot à deviner + 3 indices', max: 8, maxTokens: 4000,
     rule: '{"mot":"LE MOT À DEVINER","indices":["indice 1 (difficile)","indice 2 (moyen)","indice 3 (facile)"],"theme":"sous-thème en 2-3 mots"}',
     note: 'Exactement 3 indices, du plus difficile au plus facile. Aucun indice ne doit contenir le mot à deviner ni sa racine. Le mot est un nom propre ou un terme sportif court (1 à 3 mots). Difficulté croissante d\'un élément à l\'autre.'
+  },
+  buzzTexte: {
+    label: 'Texte « je suis, je suis… »', max: 3, maxTokens: 4000,
+    rule: '{"answer":"LA RÉPONSE À DEVINER","texte":"le texte de 110 à 130 mots","theme":"sous-thème en 2-3 mots"}',
+    note: 'Un SEUL texte continu de 110 à 130 mots (jamais moins de 60), en français, sans liste à puces ni retour à la ligne. Style « Question pour un Champion » : chaque nouvel indice commence par « Je suis… » — le fameux « je suis, je suis… » — et enchaîne du plus vague au plus précis. La réponse ne doit JAMAIS apparaître : ni son nom, ni son prénom, ni un surnom qui la trahirait. Aucun indice faux : tout doit être exact et vérifiable. Termine par un indice très précis, presque la réponse. Si plusieurs textes sont demandés, ils portent tous sur la MÊME réponse avec des indices différents, du plus vague au plus précis.'
+  },
+  sportus: {
+    label: 'Indice gratuit + 2 indices payants', max: 3, maxTokens: 3000,
+    rule: '{"answer":"LE SPORTIF À DEVINER","indiceGratuit":"un indice général, affiché dès le début","indice1":"indice payant n°1, encore vague","indice2":"indice payant n°2, nettement plus précis","lettres":"_A_A_","theme":"sous-thème en 2-3 mots"}',
+    note: 'Les deux indices payants apportent chacun une information NOUVELLE et de plus en plus précise, sans jamais écrire la réponse. "lettres" est optionnel : quelques lettres révélées du nom du sportif, un underscore par lettre masquée, en majuscules (exemple : pour NADAL → _A_A_). Laisse "lettres" vide si tu n\'es pas certain du nombre de lettres.'
+  },
+  scout: {
+    label: '4 tiroirs thématiques', max: 4, maxTokens: 3000,
+    rule: '{"answer":"LE SPORTIF À DEVINER","identite":"nationalité, époque, âge, particularité physique","carriere":"clubs, équipes, entraîneurs, tournois","palmares":"titres, médailles, records, récompenses","mystere":"surnom peu connu, anecdote ou fait insolite","theme":"sous-thème en 2-3 mots"}',
+    note: 'Chaque tiroir apporte une information de nature DIFFÉRENTE et ne doit jamais écrire la réponse ni son surnom le plus célèbre. Ordre croissant de révélation : identité (le plus vague), puis carrière, puis palmarès, puis anecdote (la plus révélatrice). Une à deux phrases par tiroir, en français.'
+  },
+  rouletteTexte: {
+    label: 'Texte masqué à deviner', max: 2, maxTokens: 3000,
+    rule: '{"answer":"LE SPORTIF À DEVINER","texte":"un texte descriptif de 80 à 120 mots","indice":"une phrase d\'aide courte","theme":"sous-thème en 2-3 mots"}',
+    note: 'Le texte décrit le sportif — palmarès, style de jeu, époque, pays, faits marquants — sans jamais écrire ni son nom ni son surnom. 80 à 120 mots, phrases courtes et concrètes, en français, sans liste.'
+  },
+  valeurs: {
+    label: 'Valeurs numériques cumulables', max: 2, maxTokens: 3500,
+    rule: '{"consigne":"la consigne affichée au joueur (ex : Cumulez les buts de ces joueurs en équipe de France)","cible":50,"entrees":[{"nom":"Mbappé","valeur":46}],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Entre 12 et 20 entrées. Chaque "valeur" est un nombre ENTIER exact et vérifiable (buts, titres, sélections, médailles…). "cible" est le plafond à ne pas dépasser : choisis-la pour que plusieurs combinaisons permettent de s\'en approcher, qu\'aucune entrée ne l\'égale exactement et qu\'aucune entrée ne la dépasse.'
+  },
+  biathlonComplet: {
+    label: 'Biathlon complet (sprint + QCM + ordre)', max: 1, maxTokens: 4000,
+    rule: '{"sprint":{"question":"la consigne de la phase sprint","reponses":["Nom;Variante"]},"qcm":[{"question":"...","answer":"...","wrong":["faux1","faux2","faux3"]}],"ordre":{"question":"instruction de remise en ordre","items":["premier","deuxième","troisième"]},"theme":"sous-thème en 2-3 mots"}',
+    note: 'TROIS parties obligatoires. "sprint" : une consigne + 12 à 20 réponses acceptées (format "Nom;Variante" quand il existe une variante). "qcm" : exactement 3 questions à 4 choix (1 bonne réponse + 3 leurres plausibles). "ordre" : une instruction + exactement 5 éléments DÉJÀ rangés dans le bon ordre.'
+  },
+  cibles: {
+    label: '3 cibles chiffrées', max: 1, maxTokens: 2500,
+    rule: '{"cibles":[{"stat":"la statistique à deviner (ex : Buts en carrière)","valeur":700,"max":1400}],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Exactement 3 cibles. "valeur" est le chiffre exact et vérifiable, "max" le maximum du curseur (environ le double de la valeur). Varie les ordres de grandeur entre les trois cibles et précise l\'unité dans "stat".'
+  },
+  nage: {
+    label: 'Grille nage synchronisée', max: 1, maxTokens: 3500,
+    rule: '{"couloirs":["France","100 m papillon"],"sportifs":[{"nom":"Léon Marchand","couloir":1}],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Exactement 5 couloirs : chacun une caractéristique courte (pays, épreuve, nombre de titres…). Puis 5 à 8 sportifs, avec pour chacun le NUMÉRO du couloir où il doit être placé (1 = premier couloir, 2 = deuxième, etc.). Chaque couloir doit avoir au moins un sportif, et chaque sportif ne correspond qu\'à un seul couloir.'
+  },
+  escrime: {
+    label: 'Assaut (touche / contre / feinte)', max: 6, maxTokens: 3500,
+    rule: '{"question":"la question","touche":"la bonne réponse","contre":"une réponse franchement fausse","feinte":"une réponse plausible mais fausse","theme":"sous-thème en 2-3 mots"}',
+    note: 'Chaque question a exactement 3 réponses : "touche" la bonne, "contre" une réponse clairement fausse, et "feinte" une réponse crédible qui piège le joueur. La feinte ne doit jamais être acceptable, et les trois réponses doivent être de même nature.'
+  },
+  equitation: {
+    label: 'Parcours complet (4 obstacles)', max: 1, maxTokens: 4000,
+    rule: '{"fleche":{"indices":["indice 1","indice 2","indice 3","indice 4"],"mots":["MOT1","MOT2","MOT3","MOT4"]},"riviere":{"question":"...","answer":42,"multiplier":2},"vraiFaux":[{"affirmation":"...","answer":"vrai"}],"grille":{"indice":"indice ou thème","answer":"MOT","pieges":["AUTRE","FAUX"],"size":10},"theme":"sous-thème en 2-3 mots"}',
+    note: 'QUATRE obstacles obligatoires. "fleche" : 4 indices et les 4 MOTS correspondants (un seul mot par indice, en majuscules). "riviere" : une question, un nombre exact "answer" et un "multiplier" (2 ou 3). "vraiFaux" : exactement 3 affirmations avec "answer" valant "vrai" ou "faux", en alternant les deux. "grille" : un indice, le MOT à trouver (au moins 5 lettres, en majuscules), 2 à 4 mots pièges et "size" la taille de la grille (entre 8 et 12).'
   }
 };
 
@@ -2657,6 +2707,102 @@ function aiNormalize(mode, raw){
       const indices = aiCleanList(it.indices || it.clues, 220);
       if (!mot || indices.length < 3) continue;
       out.push({ mot, indices: indices.slice(0, 3), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'buzzTexte') {
+      // Le Buzz révèle un texte mot à mot : un texte trop court est injouable.
+      const a = aiClean(it.answer, 80), t = aiClean(it.texte || it.text, 1800);
+      if (!a || !t) continue;
+      const mots = t.split(/\s+/).filter(Boolean).length;
+      if (mots < 60) continue;
+      out.push({ answer: a, texte: t, mots, theme: aiClean(it.theme, 60) });
+    } else if (mode === 'sportus') {
+      const a = aiClean(it.answer, 80);
+      const i1 = aiClean(it.indice1 || it.indice_1, 300), i2 = aiClean(it.indice2 || it.indice_2, 300);
+      if (!a || !i1 || !i2) continue;
+      out.push({
+        answer: a,
+        indiceGratuit: aiClean(it.indiceGratuit || it.gratuit, 300),
+        indice1: i1, indice2: i2,
+        lettres: aiClean(it.lettres || it.reveal, 30).toUpperCase(),
+        theme: aiClean(it.theme, 60)
+      });
+    } else if (mode === 'scout') {
+      const a = aiClean(it.answer, 80);
+      const identite = aiClean(it.identite || it.identity, 300), carriere = aiClean(it.carriere || it.career, 300);
+      const palmares = aiClean(it.palmares || it.palmarès, 300), mystere = aiClean(it.mystere || it.mystère, 300);
+      if (!a || !identite || !carriere || !palmares || !mystere) continue;
+      out.push({ answer: a, identite, carriere, palmares, mystere, theme: aiClean(it.theme, 60) });
+    } else if (mode === 'rouletteTexte') {
+      const a = aiClean(it.answer, 80), t = aiClean(it.texte || it.text, 1400);
+      if (!a || !t) continue;
+      out.push({ answer: a, texte: t, indice: aiClean(it.indice, 200), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'valeurs') {
+      const consigne = aiClean(it.consigne || it.question || it.theme, 300);
+      const cible = aiNumber(it.cible || it.plafond || it.target);
+      const entrees = (Array.isArray(it.entrees) ? it.entrees : []).map(e => ({
+        nom: aiClean(e && (e.nom || e.name), 60),
+        valeur: aiNumber(e && (e.valeur != null ? e.valeur : e.value))
+      })).filter(e => e.nom && e.valeur !== null);
+      if (!consigne || cible === null || entrees.length < 5) continue;
+      out.push({ consigne, cible, entrees: entrees.slice(0, 30), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'biathlonComplet') {
+      const sp = it.sprint || {};
+      const reponses = aiCleanList(sp.reponses || sp.answers || sp.liste, 80);
+      const qcm = (Array.isArray(it.qcm) ? it.qcm : []).map(q => ({
+        question: aiClean(q && q.question, 240),
+        answer: aiClean(q && q.answer, 120),
+        wrong: aiCleanList(q && q.wrong, 120)
+      })).filter(q => q.question && q.answer && q.wrong.length >= 3);
+      const ordre = it.ordre || {};
+      const items = aiCleanList(ordre.items || ordre.liste, 80);
+      if (!reponses.length || qcm.length < 3 || !ordre.question || items.length < 3) continue;
+      out.push({
+        sprint: { question: aiClean(sp.question || it.theme, 240), reponses: reponses.slice(0, 25) },
+        qcm: qcm.slice(0, 3).map(q => ({ question: q.question, answer: q.answer, wrong: q.wrong.slice(0, 3) })),
+        ordre: { question: aiClean(ordre.question, 240), items: items.slice(0, 8) },
+        theme: aiClean(it.theme, 60)
+      });
+    } else if (mode === 'cibles') {
+      const cibles = (Array.isArray(it.cibles) ? it.cibles : []).map(c => ({
+        stat: aiClean(c && c.stat, 120),
+        value: aiNumber(c && (c.valeur != null ? c.valeur : c.value)),
+        max: aiNumber(c && c.max)
+      })).filter(c => c.stat && c.value !== null);
+      if (cibles.length < 3) continue;
+      out.push({ cibles: cibles.slice(0, 3), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'nage') {
+      const couloirs = aiCleanList(it.couloirs, 60);
+      const sportifs = (Array.isArray(it.sportifs) ? it.sportifs : []).map(s => ({
+        nom: aiClean(s && (s.nom || s.name), 60),
+        couloir: aiNumber(s && (s.couloir != null ? s.couloir : s.lane))
+      })).filter(s => s.nom && s.couloir !== null && s.couloir >= 1 && s.couloir <= couloirs.length);
+      if (couloirs.length < 3 || sportifs.length < 3) continue;
+      out.push({ couloirs: couloirs.slice(0, 8), sportifs, theme: aiClean(it.theme, 60) });
+    } else if (mode === 'escrime') {
+      const q = aiClean(it.question, 240), t = aiClean(it.touche, 120);
+      const c = aiClean(it.contre, 120), f = aiClean(it.feinte, 120);
+      if (!q || !t || !c || !f) continue;
+      out.push({ question: q, touche: t, contre: c, feinte: f, theme: aiClean(it.theme, 60) });
+    } else if (mode === 'equitation') {
+      const fl = it.fleche || {}, ri = it.riviere || {}, gr = it.grille || {};
+      const indices = aiCleanList(fl.indices, 200), mots = aiCleanList(fl.mots, 40);
+      const vf = (Array.isArray(it.vraiFaux) ? it.vraiFaux : []).map(v => ({
+        affirmation: aiClean(v && (v.affirmation || v.question), 240),
+        answer: aiClean(v && v.answer, 10).toLowerCase().indexOf('vrai') === 0 ? 'vrai' : 'faux'
+      })).filter(v => v.affirmation);
+      const rq = aiClean(ri.question, 240), rv = aiNumber(ri.answer);
+      const mot = aiClean(gr.answer, 40).toUpperCase().replace(/[^A-Z]/g, '');
+      if (indices.length < 4 || mots.length < 4 || vf.length < 3 || !rq || rv === null || mot.length < 3) continue;
+      out.push({
+        fleche: { indices: indices.slice(0, 4), mots: mots.slice(0, 4) },
+        riviere: { question: rq, answer: rv, multiplier: aiNumber(ri.multiplier) || 2 },
+        vraiFaux: vf.slice(0, 3),
+        grille: {
+          indice: aiClean(gr.indice || gr.question, 200), answer: mot,
+          pieges: aiCleanList(gr.pieges || gr.trapWords, 40).slice(0, 4),
+          size: aiNumber(gr.size) || 0
+        },
+        theme: aiClean(it.theme, 60)
+      });
     } else if (mode === 'mines') {
       const items = (Array.isArray(it.items) ? it.items : [])
         .map(x => ({ text: aiClean(x && (x.text || x.name), 80), correct: !(x && x.correct === false) }))
@@ -2670,8 +2816,10 @@ function aiNormalize(mode, raw){
 
 function aiBuildPrompt(spec, o){
   const diff = ['facile','moyenne','difficile','mixte'].indexOf(String(o.difficulty)) >= 0 ? o.difficulty : 'moyenne';
+  const sujet = aiClean(o.theme, 300);
+  const label = aiClean(o.subjectLabel, 60) || 'Thème';
   const lines = [
-    'Thème : ' + (aiClean(o.theme, 300) || 'sport en général'),
+    label + ' : ' + (sujet || 'aucun sujet imposé — choisis toi-même un sujet précis, varié et intéressant, et recopie-le dans le champ "theme"'),
     'Difficulté : ' + diff,
     "Nombre d'éléments à générer : " + o.count,
     '',
@@ -2679,6 +2827,8 @@ function aiBuildPrompt(spec, o){
     '{"questions":[ ' + spec.rule + ' ]}'
   ];
   if (spec.note) lines.push('', spec.note);
+  if (!sujet) lines.push('', "Choisis librement un sujet : évite les redites, privilégie un angle précis plutôt qu'un thème trop large.");
+  lines.push('', "Si le sujet fourni est un thème plutôt qu'un nom précis, choisis toi-même le sujet exact qui convient le mieux au jeu.");
   if (o.extra) lines.push('', 'Précisions du rédacteur : ' + aiClean(o.extra, 600));
   if (Array.isArray(o.avoid) && o.avoid.length)
     lines.push('', 'Ne repose PAS ces questions déjà utilisées : ' + o.avoid.slice(0, 20).map(x => aiClean(x, 80)).join(' | '));
@@ -2763,7 +2913,7 @@ app.post('/api/admin/ai-test', async (req, res) => {
 });
 
 app.post('/api/admin/ai-generate', async (req, res) => {
-  const { password, mode, theme, count, difficulty, extra, avoid } = req.body || {};
+  const { password, mode, theme, count, difficulty, extra, avoid, subjectLabel } = req.body || {};
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
   const spec = AI_MODES[mode];
   if (!spec) return res.status(400).json({ ok: false, error: 'Mode de génération inconnu : ' + mode });
@@ -2773,7 +2923,7 @@ app.post('/api/admin/ai-generate', async (req, res) => {
   try {
     const { content, model } = await aiChat([
       { role: 'system', content: AI_SYSTEM },
-      { role: 'user', content: aiBuildPrompt(spec, { theme, count: n, difficulty, extra, avoid }) }
+      { role: 'user', content: aiBuildPrompt(spec, { theme, count: n, difficulty, extra, avoid, subjectLabel }) }
     ], { maxTokens: spec.maxTokens, ms: 180000 });
     const parsed = aiExtractJson(content);
     const arr = Array.isArray(parsed) ? parsed
