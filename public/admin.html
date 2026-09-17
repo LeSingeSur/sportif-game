@@ -1281,6 +1281,25 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
           </div>
           <div class="msg" id="ai-gen-status"></div>
           <div id="ai-gen-preview" style="margin-top:10px;max-height:340px;overflow-y:auto;display:none;flex-direction:column;gap:8px"></div>
+
+          <!-- 💬 Option A — itérer par la discussion -->
+          <div id="ai-chat-block" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;letter-spacing:2px;color:var(--mute)">💬 AFFINER PAR DISCUSSION</span>
+              <button class="btn btn-sm btn-cancel" type="button" onclick="aiResetChat()" style="margin:0">🗑 Vider</button>
+            </div>
+            <div style="font-size:11px;color:var(--mute);line-height:1.5;margin-bottom:8px">
+              Le lot affiché ci-dessus est envoyé au modèle à chaque message : demande-lui de corriger, remplacer ou compléter, puis « 📥 Insérer ».
+            </div>
+            <div id="ai-chat-log" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;padding-right:4px"></div>
+            <div id="ai-chat-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+            <div style="display:flex;gap:6px;align-items:flex-end;margin-top:8px">
+              <textarea id="ai-chat-in" placeholder="Ex : rends la 3 plus facile · remplace la 2 · ajoute 2 questions sur les JO"
+                style="min-height:46px;flex:1;resize:vertical;font-size:14px" onkeydown="aiChatKey(event)"></textarea>
+              <button class="btn btn-p" type="button" id="ai-chat-send" onclick="aiSend()" style="width:58px;margin:0;height:46px;padding:0">➤</button>
+            </div>
+            <div class="msg" id="ai-chat-status"></div>
+          </div>
         </div>
       </div>
 
@@ -1495,13 +1514,19 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         et une difficulté : les questions sont générées au format exact du défi en cours, tu les vérifies puis tu les insères
         dans le formulaire avant de publier.
       </div>
+      <div style="font-size:13px;color:var(--mute);line-height:1.7;margin-top:10px">
+        <strong style="color:var(--neon)">💬 Affiner par discussion</strong> — sous l'aperçu, discute avec le modèle :
+        <em>« rends la 3 plus facile »</em>, <em>« remplace la 2 »</em>, <em>« ajoute 2 questions sur les JO »</em>.
+        Le lot affiché lui est renvoyé à chaque message : il te répond et renvoie tout le lot corrigé, que tu insères d'un clic.
+      </div>
       <div style="font-size:12px;color:var(--orange);line-height:1.6;margin-top:10px;background:rgba(255,140,0,.08);border-radius:10px;padding:10px 12px">
         ⚠️ Relis toujours les questions générées : une IA peut se tromper sur une date, un score ou un palmarès.
       </div>
       <div style="font-size:12px;color:var(--mute);line-height:1.6;margin-top:10px">
-        Défi disponible côté serveur ? Les types gérés par l'IA : Blackjack non, mais <strong>Badminton, Trappe, RVLF, Maillon Faible,
-        Haltéro, Bowling, Juste Prix, Texte, Image, Roulette, APOL, Trivial Pursuit, The Chase, Réplique, Buzz, Sportus, Scout,
-        Escalade, Méli-Mélo et Démineur</strong>.
+        <strong style="color:var(--txt)">24 défis sur 30</strong> sont gérés par l'IA : Badminton, Trappe, RVLF, Maillon Faible,
+        Haltéro, Bowling, Juste Prix, Texte, Image, Roulette, APOL, Trivial Pursuit, The Chase, L'Alpe d'Huez, Réplique, Buzz,
+        Sportus, Scout, Escalade, Plongée, Saut en hauteur, Méli-Mélo, Démineur et VAR.<br>
+        Restent en saisie manuelle : Blackjack, Biathlon, Tir à l'Arc, Natation synchronisée, Assaut et Équitation.
       </div>
     </div>
   </div>
@@ -4591,6 +4616,18 @@ let aiResults     = [];     // questions renvoyées par l'IA (format canonique)
 let aiResultsType = null;   // type de défi au moment de la génération
 let aiBusy        = false;
 let aiPanelType   = null;   // dernier type de défi affiché dans le panneau
+let aiChatMsgs    = [];     // fil de discussion [{role:'user'|'assistant', content}]
+let aiChatBusy    = false;
+
+// Suggestions affichées sous forme de puces cliquables dans la discussion
+const AI_CHAT_SUGGESTIONS = [
+  'Rends les questions plus difficiles',
+  'Rends-les plus faciles',
+  'Varie davantage les sous-thèmes',
+  'Raccourcis le libellé des questions',
+  'Remplace la 2',
+  'Ajoute 2 questions sur les Jeux Olympiques'
+];
 
 // Type de défi → mode de génération côté serveur
 const AI_TYPE_MODES = {
@@ -4600,10 +4637,12 @@ const AI_TYPE_MODES = {
   bowling:'numero', prix:'numero',
   text:'court', apol:'court', trivpursuit:'court', image:'court',
   demineur:'mines',
-  chase:'liste',
+  chase:'liste', grimpe:'liste',
   replique:'citation',
   buzz:'indices', sportus:'indices', scout:'indices', roulette:'indices',
   escalade:'escalade',
+  plongee:'paliers',
+  saut:'motIndices',
   melimelo:'anagramme',
   var:'paragraphe'
 };
@@ -4611,11 +4650,23 @@ const AI_TYPE_MODES = {
 // Types dont le nombre d'éléments est imposé par les règles du jeu
 const AI_TYPE_FIXED = {
   prix:1, text:1, image:1, roulette:1, replique:1, buzz:1, sportus:1, scout:1,
-  var:1, chase:1, demineur:1,
-  trivpursuit:12, escalade:8, rvlf:10, bowling:12
+  var:1, chase:1, demineur:1, grimpe:1,
+  trivpursuit:12, escalade:8, rvlf:10, bowling:12,
+  plongee:5, saut:5
 };
 const AI_TYPE_DEFAULT_COUNT = {
   badminton:10, trappe:5, maillonfaible:10, haltero:5, apol:5, melimelo:5
+};
+
+// Noms lisibles, transmis au modèle comme contexte de la discussion
+const AI_TYPE_LABELS = {
+  badminton:'Badminton Quiz', trappe:'La Trappe', rvlf:'RVLF', maillonfaible:'Maillon Faible',
+  haltero:'Haltéro-Quiz', bowling:'Bowling Quiz', prix:'Juste Prix', text:'Défi Texte',
+  image:'Défi Image', apol:'À prendre ou à laisser', trivpursuit:'Trivial Pursuit',
+  demineur:'Le Démineur', chase:'The Chase', grimpe:"L'Alpe d'Huez (grimpe)",
+  replique:'Réplique Culte', buzz:'Buzz', sportus:'Sportus', scout:'Le Scout',
+  roulette:'Roulette Russe', escalade:'Escalade', plongee:'Plongée', saut:'Saut en hauteur',
+  melimelo:'Méli-Mélo', var:'VAR (texte à erreur)'
 };
 
 function aiEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -4796,6 +4847,9 @@ function updateAiPanel(){
     if(AI_TYPE_FIXED[type]) info+=' · nombre imposé par le jeu : '+AI_TYPE_FIXED[type];
     if(type==='image') info+=" · pense à fournir l'image (URL ou fichier)";
     if(type==='haltero') info+=" · la 5e question remplit le Jeté ; l'Arraché (2 sportifs) reste à saisir";
+    if(type==='plongee') info+=' · 5 paliers = 10 questions (descente + remontée)';
+    if(type==='saut') info+=' · 5 mots, indices du plus dur au plus facile (les barres 2m10→2m50 sont décoratives)';
+    if(type==='grimpe') info+=' · remplit le thème du col et la liste des réponses';
     if(type==='var') info+=" · vérifie que le segment souligné est bien l'erreur";
     lbl.textContent=info;
   }
@@ -4820,6 +4874,7 @@ function aiRenderPreview(){
   if(!aiResults.length){
     box.style.display='none';
     if(btn) btn.disabled=true;
+    aiUpdateChatVisibility();
     return;
   }
   aiResults.forEach((q,i)=>{
@@ -4850,6 +4905,7 @@ function aiRenderPreview(){
   });
   box.style.display='flex';
   if(btn) btn.disabled=false;
+  aiUpdateChatVisibility();
 }
 
 function aiCollectExisting(type){
@@ -4901,8 +4957,10 @@ async function aiGenerate(){
     const d=await r.json();
     if(!d.ok || !d.questions || !d.questions.length) throw new Error(d.error||'Génération impossible');
     aiResults=d.questions; aiResultsType=type;
+    aiChatMsgs=[];                       // nouveau lot = nouvelle discussion
     aiRenderPreview();
-    aiMsg('ai-gen-status','ok','✅ '+d.questions.length+' question(s) générée(s) en '+Math.round((d.latencyMs||0)/1000)+' s — relis-les, corrige si besoin, puis « Insérer ».');
+    aiRenderChat();
+    aiMsg('ai-gen-status','ok','✅ '+d.questions.length+' question(s) générée(s) en '+Math.round((d.latencyMs||0)/1000)+' s — relis-les, affine par la discussion ci-dessous, puis « Insérer ».');
   }catch(e){
     aiMsg('ai-gen-status','err','❌ '+e.message);
   }finally{
@@ -4922,6 +4980,117 @@ function aiInsert(){
     aiMsg('ai-gen-status','ok','✅ '+aiResults.length+' élément(s) inséré(s) dans le formulaire — vérifie la mise en forme puis publie le défi.');
   }catch(e){
     aiMsg('ai-gen-status','err','❌ Erreur pendant l\'insertion : '+e.message);
+  }
+}
+
+/* ── Option A — discuter pour itérer sur le lot courant ──────────────────── */
+function aiBrief(){
+  try{
+    const theme=(document.getElementById('ai-gen-theme').value||'').trim();
+    const diff=(document.getElementById('ai-gen-diff').value||'').trim();
+    const extra=(document.getElementById('ai-gen-extra').value||'').trim();
+    let b='Thème : '+(theme||'—')+' · difficulté : '+(diff||'moyenne');
+    if(extra) b+=' · précisions : '+extra;
+    return b;
+  }catch(e){ return ''; }
+}
+
+function aiUpdateChatVisibility(){
+  const b=document.getElementById('ai-chat-block'); if(!b)return;
+  const on = !!(aiCfg.configured && aiResults && aiResults.length);
+  b.style.display = on ? 'block' : 'none';
+  if(on) aiRenderChatChips();
+}
+
+function aiRenderChatChips(){
+  const box=document.getElementById('ai-chat-chips'); if(!box || box.dataset.done) return;
+  box.dataset.done='1';
+  AI_CHAT_SUGGESTIONS.forEach(s=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='btn btn-sm btn-s'; b.style.margin='0';
+    b.textContent=s;
+    b.onclick=()=>{ const ta=document.getElementById('ai-chat-in'); ta.value=s; ta.focus(); };
+    box.appendChild(b);
+  });
+}
+
+function aiRenderChat(){
+  const log=document.getElementById('ai-chat-log'); if(!log)return;
+  log.innerHTML='';
+  if(!aiChatMsgs.length){
+    const p=document.createElement('div');
+    p.style.cssText='font-size:12px;color:var(--mute);line-height:1.5';
+    p.textContent='Pose ta demande : le modèle renvoie le lot complet corrigé, que tu insères ensuite d\'un clic.';
+    log.appendChild(p);
+    return;
+  }
+  aiChatMsgs.forEach(m=>{
+    const d=document.createElement('div');
+    const mine=m.role==='user';
+    d.style.cssText='max-width:88%;padding:9px 11px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;'+
+      (mine ? 'align-self:flex-end;background:rgba(212,255,0,.10);border:1px solid rgba(212,255,0,.28);color:var(--txt)'
+            : 'align-self:flex-start;background:var(--c1);border:1px solid rgba(255,255,255,.08);color:#d8d8ea');
+    d.textContent=(mine?'':'🤖 ')+m.content;
+    log.appendChild(d);
+  });
+  log.scrollTop=log.scrollHeight;
+}
+
+function aiResetChat(){
+  aiChatMsgs=[];
+  aiMsg('ai-chat-status','ok','💬 Discussion vidée');
+  aiRenderChat();
+}
+
+function aiChatKey(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); aiSend(); }
+}
+
+async function aiSend(){
+  if(aiChatBusy) return;
+  const ta=document.getElementById('ai-chat-in');
+  const txt=(ta.value||'').trim();
+  if(!txt){ aiMsg('ai-chat-status','err','❌ Écris d\'abord une demande.'); ta.focus(); return; }
+  if(!aiResults.length){ aiMsg('ai-chat-status','err','❌ Génère d\'abord un lot de questions.'); return; }
+  const type=currentType, mode=AI_TYPE_MODES[type];
+  if(!mode){ aiMsg('ai-chat-status','err','❌ Ce type de défi n\'est pas géré.'); return; }
+
+  aiChatMsgs.push({role:'user',content:txt});
+  ta.value='';
+  aiRenderChat();
+  aiChatBusy=true;
+  const btn=document.getElementById('ai-chat-send'); if(btn)btn.disabled=true;
+  aiMsg('ai-chat-status','ok','⏳ Le modèle réfléchit…');
+  try{
+    const spec=(aiCfg.modes||{})[mode]||{};
+    const r=await fetch('/api/admin/ai-chat',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        password:adminPw, mode, type,
+        gameLabel:AI_TYPE_LABELS[type]||type,
+        brief:aiBrief(),
+        expectedCount:AI_TYPE_FIXED[type]||(spec.max?('max '+spec.max):''),
+        messages:aiChatMsgs.slice(-12),
+        batch:aiResults
+      })
+    });
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Échange impossible');
+    if(d.reply) aiChatMsgs.push({role:'assistant',content:d.reply});
+    if(d.updated){ aiResults=d.questions; aiResultsType=type; aiRenderPreview(); }
+    aiRenderChat();
+    const fixe=AI_TYPE_FIXED[type], nb=aiResults.length;
+    let msg = d.updated ? ('✅ Lot mis à jour — '+nb+' question(s)')
+                        : ('ℹ️ Aucun changement appliqué — '+nb+' question(s) conservée(s)');
+    if(d.dropped) msg+=' · ⚠️ '+d.dropped+' réponse(s) incomplète(s) ignorée(s)';
+    if(fixe && nb!==fixe) msg+=' · ⚠️ ce défi exige exactement '+fixe+' question(s)';
+    aiMsg('ai-chat-status', (fixe && nb!==fixe)?'err':'ok', msg);
+  }catch(e){
+    aiMsg('ai-chat-status','err','❌ '+e.message);
+    aiRenderChat();
+  }finally{
+    aiChatBusy=false;
+    if(btn)btn.disabled=false;
   }
 }
 
@@ -5076,6 +5245,44 @@ const AI_APPLIERS = {
       asDifficileList:'', nbRequired:1
     }));
     renderEscaladeQuestions();
+  },
+  plongee(qs){
+    // 5 paliers = 10 questions (descente + remontée) ; les trésors restent inchangés
+    const anciens = (typeof plongeePaliers!=='undefined' && Array.isArray(plongeePaliers)) ? plongeePaliers : [];
+    const tresor = i => (anciens[i] && anciens[i].tresor!=null) ? anciens[i].tresor
+                        : ((typeof PLONGEE_TRESOR!=='undefined' && PLONGEE_TRESOR[i]!=null) ? PLONGEE_TRESOR[i] : 0);
+    plongeePaliers = Array.from({length:5},(_,i)=>{
+      const q=qs[i];
+      if(!q || !q.descente || !q.remontee) return {qDown:'',aDown:'',qUp:'',aUp:'',tresor:tresor(i)};
+      return {
+        qDown:q.descente.question, aDown:q.descente.answer,
+        qUp:q.remontee.question,   aUp:q.remontee.answer,
+        tresor:tresor(i)
+      };
+    });
+    renderPlongeePaliers();
+  },
+  saut(qs){
+    // Les 5 barres (2m10→2m50) ne sont que le décor : il faut 5 mots + 3 indices chacun
+    sautWords = Array.from({length:5},(_,i)=>{
+      const q=qs[i];
+      if(!q) return {mot:'',indices:['','','']};
+      const ind=(q.indices||[]).slice(0,3);
+      while(ind.length<3) ind.push('');
+      return {mot:q.mot, indices:ind};
+    });
+    renderSautWords();
+    const themeIn=document.getElementById('saut-theme');
+    if(themeIn && !themeIn.value.trim()){
+      const th=(qs[0]&&qs[0].theme)||(document.getElementById('ai-gen-theme').value||'').trim();
+      if(th) themeIn.value=th;
+    }
+  },
+  grimpe(qs){
+    const q=qs[0]; if(!q || !q.answers || !q.answers.length) return false;
+    aiSetVal('grimpe-theme-in', q.theme||q.question||'');
+    grimpeItems=q.answers.slice(0,60);
+    renderGrimpeItems();
   },
   demineur(qs){
     const q=qs[0]; if(!q || !q.items || !q.items.length) return false;
