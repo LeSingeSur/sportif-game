@@ -2388,9 +2388,385 @@ app.post('/api/curling/forfeit', async (req, res) => {
   catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ══════════════════════════════════════════════════════════════════════════
+// 🤖 IA — NOUS PORTAL (génération de questions pour les défis)
+// ══════════════════════════════════════════════════════════════════════════
+const AI_DEFAULT_BASE    = 'https://inference-api.nousresearch.com/v1';
+const AI_DEFAULT_MODEL   = 'google/gemini-2.5-flash';
+const AI_FILE            = path.join(__dirname, 'ai-config.json');
+// Modèles connus du portail Nous (le portail route plusieurs fournisseurs).
+// La liste réelle est récupérée en direct via le bouton 🔄 de l'admin.
+const AI_FALLBACK_MODELS = [
+  'google/gemini-2.5-flash',
+  'openai/gpt-4o-mini',
+  'deepseek/deepseek-chat-v3.1',
+  'qwen/qwen3-235b-a22b',
+  'mistralai/mistral-large',
+  'anthropic/claude-sonnet-4.5'
+];
+
+// La clé n'est jamais renvoyée au navigateur : seul un aperçu masqué l'est.
+let aiConfig = { apiKey: '', model: AI_DEFAULT_MODEL, baseUrl: AI_DEFAULT_BASE, temperature: 0.8 };
+
+const aiKey   = () => String(aiConfig.apiKey || process.env.NOUS_API_KEY || '').trim();
+const aiBase  = () => String(aiConfig.baseUrl || AI_DEFAULT_BASE).trim().replace(/\/+$/, '');
+const aiModel = () => String(aiConfig.model || AI_DEFAULT_MODEL).trim();
+function aiMask(k){
+  k = String(k || '');
+  if (!k) return '';
+  return k.length <= 12 ? k.slice(0,4) + '…' + k.slice(-2) : k.slice(0,7) + '…' + k.slice(-4);
+}
+
+async function loadAIConfig(){
+  if (db) {
+    try {
+      const doc = await db.collection('config').findOne({ key: 'ai' });
+      if (doc && doc.aiConfig) aiConfig = { ...aiConfig, ...doc.aiConfig };
+      return;
+    } catch(e){ console.error('loadAIConfig mongo:', e.message); }
+  }
+  try {
+    if (fs.existsSync(AI_FILE)) aiConfig = { ...aiConfig, ...JSON.parse(fs.readFileSync(AI_FILE, 'utf8')) };
+  } catch(e){ console.error('loadAIConfig fichier:', e.message); }
+}
+
+async function saveAIConfig(){
+  try {
+    if (db) await db.collection('config').updateOne({ key: 'ai' }, { $set: { key: 'ai', aiConfig } }, { upsert: true });
+    else fs.writeFileSync(AI_FILE, JSON.stringify(aiConfig, null, 2));
+  } catch(e){ console.error('saveAIConfig:', e.message); }
+}
+
+// fetch + délai maximum (node-fetch n'expire jamais tout seul)
+function aiTimeout(promise, ms, msg){
+  let t;
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => { t = setTimeout(() => rej(new Error(msg || 'Délai dépassé')), ms); })
+  ]).finally(() => clearTimeout(t));
+}
+
+async function aiPost(pathname, body, ms){
+  const key = aiKey();
+  if (!key) throw new Error("Aucune clé API Nous Portal enregistrée (onglet 🤖 IA).");
+  const r = await aiTimeout(fetch(aiBase() + pathname, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify(body)
+  }), ms || 180000, "Le modèle n'a pas répondu à temps.");
+  const txt = await r.text();
+  let json = null;
+  try { json = JSON.parse(txt); } catch(e){}
+  if (!r.ok) {
+    const raw = json && json.error ? (json.error.message || json.error) : (json && json.message ? json.message : txt);
+    throw new Error('[' + r.status + '] ' + String(raw || 'Erreur API').slice(0, 300));
+  }
+  return json;
+}
+
+async function aiChat(messages, opts = {}){
+  const temp = Number(aiConfig.temperature);
+  const json = await aiPost('/chat/completions', {
+    model: opts.model || aiModel(),
+    messages,
+    temperature: opts.temperature != null ? opts.temperature : (Number.isFinite(temp) ? temp : 0.8),
+    max_tokens: opts.maxTokens || 3000
+  }, opts.ms);
+  const content = json && json.choices && json.choices[0] && json.choices[0].message
+    ? json.choices[0].message.content : '';
+  if (!content) throw new Error('Réponse vide du modèle.');
+  return { content, model: (json && json.model) || opts.model || aiModel(), usage: (json && json.usage) || null };
+}
+
+async function aiListModels(){
+  const key = aiKey();
+  if (!key) throw new Error("Aucune clé API Nous Portal enregistrée.");
+  const r = await aiTimeout(fetch(aiBase() + '/models', { headers: { 'Authorization': 'Bearer ' + key } }), 25000, 'Délai dépassé');
+  const txt = await r.text();
+  let json = null;
+  try { json = JSON.parse(txt); } catch(e){}
+  if (!r.ok) throw new Error('[' + r.status + '] ' + String((json && json.error && (json.error.message || json.error)) || txt).slice(0, 200));
+  const arr = (json && (json.data || json.models)) || [];
+  return arr.map(m => (typeof m === 'string' ? m : (m.id || m.name))).filter(Boolean).sort();
+}
+
+// ── Modes de génération ────────────────────────────────────────────────────
+const AI_SYSTEM = [
+  "Tu es le rédacteur en chef des questions d'un quiz sportif télévisé français.",
+  "Tu écris en français, avec des faits exacts et vérifiables : jamais d'invention, jamais de réponse approximative.",
+  "Les questions sont courtes et sans ambiguïté, les réponses tiennent en quelques mots.",
+  "Tu réponds UNIQUEMENT par un objet JSON valide, sans texte avant ou après, sans balise Markdown."
+].join(' ');
+
+const AI_MODES = {
+  qcm3: {
+    label: 'QCM 3 choix', max: 20, maxTokens: 3500,
+    rule: '{"question":"la question","answer":"la bonne réponse","wrong":["mauvais choix 1","mauvais choix 2"],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Les deux mauvais choix doivent être plausibles (même catégorie, même époque) mais sans ambiguïté faux.'
+  },
+  qcm4: {
+    label: 'QCM 4 choix', max: 20, maxTokens: 4000,
+    rule: '{"question":"la question","answer":"la bonne réponse","wrong":["mauvais choix 1","mauvais choix 2","mauvais choix 3"],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Les trois mauvais choix doivent être plausibles mais sans ambiguïté faux.'
+  },
+  vraifaux: {
+    label: 'Vrai / Faux', max: 20, maxTokens: 3000,
+    rule: '{"question":"une affirmation claire","answer":"Vrai" ou "Faux","theme":"sous-thème en 2-3 mots"}',
+    note: 'Alterne les affirmations vraies et fausses (environ une sur deux de chaque). N\'écris jamais "vrai" ou "faux" dans l\'affirmation.'
+  },
+  numero: {
+    label: 'Réponse numérique', max: 12, maxTokens: 3000,
+    rule: '{"question":"la question","answer":42,"unit":"unité courte (buts, cm, ans, titres…)","theme":"sous-thème en 2-3 mots"}',
+    note: '"answer" doit être un NOMBRE (jamais de texte, jamais de guillemets). La valeur doit être exacte à la date la plus récente connue.'
+  },
+  court: {
+    label: 'Réponse courte', max: 12, maxTokens: 3000,
+    rule: '{"question":"la question","answer":"la réponse courte","aliases":["autre écriture acceptée"],"theme":"sous-thème en 2-3 mots"}',
+    note: '"aliases" contient les variantes acceptées (nom seul, prénom seul, abréviation). 0 à 3 variantes.'
+  },
+  indices: {
+    label: 'Indices progressifs', max: 6, maxTokens: 3500,
+    rule: '{"answer":"la solution (1 à 4 mots)","clues":["indice 1 très vague","indice 2","indice 3","indice 4","indice 5 très précis"],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Exactement 5 indices, du plus vague au plus précis. Un indice ne doit JAMAIS contenir la solution ni sa racine.'
+  },
+  citation: {
+    label: 'Citation culte', max: 6, maxTokens: 3000,
+    rule: '{"quote":"la citation complète et exacte","amorce":"le début de la citation (5 à 8 mots)","answer":"la fin exacte de la citation","wrong":["autre fin plausible 1","autre fin plausible 2","autre fin plausible 3"],"author":"auteur de la citation","wrongAuthor":"un autre sportif connu","work":"film, match ou année","theme":"sous-thème en 2-3 mots"}',
+    note: 'La citation doit être réellement attribuée à cette personne. "amorce" + "answer" doivent reconstituer "quote". Les trois "wrong" sont d\'autres fins de citation, plausibles mais fausses.'
+  },
+  paragraphe: {
+    label: 'Paragraphe à erreur', max: 3, maxTokens: 3000,
+    rule: '{"text":"un paragraphe journalistique de 5 à 7 phrases","wrong":"le segment exact du paragraphe qui contient une erreur (2 à 4 mots, copié mot pour mot)","correct":"la correction exacte de ce segment","theme":"sous-thème en 2-3 mots"}',
+    note: '"wrong" doit être copié caractère pour caractère depuis "text" et ne contenir qu\'UNE seule erreur factuelle dans tout le paragraphe.'
+  },
+  escalade: {
+    label: 'Facile / Difficile', max: 8, maxTokens: 3500,
+    rule: '{"facile":{"question":"la question simple","answer":"la réponse"},"difficile":{"question":"la même question en plus dur","answer":"la réponse"},"theme":"sous-thème en 2-3 mots"}',
+    note: 'La version difficile porte sur le même sujet mais demande une connaissance plus pointue.'
+  },
+  anagramme: {
+    label: 'Anagramme', max: 5, maxTokens: 2000,
+    rule: '{"answer":"UNSEULMOT","hint":"un indice court","theme":"sous-thème en 2-3 mots"}',
+    note: '"answer" est un seul mot sans espace (nom propre ou terme sportif), en MAJUSCULES, de 5 à 14 lettres.'
+  },
+  liste: {
+    label: 'Liste de réponses', max: 3, maxTokens: 3000,
+    rule: '{"theme":"la consigne exacte à afficher au joueur (ex: Citez 10 joueurs français ayant joué en Ligue des Champions)","question":"un sous-titre court","answers":["réponse 1","réponse 2","réponse 3"],"theme_short":"sous-thème en 2-3 mots"}',
+    note: 'Donne au moins 20 réponses valides et vérifiées, une par entrée, en orthographe officielle. La consigne doit préciser le nombre attendu.'
+  },
+  mines: {
+    label: 'Cases + mines', max: 1, maxTokens: 2500,
+    rule: '{"consigne":"la consigne affichée au joueur","items":[{"text":"un nom ou une proposition","correct":true}],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Exactement 12 items dont EXACTEMENT 2 avec "correct": false (les mines). Les 10 autres doivent être incontestablement valides.'
+  }
+};
+
+function aiClean(v, max){
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max || 240);
+}
+function aiCleanList(v, max){
+  return (Array.isArray(v) ? v : []).map(x => aiClean(x, max || 120)).filter(Boolean);
+}
+function aiNumber(v){
+  const n = parseFloat(String(v == null ? '' : v).replace(',', '.').replace(/[^\d.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function aiNormalize(mode, raw){
+  const out = [];
+  for (const it of (Array.isArray(raw) ? raw : [])) {
+    if (!it || typeof it !== 'object') continue;
+    if (mode === 'qcm3' || mode === 'qcm4') {
+      const need = mode === 'qcm3' ? 2 : 3;
+      const q = aiClean(it.question, 240), a = aiClean(it.answer, 120);
+      const wrong = aiCleanList(it.wrong, 120).filter(w => w.toLowerCase() !== a.toLowerCase());
+      if (!q || !a || wrong.length < need) continue;
+      out.push({ question: q, answer: a, wrong: wrong.slice(0, need), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'vraifaux') {
+      const q = aiClean(it.question, 260), a = aiClean(it.answer, 12).toLowerCase();
+      if (!q || !a) continue;
+      out.push({ question: q, answer: a.indexOf('vrai') === 0 ? 'Vrai' : 'Faux', theme: aiClean(it.theme, 60) });
+    } else if (mode === 'numero') {
+      const q = aiClean(it.question, 240), n = aiNumber(it.answer);
+      if (!q || n === null) continue;
+      out.push({ question: q, answer: n, unit: aiClean(it.unit, 30), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'court') {
+      const q = aiClean(it.question, 240), a = aiClean(it.answer, 120);
+      if (!q || !a) continue;
+      out.push({ question: q, answer: a, aliases: aiCleanList(it.aliases, 60), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'indices') {
+      const a = aiClean(it.answer, 80), clues = aiCleanList(it.clues, 220);
+      if (!a || clues.length < 2) continue;
+      out.push({ answer: a, clues: clues.slice(0, 6), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'citation') {
+      const quote = aiClean(it.quote, 400), a = aiClean(it.answer, 240);
+      if (!quote || !a) continue;
+      out.push({
+        quote, answer: a,
+        amorce: aiClean(it.amorce, 240) || quote.slice(0, Math.max(10, Math.floor(quote.length * 0.45))),
+        wrong: aiCleanList(it.wrong, 240),
+        author: aiClean(it.author, 80), wrongAuthor: aiClean(it.wrongAuthor, 80),
+        work: aiClean(it.work, 120), theme: aiClean(it.theme, 60)
+      });
+    } else if (mode === 'paragraphe') {
+      const text = aiClean(it.text, 1600), wrong = aiClean(it.wrong, 120), correct = aiClean(it.correct, 160);
+      if (!text || !wrong || !correct) continue;
+      out.push({ text, wrong, correct, theme: aiClean(it.theme, 60) });
+    } else if (mode === 'escalade') {
+      const f = it.facile || {}, d = it.difficile || {};
+      const fq = aiClean(f.question, 240), fa = aiClean(f.answer, 120);
+      if (!fq || !fa) continue;
+      out.push({
+        facile: { question: fq, answer: fa },
+        difficile: { question: aiClean(d.question, 240), answer: aiClean(d.answer, 120) },
+        theme: aiClean(it.theme, 60)
+      });
+    } else if (mode === 'anagramme') {
+      const a = aiClean(it.answer, 20).replace(/[^A-Za-zÀ-ÿ]/g, '').toUpperCase();
+      if (a.length < 4) continue;
+      out.push({ answer: a, hint: aiClean(it.hint, 120), theme: aiClean(it.theme, 60) });
+    } else if (mode === 'liste') {
+      const answers = aiCleanList(it.answers, 80);
+      if (answers.length < 3) continue;
+      out.push({
+        theme: aiClean(it.theme, 240), question: aiClean(it.question, 120),
+        answers, theme_short: aiClean(it.theme_short || it.subtheme, 60)
+      });
+    } else if (mode === 'mines') {
+      const items = (Array.isArray(it.items) ? it.items : [])
+        .map(x => ({ text: aiClean(x && (x.text || x.name), 80), correct: !(x && x.correct === false) }))
+        .filter(x => x.text);
+      if (items.length < 6) continue;
+      out.push({ consigne: aiClean(it.consigne || it.theme, 240), items: items.slice(0, 12), theme: aiClean(it.theme, 60) });
+    }
+  }
+  return out;
+}
+
+function aiBuildPrompt(spec, o){
+  const diff = ['facile','moyenne','difficile','mixte'].indexOf(String(o.difficulty)) >= 0 ? o.difficulty : 'moyenne';
+  const lines = [
+    'Thème : ' + (aiClean(o.theme, 300) || 'sport en général'),
+    'Difficulté : ' + diff,
+    "Nombre d'éléments à générer : " + o.count,
+    '',
+    'Format STRICT de sortie — un objet JSON uniquement :',
+    '{"questions":[ ' + spec.rule + ' ]}'
+  ];
+  if (spec.note) lines.push('', spec.note);
+  if (o.extra) lines.push('', 'Précisions du rédacteur : ' + aiClean(o.extra, 600));
+  if (Array.isArray(o.avoid) && o.avoid.length)
+    lines.push('', 'Ne repose PAS ces questions déjà utilisées : ' + o.avoid.slice(0, 20).map(x => aiClean(x, 80)).join(' | '));
+  lines.push('',
+    'Génère exactement ' + o.count + ' élément(s). Varie les sous-thèmes, les époques, les pays et les disciplines.',
+    'Vérifie une dernière fois chaque fait avant de répondre. Aucun commentaire, aucun texte hors du JSON.'
+  );
+  return lines.join('\n');
+}
+
+function aiExtractJson(text){
+  let s = String(text || '').trim();
+  const fence = s.split('```');
+  if (fence.length >= 3) s = fence[1].replace(/^json/i, '').trim();
+  const first = s.search(/[\[{]/);
+  if (first < 0) return null;
+  const last = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+  if (last < first) return null;
+  try { return JSON.parse(s.slice(first, last + 1)); } catch(e){ return null; }
+}
+
+// ── Endpoints admin IA ─────────────────────────────────────────────────────
+app.get('/api/admin/ai-config', (req, res) => {
+  if (req.query.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const key = aiKey();
+  res.json({
+    configured : !!key,
+    source     : aiConfig.apiKey ? 'admin' : (process.env.NOUS_API_KEY ? 'env' : 'none'),
+    keyPreview : aiMask(key),
+    model      : aiModel(),
+    baseUrl    : aiBase(),
+    temperature: Number.isFinite(Number(aiConfig.temperature)) ? Number(aiConfig.temperature) : 0.8,
+    defaultBase: AI_DEFAULT_BASE,
+    defaultModel: AI_DEFAULT_MODEL,
+    fallbackModels: AI_FALLBACK_MODELS,
+    modes      : Object.keys(AI_MODES).reduce((acc, k) => { acc[k] = { label: AI_MODES[k].label, max: AI_MODES[k].max }; return acc; }, {})
+  });
+});
+
+app.post('/api/admin/ai-config', async (req, res) => {
+  const { password, apiKey, model, baseUrl, temperature, clearKey } = req.body || {};
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  if (clearKey) aiConfig.apiKey = '';
+  else if (typeof apiKey === 'string' && apiKey.trim()) aiConfig.apiKey = apiKey.trim();
+  if (typeof model === 'string' && model.trim()) aiConfig.model = model.trim();
+  if (typeof baseUrl === 'string' && baseUrl.trim()) aiConfig.baseUrl = baseUrl.trim();
+  const t = parseFloat(temperature);
+  if (Number.isFinite(t)) aiConfig.temperature = Math.min(2, Math.max(0, t));
+  await saveAIConfig();
+  const key = aiKey();
+  res.json({
+    success: true, configured: !!key, source: aiConfig.apiKey ? 'admin' : (process.env.NOUS_API_KEY ? 'env' : 'none'),
+    keyPreview: aiMask(key), model: aiModel(), baseUrl: aiBase()
+  });
+});
+
+app.get('/api/admin/ai-models', async (req, res) => {
+  if (req.query.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  try {
+    const models = await aiListModels();
+    res.json({ success: true, models: models.length ? models : AI_FALLBACK_MODELS, fallback: !models.length });
+  } catch(e) {
+    res.json({ success: false, error: e.message, models: AI_FALLBACK_MODELS, fallback: true });
+  }
+});
+
+app.post('/api/admin/ai-test', async (req, res) => {
+  const { password } = req.body || {};
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  if (!aiKey()) return res.json({ ok: false, error: "Aucune clé API enregistrée." });
+  const t0 = Date.now();
+  try {
+    const { content, model } = await aiChat([
+      { role: 'system', content: AI_SYSTEM },
+      { role: 'user', content: 'Réponds uniquement par ce JSON : {"ok":true,"sport":"..."} avec un sport de ton choix.' }
+    ], { maxTokens: 60, ms: 45000, temperature: 0 });
+    const parsed = aiExtractJson(content);
+    res.json({ ok: true, model, latencyMs: Date.now() - t0, reply: aiClean(content, 120), parsed: parsed || null });
+  } catch(e) {
+    res.json({ ok: false, error: e.message, latencyMs: Date.now() - t0 });
+  }
+});
+
+app.post('/api/admin/ai-generate', async (req, res) => {
+  const { password, mode, theme, count, difficulty, extra, avoid } = req.body || {};
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const spec = AI_MODES[mode];
+  if (!spec) return res.status(400).json({ ok: false, error: 'Mode de génération inconnu : ' + mode });
+  if (!aiKey()) return res.status(400).json({ ok: false, error: "Aucune clé API Nous Portal enregistrée. Ouvre l'onglet 🤖 IA." });
+  const n = Math.max(1, Math.min(spec.max, parseInt(count, 10) || spec.max));
+  const t0 = Date.now();
+  try {
+    const { content, model } = await aiChat([
+      { role: 'system', content: AI_SYSTEM },
+      { role: 'user', content: aiBuildPrompt(spec, { theme, count: n, difficulty, extra, avoid }) }
+    ], { maxTokens: spec.maxTokens, ms: 180000 });
+    const parsed = aiExtractJson(content);
+    const arr = Array.isArray(parsed) ? parsed
+      : (parsed && Array.isArray(parsed.questions) ? parsed.questions
+      : (parsed && Array.isArray(parsed.items) ? parsed.items : null));
+    if (!arr) return res.json({ ok: false, error: "Le modèle n'a pas renvoyé de JSON exploitable.", raw: String(content).slice(0, 1200) });
+    const questions = aiNormalize(mode, arr).slice(0, n);
+    if (!questions.length) return res.json({ ok: false, error: 'Questions incomplètes renvoyées par le modèle.', raw: String(content).slice(0, 1200) });
+    res.json({ ok: true, mode, model, count: questions.length, latencyMs: Date.now() - t0, questions });
+  } catch(e) {
+    res.status(502).json({ ok: false, error: e.message, latencyMs: Date.now() - t0 });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
-connectMongo().then(() => {
+connectMongo().then(async () => {
+  await loadAIConfig();
   connectFormula();
   connectCurling();
-  app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html`));
+  app.listen(PORT, () => console.log(`🏆 http://localhost:${PORT}  |  🔐 /admin.html  |  🤖 IA Nous Portal`));
 });
