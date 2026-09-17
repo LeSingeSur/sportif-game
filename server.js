@@ -2558,6 +2558,16 @@ const AI_MODES = {
     label: 'Cases + mines', max: 1, maxTokens: 2500,
     rule: '{"consigne":"la consigne affichée au joueur","items":[{"text":"un nom ou une proposition","correct":true}],"theme":"sous-thème en 2-3 mots"}',
     note: 'Exactement 12 items dont EXACTEMENT 2 avec "correct": false (les mines). Les 10 autres doivent être incontestablement valides.'
+  },
+  paliers: {
+    label: 'Paliers (descente + remontée)', max: 6, maxTokens: 4000,
+    rule: '{"descente":{"question":"la question pour descendre à ce palier","answer":"la réponse courte"},"remontee":{"question":"la question pour remonter de ce palier","answer":"la réponse courte"},"theme":"sous-thème en 2-3 mots"}',
+    note: 'Les deux questions d\'un même palier portent sur le même sous-thème mais sont différentes. Difficulté croissante : le palier 1 est le plus accessible, le dernier le plus pointu.'
+  },
+  motIndices: {
+    label: 'Mot à deviner + 3 indices', max: 8, maxTokens: 4000,
+    rule: '{"mot":"LE MOT À DEVINER","indices":["indice 1 (difficile)","indice 2 (moyen)","indice 3 (facile)"],"theme":"sous-thème en 2-3 mots"}',
+    note: 'Exactement 3 indices, du plus difficile au plus facile. Aucun indice ne doit contenir le mot à deviner ni sa racine. Le mot est un nom propre ou un terme sportif court (1 à 3 mots). Difficulté croissante d\'un élément à l\'autre.'
   }
 };
 
@@ -2632,6 +2642,21 @@ function aiNormalize(mode, raw){
         theme: aiClean(it.theme, 240), question: aiClean(it.question, 120),
         answers, theme_short: aiClean(it.theme_short || it.subtheme, 60)
       });
+    } else if (mode === 'paliers') {
+      const d = it.descente || {}, u = it.remontee || it.remontée || {};
+      const dq = aiClean(d.question, 240), da = aiClean(d.answer, 120);
+      const uq = aiClean(u.question, 240), ua = aiClean(u.answer, 120);
+      if (!dq || !da || !uq || !ua) continue;
+      out.push({
+        descente: { question: dq, answer: da },
+        remontee: { question: uq, answer: ua },
+        theme: aiClean(it.theme, 60)
+      });
+    } else if (mode === 'motIndices') {
+      const mot = aiClean(it.mot || it.answer, 60);
+      const indices = aiCleanList(it.indices || it.clues, 220);
+      if (!mot || indices.length < 3) continue;
+      out.push({ mot, indices: indices.slice(0, 3), theme: aiClean(it.theme, 60) });
     } else if (mode === 'mines') {
       const items = (Array.isArray(it.items) ? it.items : [])
         .map(x => ({ text: aiClean(x && (x.text || x.name), 80), correct: !(x && x.correct === false) }))
@@ -2758,6 +2783,75 @@ app.post('/api/admin/ai-generate', async (req, res) => {
     const questions = aiNormalize(mode, arr).slice(0, n);
     if (!questions.length) return res.json({ ok: false, error: 'Questions incomplètes renvoyées par le modèle.', raw: String(content).slice(0, 1200) });
     res.json({ ok: true, mode, model, count: questions.length, latencyMs: Date.now() - t0, questions });
+  } catch(e) {
+    res.status(502).json({ ok: false, error: e.message, latencyMs: Date.now() - t0 });
+  }
+});
+
+// ── 🤖 Option A — discussion pour itérer sur un lot de questions ───────────
+// Le client envoie l'historique + le lot courant ; le modèle renvoie TOUJOURS
+// le lot complet mis à jour, revalidé ici par aiNormalize avant de repartir.
+const AI_CHAT_SYSTEM = [
+  "Tu es le rédacteur en chef des questions d'un quiz sportif télévisé français.",
+  "Tu discutes avec le rédacteur pour améliorer un lot de questions déjà généré.",
+  "Tu réponds TOUJOURS par un objet JSON valide et rien d'autre : ni texte avant ou après, ni balise Markdown.",
+  "Forme exacte attendue :",
+  '{"reply":"ta réponse au rédacteur, en français, 1 à 3 phrases","questions":[ ... le lot COMPLET mis à jour ... ]}',
+  "Tu renvoies toujours le lot complet, jamais un diff ni un extrait, même si tu ne modifies rien.",
+  "Si le rédacteur pose une question sans demander de changement, tu renvoies le lot inchangé et tu réponds dans \"reply\".",
+  "Chaque question conserve exactement la même structure JSON que celle du lot fourni.",
+  "Faits exacts et vérifiables uniquement : jamais d'invention, jamais de réponse approximative."
+].join(' ');
+
+app.post('/api/admin/ai-chat', async (req, res) => {
+  const { password, mode, gameLabel, brief, expectedCount, messages, batch } = req.body || {};
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Non autorisé' });
+  const spec = AI_MODES[mode];
+  if (!spec) return res.status(400).json({ ok: false, error: 'Mode de génération inconnu : ' + mode });
+  if (!aiKey()) return res.status(400).json({ ok: false, error: "Aucune clé API Nous Portal enregistrée. Ouvre l'onglet 🤖 IA." });
+
+  const history = (Array.isArray(messages) ? messages : [])
+    .filter(m => m && typeof m.content === 'string' && m.content.trim())
+    .slice(-12)
+    .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: aiClean(m.content, 1500) }));
+  if (!history.length || history[history.length - 1].role !== 'user')
+    return res.status(400).json({ ok: false, error: 'Message manquant.' });
+
+  const current = (Array.isArray(batch) ? batch : []).slice(0, 30);
+  const etat = [
+    'Défi en cours : ' + aiClean(gameLabel, 60) + ' — format imposé : ' + spec.label + '.',
+    spec.note ? 'Règles du format : ' + spec.note : '',
+    expectedCount ? "Nombre de questions attendu par le jeu : " + aiClean(String(expectedCount), 20) + '.' : '',
+    brief ? 'Brief de départ : ' + aiClean(brief, 400) : '',
+    '',
+    'Lot actuel (' + current.length + ' question(s), JSON) :',
+    JSON.stringify({ questions: current })
+  ].filter(Boolean).join('\n');
+
+  const t0 = Date.now();
+  try {
+    const { content, model } = await aiChat([
+      { role: 'system', content: AI_CHAT_SYSTEM + '\n\n' + etat },
+      ...history
+    ], { maxTokens: Math.max(3000, spec.maxTokens || 3000), ms: 180000 });
+
+    const parsed = aiExtractJson(content);
+    let raw = null, reply = '';
+    if (Array.isArray(parsed)) raw = parsed;
+    else if (parsed && typeof parsed === 'object') {
+      raw = Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed.items) ? parsed.items : null);
+      reply = aiClean(parsed.reply || parsed.message || parsed.commentaire, 700);
+    }
+    const questions = raw ? aiNormalize(mode, raw) : [];
+    const dropped = raw ? Math.max(0, raw.length - questions.length) : 0;
+    res.json({
+      ok: true, model, reply,
+      questions: questions.length ? questions : current,   // on ne perd jamais le lot
+      updated: questions.length > 0,
+      dropped,
+      debug: (questions.length ? undefined : String(content || '').slice(0, 900)),
+      latencyMs: Date.now() - t0
+    });
   } catch(e) {
     res.status(502).json({ ok: false, error: e.message, latencyMs: Date.now() - t0 });
   }
