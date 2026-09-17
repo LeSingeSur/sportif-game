@@ -144,6 +144,92 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
 .nav-tab{background:var(--c2);border:2px solid transparent;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--mute);cursor:pointer;transition:border-color .15s,color .15s}
 .nav-tab.active{border-color:var(--neon);color:var(--neon)}
 </style>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   🖥  COQUILLE DESKTOP — ADMIN  (bloc additif, isolé)
+   Tout est enfermé dans @media (min-width:1024px) + souris précise.
+   En dessous de 1024px, ou sur écran tactile, aucune de ces règles ne
+   s'applique : l'interface mobile reste strictement identique.
+   Pour tout annuler : supprimer ce bloc CSS et l'appel initTabHooks().
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+
+  /* ── Fond « plateau télé » ─────────────────────────────────────────────── */
+  body{
+    background-color:#05050b;
+    background-image:
+      radial-gradient(ellipse 55% 42% at 12% 0%,   rgba(212,255,0,.10) 0%, transparent 62%),
+      radial-gradient(ellipse 50% 38% at 88% 100%, rgba(0,229,200,.09) 0%, transparent 62%),
+      radial-gradient(ellipse 80% 55% at 50% 45%,  rgba(28,28,58,.60)  0%, transparent 72%),
+      repeating-linear-gradient(115deg, rgba(255,255,255,.014) 0 2px, transparent 2px 9px);
+    background-attachment:fixed;
+    padding:26px 26px 70px;
+  }
+
+  /* ── Panneau principal ─────────────────────────────────────────────────── */
+  .wrap{
+    max-width:1320px;
+    padding:0 0 26px;
+    background:linear-gradient(180deg, rgba(14,14,26,.88), rgba(7,7,15,.94));
+    border:1px solid rgba(212,255,0,.10);
+    border-radius:26px;
+    box-shadow:0 40px 120px rgba(0,0,0,.75), 0 0 90px rgba(212,255,0,.05),
+               inset 0 0 0 1px rgba(255,255,255,.03);
+  }
+  .wrap::before{
+    content:''; display:block; height:3px;
+    background:linear-gradient(90deg, transparent, rgba(212,255,0,.75) 25%, rgba(0,229,200,.55) 75%, transparent);
+  }
+
+  /* ── En-tête ───────────────────────────────────────────────────────────── */
+  .admin-header{padding:30px 34px 0; text-align:center}
+  .admin-title{font-size:40px; letter-spacing:4px}
+  .login-wrap{min-height:calc(100vh - 150px)}
+
+  /* ── Navigation par onglets ────────────────────────────────────────────── */
+  .nav-tabs{justify-content:center; gap:10px; padding:0 34px; margin:20px 0 24px; flex-wrap:wrap}
+  .nav-tab{padding:11px 22px; font-size:14px; flex:0 0 auto}
+  .tab-content{padding:0 34px}
+
+  /* ── Admin multi-colonnes ──────────────────────────────────────────────── */
+  .tab-content.tab-on{display:grid !important; gap:20px; align-items:start}
+  .tab-content.tab-on > .card{margin-bottom:0}
+
+  /* Défis : liste à gauche, formulaire à droite */
+  #tab-defis.tab-on{grid-template-columns:minmax(340px,400px) minmax(0,1fr)}
+  #tab-defis.tab-on > #btn-game{grid-column:1 / -1; justify-self:center; max-width:420px; margin-top:2px}
+
+  #tab-classement.tab-on,
+  #tab-musique.tab-on,
+  #tab-equipes.tab-on{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #tab-musique.tab-on > .card:nth-child(3){grid-column:1 / -1}
+  #tab-equipes.tab-on > .card:first-child{grid-row:span 2}
+
+  /* IA : réglages à gauche, aide à droite */
+  #tab-ia.tab-on{grid-template-columns:minmax(0,1fr) minmax(320px,420px)}
+
+  /* ── Profondeur des cartes ─────────────────────────────────────────────── */
+  .card{
+    padding:22px;
+    background:linear-gradient(180deg, rgba(23,23,42,.90), rgba(15,15,28,.90));
+    border-color:rgba(255,255,255,.08);
+    box-shadow:0 18px 50px rgba(0,0,0,.45);
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .card:hover{border-color:rgba(212,255,0,.16); box-shadow:0 22px 60px rgba(0,0,0,.55)}
+  .ath-card,.ath-item{box-shadow:0 10px 26px rgba(0,0,0,.32)}
+
+  /* La liste des défis devient une colonne défilante */
+  #ath-list{max-height:calc(100vh - 350px); overflow-y:auto; padding-right:6px}
+
+  /* ── Barres de défilement ──────────────────────────────────────────────── */
+  *{scrollbar-width:thin; scrollbar-color:rgba(212,255,0,.22) transparent}
+  *::-webkit-scrollbar{width:10px; height:10px}
+  *::-webkit-scrollbar-track{background:rgba(255,255,255,.03)}
+  *::-webkit-scrollbar-thumb{background:rgba(212,255,0,.20); border-radius:99px}
+  *::-webkit-scrollbar-thumb:hover{background:rgba(212,255,0,.35)}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -178,6 +264,7 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     <button class="nav-tab" onclick="showAdminTab('comptes')">Comptes</button>
     <button class="nav-tab" onclick="showAdminTab('equipes')">Équipes</button>
     <button class="nav-tab" onclick="showAdminTab('idees')">💡 Idées</button>
+    <button class="nav-tab" onclick="showAdminTab('ia')">🤖 IA</button>
     <a class="nav-tab" href="formula-grid.html?edit=1" style="text-decoration:none;display:inline-block">🏁 Formula·Grid</a>
   </div>
 
@@ -1153,6 +1240,50 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
         </div>
       </div>
 
+      <!-- 🤖 GÉNÉRATION IA -->
+      <div id="ai-gen-panel" class="card" style="display:none;margin:16px 0 0;background:linear-gradient(180deg,rgba(212,255,0,.05),rgba(212,255,0,.01));border:1px solid rgba(212,255,0,.22)">
+        <div class="card-title" style="margin-bottom:10px">
+          <span>🤖 Générer avec l'IA</span>
+          <span id="ai-gen-model" style="font-size:10px;color:var(--mute);text-transform:none;letter-spacing:0"></span>
+        </div>
+
+        <div id="ai-gen-off" style="display:none;font-size:13px;color:var(--mute);line-height:1.6"></div>
+
+        <div id="ai-gen-on" style="display:none">
+          <div class="field">
+            <label>Thème / sujet des questions</label>
+            <input type="text" id="ai-gen-theme" placeholder="Ex: Les gardiens de but de l'équipe de France" autocomplete="off">
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="field" style="flex:0 0 100px">
+              <label>Nb questions</label>
+              <input type="number" id="ai-gen-count" min="1" max="20" value="8" style="text-align:center">
+            </div>
+            <div class="field" style="flex:1">
+              <label>Difficulté</label>
+              <select id="ai-gen-diff">
+                <option value="mixte">Mixte</option>
+                <option value="facile">Facile</option>
+                <option value="moyenne" selected>Moyenne</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Précisions (optionnel)</label>
+            <textarea id="ai-gen-extra" placeholder="Ex: uniquement les années 2000, pas de questions sur les clubs" style="min-height:60px"></textarea>
+          </div>
+          <div id="ai-gen-mode-label" style="font-size:11px;color:var(--mute);margin-bottom:8px"></div>
+          <button class="btn btn-p" id="ai-gen-btn" onclick="aiGenerate()">✨ Générer les questions</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-s" id="ai-gen-insert-btn" onclick="aiInsert()" disabled style="flex:1">📥 Insérer dans le formulaire</button>
+            <button class="btn btn-s" onclick="aiClearResults()" style="flex:0 0 56px;margin-bottom:0">🗑</button>
+          </div>
+          <div class="msg" id="ai-gen-status"></div>
+          <div id="ai-gen-preview" style="margin-top:10px;max-height:340px;overflow-y:auto;display:none;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
       <!-- Coefficient -->
       <div class="field" style="margin-top:12px">
         <label>⚖️ Coefficient score total</label>
@@ -1306,6 +1437,75 @@ textarea{resize:vertical;min-height:120px;line-height:1.6}
     </div>
   </div>
 
+  <!-- TAB: IA — NOUS PORTAL -->
+  <div id="tab-ia" class="tab-content" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        <span>🤖 Nous Portal — clé API</span>
+        <span id="ai-status-badge" style="font-size:10px;padding:3px 9px;border-radius:99px;background:var(--c2);color:var(--mute)">…</span>
+      </div>
+
+      <div class="field">
+        <label>Clé API Nous Portal</label>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="ai-key-in" placeholder="sk-…" autocomplete="off" style="flex:1">
+          <button class="btn btn-s" type="button" onclick="aiToggleKey()" id="ai-key-eye" style="width:48px;margin-bottom:0">👁</button>
+        </div>
+        <span class="hint">
+          Crée ta clé sur <a href="https://portal.nousresearch.com" target="_blank" rel="noopener" style="color:var(--cyan)">portal.nousresearch.com</a> → API Keys.
+          Elle est enregistrée <strong>côté serveur</strong> (MongoDB ou <code>ai-config.json</code>) et n'est jamais renvoyée au navigateur.
+        </span>
+      </div>
+
+      <div class="field">
+        <label>Modèle</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="ai-model-in" placeholder="google/gemini-2.5-flash" list="ai-model-list" autocomplete="off" style="flex:1">
+          <button class="btn btn-s" type="button" onclick="aiLoadModels()" id="ai-models-btn" style="width:48px;margin-bottom:0">🔄</button>
+        </div>
+        <datalist id="ai-model-list"></datalist>
+        <span class="hint" id="ai-models-hint">Clique sur 🔄 pour charger la liste des modèles disponibles avec ta clé.</span>
+      </div>
+
+      <div class="field">
+        <label>URL de base de l'API</label>
+        <input type="text" id="ai-base-in" placeholder="https://inference-api.nousresearch.com/v1" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Créativité (temperature)</label>
+        <input type="number" id="ai-temp-in" min="0" max="2" step="0.1" value="0.8">
+        <span class="hint">0.6 à 1.0 : varié mais sérieux. Monte au-delà de 1.2 seulement si les questions se répètent.</span>
+      </div>
+
+      <button class="btn btn-p" onclick="aiSaveConfig()" id="ai-save-btn">💾 Enregistrer la configuration</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s" onclick="aiTest()" id="ai-test-btn" style="flex:1">🔌 Tester la connexion</button>
+        <button class="btn btn-s btn-del" onclick="aiClearKey()" style="flex:1">🗑 Effacer la clé</button>
+      </div>
+      <div class="msg" id="ai-config-msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Comment ça marche</div>
+      <div style="font-size:13px;color:var(--mute);line-height:1.7">
+        Une fois la clé enregistrée, un panneau <strong style="color:var(--neon)">🤖 Générer avec l'IA</strong> apparaît dans l'onglet
+        <strong>Défis</strong>, juste au-dessus du bouton <em>Publier ce défi</em>.<br><br>
+        Choisis un thème (« Les gardiens de but français », « JO d'hiver », « Formule 1 années 90 »…), un nombre de questions
+        et une difficulté : les questions sont générées au format exact du défi en cours, tu les vérifies puis tu les insères
+        dans le formulaire avant de publier.
+      </div>
+      <div style="font-size:12px;color:var(--orange);line-height:1.6;margin-top:10px;background:rgba(255,140,0,.08);border-radius:10px;padding:10px 12px">
+        ⚠️ Relis toujours les questions générées : une IA peut se tromper sur une date, un score ou un palmarès.
+      </div>
+      <div style="font-size:12px;color:var(--mute);line-height:1.6;margin-top:10px">
+        Défi disponible côté serveur ? Les types gérés par l'IA : Blackjack non, mais <strong>Badminton, Trappe, RVLF, Maillon Faible,
+        Haltéro, Bowling, Juste Prix, Texte, Image, Roulette, APOL, Trivial Pursuit, The Chase, Réplique, Buzz, Sportus, Scout,
+        Escalade, Méli-Mélo et Démineur</strong>.
+      </div>
+    </div>
+  </div>
+
 </div>
 <script>
 
@@ -1449,22 +1649,27 @@ function selectType(type){
   const hideAnswer = type==='prix'||type==='trappe'||type==='demineur'||type==='chase'||type==='replique'||type==='blackjack'||type==='grimpe'||type==='biathlon'||type==='maillonfaible'||type==='haltero'||type==='tirarlarc'||type==='nagesync'||type==='assaut'||type==='var'||type==='rvlf'||type==='plongee'||type==='escalade'||type==='saut'||type==='roulette'||type==='bowling'||type==='equitation'||type==='badminton'||type==='melimelo'||type==='apol'||type==='trivpursuit';
   document.getElementById('field-answer').style.display  = hideAnswer ? 'none' : 'block';
   document.getElementById('field-aliases').style.display = hideAnswer ? 'none' : 'block';
+  if(typeof updateAiPanel==='function') updateAiPanel();
   checkReady();
 }
 
 // Admin tab nav
-function showAdminTab(tab){
+function showAdminTab(tab, el){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  event.target.classList.add('active');
-  ['defis','classement','musique','comptes','equipes','idees'].forEach(t=>{
+  const target = el
+    || (typeof event!=='undefined' && event && event.target)
+    || Array.from(document.querySelectorAll('.nav-tab')).find(b=>(b.getAttribute('onclick')||'').includes("'"+tab+"'"));
+  if(target && target.classList) target.classList.add('active');
+  ['defis','classement','musique','comptes','equipes','idees','ia'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
-    if(el)el.style.display=tab===t?'block':'none';
+    if(el){ el.style.display=tab===t?'block':'none'; el.classList.toggle('tab-on',tab===t); }
   });
   if(tab==='classement') loadAdminScores();
   if(tab==='musique'){loadMusicConfig();loadPopupConfig();}
   if(tab==='comptes') loadComptes();
   if(tab==='equipes') loadEquipes();
   if(tab==='idees') loadIdees();
+  if(tab==='ia') loadAiConfig();
 }
 
 async function loadMusicConfig(){
@@ -1510,7 +1715,7 @@ async function login(){
   const pw=document.getElementById('pw-in').value.trim();if(!pw)return;
   const res=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
   const data=await res.json();
-  if(data.success){adminPw=pw;document.getElementById('login-screen').classList.remove('on');document.getElementById('admin-screen').classList.add('on');loadAthletes()}
+  if(data.success){adminPw=pw;document.getElementById('login-screen').classList.remove('on');document.getElementById('admin-screen').classList.add('on');loadAthletes();loadAiConfig()}
   else showMsg('login-msg','err','❌ '+data.message);
 }
 
@@ -4377,6 +4582,539 @@ document.getElementById('btn-reset-global').onclick=async()=>{
   const res=await fetch('/api/admin/reset-global',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
   if((await res.json()).success)showMsg('save-msg','ok','✅ Classement global remis à zéro');
 };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   🤖 IA — NOUS PORTAL  (clé API + génération de questions)
+   ══════════════════════════════════════════════════════════════════════════ */
+let aiCfg         = { configured:false, source:'none', keyPreview:'', model:'', baseUrl:'', temperature:0.8, modes:{} };
+let aiResults     = [];     // questions renvoyées par l'IA (format canonique)
+let aiResultsType = null;   // type de défi au moment de la génération
+let aiBusy        = false;
+let aiPanelType   = null;   // dernier type de défi affiché dans le panneau
+
+// Type de défi → mode de génération côté serveur
+const AI_TYPE_MODES = {
+  badminton:'qcm3', trappe:'qcm3', rvlf:'qcm3',
+  maillonfaible:'vraifaux',
+  haltero:'qcm4',
+  bowling:'numero', prix:'numero',
+  text:'court', apol:'court', trivpursuit:'court', image:'court',
+  demineur:'mines',
+  chase:'liste',
+  replique:'citation',
+  buzz:'indices', sportus:'indices', scout:'indices', roulette:'indices',
+  escalade:'escalade',
+  melimelo:'anagramme',
+  var:'paragraphe'
+};
+
+// Types dont le nombre d'éléments est imposé par les règles du jeu
+const AI_TYPE_FIXED = {
+  prix:1, text:1, image:1, roulette:1, replique:1, buzz:1, sportus:1, scout:1,
+  var:1, chase:1, demineur:1,
+  trivpursuit:12, escalade:8, rvlf:10, bowling:12
+};
+const AI_TYPE_DEFAULT_COUNT = {
+  badminton:10, trappe:5, maillonfaible:10, haltero:5, apol:5, melimelo:5
+};
+
+function aiEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function aiSetVal(id,v){ const el=document.getElementById(id); if(el) el.value=(v==null?'':String(v)); }
+function aiMsg(id,type,text){ const el=document.getElementById(id); if(!el)return; el.className='msg '+type; el.textContent=text; }
+function aiNorm(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+// Mélange la bonne réponse parmi les leurres
+function aiShuffleOpts(answer,wrong){
+  const opts=[answer].concat(wrong||[]);
+  for(let i=opts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=opts[i];opts[i]=opts[j];opts[j]=t; }
+  return { opts, correct: opts.indexOf(answer) };
+}
+// Retrouve le ou les segments (chips) du VAR qui composent le texte fautif
+function aiFindChipRun(segment){
+  const target=aiNorm(segment);
+  if(!target||typeof varChips==='undefined'||!varChips.length) return null;
+  for(let i=0;i<varChips.length;i++) if(aiNorm(varChips[i].text)===target) return {start:i,len:1};
+  for(let i=0;i<varChips.length;i++){
+    let acc='';
+    for(let j=i;j<varChips.length;++j){
+      acc = acc ? acc+' '+varChips[j].text : varChips[j].text;
+      const n=aiNorm(acc);
+      if(n===target) return {start:i,len:j-i+1};
+      if(n.length>target.length+3) break;
+    }
+  }
+  for(let i=0;i<varChips.length;i++){
+    const n=aiNorm(varChips[i].text);
+    if(n && (n.includes(target)||target.includes(n))) return {start:i,len:1};
+  }
+  return null;
+}
+
+/* ── Onglet 🤖 IA ───────────────────────────────────────────────────────── */
+function aiRenderBadge(){
+  const b=document.getElementById('ai-status-badge'); if(!b)return;
+  if(aiCfg.configured){
+    b.textContent = aiCfg.source==='env' ? '✅ clé via variable d\'environnement' : ('✅ connecté · '+(aiCfg.keyPreview||'clé enregistrée'));
+    b.style.background='rgba(0,200,122,.15)'; b.style.color='var(--green)';
+  } else {
+    b.textContent='⚠️ aucune clé enregistrée';
+    b.style.background='rgba(255,140,0,.15)'; b.style.color='var(--orange)';
+  }
+}
+
+async function loadAiConfig(){
+  try{
+    const r=await fetch('/api/admin/ai-config?password='+encodeURIComponent(adminPw));
+    if(!r.ok) return;
+    aiCfg=await r.json();
+
+    const ki=document.getElementById('ai-key-in');
+    if(ki){
+      ki.value='';
+      ki.placeholder = aiCfg.configured
+        ? ('clé enregistrée '+(aiCfg.keyPreview||'')+' — colle une nouvelle clé pour la remplacer')
+        : 'sk-…';
+    }
+    aiSetVal('ai-model-in', aiCfg.model||'');
+    aiSetVal('ai-base-in', aiCfg.baseUrl||'');
+    aiSetVal('ai-temp-in', aiCfg.temperature!=null?aiCfg.temperature:0.8);
+
+    const dl=document.getElementById('ai-model-list');
+    if(dl && !dl.children.length && aiCfg.fallbackModels){
+      aiCfg.fallbackModels.forEach(m=>{ const o=document.createElement('option'); o.value=m; dl.appendChild(o); });
+    }
+    const mh=document.getElementById('ai-models-hint');
+    if(mh) mh.textContent = aiCfg.configured
+      ? 'Clique sur 🔄 pour récupérer la liste exacte des modèles disponibles avec ta clé.'
+      : 'Enregistre d\'abord ta clé pour charger la liste des modèles.';
+
+    aiRenderBadge();
+    updateAiPanel();
+  }catch(e){ console.warn('loadAiConfig:',e.message); }
+}
+
+function aiToggleKey(){
+  const i=document.getElementById('ai-key-in'); if(!i)return;
+  i.type = i.type==='password' ? 'text' : 'password';
+  const b=document.getElementById('ai-key-eye'); if(b) b.textContent = i.type==='password'?'👁':'🙈';
+}
+
+async function aiSaveConfig(){
+  const btn=document.getElementById('ai-save-btn'); if(btn)btn.disabled=true;
+  try{
+    const body={
+      password : adminPw,
+      model    : document.getElementById('ai-model-in').value.trim(),
+      baseUrl  : document.getElementById('ai-base-in').value.trim(),
+      temperature: parseFloat(document.getElementById('ai-temp-in').value)
+    };
+    const k=document.getElementById('ai-key-in').value.trim();
+    if(k) body.apiKey=k;
+    const r=await fetch('/api/admin/ai-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    await loadAiConfig();
+    aiMsg('ai-config-msg','ok','✅ Configuration enregistrée'+(d.configured?' — clé active '+(d.keyPreview||''):' — aucune clé active'));
+  }catch(e){ aiMsg('ai-config-msg','err','❌ '+e.message); }
+  finally{ if(btn)btn.disabled=false; }
+}
+
+async function aiClearKey(){
+  if(!confirm('Effacer la clé API Nous Portal enregistrée sur le serveur ?')) return;
+  try{
+    const r=await fetch('/api/admin/ai-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw,clearKey:true})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+    await loadAiConfig();
+    aiMsg('ai-config-msg','ok','🗑 Clé effacée'+(aiCfg.source==='env'?' (une clé via variable d\'environnement reste active)':''));
+  }catch(e){ aiMsg('ai-config-msg','err','❌ '+e.message); }
+}
+
+async function aiTest(){
+  const btn=document.getElementById('ai-test-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Test en cours…';}
+  aiMsg('ai-config-msg','ok','⏳ Appel du modèle…');
+  try{
+    const r=await fetch('/api/admin/ai-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminPw})});
+    const d=await r.json();
+    if(d.ok) aiMsg('ai-config-msg','ok','✅ Connexion réussie — '+(d.model||'?')+' en '+(d.latencyMs||0)+' ms · réponse : '+(d.reply||''));
+    else     aiMsg('ai-config-msg','err','❌ '+(d.error||'Échec du test'));
+  }catch(e){ aiMsg('ai-config-msg','err','❌ '+e.message); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='🔌 Tester la connexion';} }
+}
+
+async function aiLoadModels(){
+  const btn=document.getElementById('ai-models-btn'), hint=document.getElementById('ai-models-hint');
+  if(btn)btn.disabled=true;
+  if(hint)hint.textContent='⏳ Chargement de la liste…';
+  try{
+    const r=await fetch('/api/admin/ai-models?password='+encodeURIComponent(adminPw));
+    const d=await r.json();
+    const dl=document.getElementById('ai-model-list'); if(dl)dl.innerHTML='';
+    (d.models||[]).forEach(m=>{ const o=document.createElement('option'); o.value=m; dl.appendChild(o); });
+    if(hint) hint.textContent = d.success
+      ? ('✅ '+(d.models||[]).length+' modèle(s) disponible(s) — clique dans le champ « Modèle » pour choisir.')
+      : ('⚠️ '+(d.error||'Liste indisponible')+' — liste par défaut affichée.');
+  }catch(e){ if(hint)hint.textContent='❌ '+e.message; }
+  finally{ if(btn)btn.disabled=false; }
+}
+
+/* ── Panneau de génération dans l'éditeur de défi ───────────────────────── */
+function updateAiPanel(){
+  const panel=document.getElementById('ai-gen-panel'); if(!panel) return;
+  const on=document.getElementById('ai-gen-on'), off=document.getElementById('ai-gen-off');
+  panel.style.display='block';
+
+  const type=currentType, mode=AI_TYPE_MODES[type];
+
+  if(!aiCfg.configured){
+    on.style.display='none'; off.style.display='block';
+    off.innerHTML='🔑 Aucune clé API Nous Portal enregistrée. <a href="#" onclick="showAdminTab(\'ia\');return false" style="color:var(--neon)">Ouvre l\'onglet 🤖 IA pour connecter ton compte</a>, puis reviens ici pour générer les questions.';
+    return;
+  }
+  if(!mode){
+    on.style.display='none'; off.style.display='block';
+    off.innerHTML='🤖 Ce type de défi n\'est pas encore géré par la génération automatique — les questions se saisissent à la main.';
+    return;
+  }
+  off.style.display='none'; on.style.display='block';
+
+  const spec=(aiCfg.modes||{})[mode]||{};
+  const max=spec.max||12;
+  const cnt=document.getElementById('ai-gen-count');
+  // Le nombre de questions est réajusté à chaque changement de type de défi
+  if(aiPanelType!==type){
+    aiPanelType=type;
+    cnt.value = AI_TYPE_FIXED[type] || Math.min(AI_TYPE_DEFAULT_COUNT[type]||8, max);
+  }
+  cnt.disabled=!!AI_TYPE_FIXED[type];
+  cnt.max=max;
+  const lbl=document.getElementById('ai-gen-mode-label');
+  if(lbl){
+    let info='Format : '+(spec.label||mode)+' · modèle '+(aiCfg.model||'—');
+    if(AI_TYPE_FIXED[type]) info+=' · nombre imposé par le jeu : '+AI_TYPE_FIXED[type];
+    if(type==='image') info+=" · pense à fournir l'image (URL ou fichier)";
+    if(type==='haltero') info+=" · la 5e question remplit le Jeté ; l'Arraché (2 sportifs) reste à saisir";
+    if(type==='var') info+=" · vérifie que le segment souligné est bien l'erreur";
+    lbl.textContent=info;
+  }
+  const mb=document.getElementById('ai-gen-model');
+  if(mb) mb.textContent=(aiCfg.model||'')+(aiCfg.source==='env'?' (env)':'');
+
+  if(aiResultsType!==type){ aiResults=[]; aiResultsType=null; }
+  aiRenderPreview();
+}
+
+function aiClearResults(){
+  aiResults=[]; aiResultsType=null;
+  aiMsg('ai-gen-status','ok','🗑 Aperçu vidé');
+  aiRenderPreview();
+}
+
+function aiRenderPreview(){
+  const box=document.getElementById('ai-gen-preview');
+  const btn=document.getElementById('ai-gen-insert-btn');
+  if(!box)return;
+  box.innerHTML='';
+  if(!aiResults.length){
+    box.style.display='none';
+    if(btn) btn.disabled=true;
+    return;
+  }
+  aiResults.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--c1);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 12px';
+    let html='<div style="font-size:10px;color:var(--mute);letter-spacing:1px;margin-bottom:4px">'+(i+1)+' · '+aiEsc(q.theme||'')+'</div>';
+    if(q.question) html+='<div style="font-size:13px;font-weight:700;line-height:1.4">'+aiEsc(q.question)+'</div>';
+    if(q.text)     html+='<div style="font-size:12px;color:#c8c8e0;line-height:1.5">'+aiEsc(q.text)+'</div>';
+    if(q.consigne) html+='<div style="font-size:12px;color:#c8c8e0;line-height:1.5">'+aiEsc(q.consigne)+'</div>';
+    if(q.quote)    html+='<div style="font-size:12px;font-style:italic;color:#c8c8e0;line-height:1.5">« '+aiEsc(q.quote)+' »</div>';
+    if(q.answer!=null && q.answer!=='')
+      html+='<div style="font-size:12px;color:var(--neon);margin-top:4px">✅ '+aiEsc(q.answer)+(q.unit?(' '+aiEsc(q.unit)):'')+'</div>';
+    if(q.wrong && q.wrong.length)
+      html+='<div style="font-size:11px;color:var(--red);margin-top:2px">❌ '+q.wrong.map(aiEsc).join(' · ')+'</div>';
+    if(q.wrongAuthor) html+='<div style="font-size:11px;color:var(--red);margin-top:2px">❌ auteur : '+aiEsc(q.wrongAuthor)+'</div>';
+    if(q.clues && q.clues.length)
+      html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">💡 '+q.clues.map(aiEsc).join(' · ')+'</div>';
+    if(q.answers && q.answers.length)
+      html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">📋 '+aiEsc(q.answers.slice(0,25).join(' · '))+'</div>';
+    if(q.items && q.items.length)
+      html+='<div style="font-size:11px;margin-top:3px">'+q.items.map(it=>'<span style="color:'+(it.correct?'var(--neon)':'var(--red)')+'">'+aiEsc(it.text)+(it.correct?'':' 💣')+'</span>').join(' · ')+'</div>';
+    if(q.facile)   html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">🟢 '+aiEsc(q.facile.question)+' → '+aiEsc(q.facile.answer)+'</div>';
+    if(q.difficile && q.difficile.question) html+='<div style="font-size:11px;color:var(--orange);margin-top:2px">🔴 '+aiEsc(q.difficile.question)+' → '+aiEsc(q.difficile.answer)+'</div>';
+    if(q.hint)     html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">💡 '+aiEsc(q.hint)+'</div>';
+    if(q.correct)  html+='<div style="font-size:11px;color:var(--cyan);margin-top:3px">✏️ '+aiEsc(q.correct)+'</div>';
+    d.innerHTML=html;
+    box.appendChild(d);
+  });
+  box.style.display='flex';
+  if(btn) btn.disabled=false;
+}
+
+function aiCollectExisting(type){
+  try{
+    if(type==='badminton')     return badmintonQuestions.map(q=>q.question);
+    if(type==='trappe')        return trappeQuestions.map(q=>q.question);
+    if(type==='rvlf')          return rvlfQuestions.map(q=>q.q);
+    if(type==='maillonfaible') return mfQuestions.map(q=>q.question);
+    if(type==='haltero')       return hejQuestions.map(q=>q.question);
+    if(type==='bowling')       return bowlingQuestions.map(q=>q.question);
+    if(type==='apol')          return apolQuestions.map(q=>q.question);
+    if(type==='melimelo')      return meliWords.map(w=>w.answer);
+    if(type==='escalade')      return escaladeQuestions.map(q=>q.qFacile);
+    if(type==='text')          return [document.getElementById('clue-in').value.trim()];
+    if(type==='prix')          return [document.getElementById('prix-question-in').value.trim()];
+  }catch(e){}
+  return [];
+}
+
+async function aiGenerate(){
+  if(aiBusy) return;
+  const type=currentType, mode=AI_TYPE_MODES[type];
+  if(!mode){ aiMsg('ai-gen-status','err','❌ Ce type de défi n\'est pas géré par l\'IA.'); return; }
+  const theme=document.getElementById('ai-gen-theme').value.trim();
+  if(!theme){
+    aiMsg('ai-gen-status','err','❌ Indique un thème (ex: « Les gardiens de but français »).');
+    document.getElementById('ai-gen-theme').focus();
+    return;
+  }
+  const spec=(aiCfg.modes||{})[mode]||{};
+  let count = AI_TYPE_FIXED[type] || (parseInt(document.getElementById('ai-gen-count').value,10)||8);
+  if(spec.max) count=Math.min(count,spec.max);
+  count=Math.max(1,count);
+
+  aiBusy=true;
+  const btn=document.getElementById('ai-gen-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Le modèle rédige…';}
+  aiMsg('ai-gen-status','ok','⏳ Génération de '+count+' question(s) sur « '+theme+' » — 10 à 40 s…');
+  try{
+    const r=await fetch('/api/admin/ai-generate',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        password:adminPw, mode, theme, count,
+        difficulty:document.getElementById('ai-gen-diff').value,
+        extra:document.getElementById('ai-gen-extra').value.trim(),
+        avoid:aiCollectExisting(type)
+      })
+    });
+    const d=await r.json();
+    if(!d.ok || !d.questions || !d.questions.length) throw new Error(d.error||'Génération impossible');
+    aiResults=d.questions; aiResultsType=type;
+    aiRenderPreview();
+    aiMsg('ai-gen-status','ok','✅ '+d.questions.length+' question(s) générée(s) en '+Math.round((d.latencyMs||0)/1000)+' s — relis-les, corrige si besoin, puis « Insérer ».');
+  }catch(e){
+    aiMsg('ai-gen-status','err','❌ '+e.message);
+  }finally{
+    aiBusy=false;
+    if(btn){btn.disabled=false;btn.textContent='✨ Générer les questions';}
+  }
+}
+
+function aiInsert(){
+  if(!aiResults.length){ aiMsg('ai-gen-status','err','❌ Rien à insérer.'); return; }
+  const fn=AI_APPLIERS[currentType];
+  if(!fn){ aiMsg('ai-gen-status','err','❌ Ce type de défi n\'est pas géré.'); return; }
+  try{
+    const r=fn(aiResults);
+    if(r===false){ aiMsg('ai-gen-status','err','❌ Questions incomplètes pour ce défi — relance une génération.'); return; }
+    if(typeof checkReady==='function') checkReady();
+    aiMsg('ai-gen-status','ok','✅ '+aiResults.length+' élément(s) inséré(s) dans le formulaire — vérifie la mise en forme puis publie le défi.');
+  }catch(e){
+    aiMsg('ai-gen-status','err','❌ Erreur pendant l\'insertion : '+e.message);
+  }
+}
+
+/* ── Insertion des questions générées, type par type ─────────────────────── */
+const AI_APPLIERS = {
+  badminton(qs){
+    badmintonQuestions = qs.slice(0,10).map(q=>{
+      const s=aiShuffleOpts(q.answer,(q.wrong||[]).slice(0,2));
+      while(s.opts.length<3) s.opts.push('—');
+      return {question:q.question,theme:q.theme||'',a:s.opts[0],b:s.opts[1],c:s.opts[2],correct:s.correct};
+    });
+    window.badmintonQuestions=badmintonQuestions;
+    badAdminRender();
+  },
+  trappe(qs){
+    trappeQuestions = qs.map(q=>{
+      const s=aiShuffleOpts(q.answer,(q.wrong||[]).slice(0,2));
+      while(s.opts.length<3) s.opts.push('—');
+      return {question:q.question,answers:s.opts,correct:s.correct};
+    });
+    renderTrappeQuestions();
+  },
+  rvlf(qs){
+    rvlfQuestions = qs.slice(0,10).map(q=>({q:q.question,a:q.answer,w:(q.wrong||[])[0]||''}));
+    renderRvlfQuestions();
+  },
+  maillonfaible(qs){
+    mfQuestions = qs.slice(0,10).map(q=>({question:q.question,answer:q.answer==='Vrai'?'Vrai':'Faux',wrong:[]}));
+    renderMFQuestions();
+  },
+  haltero(qs){
+    const epaule=qs.slice(0,4);
+    hejQuestions = epaule.map(q=>({
+      question:q.question,
+      answer:q.answer,
+      wrong:(q.wrong||[]).slice(0,3).concat(['','','']).slice(0,3)
+    }));
+    renderHEJQuestions();
+    // La 5e question sert de "Jeté" (question finale) si elle existe
+    const jete=qs[4];
+    if(jete){
+      aiSetVal('hej-jete-q',jete.question);
+      aiSetVal('hej-jete-a',jete.answer);
+      aiSetVal('hej-jete-w1',(jete.wrong||[])[0]||'');
+      aiSetVal('hej-jete-w2',(jete.wrong||[])[1]||'');
+      aiSetVal('hej-jete-w3',(jete.wrong||[])[2]||'');
+    }
+    const theme=qs[0]&&qs[0].theme;
+    const themeIn=document.getElementById('hej-theme');
+    if(themeIn && !themeIn.value.trim() && theme) themeIn.value=theme;
+  },
+  bowling(qs){
+    bowlingQuestions = qs.slice(0,12).map(q=>({question:q.question,answer:Number(q.answer)||0}));
+    bowlingAdminRender();
+  },
+  prix(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('prix-question-in',q.question);
+    aiSetVal('prix-target-in',q.answer);
+    aiSetVal('prix-unit-in',q.unit||'');
+  },
+  text(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('clue-in',q.question);
+    aiSetVal('answer-in',q.answer);
+    if(q.aliases && q.aliases.length) aiSetVal('aliases-in',q.aliases.join(', '));
+    updateAliases(); updateWC();
+  },
+  image(qs){
+    const q=qs[0]; if(!q) return false;
+    imageQuestion=q.question; imageAnswer=q.answer;
+    aiSetVal('img-question-in',q.question);
+    aiSetVal('answer-in',q.answer);
+    updateAliases();
+  },
+  roulette(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('roulette-answer',q.answer);
+    aiSetVal('roulette-text',(q.clues||[]).join(' '));
+    aiSetVal('roulette-hint',(q.clues||[])[0]||'');
+    if(typeof roulettePreview==='function') roulettePreview();
+  },
+  apol(qs){
+    apolQuestions = qs.slice(0,5).map(q=>({question:q.question,theme:q.theme||'',answer:q.answer,tol:1}));
+    window.apolQuestions=apolQuestions;
+    apolAdminRender();
+  },
+  trivpursuit(qs){
+    const all=qs.slice(0,12);
+    trivThemes = all.slice(0,6).map((q,i)=>({
+      name:q.theme||('Thème '+(i+1)), color:TRIV_COLORS[i]||'#888',
+      question:q.question, answer:q.answer, tol:1
+    }));
+    while(trivThemes.length<6) trivThemes.push({name:'',color:TRIV_COLORS[trivThemes.length]||'#888',question:'',answer:'',tol:1});
+    trivQuestions = all.slice(6,12).map((q,i)=>({question:q.question,answer:q.answer,tol:1,sectionIdx:i}));
+    while(trivQuestions.length<6) trivQuestions.push({question:'',answer:'',tol:1,sectionIdx:trivQuestions.length});
+    window.trivQuestions=trivQuestions;
+    trivAdminRender();
+  },
+  chase(qs){
+    const q=qs[0]; if(!q || !q.answers || !q.answers.length) return false;
+    aiSetVal('chase-theme-in',q.theme||q.question||'');
+    aiSetVal('chase-answers-in',q.answers.join('\n'));
+    const el=document.getElementById('chase-answers-in');
+    if(el) el.dispatchEvent(new Event('input',{bubbles:true}));
+  },
+  replique(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('rq-citation-in',q.quote);
+    aiSetVal('rq-amorce-in',q.amorce);
+    aiSetVal('rq-answer-in',q.answer);
+    const choices=aiShuffleOpts(q.answer,(q.wrong||[]).slice(0,3)).opts;
+    aiSetVal('rq-choices-in',choices.join(';'));
+    aiSetVal('rq-author-in',q.author||'');
+    aiSetVal('rq-author-choices-in',q.wrongAuthor||'');
+  },
+  buzz(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('answer-in',q.answer);
+    buzzClues=(q.clues||[]).slice();
+    renderBuzzClues(); updateAliases();
+  },
+  sportus(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('answer-in',q.answer);
+    const c=q.clues||[];
+    aiSetVal('sportus-hint0-in',c[0]||'');
+    aiSetVal('sportus-hint1-in',c[1]||'');
+    aiSetVal('sportus-hint2-in',c[2]||'');
+    updateAliases();
+  },
+  scout(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('answer-in',q.answer);
+    const c=q.clues||[];
+    [0,1,2,3].forEach(i=>aiSetVal('scout-'+i+'-in',c[i]||''));
+    updateAliases();
+  },
+  melimelo(qs){
+    meliWords = qs.slice(0,5).map(q=>{
+      const ans=String(q.answer||'').toUpperCase();
+      return {answer:ans,scrambled:meliScramble(ans),indice:q.hint||''};
+    });
+    window.meliWords=meliWords;
+    meliAdminRender();
+  },
+  escalade(qs){
+    escaladeQuestions = qs.slice(0,8).map(q=>({
+      qFacile:q.facile.question, aFacile:q.facile.answer,
+      qDifficile:(q.difficile&&q.difficile.question)||'',
+      aDifficile:(q.difficile&&q.difficile.answer)||'',
+      asDifficileList:'', nbRequired:1
+    }));
+    renderEscaladeQuestions();
+  },
+  demineur(qs){
+    const q=qs[0]; if(!q || !q.items || !q.items.length) return false;
+    let items=q.items.slice(0,12).map(x=>({text:x.text,isMine:!x.correct}));
+    let mines=items.filter(i=>i.isMine).length;
+    if(mines<2){ for(let i=items.length-1;i>=0 && mines<2;i--){ if(!items[i].isMine){items[i].isMine=true;mines++;} } }
+    else if(mines>2){ let extra=mines-2; for(let i=0;i<items.length && extra>0;i++){ if(items[i].isMine){items[i].isMine=false;extra--;} } }
+    demItems=items;
+    aiSetVal('dem-question-in',q.consigne||'');
+    renderDemItems();
+  },
+  var(qs){
+    const q=qs[0]; if(!q) return false;
+    aiSetVal('var-text-in',q.text);
+    varGenerateChips();
+    const run=aiFindChipRun(q.wrong);
+    if(run){
+      for(let k=0;k<run.len-1;k++){ varChipClick(run.start); varChipClick(run.start+1); }
+      varChipClick(run.start); varChipClick(run.start);
+    }
+    aiSetVal('var-correct-in',q.correct);
+  }
+};
+
+// Le panneau doit refléter le défi en cours dès le chargement de la page
+setTimeout(()=>{
+  try{ updateAiPanel(); }catch(e){}
+  try{ initTabHooks(); }catch(e){}
+}, 0);
+
+// Pose la classe .tab-on sur l'onglet déjà visible au chargement.
+// Cette classe ne sert qu'aux règles @media desktop de la coquille :
+// en dessous de 1024px elle n'a aucun effet.
+function initTabHooks(){
+  ['defis','classement','musique','comptes','equipes','idees','ia'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el && getComputedStyle(el).display!=='none') el.classList.add('tab-on');
+  });
+}
 </script>
 </body>
 </html>

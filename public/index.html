@@ -583,6 +583,67 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
 .saut-pastille{width:12px;height:12px;border-radius:50%;background:#334155;transition:all .25s}
 .saut-pastille.fail{background:var(--red)}
 </style>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   🖥  COQUILLE DESKTOP — JEU  (bloc additif, isolé)
+   Tout est enfermé dans @media (min-width:1024px) + souris précise.
+   Aucune largeur ni position interne n'est modifiée : le mobile — et donc
+   chaque mini-jeu — garde exactement la mise en page actuelle.
+   On ne fait qu'éclairer la scène et poser un podium autour de l'écran.
+   Pour tout annuler : supprimer ce bloc CSS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+
+  /* ── Scène : projecteurs, halo de sol, vignette ────────────────────────── */
+  body{
+    background-color:#04040a;
+    background-image:
+      radial-gradient(ellipse 46% 34% at 50% -6%,  rgba(212,255,0,.16) 0%, transparent 68%),
+      radial-gradient(ellipse 30% 26% at 12% 12%,  rgba(0,229,200,.10) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 26% at 88% 12%,  rgba(212,255,0,.08) 0%, transparent 70%),
+      radial-gradient(ellipse 70% 26% at 50% 104%, rgba(0,229,200,.10) 0%, transparent 72%),
+      radial-gradient(ellipse 90% 60% at 50% 45%,  rgba(26,26,56,.55)  0%, transparent 74%),
+      repeating-linear-gradient(115deg, rgba(255,255,255,.013) 0 2px, transparent 2px 9px);
+    background-attachment:fixed;
+    padding:22px 22px 46px;
+  }
+
+  /* ── Podium : l'écran de jeu devient un panneau éclairé ────────────────── */
+  .scr,
+  #sp,#sg,#sl,#sv,#sd,#si{
+    min-height:calc(100vh - 68px);
+    padding:34px 30px 52px;
+    background:linear-gradient(180deg, rgba(14,14,26,.78), rgba(7,7,15,.90));
+    border:1px solid rgba(212,255,0,.10);
+    border-top:2px solid rgba(212,255,0,.42);
+    border-radius:30px;
+    box-shadow:0 44px 120px rgba(0,0,0,.72), 0 0 80px rgba(212,255,0,.05),
+               inset 0 0 0 1px rgba(255,255,255,.025);
+  }
+
+  /* ── Profondeur des cartes de jeu ──────────────────────────────────────── */
+  .card{
+    background:linear-gradient(180deg, rgba(24,24,44,.94), rgba(14,14,26,.94));
+    border-color:rgba(255,255,255,.085);
+    box-shadow:0 22px 60px rgba(0,0,0,.48);
+  }
+  .tile{box-shadow:inset 0 0 24px rgba(0,0,0,.5)}
+
+  /* ── Confort souris ────────────────────────────────────────────────────── */
+  .btn{transition:transform .12s, box-shadow .12s, filter .12s}
+  .btn:hover{filter:brightness(1.07)}
+  .btn:active{transform:translateY(1px)}
+  .btn-p:hover{box-shadow:0 0 30px rgba(212,255,0,.42)}
+  .gt-item:hover{border-color:rgba(212,255,0,.45)}
+
+  /* ── Barres de défilement ──────────────────────────────────────────────── */
+  *{scrollbar-width:thin; scrollbar-color:rgba(212,255,0,.22) transparent}
+  *::-webkit-scrollbar{width:10px; height:10px}
+  *::-webkit-scrollbar-track{background:rgba(255,255,255,.03)}
+  *::-webkit-scrollbar-thumb{background:rgba(212,255,0,.20); border-radius:99px}
+  *::-webkit-scrollbar-thumb:hover{background:rgba(212,255,0,.35)}
+}
+</style>
 </head>
 <body>
 <div id="cft"></div>
