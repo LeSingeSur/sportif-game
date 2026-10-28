@@ -14,7 +14,7 @@
   #hud { position: fixed; top: 0; left: 0; right: 0; height: 50px; z-index: 10; display: flex; align-items: center; gap: 6px;
     padding: 0 10px; background: linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.8)); backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(255,255,255,.08); font-weight: 800; font-size: 12px; }
-  #hud .pill { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 99px; padding: 6px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud .pill { min-width: 0; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 99px; padding: 6px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #hud .time { color: #facc15; font-variant-numeric: tabular-nums; min-width: 62px; text-align: center; flex-shrink: 0; }
   #hud .sp { flex: 1; }
   #hud a { color: #94a3b8; text-decoration: none; font-size: 20px; padding: 0 4px; }
@@ -63,6 +63,7 @@
   <span class="pill time" id="h-time">0.0 s</span>
   <span class="sp"></span>
   <button class="btn small ghost" id="b-hint">💡 +15 s</button>
+  <button class="btn small ghost" id="b-solve" title="Abandonner la ville et voir Harry">🏳️ Solution</button>
 </div>
 
 <div id="zoom">
@@ -120,20 +121,20 @@
 
 // ══ RÉGLAGES — modifiables facilement ══════════════════════════════════════
 // theme   : décor (voir THEMES) · n : nombre de Ryan · cols×rows : pâtés de maisons
-// umbrellas : part des Ryan sous un parapluie · par : temps (s) en dessous duquel on a 100 pts · limit : temps où l'on tombe au plancher
+// umbrellas : part des Ryan sous un parapluie · par : temps (s) en dessous duquel on a 100 pts, ensuite on perd LOSS_PER_SEC pt par seconde
 const LEVELS = [
-  { theme: 'sunset', name: 'Sunset Boulevard', n: 110, cols: 3, rows: 2, umbrellas: 0,  par: 20, limit: 150,
+  { theme: 'sunset', name: 'Sunset Boulevard', n: 110, cols: 3, rows: 2, umbrellas: 0,  par: 20,
     intro: 'Los Angeles, fin d\'après-midi. Harry est venu visiter Hollywood… et s\'est retrouvé au milieu du fan-club de Ryan.',
     tips: ['Même veste crème, même pantalon foncé : regarde les jambes et les cheveux.', 'Pince pour zoomer, glisse pour te déplacer. Tant que c\'est trop petit, un tap zoome.'] },
-  { theme: 'london', name: 'London Rain', n: 200, cols: 4, rows: 3, umbrellas: .45, par: 30, limit: 210,
+  { theme: 'london', name: 'London Rain', n: 200, cols: 4, rows: 3, umbrellas: .45, par: 30,
     intro: 'Retour à Londres sous une pluie battante. Les parapluies cachent les coiffures et les bus à étage cachent les trottoirs.',
     tips: ['Harry est sous un parapluie : cherche les chaussettes et les genoux.', 'Les bus rouges passent devant la foule.'] },
-  { theme: 'drive', name: 'Drive Night', n: 280, cols: 4, rows: 4, umbrellas: 0, par: 45, limit: 300,
+  { theme: 'drive', name: 'Drive Night', n: 280, cols: 4, rows: 4, umbrellas: 0, par: 45,
     intro: 'La nuit tombe sur L.A., les néons s\'allument. Harry se cache dans l\'ombre.',
     tips: ['Ta souris (ou ton doigt) sert de lampe torche.', 'Les lampadaires et les phares éclairent aussi.'] },
 ];
 const WRONG_PENALTY = 5, HINT_PENALTY = 15;
-const LEVEL_MAX = 100, LEVEL_FLOOR = 25;   // points par niveau : 100 au mieux, jamais moins de 25 si on trouve Harry
+const LEVEL_MAX = 100, LOSS_PER_SEC = .6;  // points par niveau : 100 au mieux, puis −0,6 pt par seconde (jusqu'à 0)
 
 // ══ Paramètres d'URL ═══════════════════════════════════════════════════════
 const qs = new URLSearchParams(location.search);
@@ -954,24 +955,28 @@ function tap(sx, sy) {
 }
 
 function levelPoints(L, time) {
-  if (time <= L.par) return LEVEL_MAX;
-  const k = Math.min(1, (time - L.par) / (L.limit - L.par));
-  return Math.round(LEVEL_MAX - (LEVEL_MAX - LEVEL_FLOOR) * k);
+  return Math.max(0, Math.round(LEVEL_MAX - LOSS_PER_SEC * Math.max(0, time - L.par)));
 }
 
-function found() {
+function found(gaveUp) {
   playing = false; finishedAt = performance.now();
-  const L = world.L, time = elapsed(), pts = levelPoints(L, time);
+  const L = world.L, time = elapsed(), pts = gaveUp ? 0 : levelPoints(L, time);
   $('h-time').textContent = time.toFixed(1) + ' s';
-  results[lvl] = { name: L.name, time, pts, misses, hints };
+  results[lvl] = { name: L.name, time, pts, misses, hints, gaveUp: !!gaveUp };
   fx.push({ type: 'found', t: performance.now() });
   hint = null;
   centerOn(world.harry.x, world.harry.y - 38, Math.max(cam.z, 1.6));
   const total = results.reduce((s, r) => s + r.pts, 0);
   $('f-kicker').textContent = `Ville ${lvl + 1} / ${LEVELS.length} · ${L.name}`;
-  $('f-title').textContent = ['Trouvé !', 'It\'s coming home !', 'Bien vu !', 'Harry démasqué !'][(Math.random() * 4) | 0];
-  $('f-pts').textContent = '+' + Math.round(pts) + ' pts';
-  $('f-text').innerHTML = `Trouvé en <b style="color:#facc15">${time.toFixed(1)} s</b>` + (penalty ? ` (dont ${penalty} s de pénalités)` : '') + `<br>Total : ${Math.round(total)} pts`;
+  if (gaveUp) {
+    $('f-title').textContent = 'Il était là !';
+    $('f-pts').textContent = '0 pt';
+    $('f-text').innerHTML = `Ville abandonnée après ${time.toFixed(1)} s<br>Total : ${Math.round(total)} pts`;
+  } else {
+    $('f-title').textContent = ['Trouvé !', 'It\'s coming home !', 'Bien vu !', 'Harry démasqué !'][(Math.random() * 4) | 0];
+    $('f-pts').textContent = '+' + Math.round(pts) + ' pts';
+    $('f-text').innerHTML = `Trouvé en <b style="color:#facc15">${time.toFixed(1)} s</b>` + (penalty ? ` (dont ${penalty} s de pénalités)` : '') + `<br>Total : ${Math.round(total)} pts`;
+  }
   const last = lvl >= LEVELS.length - 1;
   $('b-next').textContent = last ? 'Voir mon score ›' : 'Ville suivante ›';
   setTimeout(() => $('ov-found').classList.add('on'), 1400);
@@ -1010,7 +1015,7 @@ function showEnd() {
   const total = Math.round(results.reduce((s, r) => s + r.pts, 0));
   $('e-total').textContent = total;
   $('e-max').textContent = `points sur ${LEVEL_MAX * LEVELS.length}`;
-  $('e-rows').innerHTML = results.map(r => `<div><span>${r.name}</span><span>${r.time.toFixed(1)} s · <b>${Math.round(r.pts)} pts</b></span></div>`).join('');
+  $('e-rows').innerHTML = results.map(r => `<div><span>${r.name}</span><span>${r.gaveUp ? 'abandon' : r.time.toFixed(1) + ' s'} · <b>${Math.round(r.pts)} pts</b></span></div>`).join('');
   const act = $('e-actions'); act.innerHTML = '';
   const totalTime = results.reduce((s, r) => s + r.time, 0);
   if (EMBED) {
@@ -1036,6 +1041,11 @@ $('b-hint').onclick = () => {
   hint = { ox: rnd(-r * .55, r * .55), oy: rnd(-r * .55, r * .55), r };
   centerOn(world.harry.x + hint.ox, world.harry.y - 40 + hint.oy, Math.max(cam.z, Math.min(maxZ, (vh - HUD_H) / (r * 2.6))));
   toast(`Il est dans le cercle · +${HINT_PENALTY} s`);
+};
+$('b-solve').onclick = () => {
+  if (!playing) return;
+  if (!confirm('Abandonner cette ville ?\nOn te montre Harry, mais tu marques 0 point pour cette ville.')) return;
+  found(true);
 };
 $('b-go').onclick = startPlay;
 $('b-next').onclick = () => lvl >= LEVELS.length - 1 ? showEnd() : showIntro(lvl + 1);
