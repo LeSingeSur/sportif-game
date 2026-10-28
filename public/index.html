@@ -687,6 +687,7 @@ input.ok{border-color:var(--neon);box-shadow:0 0 0 3px rgba(212,255,0,.18)}
       <div class="gt-item"><div class="gt-ico">🔀</div><div class="gt-name">Méli-Mélo</div></div>
       <div class="gt-item"><div class="gt-ico">📦</div><div class="gt-name">À Prendre ou À Laisser</div></div>
       <div class="gt-item"><div class="gt-ico">🎯</div><div class="gt-name">Trivial Pursuit</div></div>
+      <div class="gt-item"><div class="gt-ico">🕵️</div><div class="gt-name">Où est Harry ?</div></div>
       <div class="gt-item" id="gt-formula" style="position:relative">
         <div class="gt-ico">🏁</div><div class="gt-name">Formula·Grid</div>
         <a href="formula-grid.html" style="display:block;margin-top:5px;font-size:9px;font-weight:900;letter-spacing:.5px;
@@ -2900,6 +2901,9 @@ async function loadAthlete(){
     } else if(data.type==='saut'){
       document.getElementById('std-ans-area').style.display='none';
       setupSaut(data);
+    } else if(data.type==='harry'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupHarry(data);
     } else if(data.type==='plongee'){
       document.getElementById('std-ans-area').style.display='none';
       setupPlongee(data);
@@ -2958,9 +2962,33 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','saut':'🤸','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸','melimelo':'🔀','apol':'📦','trivpursuit':'🎯',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','saut':'🤸','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️',
   'var':'📺'
 };
+// -- OÙ EST HARRY : le jeu vit dans ou-est-harry.html, chargé en plein écran ----
+function setupHarry(data){
+  const old=document.getElementById('harry-frame'); if(old) old.remove();
+  const fr=document.createElement('iframe');
+  fr.id='harry-frame';
+  fr.src='ou-est-harry.html?embed=1&seed='+encodeURIComponent(data.harrySeed||1);
+  fr.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:9000;background:#0f172a';
+  document.body.appendChild(fr);
+  function onMsg(e){
+    if(e.source!==fr.contentWindow||!e.data||e.data.type!=='harry-done') return;
+    window.removeEventListener('message',onMsg);
+    fr.remove();
+    const finalScore=Math.max(0,Math.min(300,Math.round(e.data.score||0)));
+    GAME.score=finalScore;setScore(finalScore,true);
+    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+    const vName=document.getElementById('v-name');if(vName)vName.textContent='Où est Harry ?';
+    const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🕵️ Harry retrouvé dans les 3 villes en '+(e.data.total||0).toFixed(1)+' s';
+    ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+    setVictoryIcon('harry');submitScore(finalScore);
+    show('sv');
+  }
+  window.addEventListener('message',onMsg);
+}
+
 function setVictoryIcon(type){ const el=document.querySelector('.v-ico'); if(el) el.textContent=GAME_ICONS[type]||'🎉'; }
 
 // -- TEXT MODE -------------------------------------------------------------
@@ -8329,7 +8357,7 @@ async function loadLB(){
       }
     }catch(e){}
     lbAthletes.forEach((a,i)=>{
-      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','saut':'🤸','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️','melimelo':'🔀','apol':'📦','trivpursuit':'🎯'};
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','saut':'🤸','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️'};
       const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
