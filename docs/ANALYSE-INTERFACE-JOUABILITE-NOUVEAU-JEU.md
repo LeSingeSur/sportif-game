@@ -193,3 +193,37 @@ legrandchelem.fr/carriere
 2. **Semaines 2 à 4** : structure « un jeu = un dossier » et premier jeu dessus : Carrière Mystère, avec import Wikidata et classement du jour.
 3. **Semaines 5 à 6** : coque commune (navigation, session unique, charte) qui absorbe Formula·Grid, Curling et Harry. Son et vibrations partout.
 4. **Ensuite** : migration progressive des 28 formats existants vers la structure modulaire, en commençant par ceux qui envoient encore les réponses au navigateur.
+
+---
+
+## Addendum — précisions après relecture du Game Master
+
+### A. « Lettres exclues », c'est du Motus
+Exact. L'écran C de la maquette montre Sportus, qui est déjà un Motus : le clavier avec lettres exclues grisées ne concerne que lui. Le principe général à retenir pour les 28 formats est plus simple : **un seul mode de saisie par écran**. Aujourd'hui Sportus en a deux (clavier maison + champ texte qui ouvre le clavier natif) ; c'est ce doublon qu'il faut supprimer.
+
+### B. Modèle « Game Master » : un jeu commun par jour, pas de duels
+C'est le bon modèle et il change la proposition : **pas de duels, pas de « défier un ami »**. Tout le social passe par le jeu commun du jour et son classement. Le Game Master est l'animateur ; l'outil doit le servir.
+
+Ce que ça implique concrètement :
+- **Programmation** : une file des 14 prochains jours (jeu, heure de publication, heure de clôture), publication et dépublication **automatiques** à heure fixe. Aujourd'hui tout se fait à la main.
+- **Le mot du Game Master** : un message du jour visible sur l'accueil (programme de la semaine, thème, clin d'œil). La personnalité de l'animateur est un atout que l'interface actuelle n'exploite pas.
+- **Semaines thématiques et événements** : « semaine tennis », « spéciale JO », finale du dimanche à coefficient double. Le calendrier devient un objet du jeu.
+- **Rapport du jour** pour le Game Master : participants, score moyen, question la plus ratée, abandons. C'est ce qui permet d'ajuster la difficulté.
+- **Les jours passés** restent jouables en entraînement (score non compté), ce qui remplace l'onglet Duels dans la navigation.
+- Le classement, la série, le partage et le compte à rebours restent tels que proposés.
+
+### C. Carrière Mystère ressemble au Scout et à ses tiroirs
+Oui. Le Scout révèle déjà Identité, Carrière, Palmarès et Mystère tiroir par tiroir, contre des points. Carrière Mystère n'en diffère que par le détail (ordre chronologique, autocomplétion, barème dégressif). **Ce n'est pas un nouveau jeu, c'est un Scout à contenu automatique.** La bonne décision est donc de garder Le Scout et de lui brancher le pipeline de contenu (carrières importées depuis Wikidata, file de 14 jours, « Le saviez-vous ? » rédigé par l'IA), plutôt que d'ajouter un 29e format qui fait doublon.
+
+### D. Des formats quotidiens réellement différents de l'existant
+Le catalogue couvre déjà très largement « deviner un nom », « estimer un chiffre », les QCM, les anagrammes et les listes à énumérer. Les mécaniques absentes, et qui se prêtent au jeu commun quotidien :
+
+| Format | Mécanique | Pourquoi ça fait revenir | Contenu |
+|---|---|---|---|
+| **Le Dernier Debout** (méta-jeu) | Chaque jour, une question éliminatoire commune. Une erreur et tu es éliminé jusqu'au lundi suivant. Le dernier debout de la semaine gagne. | « Suis-je encore en vie ? » est la raison de revenir la plus puissante qui existe. Se superpose à n'importe quel format existant, donc zéro nouveau jeu à coder côté mécanique. | Une question par jour, choisie par le Game Master. |
+| **Le Pronostic** | Le Game Master choisit un vrai match du soir ; les joueurs pronostiquent le score ou le vainqueur avant le coup d'envoi. Points le lendemain selon la précision. | Ancre le jeu dans l'actualité réelle et crée **deux visites** : parier, puis venir voir le résultat. | Un match par jour, aucun contenu à écrire. |
+| **Le Podium** (classement à remettre en ordre) | 6 éléments à classer par glisser-déposer (sportifs par nombre de titres, stades par capacité, records par année). Score selon le nombre d'éléments à la bonne place, avec 3 corrections possibles. | Mécanique d'ordonnancement quasi absente du catalogue. Résultat partageable en emojis (🟩🟩⬛🟩⬛🟩). | Générable automatiquement depuis des données (palmarès, dates). |
+| **Le Slalom** (déjà maquetté) | Action et réflexes : éviter tout ce qui arrive sur trois couloirs. | Seul format d'adresse du jeu. Pause de 60 s entre deux quiz, piste du jour commune grâce à une graine. | Aucun contenu éditorial. |
+| **Le Vestiaire** | Composer une équipe de 5 sous contrainte (budget de points, un seul joueur par club, une nationalité imposée). La « valeur » d'un sportif est fixée par le Game Master. | Puzzle de contraintes, plusieurs bonnes réponses possibles, discussions garanties entre joueurs. | Une grille de 15 sportifs avec valeurs par jour. |
+
+**Recommandation** : Le Dernier Debout en premier. C'est une couche au-dessus de l'existant, elle colle parfaitement au rôle de Game Master, et elle donne au jeu commun quotidien un enjeu hebdomadaire sans écrire une ligne de contenu supplémentaire. Le Pronostic ensuite, pour l'ancrage dans l'actualité et la double visite. Le Slalom en récréation.
