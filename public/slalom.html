@@ -65,7 +65,7 @@ canvas{display:block;width:100%;height:100%}
 </div>
 
 <div class="topbtns" id="topbtns">
-  <a class="ico" href="index.html" title="Retour">‹</a>
+  <a class="ico" id="b-back" href="index.html" title="Retour">‹</a>
   <button class="ico" id="b-mute" title="Son">🔊</button>
 </div>
 
@@ -94,9 +94,10 @@ canvas{display:block;width:100%;height:100%}
     <div class="stat"><div class="v" id="e-pal">1</div><div class="l">Palier</div></div>
     <div class="stat"><div class="v" id="e-best">0</div><div class="l">Record</div></div>
   </div>
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">Points Grand Chelem (plafonné à 600 m)</span><b id="e-gc" style="color:var(--cyan);font-family:var(--fh);font-size:24px">0 / 100</b></div>
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">Points Grand Chelem (1 pt / 6 pts, plafonné à 100)</span><b id="e-gc" style="color:var(--cyan);font-family:var(--fh);font-size:24px">0 / 100</b></div>
   <div class="share" id="e-share"></div>
   <div class="row"><button class="btn ghost" id="b-copy">📋 Copier</button><button class="btn" id="b-again">↻ REJOUER</button></div>
+  <button class="btn" id="b-validate" hidden style="background:var(--cyan)">✅ VALIDER MON MEILLEUR SCORE</button>
   <div class="mute" id="e-note"></div>
 </div>
 
@@ -106,7 +107,7 @@ canvas{display:block;width:100%;height:100%}
 /* ───────────────────────── Paramètres de jeu ───────────────────────── */
 const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mètres
 const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
-const ATTEMPTS = 3, BONUS = 50;
+let ATTEMPTS = 3; const BONUS = 50;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
   { at:0,    msg:'',                     types:['ball'] },
   { at:100,  msg:'ATTENTION AUX HAIES',  types:['ball','hurdle'] },
@@ -122,9 +123,18 @@ const PALIERS = [                           // palier = index+1 ; nouveauté ann
 const today = new Date(); const dayKey = today.toISOString().slice(0,10);
 const trackNo = Math.floor((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()) - Date.UTC(2026,0,1))/864e5) + 1;
 let seedBase = 0; for (const c of dayKey) seedBase = (seedBase*31 + c.charCodeAt(0)) >>> 0;
+// Mode défi : lancé depuis l'accueil (iframe) avec la graine choisie par le Game Master
+const qs = new URLSearchParams(location.search);
+const EMBED = qs.get('embed')==='1', PREVIEW = qs.get('preview')==='1';
+const SEED_PARAM = parseInt(qs.get('seed'))||0;
+if (SEED_PARAM) seedBase = SEED_PARAM>>>0;
+if (qs.get('attempts')) ATTEMPTS = Math.max(1, Math.min(5, parseInt(qs.get('attempts'))||3));
+if (PREVIEW) ATTEMPTS = 99;
+const storeKey = SEED_PARAM ? 'slalom_defi_'+SEED_PARAM : 'slalom_'+dayKey;
+const trackLabel = SEED_PARAM ? 'Piste n° '+SEED_PARAM : '#'+trackNo;
 const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
-const pseudo = (()=>{ try{ return localStorage.getItem('arena_pseudo')||''; }catch(e){ return ''; } })();
-let dayData = store.get('slalom_'+dayKey, { attempts:0, best:0, bestPts:0 });
+const pseudo = qs.get('pseudo') || (()=>{ try{ return localStorage.getItem('arena_pseudo')||''; }catch(e){ return ''; } })();
+let dayData = PREVIEW ? { attempts:0, best:0, bestPts:0, bestPal:1 } : store.get(storeKey, { attempts:0, best:0, bestPts:0, bestPal:1 });
 let allBest = store.get('slalom_best', 0);
 let muted = store.get('slalom_muted', false);
 
@@ -268,7 +278,7 @@ function start(free){
   const essai=dayData.attempts+1;
   S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:10, lastObs:null, alive:true, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
   inputs=[];
-  document.getElementById('h-sub').textContent = free ? 'MODE LIBRE · NON CLASSÉ' : 'PISTE DU JOUR · ESSAI '+essai+'/'+ATTEMPTS;
+  document.getElementById('h-sub').textContent = PREVIEW ? 'APERÇU ADMIN' : free ? 'MODE LIBRE · NON CLASSÉ' : (SEED_PARAM?'DÉFI':'PISTE DU JOUR')+' · ESSAI '+essai+'/'+ATTEMPTS;
   document.getElementById('h-pal').textContent='PALIER 1'; document.getElementById('h-bonus').textContent='+0';
   const rec=document.getElementById('h-rec'); if(dayData.best>0){ rec.hidden=false; document.getElementById('h-rec-v').textContent=(pseudo||'toi')+' · '+dayData.best+' m'; } else rec.hidden=true;
   document.getElementById('ov-ready').hidden=true; document.getElementById('ov-end').hidden=true; document.getElementById('hud').hidden=false; document.getElementById('topbtns').style.display='none';
@@ -314,34 +324,47 @@ function loop(now){
 function die(){ S.alive=false; S.shake=18; SFX.die(); buzz([60,40,80]); }
 
 function end(){
-  const m=Math.floor(S.dist), pts=m+S.bonus, gc=Math.min(100,Math.round(m/6));
-  if(!S.free){ dayData.attempts++; if(pts>dayData.bestPts){ dayData.bestPts=pts; dayData.best=m; } store.set('slalom_'+dayKey,dayData); }
+  const m=Math.floor(S.dist), pts=m+S.bonus, gc=Math.min(100,Math.round(pts/6));
+  if(!S.free){ dayData.attempts++; if(pts>dayData.bestPts){ dayData.bestPts=pts; dayData.best=m; dayData.bestPal=S.pal+1; } if(!PREVIEW) store.set(storeKey,dayData); }
   if(m>allBest){ allBest=m; store.set('slalom_best',allBest); }
   document.getElementById('e-title').textContent=m+' M';
   document.getElementById('e-emoji').textContent = m>=600?'🏆':m>=300?'🔥':'💥';
   document.getElementById('e-sub').textContent = S.free ? 'Mode libre · non classé' : 'Essai '+S.essai+'/'+ATTEMPTS+' · meilleur du jour '+dayData.best+' m';
   document.getElementById('e-pts').textContent=pts; document.getElementById('e-pal').textContent=S.pal+1; document.getElementById('e-best').textContent=allBest;
   document.getElementById('e-gc').textContent=(S.free?'—':gc)+' / 100';
-  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · Piste #'+trackNo+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · '+pts+' pts\n'+(S.bonus?'💧 '+(S.bonus/BONUS)+' bidon'+(S.bonus>BONUS?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
-  const left=ATTEMPTS-dayData.attempts; const again=document.getElementById('b-again'), note=document.getElementById('e-note');
-  if(S.free){ again.textContent='↻ REJOUER (LIBRE)'; note.textContent='Les essais classés du jour sont épuisés. Reviens demain pour la piste #'+(trackNo+1)+'.'; }
-  else if(left>0){ again.textContent='↻ REJOUER · '+left+' ESSAI'+(left>1?'S':'')+' RESTANT'+(left>1?'S':''); note.textContent='Seul ton meilleur essai compte.'; }
-  else { again.textContent='🎯 MODE LIBRE'; note.textContent='Tes 3 essais du jour sont joués. Ton meilleur : '+dayData.best+' m. Le mode libre ne compte pas.'; }
+  const gcBest=Math.min(100,Math.round(dayData.bestPts/6));
+  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · '+(SEED_PARAM?trackLabel:'Piste '+trackLabel)+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · '+pts+' pts\n'+(S.bonus?'💧 '+(S.bonus/BONUS)+' bidon'+(S.bonus>BONUS?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
+  const left=ATTEMPTS-dayData.attempts; const again=document.getElementById('b-again'), note=document.getElementById('e-note'), val=document.getElementById('b-validate');
+  val.hidden=true;
+  if(EMBED&&!PREVIEW){
+    val.hidden=false; val.textContent='✅ VALIDER MON MEILLEUR SCORE · '+gcBest+' / 100';
+    again.hidden=left<=0; again.textContent='↻ REJOUER · '+left+' ESSAI'+(left>1?'S':'')+' RESTANT'+(left>1?'S':'');
+    note.textContent=left>0?'Seul ton meilleur essai compte. Tu peux rejouer ou valider maintenant.':'Essais terminés : valide ton score pour passer au défi suivant.';
+  } else if(PREVIEW){ again.hidden=false; again.textContent='↻ REJOUER (APERÇU)'; note.textContent='Aperçu admin : rien n\'est enregistré.'; }
+  else if(S.free){ again.textContent='↻ REJOUER (LIBRE)'; note.textContent='Les essais classés du jour sont épuisés. Reviens demain pour la piste #'+(trackNo+1)+'.'; }
+  else if(left>0){ again.hidden=false; again.textContent='↻ REJOUER · '+left+' ESSAI'+(left>1?'S':'')+' RESTANT'+(left>1?'S':''); note.textContent='Seul ton meilleur essai compte.'; }
+  else { again.hidden=false; again.textContent='🎯 MODE LIBRE'; note.textContent='Tes 3 essais du jour sont joués. Ton meilleur : '+dayData.best+' m. Le mode libre ne compte pas.'; }
   document.getElementById('hud').hidden=true; document.getElementById('ov-end').hidden=false; document.getElementById('topbtns').style.display='';
   drawScene(S);
 }
 
 /* ───────────────────────── Écrans et entrées ───────────────────────── */
 function ready(){
-  document.getElementById('r-track').textContent='#'+trackNo;
+  document.getElementById('r-track').textContent=trackLabel;
   const left=ATTEMPTS-dayData.attempts;
-  document.getElementById('r-kicker').textContent = left>0 ? 'Piste du jour · '+left+' essai'+(left>1?'s':'')+' restant'+(left>1?'s':'') : 'Essais du jour épuisés · mode libre';
-  document.getElementById('b-go').textContent = left>0 ? 'GO — C\'EST PARTI' : '🎯 GO — MODE LIBRE';
+  if(EMBED){ const bb=document.getElementById('b-back'); if(bb) bb.style.visibility='hidden'; }
+  if(PREVIEW) document.getElementById('r-kicker').textContent='Aperçu admin · essais illimités';
+  else if(EMBED) document.getElementById('r-kicker').textContent = left>0 ? 'Défi du Game Master · '+left+' essai'+(left>1?'s':'')+(left>1?'':'')+' · seul le meilleur compte' : 'Essais terminés';
+  else document.getElementById('r-kicker').textContent = left>0 ? 'Piste du jour · '+left+' essai'+(left>1?'s':'')+' restant'+(left>1?'s':'') : 'Essais du jour épuisés · mode libre';
+  document.getElementById('b-go').textContent = (EMBED||PREVIEW) ? (left>0||PREVIEW ? 'GO — C\'EST PARTI' : '✅ VALIDER MON SCORE') : left>0 ? 'GO — C\'EST PARTI' : '🎯 GO — MODE LIBRE';
   document.getElementById('r-best').textContent = (dayData.best?('Meilleur aujourd\'hui : '+dayData.best+' m · '):'')+(allBest?('Record : '+allBest+' m'):'');
   S=null; drawScene(null);
 }
-document.getElementById('b-go').onclick=()=>start(ATTEMPTS-dayData.attempts<=0);
-document.getElementById('b-again').onclick=()=>start(ATTEMPTS-dayData.attempts<=0);
+function sendDone(){ const gcBest=Math.min(100,Math.round(dayData.bestPts/6)); try{ parent.postMessage({type:'slalom-done',score:gcBest,dist:dayData.best,pts:dayData.bestPts,palier:dayData.bestPal||1},'*'); }catch(e){} }
+function go(){ const left=ATTEMPTS-dayData.attempts; if(EMBED&&!PREVIEW){ if(left<=0){ sendDone(); return; } start(false); return; } start(left<=0&&!PREVIEW); }
+document.getElementById('b-go').onclick=go;
+document.getElementById('b-again').onclick=go;
+document.getElementById('b-validate').onclick=()=>{ const v=document.getElementById('b-validate'); v.disabled=true; v.textContent='⏳ Envoi…'; sendDone(); };
 document.getElementById('b-copy').onclick=async()=>{ const t=document.getElementById('e-share').textContent; const b=document.getElementById('b-copy'); try{ if(navigator.share){ await navigator.share({text:t}); b.textContent='✅ Partagé'; } else { await navigator.clipboard.writeText(t); b.textContent='✅ Copié'; } }catch(e){ try{ await navigator.clipboard.writeText(t); b.textContent='✅ Copié'; }catch(e2){ b.textContent='Sélectionne le texte'; } } setTimeout(()=>b.textContent='📋 Copier',1800); };
 const mb=document.getElementById('b-mute'); const setMute=m=>{ muted=m; store.set('slalom_muted',m); mb.textContent=m?'🔇':'🔊'; }; setMute(muted); mb.onclick=()=>setMute(!muted);
 addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'||e.key==='a'||e.key==='q'){ move(-1); e.preventDefault(); } else if(e.key==='ArrowRight'||e.key==='d'){ move(1); e.preventDefault(); } else if(e.key===' '||e.key==='Enter'){ if(!document.getElementById('ov-ready').hidden) document.getElementById('b-go').click(); else if(!document.getElementById('ov-end').hidden) document.getElementById('b-again').click(); } });
