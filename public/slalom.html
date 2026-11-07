@@ -26,7 +26,7 @@ canvas{display:block;width:100%;height:100%}
 .record b{color:var(--neon)}
 .hint{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);left:0;right:0;display:flex;justify-content:space-between;padding:0 28px;color:rgba(255,255,255,.35);font-weight:900;font-size:12px;letter-spacing:2px}
 .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px 20px;background:radial-gradient(circle at 50% 30%,rgba(25,25,45,.94),rgba(7,7,15,.97));overflow-y:auto}
-.ov[hidden]{display:none}
+[hidden]{display:none!important}
 .ov h1{font-family:var(--fh);font-weight:400;font-size:clamp(52px,18vw,84px);line-height:.9;color:var(--neon);letter-spacing:2px;text-shadow:0 0 40px rgba(212,255,0,.35)}
 .ov h2{font-family:var(--fh);font-weight:400;font-size:clamp(40px,14vw,64px);line-height:1;color:var(--neon)}
 .kicker{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);font-weight:800}
@@ -76,7 +76,7 @@ canvas{display:block;width:100%;height:100%}
   <div class="kicker" id="r-kicker">Piste du jour · 3 essais</div>
   <div class="card">
     <div class="rule"><b>1</b><span>Ton sportif descend la piste. <em>Touche la gauche ou la droite</em> de l'écran (ou flèches ← →) pour changer de couloir.</span></div>
-    <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : ballons, haies, cyclistes, pierres de curling. Un seul contact et c'est fini.</span></div>
+    <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : supporters de l'OM et leurs fumigènes, Zlatan, Wembanyama, Mbappé en glissade, Teddy Riner… Un seul contact et c'est fini.</span></div>
     <div class="rule"><b>3</b><span>Le bouclier 🛡 donne <em>une vie supplémentaire</em> : il absorbe un choc. Ils se cumulent. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
   </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">La même piste pour tout le monde aujourd'hui</span><b id="r-track">#1</b></div>
@@ -109,15 +109,25 @@ const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mèt
 const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
 let ATTEMPTS = 3;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
-  { at:0,    msg:'',                     types:['ball'] },
-  { at:100,  msg:'ATTENTION AUX HAIES',  types:['ball','hurdle'] },
-  { at:200,  msg:'BIDONS À RISQUE',      types:['ball','hurdle','ball'] },
-  { at:300,  msg:'LES CYCLISTES ARRIVENT', types:['ball','hurdle','cyclist'] },
-  { at:450,  msg:'VAGUES !',             types:['ball','hurdle','cyclist','wave'] },
-  { at:600,  msg:'PIERRES DE CURLING',   types:['ball','hurdle','cyclist','wave','stone'] },
-  { at:800,  msg:'HAIES DÉCALÉES',       types:['ball','hurdle','cyclist','wave','stone','offset'] },
-  { at:1000, msg:'VITESSE MAX',          types:['ball','hurdle','cyclist','wave','stone','offset','wave'] },
+  { at:0,    msg:'',                        types:['ball','fan'] },
+  { at:100,  msg:'LE VIRAGE SUD DÉBARQUE',  types:['ball','fan','hurdle'] },
+  { at:200,  msg:'ZLATAN EST LÀ',           types:['fan','hurdle','zlatan','ball'] },
+  { at:300,  msg:'WEMBY DÉBOULE',           types:['fan','hurdle','zlatan','cyclist'] },
+  { at:450,  msg:'LA OLA !',                types:['fan','hurdle','zlatan','cyclist','wave'] },
+  { at:600,  msg:'MBAPPÉ GLISSE',           types:['fan','hurdle','zlatan','cyclist','wave','stone'] },
+  { at:800,  msg:'TEDDY RINER',             types:['fan','hurdle','zlatan','cyclist','wave','stone','riner','offset'] },
+  { at:1000, msg:'VITESSE MAX',             types:['fan','hurdle','zlatan','cyclist','wave','stone','riner','offset','wave'] },
 ];
+// Qui t'a éliminé : [nom court pour le flash, phrase pour l'écran de fin]
+const KILL = {
+  ball:    ['UN BALLON',              'Tu t\'es pris un ballon perdu. Ça arrive aux meilleurs.'],
+  fan:     ['UN SUPPORTER DE L\'OM',  'Un supporter de l\'OM t\'a pris dans ses bras. Pour toujours.'],
+  hurdle:  ['LE VIRAGE SUD',          'Le virage Sud ne laisse passer personne. Même pas toi.'],
+  zlatan:  ['ZLATAN',                 'Zlatan ne s\'écarte pas. Zlatan n\'a jamais eu à s\'écarter.'],
+  cyclist: ['WEMBANYAMA',             'Bloqué par Wembanyama. 2 m 24, fallait anticiper.'],
+  stone:   ['MBAPPÉ',                 'Mbappé a glissé sur toi en célébrant, bras croisés.'],
+  riner:   ['TEDDY RINER',            'Ippon. Teddy Riner n\'a même pas forcé.']
+};
 
 /* ───────────────────────── Piste du jour ───────────────────────── */
 const today = new Date(); const dayKey = today.toISOString().slice(0,10);
@@ -210,6 +220,47 @@ function drawRunner(x,y,lean,phase,dead){ shadow(x,y+40,34,10); ctx.save(); ctx.
   if(dead){ ctx.strokeStyle='#07070f'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(-6,-70); ctx.lineTo(0,-64); ctx.moveTo(0,-70); ctx.lineTo(-6,-64); ctx.moveTo(6,-70); ctx.lineTo(12,-64); ctx.moveTo(12,-70); ctx.lineTo(6,-64); ctx.stroke(); }
   ctx.restore(); }
 
+/* ───────────────────────── Le casting ───────────────────────── */
+const FH = "'Bebas Neue',Impact,sans-serif";
+function person(x,y,s,P){
+  const h=P.h||1, wd=P.w||1;
+  shadow(x,y+40*s,30*wd*s,8*s);
+  ctx.save(); ctx.translate(x,y+(P.bounce?-Math.abs(Math.sin(S.t*8+(P.ph||0)))*10*s:0)); ctx.scale(s*wd,s*h); ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=P.pants||'#2b2b44'; ctx.lineWidth=10/wd; ctx.beginPath();
+  if(P.kneel){ ctx.moveTo(-8,0); ctx.lineTo(-10,24); ctx.lineTo(-28,26); ctx.moveTo(8,0); ctx.lineTo(10,24); ctx.lineTo(28,26); } else { ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(10,38); }
+  ctx.stroke();
+  ctx.fillStyle=P.jersey; ctx.beginPath(); ctx.moveTo(-18,-50); ctx.lineTo(18,-50); ctx.lineTo(14,2); ctx.lineTo(-14,2); ctx.closePath(); ctx.fill();
+  if(P.stripes){ ctx.fillStyle=P.stripes; for(let i=-14;i<14;i+=8) ctx.fillRect(i,-50,4,52); }
+  if(P.text){ ctx.fillStyle=P.textColor||'#fff'; ctx.font='bold '+(P.textSize||16)+'px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(P.text,0,-24); }
+  ctx.strokeStyle=P.sleeves||P.skin; ctx.lineWidth=9/wd; const A=P.arms||'down'; ctx.beginPath();
+  if(A==='up'){ ctx.moveTo(-16,-44); ctx.lineTo(-30,-70); ctx.lineTo(-26,-96); ctx.moveTo(16,-44); ctx.lineTo(30,-70); ctx.lineTo(26,-96); }
+  else if(A==='spread'){ ctx.moveTo(-16,-44); ctx.lineTo(-40,-50); ctx.lineTo(-58,-40); ctx.moveTo(16,-44); ctx.lineTo(40,-50); ctx.lineTo(58,-40); }
+  else if(A==='cross'){ ctx.moveTo(-16,-44); ctx.lineTo(12,-30); ctx.moveTo(16,-44); ctx.lineTo(-12,-30); }
+  else if(A==='ball'){ ctx.moveTo(-16,-44); ctx.lineTo(-22,-80); ctx.lineTo(-8,-100); ctx.moveTo(16,-44); ctx.lineTo(22,-80); ctx.lineTo(8,-100); }
+  else { ctx.moveTo(-16,-44); ctx.lineTo(-24,-10); ctx.moveTo(16,-44); ctx.lineTo(24,-10); }
+  ctx.stroke();
+  ctx.fillStyle=P.skin; ctx.beginPath(); ctx.arc(0,-66,15,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=P.hairColor||'#1a1a1a'; const hs=P.hair||'short';
+  if(hs==='short'){ ctx.beginPath(); ctx.arc(0,-68,15,Math.PI,0); ctx.fill(); }
+  else if(hs==='bun'){ ctx.beginPath(); ctx.arc(0,-69,15,Math.PI,0); ctx.fill(); ctx.beginPath(); ctx.arc(0,-87,7,0,Math.PI*2); ctx.fill(); }
+  else if(hs==='cap'){ ctx.beginPath(); ctx.arc(0,-68,16,Math.PI,0); ctx.fill(); ctx.fillRect(-16,-70,38,5); }
+  if(P.beard){ ctx.beginPath(); ctx.arc(0,-60,10,0,Math.PI); ctx.fill(); }
+  if(P.scarf){ ctx.strokeStyle=P.scarf; ctx.lineWidth=7; ctx.beginPath(); ctx.moveTo(-15,-50); ctx.lineTo(15,-50); ctx.stroke(); ctx.strokeStyle='#fff'; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]); }
+  if(P.belt){ ctx.fillStyle=P.belt; ctx.fillRect(-15,-8,30,7); }
+  if(P.ball){ ctx.fillStyle='#e8752a'; ctx.beginPath(); ctx.arc(0,-112,14,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#5a2a0a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(-14,-112); ctx.lineTo(14,-112); ctx.moveTo(0,-126); ctx.lineTo(0,-98); ctx.stroke(); }
+  if(P.flare){ ctx.strokeStyle='#333'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(26,-96); ctx.lineTo(26,-110); ctx.stroke(); const fg=ctx.createRadialGradient(26,-116,0,26,-116,18); fg.addColorStop(0,'#fff5c0'); fg.addColorStop(.4,'#ff7a1a'); fg.addColorStop(1,'rgba(255,60,0,0)'); ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(26,-116,18,0,Math.PI*2); ctx.fill();
+    if(S.alive && Math.random()<.35) S.parts.push({x:x+26*s*wd,y:y-116*s*h,vx:(Math.random()-.5)*25,vy:-50,life:1.1,t:0,c:'rgba(255,130,50,.45)',r:7*s}); }
+  if(P.label){ ctx.font='bold 13px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; const tw=ctx.measureText(P.label).width+12, ly=-(P.labelY||130); ctx.fillStyle='rgba(7,7,15,.8)'; ctx.beginPath(); ctx.roundRect(-tw/2,ly-9,tw,18,5); ctx.fill(); ctx.fillStyle=P.labelColor||'#fff'; ctx.fillText(P.label,0,ly); }
+  ctx.restore();
+}
+function drawFan(x,y,s,ph,label){ person(x,y,s,{jersey:'#f4f8ff',text:'OM',textColor:'#1b9ad6',textSize:13,skin:'#f1c7a3',hair:ph%2?'cap':'short',hairColor:ph%2?'#1b9ad6':'#2a1a10',arms:'up',scarf:'#5ea8dd',bounce:true,ph:ph*1.3,flare:ph%2===0,label,labelColor:'#8fd3ff'}); }
+function drawFans(x,y,s,wpx){ const d=wpx*0.33; drawFan(x-d,y,s*0.95,0); drawFan(x+d,y,s*0.95,2); drawFan(x,y+6*s,s,1,'VIRAGE SUD'); }
+function drawZlatan(x,y,s){ person(x,y,s,{h:1.2,jersey:'#111',stripes:'#2a2a2a',text:'10',textColor:'#f7c948',skin:'#e9b98f',hair:'bun',beard:true,arms:'spread',label:'ZLATAN',labelColor:'#f7c948',labelY:125}); }
+function drawWemby(x,y,s){ person(x,y,s,{h:1.65,w:0.82,jersey:'#111',text:'1',textColor:'#c4c4c4',skin:'#5a3a22',hair:'short',arms:'ball',ball:true,bounce:true,label:'WEMBY',labelY:148}); }
+function drawMbappe(x,y,s,dir){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=3; for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(x-dir*(30+i*14)*s,y+(10+i*8)*s); ctx.lineTo(x-dir*(60+i*14)*s,y+(10+i*8)*s); ctx.stroke(); } ctx.restore();
+  person(x,y+10*s,s,{h:0.9,jersey:'#1b2a6b',text:'10',textColor:'#fff',skin:'#8a5a3a',hair:'short',arms:'cross',kneel:true,label:'MBAPPÉ',labelColor:'#8fd3ff',labelY:112}); }
+function drawRiner(x,y,s){ person(x,y,s,{h:1.3,w:1.45,jersey:'#f4f4f4',pants:'#f4f4f4',belt:'#111',skin:'#5a3a22',hair:'none',arms:'spread',label:'TEDDY RINER',labelY:138}); }
+
 /* ───────────────────────── Décor ───────────────────────── */
 // Ambiance par palier : le stade change d'heure et de lumière au fil de la course
 const AMB=[
@@ -276,7 +327,7 @@ function spawn(zOverride){
   // passage garanti : si l'écart au précédent est faible, laisser un couloir libre adjacent au couloir libre précédent
   const nearPrev = prev && (z - prev.z) < 9;
   const allowed = nearPrev ? freeLanes(prev) : [0,1,2];
-  if(type==='wave'){ let gap=allowed.length?allowed[Math.floor(rng()*allowed.length)]:Math.floor(rng()*3); for(let l=0;l<3;l++) if(l!==gap) pushObs({type:'ball',lane:l,w:1,z,rot:rng()*6}); S.lastObs={type:'wave',lane:gap===0?1:0,w:gap===1?1:2,z, _gap:gap}; if(gap===1){ S.lastObs={type:'wave',lane:0,w:1,z}; S.objs.push({type:'wall',lane:2,w:1,z,ghost:true}); } return; }
+  if(type==='wave'){ let gap=allowed.length?allowed[Math.floor(rng()*allowed.length)]:Math.floor(rng()*3); for(let l=0;l<3;l++) if(l!==gap) pushObs({type:'fan',lane:l,w:1,z}); S.lastObs={type:'wave',lane:gap===0?1:0,w:gap===1?1:2,z, _gap:gap}; if(gap===1){ S.lastObs={type:'wave',lane:0,w:1,z}; S.objs.push({type:'wall',lane:2,w:1,z,ghost:true}); } return; }
   if(type==='offset'){ // deux haies décalées : ouverture différente à 10 m d'écart
     const g1=allowed.length?allowed[Math.floor(rng()*allowed.length)]:1; const g2=(g1+1+Math.floor(rng()*2))%3;
     const mk=(g,zz)=>{ if(g===0) pushObs({type:'hurdle',lane:1,w:2,z:zz}); else if(g===2) pushObs({type:'hurdle',lane:0,w:2,z:zz}); else { pushObs({type:'hurdle',lane:0,w:1,z:zz}); pushObs({type:'hurdle',lane:2,w:1,z:zz}); } };
@@ -284,9 +335,10 @@ function spawn(zOverride){
   if(type==='hurdle'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'hurdle',lane,w:2,z}); return; }
   if(type==='cyclist'){ let lane=Math.floor(rng()*3); let target=lane; if(rng()<.75){ target=Math.max(0,Math.min(2,lane+(rng()<.5?-1:1))); } pushObs({type:'cyclist',lane,w:1,z,fl:lane,target,shiftAt:22+rng()*10}); return; }
   if(type==='stone'){ const dir=rng()<.5?1:-1; pushObs({type:'stone',lane:dir>0?0:2,w:1,z,fl:dir>0?-0.3:2.3,dir,rot:0}); return; }
-  // ball
+  if(type==='riner'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'riner',lane,w:2,z}); return; }
+  // obstacle sur un couloir : ballon, supporter, Zlatan
   let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; }
-  pushObs({type:'ball',lane,w:1,z,rot:rng()*6});
+  pushObs({type:(type==='fan'||type==='zlatan')?type:'ball',lane,w:1,z,rot:rng()*6});
 }
 
 function start(free){
@@ -321,8 +373,8 @@ function loop(now){
       if(!o.hit && !o.ghost && o.z<2.2 && o.z>-1.2){   // fenêtre de contact : un obstacle déjà dépassé ne tue plus
         const fl = (o.fl!==undefined)?o.fl:null;
         const hit = fl!==null ? Math.abs(fl-S.x)<0.62 : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
-        if(hit){ o.hit=true; if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(); } }
-        else if(!o.bonus && !o.near){ o.near=true; SFX.near(); }
+        if(hit){ o.hit=true; if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(o); } }
+        else if(!o.bonus && !o.near){ o.near=true; SFX.near(); if(o.type==='zlatan') showFlash('ZLATAN','NE BOUGE PAS. JAMAIS.'); }
       }
     }
     S.objs=S.objs.filter(o=>o.z>-6 && !(o.hit&&o.bonus));
@@ -333,7 +385,7 @@ function loop(now){
   drawScene(S);
   const sorted=[...S.objs].filter(o=>!o.ghost && o.z<VIEW_M && o.z>-5).sort((a,b)=>b.z-a.z);
   for(const o of sorted){ const p=zToP(o.z), y=yAt(p), sc=0.35+0.95*persp(p); const lx=(o.fl!==undefined)?o.fl:(o.lane+(o.w-1)/2); const x=xAt(lx,p);
-    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='hurdle') drawHurdle(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='cyclist') drawCyclist(x,y,sc*1.05,S.t); else if(o.type==='stone') drawStone(x,y,sc*1.1,o.rot); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
+    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='fan') drawFan(x,y,sc,o.lane); else if(o.type==='hurdle') drawFans(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='zlatan') drawZlatan(x,y,sc); else if(o.type==='cyclist') drawWemby(x,y,sc); else if(o.type==='stone') drawMbappe(x,y,sc,o.dir); else if(o.type==='riner') drawRiner(x,y,sc); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
   if(S.lives>0){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
   for(const q of S.parts){ q.t+=dt; q.x+=q.vx*dt; q.y+=(q.vy+S.speed*6)*dt; q.vy+=160*dt; const a=Math.max(0,1-q.t/q.life); ctx.globalAlpha=a; ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*(0.6+a*0.6),0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; S.parts=S.parts.filter(q=>q.t<q.life);
   drawRunner(xAt(S.x,1),PY,S.lean,S.phase,!S.alive);
@@ -341,7 +393,7 @@ function loop(now){
   ctx.restore();
   if(S.alive || S.deadT<0.9) raf=requestAnimationFrame(loop); else end();
 }
-function die(){ S.alive=false; S.shake=18; SFX.die(); buzz([60,40,80]); burst(xAt(S.x,1),PY-30,'#ff3f5c',30,260); burst(xAt(S.x,1),PY-30,'#f7c948',18,200); }
+function die(o){ S.alive=false; S.killer=(o&&o.type)||'ball'; const k=KILL[S.killer]||KILL.ball; showFlash('ÉLIMINÉ','PAR '+k[0]); S.shake=18; SFX.die(); buzz([60,40,80]); burst(xAt(S.x,1),PY-30,'#ff3f5c',30,260); burst(xAt(S.x,1),PY-30,'#f7c948',18,200); }
 
 function end(){
   const m=Math.floor(S.dist), pts=m, gc=Math.min(100,Math.round(m/6));
@@ -349,11 +401,12 @@ function end(){
   if(m>allBest){ allBest=m; store.set('slalom_best',allBest); }
   document.getElementById('e-title').textContent=m+' M';
   document.getElementById('e-emoji').textContent = m>=600?'🏆':m>=300?'🔥':'💥';
-  document.getElementById('e-sub').textContent = S.free ? 'Mode libre · non classé' : 'Essai '+S.essai+'/'+ATTEMPTS+' · meilleur du jour '+dayData.best+' m';
+  const kill=(KILL[S.killer]||KILL.ball)[1];
+  document.getElementById('e-sub').textContent = kill+' · '+(S.free ? 'Mode libre · non classé' : 'Essai '+S.essai+'/'+ATTEMPTS+' · meilleur '+dayData.best+' m');
   document.getElementById('e-pts').textContent=S.shieldsUsed; document.getElementById('e-pal').textContent=S.pal+1; document.getElementById('e-best').textContent=allBest;
   document.getElementById('e-gc').textContent=(S.free?'—':gc)+' / 100';
   const gcBest=Math.min(100,Math.round(dayData.bestPts/6));
-  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · '+(SEED_PARAM?trackLabel:'Piste '+trackLabel)+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · palier '+(S.pal+1)+'\n'+(S.shieldsUsed?'🛡 '+S.shieldsUsed+' choc'+(S.shieldsUsed>1?'s':'')+' absorbé'+(S.shieldsUsed>1?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
+  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · '+(SEED_PARAM?trackLabel:'Piste '+trackLabel)+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · palier '+(S.pal+1)+'\n💥 Éliminé par '+(KILL[S.killer]||KILL.ball)[0].toLowerCase()+'\n'+(S.shieldsUsed?'🛡 '+S.shieldsUsed+' choc'+(S.shieldsUsed>1?'s':'')+' absorbé'+(S.shieldsUsed>1?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
   const left=ATTEMPTS-dayData.attempts; const again=document.getElementById('b-again'), note=document.getElementById('e-note'), val=document.getElementById('b-validate');
   val.hidden=true;
   if(EMBED&&!PREVIEW){
