@@ -76,8 +76,9 @@ canvas{display:block;width:100%;height:100%}
   <div class="kicker" id="r-kicker">Piste du jour · 3 essais</div>
   <div class="card">
     <div class="rule"><b>1</b><span>Ton sportif descend la piste. <em>Touche la gauche ou la droite</em> de l'écran (ou flèches ← →) pour changer de couloir.</span></div>
-    <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : le virage Sud et ses fumigènes, un rugbyman qui te traque et plonge, des gobelets lancés des tribunes, les frappes de Zlatan, Wembanyama, Mbappé en glissade, Teddy Riner… Un seul contact et c'est fini.</span></div>
+    <div class="rule"><b>2</b><span>Évite <em>tout</em> : Chabal qui plonge, les frappes de Zlatan, Usain Bolt, Wembanyama bras écartés, le virage Sud, les gobelets… Un seul contact et c'est fini.</span></div>
     <div class="rule"><b>3</b><span>Le bouclier 🛡 donne <em>une vie supplémentaire</em> : il absorbe un choc. Ils se cumulent. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
+    <div class="rule"><b>4</b><span>Ne touche pas les <em>maillots du PSG</em> : les supporters de Marseille te foncent dessus. Si Benoît Paire t'appelle pour l'apéro, il te fait dévier.</span></div>
   </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">La même piste pour tout le monde aujourd'hui</span><b id="r-track">#1</b></div>
   <button class="btn" id="b-go">GO — C'EST PARTI</button>
@@ -109,27 +110,28 @@ const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mèt
 const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
 let ATTEMPTS = 3;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
-  { at:0,    msg:'',                                  types:['ball','fan'] },
-  { at:100,  msg:'LE VIRAGE SUD DÉBARQUE',            types:['ball','fan','hurdle'] },
-  { at:200,  msg:'ZLATAN EST LÀ · ÇA JETTE DES GOBELETS', types:['fan','hurdle','zlatan','thrower','ball'] },
-  { at:300,  msg:'RUGBYMAN EN CHASSE',                types:['fan','hurdle','zlatan','thrower','rugby'] },
-  { at:450,  msg:'WEMBY DÉBOULE · LA OLA',            types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave'] },
-  { at:600,  msg:'MBAPPÉ GLISSE · ZLATAN FRAPPE',     types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot'] },
-  { at:800,  msg:'TEDDY RINER',                       types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot','riner','offset'] },
-  { at:1000, msg:'VITESSE MAX',                       types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot','riner','offset','rugby','wave'] },
+  { at:0,    msg:'',                                    types:['psg','fan'] },
+  { at:100,  msg:'LE VIRAGE SUD DÉBARQUE',              types:['psg','fan','hurdle'] },
+  { at:200,  msg:'ZLATAN SHOOTE · ÇA JETTE DES GOBELETS', types:['psg','fan','hurdle','zlatan','thrower'] },
+  { at:300,  msg:'CHABAL EN CHASSE',                    types:['psg','fan','hurdle','zlatan','thrower','rugby'] },
+  { at:450,  msg:'WEMBY DÉBOULE · LA OLA',              types:['psg','fan','hurdle','zlatan','thrower','rugby','cyclist','wave'] },
+  { at:600,  msg:'USAIN BOLT · BENOÎT PAIRE',           types:['psg','fan','hurdle','zlatan','thrower','rugby','cyclist','wave','bolt','paire'] },
+  { at:800,  msg:'MBAPPÉ ET TEDDY RINER',               types:['psg','fan','hurdle','zlatan','thrower','rugby','cyclist','wave','bolt','paire','stone','riner','offset'] },
+  { at:1000, msg:'VITESSE MAX',                         types:['psg','fan','hurdle','zlatan','thrower','rugby','cyclist','wave','bolt','paire','stone','riner','offset','rugby','bolt'] },
 ];
 // Qui t'a éliminé : [nom court pour le flash, phrase pour l'écran de fin]
 const KILL = {
-  ball:    ['UN BALLON',              'Tu t\'es pris un ballon perdu. Ça arrive aux meilleurs.'],
-  fan:     ['UN SUPPORTER DE L\'OM',  'Un supporter de l\'OM t\'a pris dans ses bras. Pour toujours.'],
-  hurdle:  ['LE VIRAGE SUD',          'Le virage Sud ne laisse passer personne. Même pas toi.'],
-  zlatan:  ['ZLATAN',                 'Zlatan ne s\'écarte pas. Zlatan n\'a jamais eu à s\'écarter.'],
-  cyclist: ['WEMBANYAMA',             'Bloqué par Wembanyama. 2 m 24, fallait anticiper.'],
-  stone:   ['MBAPPÉ',                 'Mbappé a glissé sur toi en célébrant, bras croisés.'],
-  riner:   ['TEDDY RINER',            'Ippon. Teddy Riner n\'a même pas forcé.'],
-  rugby:   ['UN PLAQUAGE',            'Plaqué aux chevilles. Le rugbyman t\'avait repéré depuis 30 m.'],
-  proj:    ['UN GOBELET DE TRIBUNE',  'Un gobelet de bière lancé depuis la tribune. En pleine tête. Classique.'],
-  shot:    ['UNE FRAPPE DE ZLATAN',   'Frappe de Zlatan en pleine face. Il ne s\'est même pas retourné.']
+  ball:    ['UN BALLON',                  'Tu t\'es pris un ballon perdu. Ça arrive aux meilleurs.'],
+  fan:     ['UN SUPPORTER DE L\'OM',      'Un supporter de l\'OM t\'a pris dans ses bras. Pour toujours.'],
+  hurdle:  ['LE VIRAGE SUD',              'Le virage Sud ne laisse passer personne. Même pas toi.'],
+  cyclist: ['WEMBANYAMA',                 'Bloqué par Wembanyama : 2 m 24 de haut, 2 m 43 d\'envergure. Fallait anticiper.'],
+  stone:   ['MBAPPÉ',                     'Mbappé a glissé sur toi en célébrant, bras croisés.'],
+  riner:   ['TEDDY RINER',                'Ippon. Teddy Riner n\'a même pas forcé.'],
+  rugby:   ['CHABAL',                     'Plaqué par Chabal. Il t\'avait repéré depuis 30 m, et il a la barbe qui va avec.'],
+  proj:    ['UN GOBELET DE TRIBUNE',      'Un gobelet de bière lancé depuis la tribune. En pleine tête. Classique.'],
+  shot:    ['UNE FRAPPE DE ZLATAN',       'Zlatan t\'a shooté dessus. Zlatan ne rate jamais.'],
+  chaser:  ['LES SUPPORTERS DE MARSEILLE','Tu as touché un maillot du PSG. À Marseille, c\'est impardonnable.'],
+  bolt:    ['USAIN BOLT',                 'Usain Bolt t\'a fauché à 44 km/h. Il ne t\'avait même pas vu.']
 };
 
 /* ───────────────────────── Piste du jour ───────────────────────── */
@@ -230,16 +232,18 @@ function person(x,y,s,P){
   shadow(x,y+40*s,30*aw*s,8*s);
   ctx.save(); ctx.translate(x,y+(P.bounce?-Math.abs(Math.sin(S.t*8+(P.ph||0)))*10*s:0)); if(P.tilt) ctx.rotate(P.tilt); ctx.scale(s*wd,s*h); ctx.lineCap='round'; ctx.lineJoin='round';
   ctx.strokeStyle=P.pants||'#2b2b44'; ctx.lineWidth=10/aw; ctx.beginPath();
-  if(P.kick){ ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(34,-14); } else if(P.kneel){ ctx.moveTo(-8,0); ctx.lineTo(-10,24); ctx.lineTo(-28,26); ctx.moveTo(8,0); ctx.lineTo(10,24); ctx.lineTo(28,26); } else { ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(10,38); }
+  if(P.run){ const a=Math.sin(S.t*16+(P.ph||0)), b=-a; ctx.moveTo(-7,0); ctx.lineTo(-9+a*12,20); ctx.lineTo(-12+a*18,38-Math.max(0,-a)*12); ctx.moveTo(7,0); ctx.lineTo(9+b*12,20); ctx.lineTo(12+b*18,38-Math.max(0,-b)*12); } else if(P.kick){ ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(34,-14); } else if(P.kneel){ ctx.moveTo(-8,0); ctx.lineTo(-10,24); ctx.lineTo(-28,26); ctx.moveTo(8,0); ctx.lineTo(10,24); ctx.lineTo(28,26); } else { ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(10,38); }
   ctx.stroke();
   ctx.fillStyle=P.jersey; ctx.beginPath(); ctx.moveTo(-18,-50); ctx.lineTo(18,-50); ctx.lineTo(14,2); ctx.lineTo(-14,2); ctx.closePath(); ctx.fill();
   if(P.stripes){ ctx.fillStyle=P.stripes; for(let i=-14;i<14;i+=8) ctx.fillRect(i,-50,4,52); }
-  if(P.text){ ctx.fillStyle=P.textColor||'#fff'; ctx.font='bold '+(P.textSize||16)+'px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(P.text,0,-24); }
+  if(P.text){ ctx.save(); if(wd<0) ctx.scale(-1,1); ctx.fillStyle=P.textColor||'#fff'; ctx.font='bold '+(P.textSize||16)+'px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(P.text,0,-24); ctx.restore(); }
   ctx.strokeStyle=P.sleeves||P.skin; ctx.lineWidth=9/aw; const A=P.arms||'down'; ctx.beginPath();
   if(A==='up'){ ctx.moveTo(-16,-44); ctx.lineTo(-30,-70); ctx.lineTo(-26,-96); ctx.moveTo(16,-44); ctx.lineTo(30,-70); ctx.lineTo(26,-96); }
   else if(A==='spread'){ ctx.moveTo(-16,-44); ctx.lineTo(-40,-50); ctx.lineTo(-58,-40); ctx.moveTo(16,-44); ctx.lineTo(40,-50); ctx.lineTo(58,-40); }
   else if(A==='cross'){ ctx.moveTo(-16,-44); ctx.lineTo(12,-30); ctx.moveTo(16,-44); ctx.lineTo(-12,-30); }
   else if(A==='ball'){ ctx.moveTo(-16,-44); ctx.lineTo(-22,-80); ctx.lineTo(-8,-100); ctx.moveTo(16,-44); ctx.lineTo(22,-80); ctx.lineTo(8,-100); }
+  else if(A==='wide'){ ctx.moveTo(-16,-44); ctx.lineTo(-78,-58); ctx.lineTo(-128,-50); ctx.moveTo(16,-44); ctx.lineTo(78,-58); ctx.lineTo(128,-50); }
+  else if(A==='sprint'){ ctx.moveTo(-16,-44); ctx.lineTo(-32,-34); ctx.lineTo(-20,-16); ctx.moveTo(16,-44); ctx.lineTo(32,-54); ctx.lineTo(22,-74); }
   else if(A==='tackle'){ ctx.moveTo(-16,-44); ctx.lineTo(-34,-24); ctx.lineTo(-30,4); ctx.moveTo(16,-44); ctx.lineTo(34,-24); ctx.lineTo(30,4); }
   else if(A==='throw'){ ctx.moveTo(-16,-44); ctx.lineTo(-24,-10); ctx.moveTo(16,-44); ctx.lineTo(34,-66); ctx.lineTo(30,-92); }
   else { ctx.moveTo(-16,-44); ctx.lineTo(-24,-10); ctx.moveTo(16,-44); ctx.lineTo(24,-10); }
@@ -249,29 +253,47 @@ function person(x,y,s,P){
   if(hs==='short'){ ctx.beginPath(); ctx.arc(0,-68,15,Math.PI,0); ctx.fill(); }
   else if(hs==='bun'){ ctx.beginPath(); ctx.arc(0,-69,15,Math.PI,0); ctx.fill(); ctx.beginPath(); ctx.arc(0,-87,7,0,Math.PI*2); ctx.fill(); }
   else if(hs==='cap'){ ctx.beginPath(); ctx.arc(0,-68,16,Math.PI,0); ctx.fill(); ctx.fillRect(-16,-70,38,5); }
-  if(P.beard){ ctx.beginPath(); ctx.arc(0,-60,10,0,Math.PI); ctx.fill(); }
+  else if(hs==='long'){ ctx.beginPath(); ctx.arc(0,-68,16,Math.PI,0); ctx.fill(); ctx.beginPath(); ctx.ellipse(-16,-54,6,19,0.12,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(16,-54,6,19,-0.12,0,Math.PI*2); ctx.fill(); }
+  if(P.headband){ ctx.fillStyle=P.headband; ctx.fillRect(-16,-74,32,5); ctx.fillStyle=P.hairColor||'#1a1a1a'; }
+  if(P.beard){ const bw=P.beardW||10; ctx.beginPath(); ctx.ellipse(0,-60,bw,bw*(P.beardH||1),0,0,Math.PI); ctx.fill(); }
   if(P.scarf){ ctx.strokeStyle=P.scarf; ctx.lineWidth=7; ctx.beginPath(); ctx.moveTo(-15,-50); ctx.lineTo(15,-50); ctx.stroke(); ctx.strokeStyle='#fff'; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]); }
   if(P.belt){ ctx.fillStyle=P.belt; ctx.fillRect(-15,-8,30,7); }
   if(P.ball){ ctx.fillStyle='#e8752a'; ctx.beginPath(); ctx.arc(0,-112,14,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#5a2a0a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(-14,-112); ctx.lineTo(14,-112); ctx.moveTo(0,-126); ctx.lineTo(0,-98); ctx.stroke(); }
   if(P.flare){ ctx.strokeStyle='#333'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(26,-96); ctx.lineTo(26,-110); ctx.stroke(); const fg=ctx.createRadialGradient(26,-116,0,26,-116,18); fg.addColorStop(0,'#fff5c0'); fg.addColorStop(.4,'#ff7a1a'); fg.addColorStop(1,'rgba(255,60,0,0)'); ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(26,-116,18,0,Math.PI*2); ctx.fill();
     if(S.alive && Math.random()<.35) S.parts.push({x:x+26*s*wd,y:y-116*s*h,vx:(Math.random()-.5)*25,vy:-50,life:1.1,t:0,c:'rgba(255,130,50,.45)',r:7*s}); }
-  if(P.label){ ctx.font='bold 13px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; const tw=ctx.measureText(P.label).width+12, ly=-(P.labelY||130); ctx.fillStyle='rgba(7,7,15,.8)'; ctx.beginPath(); ctx.roundRect(-tw/2,ly-9,tw,18,5); ctx.fill(); ctx.fillStyle=P.labelColor||'#fff'; ctx.fillText(P.label,0,ly); }
+  if(P.label){ if(wd<0) ctx.scale(-1,1); ctx.font='bold 13px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; const tw=ctx.measureText(P.label).width+12, ly=-(P.labelY||130); ctx.fillStyle='rgba(7,7,15,.8)'; ctx.beginPath(); ctx.roundRect(-tw/2,ly-9,tw,18,5); ctx.fill(); ctx.fillStyle=P.labelColor||'#fff'; ctx.fillText(P.label,0,ly); }
   ctx.restore();
 }
 function drawFan(x,y,s,ph,label){ person(x,y,s,{jersey:'#f4f8ff',text:'OM',textColor:'#1b9ad6',textSize:13,skin:'#f1c7a3',hair:ph%2?'cap':'short',hairColor:ph%2?'#1b9ad6':'#2a1a10',arms:'up',scarf:'#5ea8dd',bounce:true,ph:ph*1.3,flare:ph%2===0,label,labelColor:'#8fd3ff'}); }
 function drawFans(x,y,s,wpx){ const d=wpx*0.33; drawFan(x-d,y,s*0.95,0); drawFan(x+d,y,s*0.95,2); drawFan(x,y+6*s,s,1,'VIRAGE SUD'); }
 function drawZlatan(x,y,s){ person(x,y,s,{h:1.2,jersey:'#111',stripes:'#2a2a2a',text:'10',textColor:'#f7c948',skin:'#e9b98f',hair:'bun',beard:true,arms:'spread',label:'ZLATAN',labelColor:'#f7c948',labelY:125}); }
-function drawWemby(x,y,s){ person(x,y,s,{h:1.65,w:0.82,jersey:'#111',text:'1',textColor:'#c4c4c4',skin:'#5a3a22',hair:'short',arms:'ball',ball:true,bounce:true,label:'WEMBY',labelY:148}); }
+function drawWemby(x,y,s,o){ const w=o&&o.wide; person(x,y,s,{h:1.65,w:0.82,jersey:'#111',text:'1',textColor:'#c4c4c4',skin:'#5a3a22',hair:'short',arms:w?'wide':'ball',ball:!w,bounce:true,label:w?'BRAS OUVERTS !':'WEMBY',labelColor:w?'#ff3f5c':'#fff',labelY:148}); }
 function drawMbappe(x,y,s,dir){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=3; for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(x-dir*(30+i*14)*s,y+(10+i*8)*s); ctx.lineTo(x-dir*(60+i*14)*s,y+(10+i*8)*s); ctx.stroke(); } ctx.restore();
   person(x,y+10*s,s,{h:0.9,jersey:'#1b2a6b',text:'10',textColor:'#fff',skin:'#8a5a3a',hair:'short',arms:'cross',kneel:true,label:'MBAPPÉ',labelColor:'#8fd3ff',labelY:112}); }
-function drawRugby(x,y,s,o){ const dir=Math.sign(S.x-o.fl)||1; person(x,y,s,{h:1.08,w:1.25,jersey:'#0f5c3a',stripes:'#f4f4f4',text:'8',skin:'#e9b98f',hair:'short',hairColor:'#3a2a1a',arms:'tackle',tilt:o.lunge?dir*0.95:0,label:o.lunge?'PLAQUAGE !':(o.lock?'IL T\'A VU':'RUGBYMAN'),labelColor:o.lock?'#ff3f5c':'#fff',labelY:128}); }
+function drawRugby(x,y,s,o){ const dir=Math.sign(S.x-o.fl)||1; person(x,y,s,{h:1.1,w:1.3,jersey:'#16339b',belt:'#e30613',text:'8',textColor:'#fff',skin:'#e9b98f',hair:'long',hairColor:'#4a2e18',beard:true,beardW:13,beardH:1.5,headband:'#fff',arms:'tackle',tilt:o.lunge?dir*0.95:0,label:o.lunge?'PLAQUAGE !':(o.lock?'CHABAL T\'A VU':'CHABAL'),labelColor:o.lock?'#ff3f5c':'#fff',labelY:132}); }
 function drawThrower(x,y,s,o){ person(x,y,s,{jersey:'#f4f8ff',text:'OM',textColor:'#1b9ad6',textSize:13,skin:'#f1c7a3',hair:'cap',hairColor:'#1b9ad6',arms:o.thrown?'down':'throw',scarf:'#5ea8dd',label:o.thrown?'':(o.z<44?'IL ARME !':''),labelColor:'#ff3f5c',labelY:120});
   if(!o.thrown){ ctx.save(); ctx.translate(x+30*s,y-96*s); ctx.scale(s,s); drawCupShape(); ctx.restore(); } }
 function drawCupShape(){ ctx.fillStyle='#f7c948'; ctx.beginPath(); ctx.moveTo(-8,-10); ctx.lineTo(8,-10); ctx.lineTo(6,10); ctx.lineTo(-6,10); ctx.closePath(); ctx.fill(); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,-10,8,3.5,0,0,Math.PI*2); ctx.fill(); }
 function drawProj(x,y,s,o){ ctx.save(); ctx.translate(x,y-40*s-Math.sin(Math.min(1,o.flight||0)*Math.PI)*60*s); ctx.rotate(o.rot||0); ctx.scale(s*1.3,s*1.3); drawCupShape(); ctx.restore();
   if(S.alive && Math.random()<.5) S.parts.push({x,y:y-40*s,vx:(Math.random()-.5)*40,vy:20,life:.5,t:0,c:'rgba(247,201,72,.8)',r:2.5*s}); }
 function drawShot(x,y,s,o){ ctx.save(); ctx.globalAlpha=.35; ctx.strokeStyle='#ff3f5c'; ctx.lineWidth=6*s; ctx.beginPath(); ctx.moveTo(x,y-70*s); ctx.lineTo(x,y); ctx.stroke(); ctx.restore(); drawBall(x,y,s*1.05,o.rot||0); }
-function drawKicker(x,y,s,o){ person(x,y,s,{h:1.2,w:(o.side<0?1:-1),jersey:'#111',stripes:'#2a2a2a',text:'10',textColor:'#f7c948',skin:'#e9b98f',hair:'bun',beard:true,arms:'spread',kick:o.kicking,label:o.kicking?'TIR !':'',labelColor:'#ff3f5c',labelY:125}); }
+function drawKicker(x,y,s,o){ person(x,y,s,{h:1.2,w:(o.side<0?1:-1),jersey:'#111',stripes:'#2a2a2a',text:'10',textColor:'#f7c948',skin:'#e9b98f',hair:'bun',beard:true,arms:'spread',kick:o.kicking,label:o.kicking?'TIR !':'ZLATAN',labelColor:o.kicking?'#ff3f5c':'#f7c948',labelY:125}); }
+function tag(x,y,txt,col){ ctx.save(); ctx.font='bold 13px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; const tw=ctx.measureText(txt).width+12; ctx.fillStyle='rgba(7,7,15,.8)'; ctx.beginPath(); ctx.roundRect(x-tw/2,y-9,tw,18,5); ctx.fill(); ctx.fillStyle=col||'#fff'; ctx.fillText(txt,x,y); ctx.restore(); }
+function drawPsg(x,y,s,t){ shadow(x,y+26*s,36*s,8*s); ctx.save(); ctx.translate(x,y-4*s+Math.sin(t*4)*2*s); ctx.scale(s*1.25,s*1.25);
+  const g=ctx.createRadialGradient(0,0,2,0,0,48); g.addColorStop(0,'rgba(227,6,19,.28)'); g.addColorStop(1,'rgba(227,6,19,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,48,0,Math.PI*2); ctx.fill();
+  const body=()=>{ ctx.beginPath(); ctx.moveTo(-28,-18); ctx.lineTo(-12,-28); ctx.quadraticCurveTo(0,-18,12,-28); ctx.lineTo(28,-18); ctx.lineTo(36,-2); ctx.lineTo(22,4); ctx.lineTo(17,-6); ctx.lineTo(17,28); ctx.lineTo(-17,28); ctx.lineTo(-17,-6); ctx.lineTo(-22,4); ctx.lineTo(-36,-2); ctx.closePath(); };
+  body(); ctx.fillStyle='#0a1f5c'; ctx.fill();
+  ctx.save(); body(); ctx.clip(); ctx.fillStyle='#fff'; ctx.fillRect(-9,-30,18,62); ctx.fillStyle='#e30613'; ctx.fillRect(-6,-30,12,62); ctx.restore();
+  body(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); ctx.restore();
+  tag(x,y-50*s,'PSG','#ff6b7a'); }
+function drawChaser(x,y,s,o){ person(x,y,s,{jersey:'#f4f8ff',text:'OM',textColor:'#1b9ad6',textSize:13,skin:'#f1c7a3',hair:o.k%2?'cap':'short',hairColor:o.k%2?'#1b9ad6':'#2a1a10',arms:'up',scarf:'#5ea8dd',run:true,bounce:true,ph:o.k*1.7,flare:o.k%2===0,tilt:0.08,label:o.k===0?'MARSEILLE':'',labelColor:'#8fd3ff',labelY:122}); }
+function drawBolt(x,y,s,o){ ctx.save(); const g=ctx.createLinearGradient(x,y-170*s,x,y); g.addColorStop(0,'rgba(255,212,0,0)'); g.addColorStop(1,'rgba(255,212,0,.55)'); ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(x-16*s,y-170*s); ctx.lineTo(x+16*s,y-170*s); ctx.lineTo(x+26*s,y+30*s); ctx.lineTo(x-26*s,y+30*s); ctx.closePath(); ctx.fill(); ctx.restore();
+  person(x,y,s,{h:1.12,jersey:'#ffd400',belt:'#0a8a3a',text:'BOLT',textColor:'#0a8a3a',textSize:11,pants:'#0a8a3a',skin:'#5a3a22',hair:'short',arms:'sprint',run:true,bounce:true,tilt:0.12,label:'USAIN BOLT',labelColor:'#ffd400',labelY:134}); }
+function drawPaire(x,y,s,o){ const m=o.side<0?1:-1; person(x,y,s,{w:m,jersey:'#e9eef8',stripes:'#3a6ea5',skin:'#e9b98f',hair:'long',hairColor:'#2a1a10',beard:true,beardW:11,beardH:1.2,headband:'#ff3f5c',arms:'throw',label:o.called?'T\'VIENS POUR L\'APÉRO ?!':'BENOÎT PAIRE',labelColor:o.called?'#f7c948':'#fff',labelY:124});
+  ctx.save(); ctx.translate(x+30*s*m,y-102*s); ctx.scale(s,s); ctx.fillStyle='rgba(247,201,72,.92)'; ctx.beginPath(); ctx.moveTo(-9,-12); ctx.lineTo(9,-12); ctx.lineTo(6,12); ctx.lineTo(-6,12); ctx.closePath(); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); ctx.restore(); }
+function laneWarn(l,p0){ ctx.save(); ctx.globalAlpha=.16+.1*Math.sin(S.t*16); ctx.fillStyle='#ffd400'; ctx.beginPath(); ctx.moveTo(xAt(l-0.5,p0),yAt(p0)); ctx.lineTo(xAt(l+0.5,p0),yAt(p0)); ctx.lineTo(xAt(l+0.5,1.3),yAt(1.3)); ctx.lineTo(xAt(l-0.5,1.3),yAt(1.3)); ctx.closePath(); ctx.fill(); ctx.restore(); }
+function laneBlocked(l,zmax,zmin){ if(zmin===undefined) zmin=-1; return S.objs.some(q=>!q.noHit&&!q.soft&&!q.bonus&&!q.hit&&!q.ghost&&q.z>zmin&&q.z<zmax&&((q.fl!==undefined)?Math.abs(q.fl-l)<(q.wide?1.12:0.8):(l>=q.lane&&l<q.lane+q.w))); }
+function takeJersey(){ S.jerseys++; const n=Math.min(5,S.jerseys+1); for(let k=0;k<n;k++) S.objs.push({type:'chaser',lane:k%3,w:1,z:36+k*1.4,fl:k%3,off:((k*0.37)%0.6)-0.3,k}); showFlash('MAILLOT PSG !',n+' MARSEILLAIS FONCENT SUR TOI'); SFX.near(); buzz([30,30,30]); S.shake=6; }
 function drawRiner(x,y,s){ person(x,y,s,{h:1.3,w:1.45,jersey:'#f4f4f4',pants:'#f4f4f4',belt:'#111',skin:'#5a3a22',hair:'none',arms:'spread',label:'TEDDY RINER',labelY:138}); }
 
 /* ───────────────────────── Décor ───────────────────────── */
@@ -333,7 +355,12 @@ function freeLanes(o){ const f=[0,1,2].filter(l=>!(l>=o.lane && l<o.lane+o.w)); 
 function spawn(zOverride){
   const pal=PALIERS[palierAt(S.dist)]; const types=pal.types; let type=types[Math.floor(rng()*types.length)];
   const z=zOverride||VIEW_M; const prev=S.lastObs;
-  const pushObs=o=>{ S.objs.push(o); if(!o.bonus) S.lastObs=o; };
+  const pushObs=o=>{ S.objs.push(o); if(!o.bonus && !o.soft) S.lastObs=o; };
+  // garde-fous : une menace spéciale à la fois, jamais au prélancement, et Bolt jamais pendant un autre danger
+  if(type==='zlatan' && (zOverride || S.dist<S.shotLock)) type='fan';
+  // Bolt arrive ~2 s après : il faut qu'au moins un couloir voisin du sien soit libre à ce moment-là (fenêtre z 16 à 34)
+  if(type==='bolt' && (zOverride || S.dist<S.boltLock || ![S.lane-1,S.lane+1].some(l=>l>=0&&l<=2&&!laneBlocked(l,34,16)))) type='fan';
+  if(type==='paire' && (zOverride || S.dist<S.paireLock)) type='psg';
   // bonus : 1 sur 7, placé derrière le dernier obstacle à partir du palier 3 (bidon à risque)
   if(!zOverride && rng()<0.14){ let lane=Math.floor(rng()*3); if(S.dist>=200 && prev && prev.type!=='wave'){ const fl=freeLanes(prev); lane = fl.length? fl[Math.floor(rng()*fl.length)] : lane; /* toujours dans un couloir libre, à côté de l'obstacle : atteignable mais il faut aller le chercher */ }
     pushObs({type:'bottle',lane,w:1,z:z+4,bonus:true}); }
@@ -346,20 +373,23 @@ function spawn(zOverride){
     const mk=(g,zz)=>{ if(g===0) pushObs({type:'hurdle',lane:1,w:2,z:zz}); else if(g===2) pushObs({type:'hurdle',lane:0,w:2,z:zz}); else { pushObs({type:'hurdle',lane:0,w:1,z:zz}); pushObs({type:'hurdle',lane:2,w:1,z:zz}); } };
     mk(g1,z); mk(g2,z+10); S.spawnAt+=10; return; }
   if(type==='hurdle'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'hurdle',lane,w:2,z}); return; }
-  if(type==='cyclist'){ let lane=Math.floor(rng()*3); let target=lane; if(rng()<.75){ target=Math.max(0,Math.min(2,lane+(rng()<.5?-1:1))); } pushObs({type:'cyclist',lane,w:1,z,fl:lane,target,shiftAt:22+rng()*10}); return; }
+  if(type==='cyclist'){ let lane=Math.floor(rng()*3); let target=lane; if(rng()<.75){ target=Math.max(0,Math.min(2,lane+(rng()<.5?-1:1))); } pushObs({type:'cyclist',lane,w:1,z,fl:lane,target,shiftAt:22+rng()*10,willWide:rng()<.4,wideAt:26+rng()*6,ctrPick:rng()<.5,wide:false}); return; }
   if(type==='stone'){ const dir=rng()<.5?1:-1; pushObs({type:'stone',lane:dir>0?0:2,w:1,z,fl:dir>0?-0.3:2.3,dir,rot:0}); return; }
   if(type==='rugby'){ let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'rugby',lane,w:1,z,fl:lane,lock:false,lunge:false}); return; }
   if(type==='thrower'){ const side=rng()<.5?-1:3; S.objs.push({type:'thrower',lane:side,w:1,z,side,noHit:true,thrown:false}); return; }
-  if(type==='shot'){ const side=S.lane<1?3:-1; S.objs.push({type:'kicker',lane:side,w:1,z:z+6,side,noHit:true,kicking:true,kt:0}); pushObs({type:'shot',lane:S.lane,w:1,z:z+6,fast:true,rot:0}); showFlash('TIR !','ZLATAN FRAPPE DANS TON COULOIR'); return; }
+  if(type==='zlatan'){ const side=S.lane<1?3:-1; S.shotLock=S.dist+55; S.objs.push({type:'kicker',lane:side,w:1,z:z-8,side,noHit:true,kicking:false,kicked:false,kt:0}); return; }
+  if(type==='bolt'){ S.boltLock=S.dist+45; S.objs.push({type:'bolt',lane:S.lane,w:1,z:VIEW_M}); showFlash('BOLT !','IL COURT TOUT DROIT DANS TON COULOIR'); return; }
+  if(type==='paire'){ const side=rng()<.5?-1:3; S.paireLock=S.dist+80; S.objs.push({type:'paire',lane:side,w:1,z,side,noHit:true,called:false}); return; }
+  if(type==='psg'){ let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'psg',lane,w:1,z,soft:true}); return; }
   if(type==='riner'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'riner',lane,w:2,z}); return; }
   // obstacle sur un couloir : ballon, supporter, Zlatan
   let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; }
-  pushObs({type:(type==='fan'||type==='zlatan')?type:'ball',lane,w:1,z,rot:rng()*6});
+  pushObs({type:'fan',lane,w:1,z,rot:rng()*6});
 }
 
 function start(free){
   const essai=dayData.attempts+1;
-  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:13, lastObs:null, alive:true, lives:0, shieldsUsed:0, parts:[], t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
+  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:13, lastObs:null, alive:true, lives:0, shieldsUsed:0, parts:[], t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0, shotLock:0, boltLock:0, paireLock:0, jerseys:0, pullT:0, pullDir:0 };
   inputs=[];
   for(const z of [24,40,56,70]) spawn(z);   // la piste est déjà peuplée au départ : pas de vide pendant 80 m
   document.getElementById('h-sub').textContent = PREVIEW ? 'APERÇU ADMIN' : free ? 'MODE LIBRE · NON CLASSÉ' : (SEED_PARAM?'DÉFI':'PISTE DU JOUR')+' · ESSAI '+essai+'/'+ATTEMPTS;
@@ -370,7 +400,7 @@ function start(free){
 }
 function hudBonus(){ document.getElementById('h-bonus').textContent='×'+S.lives; }
 function burst(x,y,color,n,sp){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, v=(sp||120)*(0.4+Math.random()); S.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,life:0.5+Math.random()*0.4,t:0,c:color,r:2+Math.random()*3}); } }
-function move(d){ if(!S||!S.alive) return; const nl=Math.max(0,Math.min(2,S.lane+d)); if(nl===S.lane) return; S.lane=nl; S.lean=d; inputs.push([Math.round(S.dist*10)/10,nl]); SFX.move(); burst(xAt(S.x,1)-d*10,PY+36,'rgba(230,180,150,.9)',7,70); }
+function move(d){ if(!S||!S.alive) return; if(S.pullT>0 && Math.sign(d)===-S.pullDir) return; const nl=Math.max(0,Math.min(2,S.lane+d)); if(nl===S.lane) return; S.lane=nl; S.lean=d; inputs.push([Math.round(S.dist*10)/10,nl]); SFX.move(); burst(xAt(S.x,1)-d*10,PY+36,'rgba(230,180,150,.9)',7,70); }
 function showFlash(txt,sub){ const f=document.getElementById('flash'); f.innerHTML=txt+'<small>'+sub+'</small>'; f.classList.add('on'); clearTimeout(f._t); f._t=setTimeout(()=>f.classList.remove('on'),1400); }
 
 function loop(now){
@@ -379,34 +409,42 @@ function loop(now){
   // joueur
   S.x+=(S.lane-S.x)*Math.min(1,dt*13); S.lean*=Math.pow(0.02,dt);
   if(S.alive){
-    S.speed=speedAt(S.dist); S.dist+=S.speed*dt; S.phase+=S.speed*dt*1.9;
+    if(S.pullT>0) S.pullT-=dt; S.speed=speedAt(S.dist); S.dist+=S.speed*dt; S.phase+=S.speed*dt*1.9;
     const pal=palierAt(S.dist); if(pal!==S.pal){ S.pal=pal; document.getElementById('h-pal').textContent='PALIER '+(pal+1); showFlash(PALIERS[pal].at+' M !', PALIERS[pal].msg||'ÇA ACCÉLÈRE'); SFX.palier(); buzz(20); }
     if(S.dist>=S.spawnAt){ spawn(); S.spawnAt=S.dist+gapAt(S.dist); }
     for(const o of S.objs){ o.z-=S.speed*dt;
-      if(o.type==='shot'){ o.z-=S.speed*0.9*dt; o.rot=(o.rot||0)+dt*14; }
-      if(o.type==='kicker'){ o.kt+=dt; if(o.kt>0.5) o.kicking=false; }
+      if(o.type==='shot'){ o.z-=S.speed*0.8*dt; o.fl+=o.vx*dt; o.lane=Math.round(o.fl); o.rot=(o.rot||0)+dt*14; }
+      if(o.type==='kicker'){ if(!o.kicked && o.z<50){ o.kicked=true; o.kicking=true; const fl0=o.side, T=Math.max(0.9,o.z/(S.speed*1.8)); S.objs.push({type:'shot',lane:o.side,w:1,z:o.z,fl:fl0,vx:(S.x-fl0)/T,rot:0}); showFlash('TIR !','ZLATAN T\'ENVOIE LE BALLON'); buzz(25); } if(o.kicking){ o.kt+=dt; if(o.kt>0.5) o.kicking=false; } }
+      if(o.type==='bolt'){ o.z-=22*dt; }
+      if(o.type==='chaser'){ o.z-=4*dt; if(o.z>10){ const d=(S.x+o.off)-o.fl; o.fl+=Math.sign(d)*Math.min(Math.abs(d),1.15*dt); } o.fl=Math.max(-0.4,Math.min(2.4,o.fl)); o.lane=Math.round(o.fl); }
+      if(o.type==='paire' && !o.called && o.z<30){ o.called=true; const dir=o.side<0?-1:1, tl=Math.max(0,Math.min(2,S.lane+dir));
+        if(tl===S.lane){ if(!laneBlocked(S.lane,20)){ S.pullDir=dir; S.pullT=0.8; showFlash('L\'APÉRO ?!','BENOÎT PAIRE TE RETIENT'); } }
+        else if(!laneBlocked(tl,18)){ S.lane=tl; S.lean=dir; S.pullDir=dir; S.pullT=0.8; burst(xAt(S.x,1)-dir*10,PY+36,'rgba(230,180,150,.9)',9,90); showFlash('L\'APÉRO ?!','BENOÎT PAIRE T\'ATTIRE'); SFX.move(); buzz(30); }
+        else showFlash('L\'APÉRO ?','BENOÎT PAIRE TE LAISSE FILER'); }
       if(o.type==='rugby'){ if(!o.lunge && o.z<32 && o.z>9){ o.lock=true; const d=S.x-o.fl, mv=Math.min(Math.abs(d),dt*1.25); o.fl+=Math.sign(d)*mv; } if(!o.lunge && o.z<=9){ o.lunge=true; o.ldir=Math.sign(S.x-o.fl)||0; } if(o.lunge){ o.fl+=o.ldir*dt*0.9; } o.fl=Math.max(0,Math.min(2,o.fl)); o.lane=Math.round(o.fl); }
       if(o.type==='thrower' && !o.thrown && o.z<34){ o.thrown=true; const fl0=o.side<0?-0.8:2.8, T=Math.max(0.8,o.z/S.speed); S.objs.push({type:'proj',lane:o.side,w:1,z:o.z,fl:fl0,vx:(S.x-fl0)/T,T,rot:0,flight:0}); }
       if(o.type==='proj'){ o.fl+=o.vx*dt; o.flight+=dt/o.T; o.rot+=dt*10; o.lane=Math.round(o.fl); }
-      if(o.type==='cyclist' && o.z<o.shiftAt){ o.fl+=(o.target-o.fl)*Math.min(1,dt*3); o.lane=Math.round(o.fl); }
+      if(o.type==='cyclist'){ if(o.willWide && !o.wide && o.z<o.wideAt){ o.wide=true; o.target=o.fl<0.75?0.5:(o.fl>1.25?1.5:(o.ctrPick?0.5:1.5)); }
+        if(o.z<o.shiftAt || o.wide){ o.fl+=(o.target-o.fl)*Math.min(1,dt*(o.wide?4:3)); o.lane=Math.round(o.fl); } }
       if(o.type==='stone'){ o.fl+=o.dir*dt*1.6; o.rot+=dt*8; o.lane=Math.round(o.fl); if(o.fl<-0.6||o.fl>2.6){ o.fl=o.dir>0?2.6:-0.6; o.dir*=-1; } }
       if(o.type==='ball') o.rot=(o.rot||0)+dt*6;
       if(!o.hit && !o.ghost && !o.noHit && o.z<2.2 && o.z>-1.2){   // fenêtre de contact : un obstacle déjà dépassé ne tue plus
         const fl = (o.fl!==undefined)?o.fl:null;
-        const hit = fl!==null ? Math.abs(fl-S.x)<0.62 : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
-        if(hit){ o.hit=true; if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(o); } }
-        else if(!o.bonus && !o.near){ o.near=true; SFX.near(); if(o.type==='zlatan') showFlash('ZLATAN','NE BOUGE PAS. JAMAIS.'); }
+        const hit = fl!==null ? Math.abs(fl-S.x)<(o.wide?1.12:0.62) : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
+        if(hit){ o.hit=true; if(o.soft){ takeJersey(); } else if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(o); } }
+        else if(!o.bonus && !o.soft && !o.near){ o.near=true; SFX.near(); }
       }
     }
-    S.objs=S.objs.filter(o=>o.z>-6 && !(o.hit&&o.bonus) && !(o.type==='proj'&&(o.fl<-1||o.fl>3)));
+    S.objs=S.objs.filter(o=>o.z>-6 && !(o.hit&&(o.bonus||o.soft)) && !(o.type==='proj'&&(o.fl<-1||o.fl>3)));
     document.getElementById('h-dist').textContent=Math.floor(S.dist);
   } else { S.deadT+=dt/S.slow; }
   // rendu
   ctx.save(); if(S.shake>0){ ctx.translate((Math.random()-.5)*S.shake,(Math.random()-.5)*S.shake); S.shake*=0.86; if(S.shake<.5) S.shake=0; }
   drawScene(S);
+  for(const o of S.objs) if(o.type==='bolt' && o.z>3) laneWarn(o.lane,zToP(Math.min(o.z,VIEW_M)));
   const sorted=[...S.objs].filter(o=>!o.ghost && o.z<VIEW_M && o.z>-5).sort((a,b)=>b.z-a.z);
   for(const o of sorted){ const p=zToP(o.z), y=yAt(p), sc=0.35+0.95*persp(p); const lx=(o.fl!==undefined)?o.fl:(o.lane+(o.w-1)/2); const x=xAt(lx,p);
-    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='fan') drawFan(x,y,sc,o.lane); else if(o.type==='hurdle') drawFans(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='zlatan') drawZlatan(x,y,sc); else if(o.type==='cyclist') drawWemby(x,y,sc); else if(o.type==='stone') drawMbappe(x,y,sc,o.dir); else if(o.type==='riner') drawRiner(x,y,sc); else if(o.type==='rugby') drawRugby(x,y,sc,o); else if(o.type==='thrower') drawThrower(x,y,sc,o); else if(o.type==='proj') drawProj(x,y,sc,o); else if(o.type==='shot') drawShot(x,y,sc,o); else if(o.type==='kicker') drawKicker(x,y,sc,o); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
+    if(o.type==='psg') drawPsg(x,y,sc,S.t); else if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='fan') drawFan(x,y,sc,o.lane); else if(o.type==='hurdle') drawFans(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='chaser') drawChaser(x,y,sc,o); else if(o.type==='bolt') drawBolt(x,y,sc,o); else if(o.type==='paire') drawPaire(x,y,sc,o); else if(o.type==='cyclist') drawWemby(x,y,sc,o); else if(o.type==='stone') drawMbappe(x,y,sc,o.dir); else if(o.type==='riner') drawRiner(x,y,sc); else if(o.type==='rugby') drawRugby(x,y,sc,o); else if(o.type==='thrower') drawThrower(x,y,sc,o); else if(o.type==='proj') drawProj(x,y,sc,o); else if(o.type==='shot') drawShot(x,y,sc,o); else if(o.type==='kicker') drawKicker(x,y,sc,o); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
   if(S.lives>0){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
   for(const q of S.parts){ q.t+=dt; q.x+=q.vx*dt; q.y+=(q.vy+S.speed*6)*dt; q.vy+=160*dt; const a=Math.max(0,1-q.t/q.life); ctx.globalAlpha=a; ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*(0.6+a*0.6),0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; S.parts=S.parts.filter(q=>q.t<q.life);
   drawRunner(xAt(S.x,1),PY,S.lean,S.phase,!S.alive);
