@@ -77,7 +77,7 @@ canvas{display:block;width:100%;height:100%}
   <div class="card">
     <div class="rule"><b>1</b><span>Ton sportif descend la piste. <em>Touche la gauche ou la droite</em> de l'écran (ou flèches ← →) pour changer de couloir.</span></div>
     <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : ballons, haies, cyclistes, pierres de curling. Un seul contact et c'est fini.</span></div>
-    <div class="rule"><b>3</b><span>Le bidon 💧 vaut <em>+50 pts</em>. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
+    <div class="rule"><b>3</b><span>Le bidon 💧 donne <em>+50 pts et un bouclier</em> qui absorbe un choc. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
   </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">La même piste pour tout le monde aujourd'hui</span><b id="r-track">#1</b></div>
   <button class="btn" id="b-go">GO — C'EST PARTI</button>
@@ -251,12 +251,12 @@ function speedAt(d){ return Math.min(SPEED_MAX, SPEED0 + Math.floor(d/100)*SPEED
 function gapAt(d){ return Math.max(7, 13 - d/100); }   // mètres entre deux spawns
 
 function freeLanes(o){ const f=[0,1,2].filter(l=>!(l>=o.lane && l<o.lane+o.w)); return f; }
-function spawn(){
+function spawn(zOverride){
   const pal=PALIERS[palierAt(S.dist)]; const types=pal.types; let type=types[Math.floor(rng()*types.length)];
-  const z=VIEW_M; const prev=S.lastObs;
+  const z=zOverride||VIEW_M; const prev=S.lastObs;
   const pushObs=o=>{ S.objs.push(o); if(!o.bonus) S.lastObs=o; };
   // bonus : 1 sur 7, placé derrière le dernier obstacle à partir du palier 3 (bidon à risque)
-  if(rng()<0.14){ let lane=Math.floor(rng()*3); if(S.dist>=200 && prev && prev.type!=='wave'){ const fl=freeLanes(prev); lane = fl.length? fl[Math.floor(rng()*fl.length)] : lane; if(rng()<.5 && prev.w===1) lane=prev.lane; /* juste derrière l'obstacle */ }
+  if(!zOverride && rng()<0.14){ let lane=Math.floor(rng()*3); if(S.dist>=200 && prev && prev.type!=='wave'){ const fl=freeLanes(prev); lane = fl.length? fl[Math.floor(rng()*fl.length)] : lane; if(rng()<.5 && prev.w===1) lane=prev.lane; /* juste derrière l'obstacle */ }
     pushObs({type:'bottle',lane,w:1,z:z+4,bonus:true}); }
   // passage garanti : si l'écart au précédent est faible, laisser un couloir libre adjacent au couloir libre précédent
   const nearPrev = prev && (z - prev.z) < 9;
@@ -276,14 +276,16 @@ function spawn(){
 
 function start(free){
   const essai=dayData.attempts+1;
-  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:10, lastObs:null, alive:true, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
+  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:13, lastObs:null, alive:true, shield:false, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
   inputs=[];
+  for(const z of [24,40,56,70]) spawn(z);   // la piste est déjà peuplée au départ : pas de vide pendant 80 m
   document.getElementById('h-sub').textContent = PREVIEW ? 'APERÇU ADMIN' : free ? 'MODE LIBRE · NON CLASSÉ' : (SEED_PARAM?'DÉFI':'PISTE DU JOUR')+' · ESSAI '+essai+'/'+ATTEMPTS;
   document.getElementById('h-pal').textContent='PALIER 1'; document.getElementById('h-bonus').textContent='+0';
   const rec=document.getElementById('h-rec'); if(dayData.best>0){ rec.hidden=false; document.getElementById('h-rec-v').textContent=(pseudo||'toi')+' · '+dayData.best+' m'; } else rec.hidden=true;
   document.getElementById('ov-ready').hidden=true; document.getElementById('ov-end').hidden=true; document.getElementById('hud').hidden=false; document.getElementById('topbtns').style.display='none';
   ac(); last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
+function hudBonus(){ document.getElementById('h-bonus').textContent='+'+S.bonus+(S.shield?' · 🛡':''); }
 function move(d){ if(!S||!S.alive) return; const nl=Math.max(0,Math.min(2,S.lane+d)); if(nl===S.lane) return; S.lane=nl; S.lean=d; inputs.push([Math.round(S.dist*10)/10,nl]); SFX.move(); }
 function showFlash(txt,sub){ const f=document.getElementById('flash'); f.innerHTML=txt+'<small>'+sub+'</small>'; f.classList.add('on'); clearTimeout(f._t); f._t=setTimeout(()=>f.classList.remove('on'),1400); }
 
@@ -303,7 +305,7 @@ function loop(now){
       if(!o.hit && !o.ghost && Math.abs(o.z)<2.2){
         const fl = (o.fl!==undefined)?o.fl:null;
         const hit = fl!==null ? Math.abs(fl-S.x)<0.62 : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
-        if(hit){ o.hit=true; if(o.bonus){ S.bonus+=BONUS; document.getElementById('h-bonus').textContent='+'+S.bonus; SFX.bonus(); buzz(15); } else { die(); } }
+        if(hit){ o.hit=true; if(o.bonus){ S.bonus+=BONUS; S.shield=true; hudBonus(); showFlash('🛡','BOUCLIER ACTIVÉ'); SFX.bonus(); buzz(15); } else if(S.shield){ S.shield=false; hudBonus(); S.shake=10; SFX.near(); buzz(40); showFlash('OUF !','BOUCLIER PERDU'); } else { die(); } }
         else if(!o.bonus && !o.near){ o.near=true; SFX.near(); }
       }
     }
@@ -316,6 +318,7 @@ function loop(now){
   const sorted=[...S.objs].filter(o=>!o.ghost && o.z<VIEW_M && o.z>-5).sort((a,b)=>b.z-a.z);
   for(const o of sorted){ const p=zToP(o.z), y=yAt(p), sc=0.35+0.95*persp(p); const lx=(o.fl!==undefined)?o.fl:(o.lane+(o.w-1)/2); const x=xAt(lx,p);
     if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='hurdle') drawHurdle(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='cyclist') drawCyclist(x,y,sc*1.05,S.t); else if(o.type==='stone') drawStone(x,y,sc*1.1,o.rot); else if(o.type==='bottle') drawBottle(x,y,sc,S.t); }
+  if(S.shield){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
   drawRunner(xAt(S.x,1),PY,S.lean,S.phase,!S.alive);
   if(!S.alive){ ctx.fillStyle='rgba(255,63,92,'+Math.max(0,.35-S.deadT*.5)+')'; ctx.fillRect(0,0,W,H); }
   ctx.restore();
