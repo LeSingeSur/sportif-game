@@ -2905,6 +2905,9 @@ async function loadAthlete(){
     } else if(data.type==='harry'){
       document.getElementById('std-ans-area').style.display='none';
       setupHarry(data);
+    } else if(data.type==='slalom'){
+      document.getElementById('std-ans-area').style.display='none';
+      setupSlalom(data);
     } else if(data.type==='plongee'){
       document.getElementById('std-ans-area').style.display='none';
       setupPlongee(data);
@@ -2963,9 +2966,33 @@ const GAME_ICONS={
   'haltero':'🏋️',
   'tirarlarc':'🎯',
   'nagesync':'🏊',
-  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','saut':'🤸','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️',
+  'assaut':'⚔️','rvlf':'⏳','plongee':'🤿','escalade':'🧗','saut':'🤸','roulette':'🔫','bowling':'🎳','equitation':'🏇','badminton':'🏸','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️','slalom':'🏃',
   'var':'📺'
 };
+// -- LE SLALOM : le jeu vit dans slalom.html, chargé en plein écran ---------
+function setupSlalom(data){
+  const old=document.getElementById('slalom-frame'); if(old) old.remove();
+  const fr=document.createElement('iframe');
+  fr.id='slalom-frame';
+  fr.src='slalom.html?embed=1&seed='+encodeURIComponent(data.slalomSeed||1)+'&attempts='+encodeURIComponent(data.slalomAttempts||3)+'&pseudo='+encodeURIComponent(GAME.pseudo||'');
+  fr.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:9000;background:#07070f';
+  document.body.appendChild(fr);
+  function onMsg(e){
+    if(e.source!==fr.contentWindow||!e.data||e.data.type!=='slalom-done') return;
+    window.removeEventListener('message',onMsg);
+    fr.remove();
+    const finalScore=Math.max(0,Math.min(100,Math.round(e.data.score||0)));
+    GAME.score=finalScore;setScore(finalScore,true);
+    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+    const vName=document.getElementById('v-name');if(vName)vName.textContent='Le Slalom';
+    const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🏃 Meilleur essai : '+(e.data.dist||0)+' m · '+(e.data.pts||0)+' pts · palier '+(e.data.palier||1);
+    ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+    setVictoryIcon('slalom');submitScore(finalScore);
+    show('sv');
+  }
+  window.addEventListener('message',onMsg);
+}
+
 // -- OÙ EST HARRY : le jeu vit dans ou-est-harry.html, chargé en plein écran ----
 function setupHarry(data){
   const old=document.getElementById('harry-frame'); if(old) old.remove();
@@ -8358,7 +8385,7 @@ async function loadLB(){
       }
     }catch(e){}
     lbAthletes.forEach((a,i)=>{
-      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','saut':'🤸','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️'};
+      const icons={'image':'🖼','buzz':'⚡','sportus':'🎯','prix':'💰','trappe':'🕳️','demineur':'💣','chase':'🏃','scout':'🔍','replique':'💬','blackjack':'🃏','grimpe':'🚴','text':'📝','biathlon':'🎿','maillonfaible':'🔗','haltero':'🏋️','tirarlarc':'🏹','escalade':'🧗','saut':'🤸','plongee':'🤿','roulette':'🔫','bowling':'🎳','equitation':'🏇','var':'📺','rvlf':'⏳','badminton':'🏸','nagesync':'🏊','assaut':'⚔️','melimelo':'🔀','apol':'📦','trivpursuit':'🎯','harry':'🕵️','slalom':'🏃'};
       const icon=icons[a.type]||'🎮';
       tabs.appendChild(makeTab(icon+' #'+(i+1), a.id));
     });
