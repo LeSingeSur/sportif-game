@@ -76,7 +76,7 @@ canvas{display:block;width:100%;height:100%}
   <div class="kicker" id="r-kicker">Piste du jour · 3 essais</div>
   <div class="card">
     <div class="rule"><b>1</b><span>Ton sportif descend la piste. <em>Touche la gauche ou la droite</em> de l'écran (ou flèches ← →) pour changer de couloir.</span></div>
-    <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : supporters de l'OM et leurs fumigènes, Zlatan, Wembanyama, Mbappé en glissade, Teddy Riner… Un seul contact et c'est fini.</span></div>
+    <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : le virage Sud et ses fumigènes, un rugbyman qui te traque et plonge, des gobelets lancés des tribunes, les frappes de Zlatan, Wembanyama, Mbappé en glissade, Teddy Riner… Un seul contact et c'est fini.</span></div>
     <div class="rule"><b>3</b><span>Le bouclier 🛡 donne <em>une vie supplémentaire</em> : il absorbe un choc. Ils se cumulent. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
   </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">La même piste pour tout le monde aujourd'hui</span><b id="r-track">#1</b></div>
@@ -109,14 +109,14 @@ const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mèt
 const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
 let ATTEMPTS = 3;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
-  { at:0,    msg:'',                        types:['ball','fan'] },
-  { at:100,  msg:'LE VIRAGE SUD DÉBARQUE',  types:['ball','fan','hurdle'] },
-  { at:200,  msg:'ZLATAN EST LÀ',           types:['fan','hurdle','zlatan','ball'] },
-  { at:300,  msg:'WEMBY DÉBOULE',           types:['fan','hurdle','zlatan','cyclist'] },
-  { at:450,  msg:'LA OLA !',                types:['fan','hurdle','zlatan','cyclist','wave'] },
-  { at:600,  msg:'MBAPPÉ GLISSE',           types:['fan','hurdle','zlatan','cyclist','wave','stone'] },
-  { at:800,  msg:'TEDDY RINER',             types:['fan','hurdle','zlatan','cyclist','wave','stone','riner','offset'] },
-  { at:1000, msg:'VITESSE MAX',             types:['fan','hurdle','zlatan','cyclist','wave','stone','riner','offset','wave'] },
+  { at:0,    msg:'',                                  types:['ball','fan'] },
+  { at:100,  msg:'LE VIRAGE SUD DÉBARQUE',            types:['ball','fan','hurdle'] },
+  { at:200,  msg:'ZLATAN EST LÀ · ÇA JETTE DES GOBELETS', types:['fan','hurdle','zlatan','thrower','ball'] },
+  { at:300,  msg:'RUGBYMAN EN CHASSE',                types:['fan','hurdle','zlatan','thrower','rugby'] },
+  { at:450,  msg:'WEMBY DÉBOULE · LA OLA',            types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave'] },
+  { at:600,  msg:'MBAPPÉ GLISSE · ZLATAN FRAPPE',     types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot'] },
+  { at:800,  msg:'TEDDY RINER',                       types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot','riner','offset'] },
+  { at:1000, msg:'VITESSE MAX',                       types:['fan','hurdle','zlatan','thrower','rugby','cyclist','wave','stone','shot','riner','offset','rugby','wave'] },
 ];
 // Qui t'a éliminé : [nom court pour le flash, phrase pour l'écran de fin]
 const KILL = {
@@ -126,7 +126,10 @@ const KILL = {
   zlatan:  ['ZLATAN',                 'Zlatan ne s\'écarte pas. Zlatan n\'a jamais eu à s\'écarter.'],
   cyclist: ['WEMBANYAMA',             'Bloqué par Wembanyama. 2 m 24, fallait anticiper.'],
   stone:   ['MBAPPÉ',                 'Mbappé a glissé sur toi en célébrant, bras croisés.'],
-  riner:   ['TEDDY RINER',            'Ippon. Teddy Riner n\'a même pas forcé.']
+  riner:   ['TEDDY RINER',            'Ippon. Teddy Riner n\'a même pas forcé.'],
+  rugby:   ['UN PLAQUAGE',            'Plaqué aux chevilles. Le rugbyman t\'avait repéré depuis 30 m.'],
+  proj:    ['UN GOBELET DE TRIBUNE',  'Un gobelet de bière lancé depuis la tribune. En pleine tête. Classique.'],
+  shot:    ['UNE FRAPPE DE ZLATAN',   'Frappe de Zlatan en pleine face. Il ne s\'est même pas retourné.']
 };
 
 /* ───────────────────────── Piste du jour ───────────────────────── */
@@ -223,20 +226,22 @@ function drawRunner(x,y,lean,phase,dead){ shadow(x,y+40,34,10); ctx.save(); ctx.
 /* ───────────────────────── Le casting ───────────────────────── */
 const FH = "'Bebas Neue',Impact,sans-serif";
 function person(x,y,s,P){
-  const h=P.h||1, wd=P.w||1;
-  shadow(x,y+40*s,30*wd*s,8*s);
-  ctx.save(); ctx.translate(x,y+(P.bounce?-Math.abs(Math.sin(S.t*8+(P.ph||0)))*10*s:0)); ctx.scale(s*wd,s*h); ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.strokeStyle=P.pants||'#2b2b44'; ctx.lineWidth=10/wd; ctx.beginPath();
-  if(P.kneel){ ctx.moveTo(-8,0); ctx.lineTo(-10,24); ctx.lineTo(-28,26); ctx.moveTo(8,0); ctx.lineTo(10,24); ctx.lineTo(28,26); } else { ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(10,38); }
+  const h=P.h||1, wd=P.w||1, aw=Math.abs(wd);
+  shadow(x,y+40*s,30*aw*s,8*s);
+  ctx.save(); ctx.translate(x,y+(P.bounce?-Math.abs(Math.sin(S.t*8+(P.ph||0)))*10*s:0)); if(P.tilt) ctx.rotate(P.tilt); ctx.scale(s*wd,s*h); ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=P.pants||'#2b2b44'; ctx.lineWidth=10/aw; ctx.beginPath();
+  if(P.kick){ ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(34,-14); } else if(P.kneel){ ctx.moveTo(-8,0); ctx.lineTo(-10,24); ctx.lineTo(-28,26); ctx.moveTo(8,0); ctx.lineTo(10,24); ctx.lineTo(28,26); } else { ctx.moveTo(-7,0); ctx.lineTo(-10,38); ctx.moveTo(7,0); ctx.lineTo(10,38); }
   ctx.stroke();
   ctx.fillStyle=P.jersey; ctx.beginPath(); ctx.moveTo(-18,-50); ctx.lineTo(18,-50); ctx.lineTo(14,2); ctx.lineTo(-14,2); ctx.closePath(); ctx.fill();
   if(P.stripes){ ctx.fillStyle=P.stripes; for(let i=-14;i<14;i+=8) ctx.fillRect(i,-50,4,52); }
   if(P.text){ ctx.fillStyle=P.textColor||'#fff'; ctx.font='bold '+(P.textSize||16)+'px '+FH; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(P.text,0,-24); }
-  ctx.strokeStyle=P.sleeves||P.skin; ctx.lineWidth=9/wd; const A=P.arms||'down'; ctx.beginPath();
+  ctx.strokeStyle=P.sleeves||P.skin; ctx.lineWidth=9/aw; const A=P.arms||'down'; ctx.beginPath();
   if(A==='up'){ ctx.moveTo(-16,-44); ctx.lineTo(-30,-70); ctx.lineTo(-26,-96); ctx.moveTo(16,-44); ctx.lineTo(30,-70); ctx.lineTo(26,-96); }
   else if(A==='spread'){ ctx.moveTo(-16,-44); ctx.lineTo(-40,-50); ctx.lineTo(-58,-40); ctx.moveTo(16,-44); ctx.lineTo(40,-50); ctx.lineTo(58,-40); }
   else if(A==='cross'){ ctx.moveTo(-16,-44); ctx.lineTo(12,-30); ctx.moveTo(16,-44); ctx.lineTo(-12,-30); }
   else if(A==='ball'){ ctx.moveTo(-16,-44); ctx.lineTo(-22,-80); ctx.lineTo(-8,-100); ctx.moveTo(16,-44); ctx.lineTo(22,-80); ctx.lineTo(8,-100); }
+  else if(A==='tackle'){ ctx.moveTo(-16,-44); ctx.lineTo(-34,-24); ctx.lineTo(-30,4); ctx.moveTo(16,-44); ctx.lineTo(34,-24); ctx.lineTo(30,4); }
+  else if(A==='throw'){ ctx.moveTo(-16,-44); ctx.lineTo(-24,-10); ctx.moveTo(16,-44); ctx.lineTo(34,-66); ctx.lineTo(30,-92); }
   else { ctx.moveTo(-16,-44); ctx.lineTo(-24,-10); ctx.moveTo(16,-44); ctx.lineTo(24,-10); }
   ctx.stroke();
   ctx.fillStyle=P.skin; ctx.beginPath(); ctx.arc(0,-66,15,0,Math.PI*2); ctx.fill();
@@ -259,6 +264,14 @@ function drawZlatan(x,y,s){ person(x,y,s,{h:1.2,jersey:'#111',stripes:'#2a2a2a',
 function drawWemby(x,y,s){ person(x,y,s,{h:1.65,w:0.82,jersey:'#111',text:'1',textColor:'#c4c4c4',skin:'#5a3a22',hair:'short',arms:'ball',ball:true,bounce:true,label:'WEMBY',labelY:148}); }
 function drawMbappe(x,y,s,dir){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=3; for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(x-dir*(30+i*14)*s,y+(10+i*8)*s); ctx.lineTo(x-dir*(60+i*14)*s,y+(10+i*8)*s); ctx.stroke(); } ctx.restore();
   person(x,y+10*s,s,{h:0.9,jersey:'#1b2a6b',text:'10',textColor:'#fff',skin:'#8a5a3a',hair:'short',arms:'cross',kneel:true,label:'MBAPPÉ',labelColor:'#8fd3ff',labelY:112}); }
+function drawRugby(x,y,s,o){ const dir=Math.sign(S.x-o.fl)||1; person(x,y,s,{h:1.08,w:1.25,jersey:'#0f5c3a',stripes:'#f4f4f4',text:'8',skin:'#e9b98f',hair:'short',hairColor:'#3a2a1a',arms:'tackle',tilt:o.lunge?dir*0.95:0,label:o.lunge?'PLAQUAGE !':(o.lock?'IL T\'A VU':'RUGBYMAN'),labelColor:o.lock?'#ff3f5c':'#fff',labelY:128}); }
+function drawThrower(x,y,s,o){ person(x,y,s,{jersey:'#f4f8ff',text:'OM',textColor:'#1b9ad6',textSize:13,skin:'#f1c7a3',hair:'cap',hairColor:'#1b9ad6',arms:o.thrown?'down':'throw',scarf:'#5ea8dd',label:o.thrown?'':(o.z<44?'IL ARME !':''),labelColor:'#ff3f5c',labelY:120});
+  if(!o.thrown){ ctx.save(); ctx.translate(x+30*s,y-96*s); ctx.scale(s,s); drawCupShape(); ctx.restore(); } }
+function drawCupShape(){ ctx.fillStyle='#f7c948'; ctx.beginPath(); ctx.moveTo(-8,-10); ctx.lineTo(8,-10); ctx.lineTo(6,10); ctx.lineTo(-6,10); ctx.closePath(); ctx.fill(); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,-10,8,3.5,0,0,Math.PI*2); ctx.fill(); }
+function drawProj(x,y,s,o){ ctx.save(); ctx.translate(x,y-40*s-Math.sin(Math.min(1,o.flight||0)*Math.PI)*60*s); ctx.rotate(o.rot||0); ctx.scale(s*1.3,s*1.3); drawCupShape(); ctx.restore();
+  if(S.alive && Math.random()<.5) S.parts.push({x,y:y-40*s,vx:(Math.random()-.5)*40,vy:20,life:.5,t:0,c:'rgba(247,201,72,.8)',r:2.5*s}); }
+function drawShot(x,y,s,o){ ctx.save(); ctx.globalAlpha=.35; ctx.strokeStyle='#ff3f5c'; ctx.lineWidth=6*s; ctx.beginPath(); ctx.moveTo(x,y-70*s); ctx.lineTo(x,y); ctx.stroke(); ctx.restore(); drawBall(x,y,s*1.05,o.rot||0); }
+function drawKicker(x,y,s,o){ person(x,y,s,{h:1.2,w:(o.side<0?1:-1),jersey:'#111',stripes:'#2a2a2a',text:'10',textColor:'#f7c948',skin:'#e9b98f',hair:'bun',beard:true,arms:'spread',kick:o.kicking,label:o.kicking?'TIR !':'',labelColor:'#ff3f5c',labelY:125}); }
 function drawRiner(x,y,s){ person(x,y,s,{h:1.3,w:1.45,jersey:'#f4f4f4',pants:'#f4f4f4',belt:'#111',skin:'#5a3a22',hair:'none',arms:'spread',label:'TEDDY RINER',labelY:138}); }
 
 /* ───────────────────────── Décor ───────────────────────── */
@@ -335,6 +348,9 @@ function spawn(zOverride){
   if(type==='hurdle'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'hurdle',lane,w:2,z}); return; }
   if(type==='cyclist'){ let lane=Math.floor(rng()*3); let target=lane; if(rng()<.75){ target=Math.max(0,Math.min(2,lane+(rng()<.5?-1:1))); } pushObs({type:'cyclist',lane,w:1,z,fl:lane,target,shiftAt:22+rng()*10}); return; }
   if(type==='stone'){ const dir=rng()<.5?1:-1; pushObs({type:'stone',lane:dir>0?0:2,w:1,z,fl:dir>0?-0.3:2.3,dir,rot:0}); return; }
+  if(type==='rugby'){ let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'rugby',lane,w:1,z,fl:lane,lock:false,lunge:false}); return; }
+  if(type==='thrower'){ const side=rng()<.5?-1:3; S.objs.push({type:'thrower',lane:side,w:1,z,side,noHit:true,thrown:false}); return; }
+  if(type==='shot'){ const side=S.lane<1?3:-1; S.objs.push({type:'kicker',lane:side,w:1,z:z+6,side,noHit:true,kicking:true,kt:0}); pushObs({type:'shot',lane:S.lane,w:1,z:z+6,fast:true,rot:0}); showFlash('TIR !','ZLATAN FRAPPE DANS TON COULOIR'); return; }
   if(type==='riner'){ let lane=Math.floor(rng()*2); if(nearPrev){ const ok=[0,1].filter(l=>allowed.some(a=>a<l||a>=l+2)); if(ok.length) lane=ok[Math.floor(rng()*ok.length)]; } pushObs({type:'riner',lane,w:2,z}); return; }
   // obstacle sur un couloir : ballon, supporter, Zlatan
   let lane=Math.floor(rng()*3); if(nearPrev && allowed.length){ const ok=[0,1,2].filter(l=>allowed.some(a=>a!==l)); lane=ok[Math.floor(rng()*ok.length)]; }
@@ -367,17 +383,22 @@ function loop(now){
     const pal=palierAt(S.dist); if(pal!==S.pal){ S.pal=pal; document.getElementById('h-pal').textContent='PALIER '+(pal+1); showFlash(PALIERS[pal].at+' M !', PALIERS[pal].msg||'ÇA ACCÉLÈRE'); SFX.palier(); buzz(20); }
     if(S.dist>=S.spawnAt){ spawn(); S.spawnAt=S.dist+gapAt(S.dist); }
     for(const o of S.objs){ o.z-=S.speed*dt;
+      if(o.type==='shot'){ o.z-=S.speed*0.9*dt; o.rot=(o.rot||0)+dt*14; }
+      if(o.type==='kicker'){ o.kt+=dt; if(o.kt>0.5) o.kicking=false; }
+      if(o.type==='rugby'){ if(!o.lunge && o.z<32 && o.z>9){ o.lock=true; const d=S.x-o.fl, mv=Math.min(Math.abs(d),dt*1.25); o.fl+=Math.sign(d)*mv; } if(!o.lunge && o.z<=9){ o.lunge=true; o.ldir=Math.sign(S.x-o.fl)||0; } if(o.lunge){ o.fl+=o.ldir*dt*0.9; } o.fl=Math.max(0,Math.min(2,o.fl)); o.lane=Math.round(o.fl); }
+      if(o.type==='thrower' && !o.thrown && o.z<34){ o.thrown=true; const fl0=o.side<0?-0.8:2.8, T=Math.max(0.8,o.z/S.speed); S.objs.push({type:'proj',lane:o.side,w:1,z:o.z,fl:fl0,vx:(S.x-fl0)/T,T,rot:0,flight:0}); }
+      if(o.type==='proj'){ o.fl+=o.vx*dt; o.flight+=dt/o.T; o.rot+=dt*10; o.lane=Math.round(o.fl); }
       if(o.type==='cyclist' && o.z<o.shiftAt){ o.fl+=(o.target-o.fl)*Math.min(1,dt*3); o.lane=Math.round(o.fl); }
       if(o.type==='stone'){ o.fl+=o.dir*dt*1.6; o.rot+=dt*8; o.lane=Math.round(o.fl); if(o.fl<-0.6||o.fl>2.6){ o.fl=o.dir>0?2.6:-0.6; o.dir*=-1; } }
       if(o.type==='ball') o.rot=(o.rot||0)+dt*6;
-      if(!o.hit && !o.ghost && o.z<2.2 && o.z>-1.2){   // fenêtre de contact : un obstacle déjà dépassé ne tue plus
+      if(!o.hit && !o.ghost && !o.noHit && o.z<2.2 && o.z>-1.2){   // fenêtre de contact : un obstacle déjà dépassé ne tue plus
         const fl = (o.fl!==undefined)?o.fl:null;
         const hit = fl!==null ? Math.abs(fl-S.x)<0.62 : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
         if(hit){ o.hit=true; if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(o); } }
         else if(!o.bonus && !o.near){ o.near=true; SFX.near(); if(o.type==='zlatan') showFlash('ZLATAN','NE BOUGE PAS. JAMAIS.'); }
       }
     }
-    S.objs=S.objs.filter(o=>o.z>-6 && !(o.hit&&o.bonus));
+    S.objs=S.objs.filter(o=>o.z>-6 && !(o.hit&&o.bonus) && !(o.type==='proj'&&(o.fl<-1||o.fl>3)));
     document.getElementById('h-dist').textContent=Math.floor(S.dist);
   } else { S.deadT+=dt/S.slow; }
   // rendu
@@ -385,7 +406,7 @@ function loop(now){
   drawScene(S);
   const sorted=[...S.objs].filter(o=>!o.ghost && o.z<VIEW_M && o.z>-5).sort((a,b)=>b.z-a.z);
   for(const o of sorted){ const p=zToP(o.z), y=yAt(p), sc=0.35+0.95*persp(p); const lx=(o.fl!==undefined)?o.fl:(o.lane+(o.w-1)/2); const x=xAt(lx,p);
-    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='fan') drawFan(x,y,sc,o.lane); else if(o.type==='hurdle') drawFans(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='zlatan') drawZlatan(x,y,sc); else if(o.type==='cyclist') drawWemby(x,y,sc); else if(o.type==='stone') drawMbappe(x,y,sc,o.dir); else if(o.type==='riner') drawRiner(x,y,sc); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
+    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='fan') drawFan(x,y,sc,o.lane); else if(o.type==='hurdle') drawFans(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='zlatan') drawZlatan(x,y,sc); else if(o.type==='cyclist') drawWemby(x,y,sc); else if(o.type==='stone') drawMbappe(x,y,sc,o.dir); else if(o.type==='riner') drawRiner(x,y,sc); else if(o.type==='rugby') drawRugby(x,y,sc,o); else if(o.type==='thrower') drawThrower(x,y,sc,o); else if(o.type==='proj') drawProj(x,y,sc,o); else if(o.type==='shot') drawShot(x,y,sc,o); else if(o.type==='kicker') drawKicker(x,y,sc,o); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
   if(S.lives>0){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
   for(const q of S.parts){ q.t+=dt; q.x+=q.vx*dt; q.y+=(q.vy+S.speed*6)*dt; q.vy+=160*dt; const a=Math.max(0,1-q.t/q.life); ctx.globalAlpha=a; ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*(0.6+a*0.6),0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; S.parts=S.parts.filter(q=>q.t<q.life);
   drawRunner(xAt(S.x,1),PY,S.lean,S.phase,!S.alive);
