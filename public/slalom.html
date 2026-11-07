@@ -105,7 +105,7 @@ canvas{display:block;width:100%;height:100%}
 'use strict';
 /* ───────────────────────── Paramètres de jeu ───────────────────────── */
 const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mètres
-const SPEED0 = 9, SPEED_STEP = 1.25, SPEED_MAX = 21; // m/s
+const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
 const ATTEMPTS = 3, BONUS = 50;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
   { at:0,    msg:'',                     types:['ball'] },
@@ -238,7 +238,7 @@ let S=null, raf=0, last=0, inputs=[];
 function rng(){ S.seed=(Math.imul(S.seed,1664525)+1013904223)>>>0; return S.seed/4294967296; }
 function palierAt(d){ let i=0; for(let k=0;k<PALIERS.length;k++) if(d>=PALIERS[k].at) i=k; return i; }
 function speedAt(d){ return Math.min(SPEED_MAX, SPEED0 + Math.floor(d/100)*SPEED_STEP); }
-function gapAt(d){ return Math.max(7, 15 - d/90); }   // mètres entre deux spawns
+function gapAt(d){ return Math.max(7, 13 - d/100); }   // mètres entre deux spawns
 
 function freeLanes(o){ const f=[0,1,2].filter(l=>!(l>=o.lane && l<o.lane+o.w)); return f; }
 function spawn(){
@@ -266,7 +266,7 @@ function spawn(){
 
 function start(free){
   const essai=dayData.attempts+1;
-  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:14, lastObs:null, alive:true, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
+  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:10, lastObs:null, alive:true, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
   inputs=[];
   document.getElementById('h-sub').textContent = free ? 'MODE LIBRE · NON CLASSÉ' : 'PISTE DU JOUR · ESSAI '+essai+'/'+ATTEMPTS;
   document.getElementById('h-pal').textContent='PALIER 1'; document.getElementById('h-bonus').textContent='+0';
