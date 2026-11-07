@@ -1,0 +1,549 @@
+<title>Maquettes Grand Chelem</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+/* Layout : une page sombre fidèle à la charte du jeu, trois volets (Refonte · Carrière Mystère · Le Slalom),
+   chaque volet = rangée de cadres téléphone + notes. Thème unique, assumé : c'est la charte du produit. */
+:root{
+  --bg:#07070f; --c1:#0f0f1c; --c2:#191928; --line:#262640;
+  --txt:#ededf8; --mute:#8a8aa8; --neon:#d4ff00; --cyan:#19e6c1; --red:#ff3f5c; --gold:#f7c948;
+  --fh:'Bebas Neue',Impact,'Arial Narrow',sans-serif; --ff:'Nunito',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--ff);line-height:1.5;
+  padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{max-width:1180px;margin:0 auto;padding:28px 0 8px}
+.kicker{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mute);font-weight:800}
+h1{font-family:var(--fh);font-weight:400;font-size:clamp(40px,8vw,64px);line-height:.95;margin:4px 0 10px;color:var(--neon);text-wrap:balance}
+h1 small{display:block;color:var(--txt);font-size:.5em;letter-spacing:1px}
+.lead{max-width:62ch;color:var(--mute);margin:0 0 18px;font-size:15px}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:10px 0 14px;display:flex;gap:8px;flex-wrap:wrap}
+nav a{text-decoration:none;color:var(--txt);background:var(--c2);border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-weight:800;font-size:13px}
+nav a.on{background:var(--neon);color:#07070f;border-color:var(--neon)}
+nav a:focus-visible,button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+main{max-width:1180px;margin:0 auto}
+section.vol{display:none;padding-top:10px}
+section.vol.on{display:block}
+h2{font-family:var(--fh);font-weight:400;font-size:40px;margin:8px 0 2px;letter-spacing:.5px}
+.sub{color:var(--mute);max-width:70ch;margin:0 0 22px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;align-items:start;margin-bottom:40px}
+.mk{display:flex;flex-direction:column;gap:14px;min-width:0}
+.mk h3{margin:0;font-size:15px;font-weight:900;letter-spacing:.5px}
+.mk h3 span{color:var(--neon);font-family:var(--fh);font-size:20px;margin-right:8px;letter-spacing:1px}
+.notes{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--mute)}
+.notes li{display:flex;gap:8px}.notes b{color:var(--txt);font-weight:800}
+.notes i{flex:none;width:18px;height:18px;border-radius:50%;background:var(--neon);color:#07070f;font-style:normal;font-size:11px;font-weight:900;display:grid;place-items:center;margin-top:2px}
+/* ─ Cadre téléphone ─ */
+.ph{width:100%;max-width:320px;aspect-ratio:9/18.4;background:#000;border-radius:38px;padding:9px;border:1px solid #2a2a3c;box-shadow:0 30px 60px rgba(0,0,0,.6);position:relative;margin:0 auto}
+.ph::before{content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);width:90px;height:22px;border-radius:12px;background:#000;z-index:3}
+.scr{position:relative;width:100%;height:100%;border-radius:30px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;font-size:12px}
+.scr .sb{height:40px;flex:none}
+.scr .body{flex:1;overflow:hidden;padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{font-family:var(--fh);font-size:26px;line-height:.9;color:var(--neon);letter-spacing:1px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--c2);border:1px solid var(--line);border-radius:99px;padding:4px 9px;font-weight:800;font-size:11px;white-space:nowrap}
+.chip.fire{color:var(--gold)}.chip.neon{color:var(--neon)}
+.card{background:var(--c1);border:1px solid var(--line);border-radius:16px;padding:12px}
+.card.hero{background:linear-gradient(145deg,#1a1a30,#0f0f1c);border-color:#3a3a5a;position:relative;overflow:hidden}
+.card.hero::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(var(--neon),transparent 70%);opacity:.18}
+.lbl{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);font-weight:800}
+.big{font-family:var(--fh);font-size:34px;line-height:1;letter-spacing:.5px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:12px;padding:12px;font:800 13px var(--ff);background:var(--neon);color:#07070f;width:100%;cursor:pointer;letter-spacing:.5px}
+.btn.ghost{background:var(--c2);color:var(--txt);border:1px solid var(--line)}
+.btn.cy{background:var(--cyan)}
+.tabbar{flex:none;display:flex;justify-content:space-around;padding:8px 6px 12px;border-top:1px solid var(--line);background:var(--c1);font-size:9px;font-weight:800;color:var(--mute)}
+.tabbar div{display:flex;flex-direction:column;align-items:center;gap:2px}.tabbar div span{font-size:16px}.tabbar .on{color:var(--neon)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.tile{background:var(--c2);border-radius:12px;padding:8px 4px;text-align:center;font-size:9.5px;font-weight:800;border:1px solid var(--line)}
+.tile span{display:block;font-size:20px}
+.tile.done{opacity:.55}.tile .pts{color:var(--cyan);font-size:9px;display:block}
+.rule{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600}
+.rule b{font-family:var(--fh);font-size:20px;color:var(--neon);line-height:1;min-width:16px}
+.kb{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
+.kb div{background:var(--c2);border-radius:6px;text-align:center;padding:6px 0;font-weight:900;font-size:11px}
+.kb div.off{opacity:.25}.kb div.ok{background:var(--cyan);color:#07070f}
+.slots{display:flex;gap:5px;justify-content:center}
+.slots div{width:30px;height:36px;border-radius:7px;background:var(--c2);display:grid;place-items:center;font-family:var(--fh);font-size:22px;border:1px solid var(--line)}
+.slots div.ok{background:var(--neon);color:#07070f}.slots div.half{border-color:var(--gold);color:var(--gold)}
+.bar{height:8px;border-radius:99px;background:var(--c2);overflow:hidden}.bar i{display:block;height:100%;background:var(--neon);width:72%}
+.lb{display:flex;flex-direction:column;gap:6px}
+.lb div{display:flex;align-items:center;gap:8px;background:var(--c1);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:700}
+.lb div.me{border-color:var(--neon);background:#1b1f0c}
+.lb .r{font-family:var(--fh);font-size:18px;color:var(--mute);min-width:22px}.lb .s{margin-left:auto;font-family:var(--fh);font-size:20px;color:var(--neon)}
+.lb small{color:var(--mute);font-weight:600;font-size:10px}
+.sharebox{background:#0b0b14;border:1px dashed #3a3a5a;border-radius:12px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.6;white-space:pre-wrap}
+.steps{display:flex;flex-direction:column;gap:6px}
+.step{display:flex;align-items:center;gap:8px;background:var(--c1);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:700}
+.step .yrs{font-family:var(--fh);font-size:16px;color:var(--mute);min-width:62px;letter-spacing:.5px}
+.step.lock{color:var(--mute);justify-content:center;border-style:dashed;background:transparent}
+.step .pt{margin-left:auto;font-size:10px;color:var(--cyan);font-weight:900}
+.inp{display:flex;gap:6px}
+.inp input{flex:1;min-width:0;background:var(--c2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:10px;font:700 13px var(--ff)}
+.inp button{flex:none;width:44px;border-radius:10px;border:none;background:var(--cyan);font-size:18px;font-weight:900;cursor:pointer}
+.sugg{display:flex;flex-direction:column;gap:3px}
+.sugg button{text-align:left;background:var(--c2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:7px 10px;font:700 12px var(--ff);cursor:pointer}
+.toast{font-size:12px;font-weight:800;color:var(--gold);min-height:16px;text-align:center}
+.fx{animation:pop .35s ease}@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+/* ─ Slalom ─ */
+#cvwrap{position:relative;flex:1;border-radius:0 0 30px 30px;overflow:hidden;background:#0a1a0f;touch-action:none}
+#cv{display:block;width:100%;height:100%}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;background:rgba(7,7,15,.86)}
+.ov h4{font-family:var(--fh);font-size:40px;margin:0;color:var(--neon);line-height:1}
+.ov p{margin:0;color:var(--mute);font-size:12.5px;max-width:28ch}
+.hud{position:absolute;top:8px;left:10px;right:10px;display:flex;justify-content:space-between;font-family:var(--fh);font-size:22px;color:#fff;text-shadow:0 2px 6px #000;pointer-events:none;letter-spacing:1px}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:6px}
+.spec .card{font-size:13.5px}.spec .card h4{margin:0 0 6px;font-family:var(--fh);font-weight:400;font-size:22px;letter-spacing:.5px;color:var(--neon)}
+.spec ul{margin:0;padding-left:16px;color:var(--mute)}.spec li{margin:3px 0}.spec li b{color:var(--txt)}
+.kicker2{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mute);font-weight:800;margin:30px 0 8px}
+@media (prefers-reduced-motion:reduce){.fx{animation:none}}
+</style>
+
+<header>
+  <div class="kicker">Le Grand Chelem · propositions</div>
+  <h1>Maquettes<small>Refonte · Carrière Mystère · Le Slalom</small></h1>
+  <p class="lead">Trois volets : la refonte de l'interface existante, le nouveau jeu quotidien « Carrière Mystère », et un mini-jeu d'esquive jouable ici même. Les écrans sont des maquettes au format téléphone ; les deux jeux sont interactifs.</p>
+  <nav id="nav">
+    <a href="#refonte" class="on">1 · Refonte</a>
+    <a href="#carriere">2 · Carrière Mystère</a>
+    <a href="#slalom">3 · Le Slalom</a>
+  </nav>
+</header>
+
+<main>
+<!-- ═══════════════════════ 1. REFONTE ═══════════════════════ -->
+<section class="vol on" id="refonte">
+  <h2>Refonte de l'interface</h2>
+  <p class="sub">Même charte (noir profond, néon, Bebas Neue), mais une seule coque applicative, un accueil qui sert à jouer, et une règle appliquée partout : rien ne démarre avant que le joueur ait dit « GO ».</p>
+
+  <div class="row">
+    <div class="mk">
+      <h3><span>A</span>Accueil : le hub du jour</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body">
+          <div class="top"><div class="logo">LE GRAND<br>CHELEM</div><span class="chip fire">🔥 Série 4</span></div>
+          <div class="card hero">
+            <div class="lbl">Défi du jour · vendredi 7 nov.</div>
+            <div class="big" style="margin:4px 0 2px">🔡 SPORTUS</div>
+            <div style="color:var(--mute);font-weight:700">Devine le sportif mystère · 2 min · 100 pts</div>
+            <div style="display:flex;gap:6px;margin:10px 0 8px"><span class="chip neon">⏳ 13 h 22 restantes</span><span class="chip">👥 312 joueurs</span></div>
+            <button class="btn">▶ JOUER LE DÉFI DU JOUR</button>
+          </div>
+          <div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+            <span style="font-size:22px">🎙️</span>
+            <div style="flex:1;min-width:0"><b>Le mot du Game Master</b><br><small style="color:var(--mute)">« Semaine tennis : lundi Sportus, mardi Juste Prix… Dimanche, finale ! »</small></div>
+          </div>
+          <div class="lbl">Entraînement · 28 formats</div>
+          <div class="grid3">
+            <div class="tile"><span>🃏</span>Blackjack<i class="pts">Record 84</i></div>
+            <div class="tile done"><span>💰</span>Juste Prix<i class="pts">✓ 100</i></div>
+            <div class="tile"><span>🚴</span>L'Alpe<i class="pts">Record 61</i></div>
+            <div class="tile"><span>🎿</span>Biathlon<i class="pts">—</i></div>
+            <div class="tile"><span>🏁</span>Formula<i class="pts">1'42</i></div>
+            <div class="tile"><span>🏃</span>Slalom<i class="pts">412 m</i></div>
+          </div>
+        </div>
+        <div class="tabbar"><div class="on"><span>🏟️</span>Jouer</div><div><span>📅</span>Les jours passés</div><div><span>🏆</span>Classement</div><div><span>👤</span>Profil</div></div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Un seul bouton principal :</b> le défi du jour, avec son compte à rebours et le nombre de joueurs déjà passés.</div></li>
+        <li><i>2</i><div><b>La série est visible en permanence</b> dès l'accueil, à côté du logo.</div></li>
+        <li><i>3</i><div><b>Les tuiles deviennent cliquables</b> et montrent le record personnel : le catalogue existant passe en mode Entraînement.</div></li>
+        <li><i>4</i><div><b>Le Game Master a une voix :</b> un message du jour, le programme de la semaine, les événements. C'est lui l'animateur, pas un algorithme.</div></li>
+        <li><i>5</i><div><b>Barre de navigation commune</b> à tout le produit : Formula·Grid, Curling et Harry deviennent des onglets, plus des sites à part.</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>B</span>Écran « Prêt ? » avant chaque jeu</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body" style="justify-content:center;gap:14px">
+          <div style="text-align:center"><div style="font-size:54px">🔡</div><div class="big" style="font-size:40px">SPORTUS</div><div style="color:var(--mute);font-weight:700">Défi du jour · 100 pts max</div></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px">
+            <div class="rule"><b>1</b>Devine le <b style="font:inherit;color:var(--cyan)">nom de famille</b> d'un sportif en 6 lettres.</div>
+            <div class="rule"><b>2</b>10 essais, 45 secondes. Chaque essai après le premier coûte 10 pts.</div>
+            <div class="rule"><b>3</b>Bloqué ? Révèle une lettre pour 20 pts.</div>
+          </div>
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><span style="color:var(--mute);font-weight:700">💡 Indice gratuit</span><b>Numéro 10</b></div>
+          <button class="btn" style="padding:16px;font-size:16px">GO — lancer le chrono</button>
+          <div style="text-align:center;color:var(--mute);font-size:11px">Le chrono ne démarre qu'au GO.</div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Règles en trois lignes</b>, grandes, numérotées parce qu'elles sont réellement lues dans l'ordre.</div></li>
+        <li><i>2</i><div><b>Chaque coût est écrit</b> : « Révèle une lettre pour 20 pts » remplace les trois boules « ? ».</div></li>
+        <li><i>3</i><div><b>Même gabarit pour les 28 formats</b> : un composant unique, alimenté par le manifeste de chaque jeu.</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>C</span>En jeu : une seule saisie</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body">
+          <div class="top"><div><div class="lbl">Score</div><div class="big">90</div></div><span class="chip">⏱ 0:31</span><span class="chip">Essai 2/10</span></div>
+          <div class="bar"><i></i></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:8px;align-items:center">
+            <div class="lbl">Nom de famille · 6 lettres</div>
+            <div class="slots"><div class="ok">Z</div><div>·</div><div class="half">D</div><div>·</div><div>·</div><div class="ok">E</div></div>
+            <div style="color:var(--mute);font-size:11px;font-weight:700">Essai 1 : ZIDANE ✗ → ZAHOUI ? </div>
+          </div>
+          <div class="kb">
+            <div class="ok">Z</div><div>A</div><div class="off">B</div><div class="off">C</div><div class="half" style="color:var(--gold)">D</div><div class="ok">E</div><div>F</div><div>G</div><div class="off">H</div>
+            <div>I</div><div>J</div><div>K</div><div>L</div><div>M</div><div>N</div><div>O</div><div>P</div><div class="off">Q</div>
+            <div>R</div><div>S</div><div>T</div><div>U</div><div>V</div><div class="off">W</div><div class="off">X</div><div>Y</div><div style="background:var(--neon);color:#07070f">⏎</div>
+          </div>
+          <button class="btn ghost">💡 Révéler une lettre · −20 pts</button>
+          <div style="text-align:center;color:var(--red);font-weight:900;font-size:13px" class="fx">−10 pts</div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Un clavier, pas deux</b> (ici l'exemple Sportus, qui est déjà un Motus : lettres exclues grisées, bonnes positions en néon). Le principe général pour les autres formats : un seul mode de saisie par écran.</div></li>
+        <li><i>2</i><div><b>Le score vit :</b> le « −10 » flotte et le compteur en haut se met à jour. Une vibration de 30 ms et un son court accompagnent chaque réponse.</div></li>
+        <li><i>3</i><div><b>Tout tient sans scroller</b>, actions principales dans le tiers bas, à portée de pouce.</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>D</span>Victoire : partager et comparer</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body" style="align-items:stretch">
+          <div style="text-align:center"><div style="font-size:40px">🎉</div><div class="big" style="font-size:38px;color:var(--neon)">BRAVO !</div><div class="big" style="font-size:22px">ZINEDINE ZIDANE</div></div>
+          <div class="card" style="text-align:center"><div class="lbl">Score</div><div class="big" style="font-size:54px;color:var(--neon)">90</div><div style="color:var(--mute);font-weight:700">Trouvé en 2 essais · 0:14</div></div>
+          <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
+            <div><div class="lbl">Tu bats</div><div class="big" style="color:var(--cyan)">84 %</div><small style="color:var(--mute)">des 312 joueurs</small></div>
+            <div><div class="lbl">Moyenne</div><div class="big">61</div><small style="color:var(--mute)">pts</small></div>
+          </div>
+          <div class="sharebox">Grand Chelem · Sportus #142
+🟩🟩⬛⬛⬛⬛⬛⬛⬛⬛  90 pts
+🔥 Série : 5 jours
+legrandchelem.fr</div>
+          <button class="btn">📤 Partager mon résultat</button>
+          <div style="display:flex;gap:6px"><button class="btn ghost">🏆 Classement du jour</button><button class="btn ghost">⏳ Prochain : 13 h</button></div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Comparaison sociale</b> dès la fin de la partie : « Tu bats 84 % des joueurs ». C'est la phrase qui fait revenir.</div></li>
+        <li><i>2</i><div><b>Résultat en emojis</b>, copié en un geste vers WhatsApp. Acquisition gratuite.</div></li>
+        <li><i>3</i><div><b>La fin pointe vers la suite :</b> le classement du jour, le compte à rebours du prochain défi. Plus jamais « Reviens bientôt ».</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>E</span>Classement et profil</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body">
+          <div class="big" style="font-size:30px">🏆 CLASSEMENT</div>
+          <div style="display:flex;gap:6px"><span class="chip neon">Aujourd'hui</span><span class="chip">Semaine</span><span class="chip">Saison</span><span class="chip">Équipes</span></div>
+          <div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-color:#3a3a5a">
+            <span style="font-size:22px">🥈</span><div style="flex:1"><b>Ligue Argent</b><br><small style="color:var(--mute)">Top 5 dimanche → Ligue Or</small></div><span class="chip fire">4e / 24</span>
+          </div>
+          <div class="lb">
+            <div><span class="r">1</span>Marion <small>Sportus 100 · 0:09</small><span class="s">100</span></div>
+            <div><span class="r">2</span>Karim <small>2 essais</small><span class="s">90</span></div>
+            <div><span class="r">3</span>Lucas <small>2 essais</small><span class="s">90</span></div>
+            <div class="me"><span class="r">4</span>Toi <small>2 essais · 0:14</small><span class="s">90</span></div>
+            <div><span class="r">5</span>Sofia <small>3 essais</small><span class="s">80</span></div>
+            <div><span class="r">6</span>Nino <small>4 essais</small><span class="s">70</span></div>
+          </div>
+          <div class="card" style="display:flex;justify-content:space-around;text-align:center;padding:10px">
+            <div><div class="lbl">Série</div><div class="big" style="color:var(--gold)">5</div></div>
+            <div><div class="lbl">Niveau</div><div class="big">PRO</div></div>
+            <div><div class="lbl">Badges</div><div class="big">7</div></div>
+          </div>
+        </div>
+        <div class="tabbar"><div><span>🏟️</span>Jouer</div><div><span>📅</span>Les jours passés</div><div class="on"><span>🏆</span>Classement</div><div><span>👤</span>Profil</div></div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Toujours visible</b>, plus jamais verrouillé. Trois horizons : jour, semaine, saison.</div></li>
+        <li><i>2</i><div><b>Ligues par paliers</b> de 24 joueurs : être 4e d'une ligue est atteignable, être 143e au général ne l'est pas.</div></li>
+        <li><i>3</i><div><b>Ta ligne est surlignée</b>, avec le détail qui départage (essais, temps).</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ 2. CARRIÈRE MYSTÈRE ═══════════════════════ -->
+<section class="vol" id="carriere">
+  <h2>Carrière Mystère</h2>
+  <p class="sub">Un sportif par jour, identique pour tous. Sa carrière se dévoile étape par étape ; plus tu trouves tôt, plus tu marques. La première maquette est jouable. <b>Mécaniquement, c'est un cousin du Scout et de ses tiroirs</b> : la vraie nouveauté est le contenu automatique (carrières importées, zéro saisie), pas la règle. Voir l'addendum du document pour des formats réellement différents.</p>
+
+  <div class="row">
+    <div class="mk">
+      <h3><span>A</span>Partie en cours (jouable)</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body" id="cm-body">
+          <div class="top"><div><div class="lbl">Carrière Mystère · #142</div><div class="big" style="font-size:26px">⚽ FOOTBALL</div></div><div style="text-align:right"><div class="lbl">Score possible</div><div class="big" id="cm-pts" style="color:var(--neon)">100</div></div></div>
+          <div class="steps" id="cm-steps"></div>
+          <div class="card" style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">Indices</span><span id="cm-hints" style="font-weight:800;color:var(--gold)">—</span></div>
+          <div class="inp"><input id="cm-in" placeholder="Qui est-ce ?" autocomplete="off"><button id="cm-ok" aria-label="Valider">✓</button></div>
+          <div class="sugg" id="cm-sugg"></div>
+          <button class="btn ghost" id="cm-reveal">🔓 Révéler l'étape suivante</button>
+          <div class="toast" id="cm-toast"></div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Le joueur choisit quand révéler.</b> Barème : 100 · 85 · 70 · 55 · 40 · 25 selon l'étape où il trouve.</div></li>
+        <li><i>2</i><div><b>Une erreur coûte 5 pts mais débloque un indice</b> (nationalité, poste, décennie). L'erreur fait avancer.</div></li>
+        <li><i>3</i><div><b>Autocomplétion sur une base de sportifs :</b> plus de problème d'orthographe, plus de tolérance à régler.</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>B</span>Résultat du jour</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body" style="align-items:stretch">
+          <div style="text-align:center"><div style="font-size:40px">🕵️</div><div class="big" style="font-size:36px;color:var(--neon)">TROUVÉ !</div><div class="big" style="font-size:22px">KARIM BENZEMA</div></div>
+          <div class="steps">
+            <div class="step"><span class="yrs">2004–09</span>🇫🇷 Lyon</div>
+            <div class="step"><span class="yrs">2009–23</span>🇪🇸 Real Madrid<span class="pt">trouvé ici · 85 pts</span></div>
+            <div class="step" style="opacity:.5"><span class="yrs">2023–</span>🇸🇦 Al-Ittihad</div>
+            <div class="step" style="opacity:.5"><span class="yrs">2022</span>🏆 Ballon d'Or</div>
+          </div>
+          <div class="card" style="font-size:12px"><b>Le saviez-vous ?</b> <span style="color:var(--mute)">Meilleur buteur de l'histoire de Lyon en Ligue des champions avant même ses 22 ans.</span></div>
+          <div class="sharebox">Carrière Mystère #142 · 85 pts
+🟩🟩⬛⬛⬛⬛  trouvé à l'étape 2
+🔥 Série : 5 jours
+legrandchelem.fr/carriere</div>
+          <button class="btn">📤 Partager</button>
+          <div style="display:flex;gap:6px"><button class="btn ghost">🏆 Classement du jour</button><button class="btn ghost">🎯 Rejouer hier</button></div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>La carrière complète se révèle à la fin</b> : on apprend quelque chose même quand on a trouvé vite.</div></li>
+        <li><i>2</i><div><b>« Le saviez-vous ? »</b> est rédigé par le pipeline IA existant, à partir des données importées.</div></li>
+        <li><i>3</i><div><b>Les sportifs des jours passés</b> restent jouables en entraînement : la profondeur se construit toute seule.</div></li>
+      </ul>
+    </div>
+
+    <div class="mk">
+      <h3><span>C</span>File de contenu côté admin</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb"></div>
+        <div class="body">
+          <div class="big" style="font-size:26px">🗓️ 14 PROCHAINS JOURS</div>
+          <div style="color:var(--mute);font-size:11px;font-weight:700">Tirés automatiquement depuis la base (Wikidata). Un clic pour remplacer.</div>
+          <div class="lb">
+            <div><span class="r">sam</span>🎾 Justine Henin <small>facile</small><span class="chip" style="margin-left:auto">↻</span></div>
+            <div><span class="r">dim</span>🏉 Antoine Dupont <small>facile</small><span class="chip" style="margin-left:auto">↻</span></div>
+            <div><span class="r">lun</span>⚽ Didier Drogba <small>moyen</small><span class="chip" style="margin-left:auto">↻</span></div>
+            <div><span class="r">mar</span>🏀 Tony Parker <small>facile</small><span class="chip" style="margin-left:auto">↻</span></div>
+            <div><span class="r">mer</span>🚴 Marianne Vos <small>difficile</small><span class="chip" style="margin-left:auto;color:var(--red)">↻</span></div>
+            <div><span class="r">jeu</span>🏎️ Sebastian Vettel <small>moyen</small><span class="chip" style="margin-left:auto">↻</span></div>
+            <div><span class="r">ven</span>🤾 Nikola Karabatic <small>moyen</small><span class="chip" style="margin-left:auto">↻</span></div>
+          </div>
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><span style="font-weight:700">Rotation des sports</span><span class="chip neon">Hebdo</span></div>
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><span style="font-weight:700">Base de sportifs</span><b>12 480</b></div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Zéro saisie manuelle :</b> les carrières viennent de Wikidata, la difficulté de la notoriété (liens Wikipédia).</div></li>
+        <li><i>2</i><div><b>L'admin garde la main</b> : il voit deux semaines d'avance et remplace en un clic.</div></li>
+        <li><i>3</i><div><b>Même base pour la Grille Immaculée</b> (3×3 clubs × nationalités), second format quotidien à coût nul.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ 3. LE SLALOM ═══════════════════════ -->
+<section class="vol" id="slalom">
+  <h2>Le Slalom</h2>
+  <p class="sub">Mini-jeu d'esquive, jouable ci-dessous. Ton sportif descend la piste ; ballons, haies, coureurs et cyclistes déboulent et il faut tout éviter. Flèches ← → au clavier, ou touche la moitié gauche / droite de l'écran. La piste accélère ; un bidon 💧 vaut 50 pts.</p>
+
+  <div class="row">
+    <div class="mk">
+      <h3><span>A</span>Prototype jouable</h3>
+      <div class="ph"><div class="scr">
+        <div class="sb" style="background:#0a1a0f"></div>
+        <div id="cvwrap">
+          <canvas id="cv" aria-label="Le Slalom, mini-jeu d'esquive"></canvas>
+          <div class="hud"><span id="sl-dist">0 m</span><span id="sl-score">0</span></div>
+          <div class="ov" id="sl-ov">
+            <div style="font-size:46px">🏃</div>
+            <h4>LE SLALOM</h4>
+            <p>Évite tout ce qui arrive. ← → ou touche la gauche / droite de l'écran. Ça va de plus en plus vite.</p>
+            <button class="btn" id="sl-start" style="max-width:200px">▶ C'EST PARTI</button>
+            <p id="sl-best" style="font-weight:800;color:var(--gold)"></p>
+          </div>
+        </div>
+      </div></div>
+      <ul class="notes">
+        <li><i>1</i><div><b>Trois couloirs</b>, un geste : c'est jouable d'un pouce, dans le métro, en 60 secondes.</div></li>
+        <li><i>2</i><div><b>Les obstacles sont les sportifs et objets du Grand Chelem</b> : ballon, haie, cycliste de l'Alpe, pierre de curling. Le mini-jeu recycle l'univers.</div></li>
+        <li><i>3</i><div><b>Une partie dure 30 à 90 s.</b> Format parfait pour une pause entre deux défis, ou en « bonus du jour ».</div></li>
+      </ul>
+    </div>
+
+    <div class="mk" style="grid-column:span 1">
+      <h3><span>B</span>Conception du mini-jeu</h3>
+      <div class="spec" style="grid-template-columns:1fr">
+        <div class="card"><h4>Boucle de jeu</h4><ul>
+          <li><b>Le joueur descend la piste</b> en vue de dessus, sur trois couloirs. Un tap ou une flèche change de couloir.</li>
+          <li><b>Les obstacles arrivent par le haut</b> : ballons (⚽🏀🎾🏉), haies, coureurs, cyclistes, pierres de curling. Certains occupent deux couloirs, ce qui force une lecture anticipée.</li>
+          <li><b>La vitesse augmente par paliers</b> tous les 100 m. Au-delà de 500 m, des « vagues » de trois objets alignés laissent un seul passage.</li>
+          <li><b>Un bidon 💧</b> apparaît de temps en temps : 50 pts, à aller chercher au risque de se mettre sur la trajectoire d'un obstacle.</li>
+        </ul></div>
+        <div class="card"><h4>Score et intégration</h4><ul>
+          <li><b>Score = mètres parcourus + bonus.</b> Converti en points Grand Chelem par un barème plafonné (ex. 100 pts à 600 m) pour ne pas écraser les quiz.</li>
+          <li><b>Piste du jour :</b> la séquence d'obstacles est tirée d'une graine quotidienne, donc identique pour tous. Classement du jour équitable, résultat partageable (« 🏃 Slalom #142 · 412 m »).</li>
+          <li><b>Trois essais par jour</b>, meilleur conservé. Au-delà, mode libre non classé.</li>
+          <li><b>Événement Game Master :</b> une piste spéciale certains jours (col de l'Alpe, patinoire), annoncée la veille dans le mot du jour.</li>
+        </ul></div>
+        <div class="card"><h4>Personnage et progression</h4><ul>
+          <li><b>Le sportif est l'avatar du joueur</b>, choisi au profil (coureur, cycliste, skieuse, nageur). Les équipes ont leur maillot : le Slalom donne enfin un rôle visible aux équipes.</li>
+          <li><b>Débloquer des tenues</b> avec la série et les badges, plutôt qu'avec de l'argent : la progression du quiz se voit dans le mini-jeu.</li>
+          <li><b>Thèmes de piste</b> par saison : stade d'athlétisme, col alpin, patinoire, piscine. Un thème par mois, aligné sur le calendrier sportif réel.</li>
+        </ul></div>
+        <div class="card"><h4>Technique</h4><ul>
+          <li><b>Canvas 2D, sans dépendance</b>, comme le prototype ci-contre (environ 200 lignes). S'intègre tel quel dans la structure « un jeu = un dossier ».</li>
+          <li><b>Score vérifié côté serveur :</b> le client envoie la suite d'actions horodatées, le serveur rejoue la piste de la graine du jour et recalcule la distance. Aucun score injecté possible.</li>
+          <li><b>Effort :</b> une semaine pour la version classée (graine, trois essais, classement du jour, partage), deux pour avatars et thèmes.</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+/* ─── navigation par volets ─── */
+(function(){
+  const vols=['refonte','carriere','slalom'];
+  function go(){
+    let h=(location.hash||'#refonte').slice(1); if(!vols.includes(h)) h='refonte';
+    document.querySelectorAll('section.vol').forEach(s=>s.classList.toggle('on',s.id===h));
+    document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+h));
+    window.scrollTo(0,0);
+  }
+  addEventListener('hashchange',go); go();
+})();
+
+/* ─── Carrière Mystère : maquette jouable ─── */
+(function(){
+  const target='Karim Benzema';
+  const steps=[['2004–09','🇫🇷 Lyon'],['2009–23','🇪🇸 Real Madrid'],['2023–','🇸🇦 Al-Ittihad'],['2007–22','🇫🇷 97 sélections'],['2022','🏆 Ballon d\'Or'],['2014–22','🏆 5 Ligues des champions']];
+  const pts=[100,85,70,55,40,25];
+  const hints=['🇫🇷 Français','⚽ Attaquant','Né dans les années 1980'];
+  const db=['Karim Benzema','Zinedine Zidane','Kylian Mbappé','Antoine Griezmann','Thierry Henry','Olivier Giroud','Didier Drogba','Cristiano Ronaldo','Lionel Messi','Robert Lewandowski','Luka Modrić','Raphaël Varane','Hugo Lloris','Paul Pogba','N\'Golo Kanté','Samir Nasri','Hatem Ben Arfa','Alexandre Lacazette'];
+  let revealed=1,errors=0,done=false;
+  const $=id=>document.getElementById(id);
+  function render(){
+    $('cm-steps').innerHTML=steps.map((s,i)=>i<revealed
+      ?`<div class="step fx"><span class="yrs">${s[0]}</span>${s[1]}</div>`
+      :`<div class="step lock">🔒 Étape ${i+1} · ${pts[i]} pts</div>`).join('');
+    $('cm-pts').textContent=Math.max(0,pts[revealed-1]-errors*5);
+    $('cm-hints').textContent=errors?hints.slice(0,errors).join(' · '):'—';
+    $('cm-reveal').hidden=done||revealed>=steps.length;
+  }
+  function end(ok){
+    done=true; $('cm-in').disabled=true; $('cm-ok').disabled=true; $('cm-sugg').innerHTML='';
+    revealed=steps.length; render();
+    $('cm-toast').textContent=ok?`✅ ${target} · ${Math.max(0,pts[revealedAt-1]-errors*5)} pts`:`❌ C'était ${target}. 0 pt, mais la série continue.`;
+    $('cm-toast').style.color=ok?'var(--neon)':'var(--red)';
+  }
+  let revealedAt=1;
+  function guess(name){
+    if(done||!name) return;
+    if(name.toLowerCase()===target.toLowerCase()){ revealedAt=revealed; end(true); return; }
+    errors++; $('cm-in').value=''; $('cm-sugg').innerHTML='';
+    $('cm-toast').textContent=`✗ ${name} · −5 pts · indice débloqué`; $('cm-toast').style.color='var(--gold)';
+    if(revealed>=steps.length&&errors>=3) return end(false);
+    render();
+  }
+  $('cm-in').addEventListener('input',e=>{
+    const q=e.target.value.trim().toLowerCase();
+    const list=q.length<2?[]:db.filter(n=>n.toLowerCase().includes(q)).slice(0,4);
+    $('cm-sugg').innerHTML=list.map(n=>`<button type="button">${n}</button>`).join('');
+    $('cm-sugg').querySelectorAll('button').forEach(b=>b.onclick=()=>guess(b.textContent));
+  });
+  $('cm-ok').onclick=()=>{ const v=$('cm-in').value.trim(); const m=db.find(n=>n.toLowerCase()===v.toLowerCase()); guess(m||v); };
+  $('cm-in').addEventListener('keydown',e=>{ if(e.key==='Enter') $('cm-ok').click(); });
+  $('cm-reveal').onclick=()=>{ if(revealed<steps.length){ revealed++; render(); if(revealed===steps.length) $('cm-toast').textContent='Dernière étape : 25 pts max, 3 erreurs autorisées.'; } };
+  render();
+})();
+
+/* ─── Le Slalom : prototype canvas ─── */
+(function(){
+  const cv=document.getElementById('cv'), wrap=document.getElementById('cvwrap'), ctx=cv.getContext('2d');
+  const ov=document.getElementById('sl-ov'), elD=document.getElementById('sl-dist'), elS=document.getElementById('sl-score'), elB=document.getElementById('sl-best');
+  const LANES=3; let W=0,H=0,dpr=1;
+  const OBS=[{e:'⚽',w:1},{e:'🏀',w:1},{e:'🎾',w:1},{e:'🏉',w:1},{e:'🚧',w:2},{e:'🏃',w:1},{e:'🚴',w:1},{e:'🥌',w:1},{e:'🏋️',w:1}];
+  let st=null, raf=0, last=0, best=0;
+  try{ best=parseInt(localStorage.getItem('slalom_best')||'0')||0; }catch(e){}
+  if(best) elB.textContent='Record : '+best+' m';
+  function resize(){ const r=wrap.getBoundingClientRect(); dpr=Math.min(2,devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  new ResizeObserver(resize).observe(wrap); resize();
+  function rnd(){ st.seed=(st.seed*1664525+1013904223)>>>0; return st.seed/4294967296; }
+  function start(){
+    st={lane:1,x:1,dist:0,score:0,speed:220,objs:[],spawn:0,stripe:0,alive:true,seed:20261107,t:0,lean:0};
+    ov.hidden=true; last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+  }
+  function move(d){ if(!st||!st.alive) return; st.lane=Math.max(0,Math.min(LANES-1,st.lane+d)); st.lean=d; }
+  function spawn(){
+    const o=OBS[Math.floor(rnd()*OBS.length)];
+    let lane=Math.floor(rnd()*LANES); if(o.w===2&&lane===LANES-1) lane=LANES-2;
+    const bonus=rnd()<0.12;
+    if(st.dist>500&&rnd()<0.25){ // vague : un seul passage
+      const gap=Math.floor(rnd()*LANES);
+      for(let l=0;l<LANES;l++) if(l!==gap) st.objs.push({e:'⚽',lane:l,w:1,y:-60,bonus:false});
+      return;
+    }
+    st.objs.push(bonus?{e:'💧',lane,w:1,y:-60,bonus:true}:{e:o.e,lane,w:o.w,y:-60,bonus:false});
+  }
+  function loop(now){
+    const dt=Math.min(.05,(now-last)/1000); last=now; st.t+=dt;
+    const lw=W/LANES, py=H-90;
+    st.x+=(st.lane-st.x)*Math.min(1,dt*14); st.lean*=0.85;
+    if(st.alive){
+      st.dist+=st.speed*dt/10; st.speed=220+Math.floor(st.dist/100)*35;
+      st.spawn-=dt; if(st.spawn<=0){ spawn(); st.spawn=Math.max(.42,1.05-st.dist/900); }
+      st.stripe=(st.stripe+st.speed*dt)%60;
+      for(const o of st.objs){ o.y+=st.speed*dt;
+        const hitLane=st.lane>=o.lane&&st.lane<o.lane+o.w;
+        if(!o.hit&&hitLane&&Math.abs(o.y-py)<30){ o.hit=true; if(o.bonus){ st.score+=50; } else { st.alive=false; } }
+      }
+      st.objs=st.objs.filter(o=>o.y<H+40&&!(o.hit&&o.bonus));
+    }
+    // ── dessin ──
+    ctx.fillStyle='#113a1c'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#1b4d27'; ctx.fillRect(lw*0.5,0,lw*2,H);
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=3; ctx.setLineDash([26,34]); ctx.lineDashOffset=-st.stripe*1.1;
+    for(let l=1;l<LANES;l++){ ctx.beginPath(); ctx.moveTo(l*lw,0); ctx.lineTo(l*lw,H); ctx.stroke(); }
+    ctx.setLineDash([]); ctx.strokeStyle='#fff'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(4,0); ctx.lineTo(4,H); ctx.moveTo(W-4,0); ctx.lineTo(W-4,H); ctx.stroke();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const o of st.objs){ ctx.font=(o.w===2?'30px':'34px')+' system-ui,"Apple Color Emoji","Segoe UI Emoji",sans-serif'; const cx=(o.lane+o.w/2)*lw; if(o.w===2){ ctx.fillText(o.e,cx-lw*0.5,o.y); ctx.fillText(o.e,cx+lw*0.5,o.y);} else ctx.fillText(o.e,cx,o.y); }
+    const px=(st.x+0.5)*lw;
+    ctx.save(); ctx.translate(px,py); ctx.rotate(st.lean*0.25);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,20,18,6,0,0,Math.PI*2); ctx.fill();
+    ctx.font='40px system-ui,"Apple Color Emoji","Segoe UI Emoji",sans-serif'; ctx.fillText(st.alive?'🏃':'💥',0,0); ctx.restore();
+    elD.textContent=Math.floor(st.dist)+' m'; elS.textContent=(Math.floor(st.dist)+st.score)+' pts';
+    if(st.alive) raf=requestAnimationFrame(loop); else over();
+  }
+  function over(){
+    const m=Math.floor(st.dist), total=m+st.score;
+    if(m>best){ best=m; try{ localStorage.setItem('slalom_best',String(best)); }catch(e){} }
+    try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
+    ov.innerHTML=`<div style="font-size:46px">💥</div><h4>${m} M</h4><p><b style="color:var(--txt)">${total} pts</b> · ${st.score?('dont '+st.score+' de bidons'):'aucun bidon'}<br>Record : ${best} m</p>
+      <div class="sharebox" style="text-align:left;max-width:240px">🏃 Slalom #142 · ${m} m\n${'🟩'.repeat(Math.min(6,Math.floor(m/100)))}${'⬛'.repeat(Math.max(0,6-Math.floor(m/100)))}\nlegrandchelem.fr/slalom</div>
+      <button class="btn" id="sl-start" style="max-width:200px">↻ REJOUER</button>`;
+    ov.hidden=false; document.getElementById('sl-start').onclick=start;
+  }
+  document.getElementById('sl-start').onclick=start;
+  addEventListener('keydown',e=>{ if(!document.getElementById('slalom').classList.contains('on')) return;
+    if(e.key==='ArrowLeft'){ move(-1); e.preventDefault(); } if(e.key==='ArrowRight'){ move(1); e.preventDefault(); }
+    if((e.key===' '||e.key==='Enter')&&!ov.hidden){ start(); e.preventDefault(); } });
+  let tx=null;
+  wrap.addEventListener('pointerdown',e=>{ if(!ov.hidden) return; tx=e.clientX; const r=wrap.getBoundingClientRect(); move(e.clientX<r.left+r.width/2?-1:1); });
+  wrap.addEventListener('pointermove',e=>{ if(tx===null) return; const d=e.clientX-tx; if(Math.abs(d)>40){ move(d>0?1:-1); tx=e.clientX; } });
+  addEventListener('pointerup',()=>{ tx=null; });
+  // premier cadre : piste vide dessinée
+  st={lane:1,x:1,dist:0,score:0,speed:0,objs:[],spawn:0,stripe:0,alive:false,seed:1,t:0,lean:0};
+  (function still(){ const lw=W/LANES; ctx.fillStyle='#113a1c'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#1b4d27'; ctx.fillRect(lw*0.5,0,lw*2,H); })();
+})();
+</script>
