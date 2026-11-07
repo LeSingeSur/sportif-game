@@ -58,7 +58,7 @@ canvas{display:block;width:100%;height:100%}
 
 <div class="hud" id="hud" hidden>
   <div class="dist"><span id="h-dist">0</span> <span style="font-size:.5em">M</span><small id="h-sub">PISTE DU JOUR · ESSAI 1/3</small></div>
-  <div class="chips"><div class="chip">⚡ <b id="h-pal">PALIER 1</b></div><div class="chip">💧 <b id="h-bonus">+0</b></div></div>
+  <div class="chips"><div class="chip">⚡ <b id="h-pal">PALIER 1</b></div><div class="chip">🛡 <b id="h-bonus">×0</b></div></div>
   <div class="flash" id="flash">100 M !<small>ÇA ACCÉLÈRE</small></div>
   <div class="record" id="h-rec" hidden>Record du jour : <b id="h-rec-v"></b></div>
   <div class="hint"><span>◀ GAUCHE</span><span>DROITE ▶</span></div>
@@ -77,7 +77,7 @@ canvas{display:block;width:100%;height:100%}
   <div class="card">
     <div class="rule"><b>1</b><span>Ton sportif descend la piste. <em>Touche la gauche ou la droite</em> de l'écran (ou flèches ← →) pour changer de couloir.</span></div>
     <div class="rule"><b>2</b><span>Évite <em>tout</em> ce qui arrive : ballons, haies, cyclistes, pierres de curling. Un seul contact et c'est fini.</span></div>
-    <div class="rule"><b>3</b><span>Le bidon 💧 donne <em>+50 pts et un bouclier</em> qui absorbe un choc. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
+    <div class="rule"><b>3</b><span>Le bouclier 🛡 donne <em>une vie supplémentaire</em> : il absorbe un choc. Ils se cumulent. La piste accélère tous les 100 m et de nouveaux obstacles apparaissent.</span></div>
   </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">La même piste pour tout le monde aujourd'hui</span><b id="r-track">#1</b></div>
   <button class="btn" id="b-go">GO — C'EST PARTI</button>
@@ -90,11 +90,11 @@ canvas{display:block;width:100%;height:100%}
   <h2 id="e-title">0 M</h2>
   <div class="kicker" id="e-sub">Essai 1/3</div>
   <div class="stats">
-    <div class="stat"><div class="v" id="e-pts">0</div><div class="l">Points</div></div>
+    <div class="stat"><div class="v" id="e-pts">0</div><div class="l">Chocs absorbés</div></div>
     <div class="stat"><div class="v" id="e-pal">1</div><div class="l">Palier</div></div>
     <div class="stat"><div class="v" id="e-best">0</div><div class="l">Record</div></div>
   </div>
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">Points Grand Chelem (1 pt / 6 pts, plafonné à 100)</span><b id="e-gc" style="color:var(--cyan);font-family:var(--fh);font-size:24px">0 / 100</b></div>
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px"><span class="mute">Points Grand Chelem (1 pt / 6 m, plafonné à 100)</span><b id="e-gc" style="color:var(--cyan);font-family:var(--fh);font-size:24px">0 / 100</b></div>
   <div class="share" id="e-share"></div>
   <div class="row"><button class="btn ghost" id="b-copy">📋 Copier</button><button class="btn" id="b-again">↻ REJOUER</button></div>
   <button class="btn" id="b-validate" hidden style="background:var(--cyan)">✅ VALIDER MON MEILLEUR SCORE</button>
@@ -107,7 +107,7 @@ canvas{display:block;width:100%;height:100%}
 /* ───────────────────────── Paramètres de jeu ───────────────────────── */
 const LANES = 3, VIEW_M = 70;              // longueur de piste visible, en mètres
 const SPEED0 = 13, SPEED_STEP = 1.1, SPEED_MAX = 24; // m/s
-let ATTEMPTS = 3; const BONUS = 50;
+let ATTEMPTS = 3;
 const PALIERS = [                           // palier = index+1 ; nouveauté annoncée au passage
   { at:0,    msg:'',                     types:['ball'] },
   { at:100,  msg:'ATTENTION AUX HAIES',  types:['ball','hurdle'] },
@@ -181,10 +181,12 @@ function drawCyclist(x,y,s,t){ shadow(x,y+40*s,40*s,9*s); ctx.save(); ctx.transl
 function drawStone(x,y,s,rot){ shadow(x,y+18*s,26*s,8*s); ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
   ctx.fillStyle='#4a4a62'; ctx.beginPath(); ctx.ellipse(0,6,26,12,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#6a6a86'; ctx.beginPath(); ctx.ellipse(0,0,26,12,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#ff3f5c'; ctx.beginPath(); ctx.ellipse(0,-2,14,6,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ff3f5c'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(Math.cos(rot)*-8,-6); ctx.lineTo(Math.cos(rot)*8,-6); ctx.stroke(); ctx.restore(); }
-function drawBottle(x,y,s,t){ shadow(x,y+26*s,18*s,6*s); ctx.save(); ctx.translate(x,y+Math.sin(t*5)*3*s); ctx.scale(s,s);
-  ctx.fillStyle='rgba(25,230,193,.16)'; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#19e6c1'; ctx.beginPath(); ctx.roundRect(-11,-20,22,40,7); ctx.fill(); ctx.fillStyle='#0b8f78'; ctx.beginPath(); ctx.roundRect(-6,-28,12,10,3); ctx.fill();
-  ctx.fillStyle='rgba(7,7,15,.45)'; ctx.fillRect(-11,-6,22,12); ctx.fillStyle='#fff'; ctx.font='bold 11px '+getComputedStyle(document.body).getPropertyValue('--fh'); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+50',0,0); ctx.restore(); }
+function drawShield(x,y,s,t){ shadow(x,y+26*s,18*s,6*s); ctx.save(); ctx.translate(x,y+Math.sin(t*5)*3*s); ctx.scale(s,s);
+  ctx.fillStyle='rgba(25,230,193,.18)'; ctx.beginPath(); ctx.arc(0,0,32,0,Math.PI*2); ctx.fill();
+  ctx.shadowColor='#19e6c1'; ctx.shadowBlur=14;
+  ctx.fillStyle='#19e6c1'; ctx.beginPath(); ctx.moveTo(0,-26); ctx.lineTo(22,-16); ctx.lineTo(20,6); ctx.quadraticCurveTo(14,22,0,30); ctx.quadraticCurveTo(-14,22,-20,6); ctx.lineTo(-22,-16); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle='#0b8f78'; ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(14,-11); ctx.lineTo(13,4); ctx.quadraticCurveTo(9,15,0,21); ctx.quadraticCurveTo(-9,15,-13,4); ctx.lineTo(-14,-11); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 14px '+getComputedStyle(document.body).getPropertyValue('--fh'); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+1',0,2); ctx.restore(); }
 function drawRunner(x,y,lean,phase,dead){ shadow(x,y+40,34,10); ctx.save(); ctx.translate(x,y); ctx.rotate(lean*0.35);
   ctx.lineCap='round'; ctx.lineJoin='round';
   // traînée
@@ -209,15 +211,27 @@ function drawRunner(x,y,lean,phase,dead){ shadow(x,y+40,34,10); ctx.save(); ctx.
   ctx.restore(); }
 
 /* ───────────────────────── Décor ───────────────────────── */
+// Ambiance par palier : le stade change d'heure et de lumière au fil de la course
+const AMB=[
+  {sky:['#05050c','#141426'],light:'rgba(255,248,200,.55)',glow:'rgba(212,255,0,.14)',grass:'#1b4d27',track:['#7a2a1e','#c2452d']},
+  {sky:['#070a16','#1a1f3a'],light:'rgba(200,220,255,.5)',glow:'rgba(120,160,255,.12)',grass:'#184524',track:['#76291d','#bd432c']},
+  {sky:['#0b0612','#2a1535'],light:'rgba(255,170,220,.5)',glow:'rgba(255,100,200,.12)',grass:'#163d22',track:['#6e2419','#b63d28']},
+  {sky:['#03070d','#0f2a2a'],light:'rgba(25,230,193,.45)',glow:'rgba(25,230,193,.12)',grass:'#12351e',track:['#5f2016','#a83a25']},
+  {sky:['#0d0505','#2e0f0f'],light:'rgba(255,120,90,.5)',glow:'rgba(255,90,60,.12)',grass:'#102e1a',track:['#4e1a12','#9a3320']},
+  {sky:['#020208','#0b0b2a'],light:'rgba(212,255,0,.5)',glow:'rgba(212,255,0,.14)',grass:'#0d2816',track:['#3f1510','#8a2c1a']},
+  {sky:['#000005','#120018'],light:'rgba(255,63,92,.5)',glow:'rgba(255,63,92,.12)',grass:'#0a2012',track:['#2f100c','#7a2616']},
+  {sky:['#000','#050510'],light:'rgba(255,255,255,.6)',glow:'rgba(255,255,255,.1)',grass:'#081a0e',track:['#2a0e0a','#6e2214']}
+];
 let crowdPat=null;
 function makeCrowd(){ const c=document.createElement('canvas'); c.width=c.height=8; const x=c.getContext('2d'); x.fillStyle='#5a5a80'; x.beginPath(); x.arc(4,4,1.8,0,7); x.fill(); x.fillStyle='rgba(154,154,192,.6)'; x.beginPath(); x.arc(4,4,.8,0,7); x.fill(); crowdPat=ctx.createPattern(c,'repeat'); }
 makeCrowd();
 function drawScene(S){
   const px = S ? (S.x-1)*18 : 0;       // parallaxe tribunes
   // ciel
-  const sky=ctx.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#05050c'); sky.addColorStop(1,'#141426'); ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  const A=AMB[Math.min(AMB.length-1,S?S.pal:0)];
+  const sky=ctx.createLinearGradient(0,0,0,H); sky.addColorStop(0,A.sky[0]); sky.addColorStop(1,A.sky[1]); ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
   // halo projecteurs
-  const g=ctx.createRadialGradient(CX,HY-10,0,CX,HY-10,W*0.7); g.addColorStop(0,'rgba(255,248,200,.55)'); g.addColorStop(.3,'rgba(212,255,0,.14)'); g.addColorStop(1,'rgba(212,255,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(CX,HY-10,0,CX,HY-10,W*0.7); g.addColorStop(0,A.light); g.addColorStop(.3,A.glow); g.addColorStop(1,'rgba(212,255,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   // tribunes (2 plans)
   ctx.save(); ctx.translate(-px*0.4,0);
   ctx.fillStyle='#22223a'; ctx.beginPath(); ctx.moveTo(-60,HY-30); ctx.quadraticCurveTo(CX,HY-95,W+60,HY-30); ctx.lineTo(W+60,HY+30); ctx.quadraticCurveTo(CX,HY-10,-60,HY+30); ctx.closePath(); ctx.fill();
@@ -230,8 +244,8 @@ function drawScene(S){
   // gazon + piste
   const edge=(lane,p)=>[xAt(lane,p),yAt(p)];
   const poly=(l0,l1,color)=>{ ctx.fillStyle=color; ctx.beginPath(); let a=edge(l0,0); ctx.moveTo(a[0],a[1]); for(let p=0;p<=1.35;p+=.05){ a=edge(l0,p); ctx.lineTo(a[0],a[1]); } for(let p=1.35;p>=0;p-=.05){ a=edge(l1,p); ctx.lineTo(a[0],a[1]); } ctx.closePath(); ctx.fill(); };
-  poly(-0.9,2.9,'#1b4d27');
-  const tr=ctx.createLinearGradient(0,HY,0,H); tr.addColorStop(0,'#7a2a1e'); tr.addColorStop(1,'#c2452d'); poly(-0.5,2.5,tr);
+  poly(-0.9,2.9,A.grass);
+  const tr=ctx.createLinearGradient(0,HY,0,H); tr.addColorStop(0,A.track[0]); tr.addColorStop(1,A.track[1]); poly(-0.5,2.5,tr);
   // lignes
   ctx.strokeStyle='#fff'; ctx.lineWidth=4; for(const l of [-0.5,2.5]){ ctx.beginPath(); let a=edge(l,0); ctx.moveTo(a[0],a[1]); for(let p=0;p<=1.35;p+=.05){ a=edge(l,p); ctx.lineTo(a[0],a[1]); } ctx.stroke(); }
   const off = S ? (S.dist%6)/6 : 0;  // défilement des pointillés (période 6 m)
@@ -245,6 +259,7 @@ function drawScene(S){
 
 /* ───────────────────────── Logique ───────────────────────── */
 let S=null, raf=0, last=0, inputs=[];
+Object.defineProperty(window,'__slalom',{get(){return S;}}); // lecture seule, pour les tests automatisés
 function rng(){ S.seed=(Math.imul(S.seed,1664525)+1013904223)>>>0; return S.seed/4294967296; }
 function palierAt(d){ let i=0; for(let k=0;k<PALIERS.length;k++) if(d>=PALIERS[k].at) i=k; return i; }
 function speedAt(d){ return Math.min(SPEED_MAX, SPEED0 + Math.floor(d/100)*SPEED_STEP); }
@@ -256,7 +271,7 @@ function spawn(zOverride){
   const z=zOverride||VIEW_M; const prev=S.lastObs;
   const pushObs=o=>{ S.objs.push(o); if(!o.bonus) S.lastObs=o; };
   // bonus : 1 sur 7, placé derrière le dernier obstacle à partir du palier 3 (bidon à risque)
-  if(!zOverride && rng()<0.14){ let lane=Math.floor(rng()*3); if(S.dist>=200 && prev && prev.type!=='wave'){ const fl=freeLanes(prev); lane = fl.length? fl[Math.floor(rng()*fl.length)] : lane; if(rng()<.5 && prev.w===1) lane=prev.lane; /* juste derrière l'obstacle */ }
+  if(!zOverride && rng()<0.14){ let lane=Math.floor(rng()*3); if(S.dist>=200 && prev && prev.type!=='wave'){ const fl=freeLanes(prev); lane = fl.length? fl[Math.floor(rng()*fl.length)] : lane; /* toujours dans un couloir libre, à côté de l'obstacle : atteignable mais il faut aller le chercher */ }
     pushObs({type:'bottle',lane,w:1,z:z+4,bonus:true}); }
   // passage garanti : si l'écart au précédent est faible, laisser un couloir libre adjacent au couloir libre précédent
   const nearPrev = prev && (z - prev.z) < 9;
@@ -276,17 +291,18 @@ function spawn(zOverride){
 
 function start(free){
   const essai=dayData.attempts+1;
-  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:13, lastObs:null, alive:true, shield:false, t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
+  S={ x:1, lane:1, lean:0, dist:0, bonus:0, speed:SPEED0, objs:[], seed:seedBase^(free?0x9e3779b9:0), spawnAt:13, lastObs:null, alive:true, lives:0, shieldsUsed:0, parts:[], t:0, pal:0, shake:0, slow:1, free:!!free, essai, deadT:0, phase:0, lastMove:0 };
   inputs=[];
   for(const z of [24,40,56,70]) spawn(z);   // la piste est déjà peuplée au départ : pas de vide pendant 80 m
   document.getElementById('h-sub').textContent = PREVIEW ? 'APERÇU ADMIN' : free ? 'MODE LIBRE · NON CLASSÉ' : (SEED_PARAM?'DÉFI':'PISTE DU JOUR')+' · ESSAI '+essai+'/'+ATTEMPTS;
-  document.getElementById('h-pal').textContent='PALIER 1'; document.getElementById('h-bonus').textContent='+0';
+  document.getElementById('h-pal').textContent='PALIER 1'; document.getElementById('h-bonus').textContent='×0';
   const rec=document.getElementById('h-rec'); if(dayData.best>0){ rec.hidden=false; document.getElementById('h-rec-v').textContent=(pseudo||'toi')+' · '+dayData.best+' m'; } else rec.hidden=true;
   document.getElementById('ov-ready').hidden=true; document.getElementById('ov-end').hidden=true; document.getElementById('hud').hidden=false; document.getElementById('topbtns').style.display='none';
   ac(); last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
-function hudBonus(){ document.getElementById('h-bonus').textContent='+'+S.bonus+(S.shield?' · 🛡':''); }
-function move(d){ if(!S||!S.alive) return; const nl=Math.max(0,Math.min(2,S.lane+d)); if(nl===S.lane) return; S.lane=nl; S.lean=d; inputs.push([Math.round(S.dist*10)/10,nl]); SFX.move(); }
+function hudBonus(){ document.getElementById('h-bonus').textContent='×'+S.lives; }
+function burst(x,y,color,n,sp){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, v=(sp||120)*(0.4+Math.random()); S.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,life:0.5+Math.random()*0.4,t:0,c:color,r:2+Math.random()*3}); } }
+function move(d){ if(!S||!S.alive) return; const nl=Math.max(0,Math.min(2,S.lane+d)); if(nl===S.lane) return; S.lane=nl; S.lean=d; inputs.push([Math.round(S.dist*10)/10,nl]); SFX.move(); burst(xAt(S.x,1)-d*10,PY+36,'rgba(230,180,150,.9)',7,70); }
 function showFlash(txt,sub){ const f=document.getElementById('flash'); f.innerHTML=txt+'<small>'+sub+'</small>'; f.classList.add('on'); clearTimeout(f._t); f._t=setTimeout(()=>f.classList.remove('on'),1400); }
 
 function loop(now){
@@ -302,10 +318,10 @@ function loop(now){
       if(o.type==='cyclist' && o.z<o.shiftAt){ o.fl+=(o.target-o.fl)*Math.min(1,dt*3); o.lane=Math.round(o.fl); }
       if(o.type==='stone'){ o.fl+=o.dir*dt*1.6; o.rot+=dt*8; o.lane=Math.round(o.fl); if(o.fl<-0.6||o.fl>2.6){ o.fl=o.dir>0?2.6:-0.6; o.dir*=-1; } }
       if(o.type==='ball') o.rot=(o.rot||0)+dt*6;
-      if(!o.hit && !o.ghost && Math.abs(o.z)<2.2){
+      if(!o.hit && !o.ghost && o.z<2.2 && o.z>-1.2){   // fenêtre de contact : un obstacle déjà dépassé ne tue plus
         const fl = (o.fl!==undefined)?o.fl:null;
         const hit = fl!==null ? Math.abs(fl-S.x)<0.62 : (S.x>o.lane-0.62 && S.x<o.lane+o.w-1+0.62);
-        if(hit){ o.hit=true; if(o.bonus){ S.bonus+=BONUS; S.shield=true; hudBonus(); showFlash('🛡','BOUCLIER ACTIVÉ'); SFX.bonus(); buzz(15); } else if(S.shield){ S.shield=false; hudBonus(); S.shake=10; SFX.near(); buzz(40); showFlash('OUF !','BOUCLIER PERDU'); } else { die(); } }
+        if(hit){ o.hit=true; if(o.bonus){ S.lives++; hudBonus(); showFlash('+1 VIE','BOUCLIER ×'+S.lives); SFX.bonus(); buzz(15); burst(xAt(S.x,1),PY-30,'#19e6c1',18,160); } else if(S.lives>0){ S.lives--; S.shieldsUsed++; hudBonus(); S.shake=12; SFX.near(); buzz(40); showFlash('OUF !', S.lives?'IL TE RESTE '+S.lives+' VIE'+(S.lives>1?'S':''):'DERNIÈRE CHANCE'); burst(xAt(S.x,1),PY-30,'#19e6c1',26,220); } else { die(); } }
         else if(!o.bonus && !o.near){ o.near=true; SFX.near(); }
       }
     }
@@ -317,26 +333,27 @@ function loop(now){
   drawScene(S);
   const sorted=[...S.objs].filter(o=>!o.ghost && o.z<VIEW_M && o.z>-5).sort((a,b)=>b.z-a.z);
   for(const o of sorted){ const p=zToP(o.z), y=yAt(p), sc=0.35+0.95*persp(p); const lx=(o.fl!==undefined)?o.fl:(o.lane+(o.w-1)/2); const x=xAt(lx,p);
-    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='hurdle') drawHurdle(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='cyclist') drawCyclist(x,y,sc*1.05,S.t); else if(o.type==='stone') drawStone(x,y,sc*1.1,o.rot); else if(o.type==='bottle') drawBottle(x,y,sc,S.t); }
-  if(S.shield){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+    if(o.type==='ball') drawBall(x,y,sc,o.rot||0); else if(o.type==='hurdle') drawHurdle(x,y,sc,LW*wAt(p)*o.w*0.92); else if(o.type==='cyclist') drawCyclist(x,y,sc*1.05,S.t); else if(o.type==='stone') drawStone(x,y,sc*1.1,o.rot); else if(o.type==='bottle') drawShield(x,y,sc,S.t); }
+  if(S.lives>0){ const hx=xAt(S.x,1); ctx.save(); ctx.globalAlpha=.55+.25*Math.sin(S.t*6); ctx.strokeStyle='#19e6c1'; ctx.lineWidth=4; ctx.shadowColor='#19e6c1'; ctx.shadowBlur=18; ctx.beginPath(); ctx.ellipse(hx,PY-30,46,70,0,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
+  for(const q of S.parts){ q.t+=dt; q.x+=q.vx*dt; q.y+=(q.vy+S.speed*6)*dt; q.vy+=160*dt; const a=Math.max(0,1-q.t/q.life); ctx.globalAlpha=a; ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*(0.6+a*0.6),0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; S.parts=S.parts.filter(q=>q.t<q.life);
   drawRunner(xAt(S.x,1),PY,S.lean,S.phase,!S.alive);
   if(!S.alive){ ctx.fillStyle='rgba(255,63,92,'+Math.max(0,.35-S.deadT*.5)+')'; ctx.fillRect(0,0,W,H); }
   ctx.restore();
   if(S.alive || S.deadT<0.9) raf=requestAnimationFrame(loop); else end();
 }
-function die(){ S.alive=false; S.shake=18; SFX.die(); buzz([60,40,80]); }
+function die(){ S.alive=false; S.shake=18; SFX.die(); buzz([60,40,80]); burst(xAt(S.x,1),PY-30,'#ff3f5c',30,260); burst(xAt(S.x,1),PY-30,'#f7c948',18,200); }
 
 function end(){
-  const m=Math.floor(S.dist), pts=m+S.bonus, gc=Math.min(100,Math.round(pts/6));
+  const m=Math.floor(S.dist), pts=m, gc=Math.min(100,Math.round(m/6));
   if(!S.free){ dayData.attempts++; if(pts>dayData.bestPts){ dayData.bestPts=pts; dayData.best=m; dayData.bestPal=S.pal+1; } if(!PREVIEW) store.set(storeKey,dayData); }
   if(m>allBest){ allBest=m; store.set('slalom_best',allBest); }
   document.getElementById('e-title').textContent=m+' M';
   document.getElementById('e-emoji').textContent = m>=600?'🏆':m>=300?'🔥':'💥';
   document.getElementById('e-sub').textContent = S.free ? 'Mode libre · non classé' : 'Essai '+S.essai+'/'+ATTEMPTS+' · meilleur du jour '+dayData.best+' m';
-  document.getElementById('e-pts').textContent=pts; document.getElementById('e-pal').textContent=S.pal+1; document.getElementById('e-best').textContent=allBest;
+  document.getElementById('e-pts').textContent=S.shieldsUsed; document.getElementById('e-pal').textContent=S.pal+1; document.getElementById('e-best').textContent=allBest;
   document.getElementById('e-gc').textContent=(S.free?'—':gc)+' / 100';
   const gcBest=Math.min(100,Math.round(dayData.bestPts/6));
-  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · '+(SEED_PARAM?trackLabel:'Piste '+trackLabel)+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · '+pts+' pts\n'+(S.bonus?'💧 '+(S.bonus/BONUS)+' bidon'+(S.bonus>BONUS?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
+  const bars=Math.min(6,Math.floor(m/100)); document.getElementById('e-share').textContent='🏃 Le Slalom · '+(SEED_PARAM?trackLabel:'Piste '+trackLabel)+'\n'+'🟩'.repeat(bars)+'⬛'.repeat(6-bars)+'  '+m+' m · palier '+(S.pal+1)+'\n'+(S.shieldsUsed?'🛡 '+S.shieldsUsed+' choc'+(S.shieldsUsed>1?'s':'')+' absorbé'+(S.shieldsUsed>1?'s':'')+'\n':'')+'legrandchelem.fr/slalom';
   const left=ATTEMPTS-dayData.attempts; const again=document.getElementById('b-again'), note=document.getElementById('e-note'), val=document.getElementById('b-validate');
   val.hidden=true;
   if(EMBED&&!PREVIEW){
