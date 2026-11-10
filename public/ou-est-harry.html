@@ -87,7 +87,7 @@
 <!-- INTRO DE NIVEAU -->
 <div class="ov" id="ov-intro">
   <div class="kicker" id="i-kicker">Niveau 1 / 3</div>
-  <h2 id="i-title">Sunset Boulevard</h2>
+  <h2 id="i-title">Munich · Oktoberfest</h2>
   <p id="i-text"></p>
   <div class="cards">
     <figure><canvas id="pv-kane" width="160" height="300"></canvas><figcaption style="color:#facc15">✅ Harry</figcaption></figure>
@@ -123,15 +123,15 @@
 // theme   : décor (voir THEMES) · n : nombre de Ryan · cols×rows : pâtés de maisons
 // umbrellas : part des Ryan sous un parapluie · par : temps (s) en dessous duquel on a 100 pts, ensuite on perd LOSS_PER_SEC pt par seconde
 const LEVELS = [
-  { theme: 'sunset', name: 'Sunset Boulevard', n: 110, cols: 3, rows: 2, umbrellas: 0,  par: 20,
-    intro: 'Los Angeles, fin d\'après-midi. Harry est venu visiter Hollywood… et s\'est retrouvé au milieu du fan-club de Ryan.',
-    tips: ['Même veste crème, même pantalon foncé : regarde les jambes et les cheveux.', 'Pince pour zoomer, glisse pour te déplacer. Tant que c\'est trop petit, un tap zoome.'] },
-  { theme: 'london', name: 'London Rain', n: 200, cols: 4, rows: 3, umbrellas: .45, par: 30,
-    intro: 'Retour à Londres sous une pluie battante. Les parapluies cachent les coiffures et les bus à étage cachent les trottoirs.',
-    tips: ['Harry est sous un parapluie : cherche les chaussettes et les genoux.', 'Les bus rouges passent devant la foule.'] },
-  { theme: 'drive', name: 'Drive Night', n: 280, cols: 4, rows: 4, umbrellas: 0, par: 45,
-    intro: 'La nuit tombe sur L.A., les néons s\'allument. Harry se cache dans l\'ombre.',
-    tips: ['Ta souris (ou ton doigt) sert de lampe torche.', 'Les lampadaires et les phares éclairent aussi.'] },
+  { theme: 'munich', name: 'Munich · Oktoberfest', n: 120, cols: 3, rows: 2, umbrellas: 0, par: 20,
+    intro: 'Munich, en pleine Oktoberfest. Harry fête ses buts avec le Bayern… mais le fan-club de Ryan a envahi les biergartens.',
+    tips: ['Tout le monde porte la veste crème : Harry, lui, a un short marine et les genoux à l\'air.', 'Pince pour zoomer, glisse pour te déplacer. Les feuilles d\'automne passent devant la foule.'] },
+  { theme: 'tokyo', name: 'Tokyo · Hanami', n: 210, cols: 4, rows: 3, umbrellas: .4, par: 32,
+    intro: 'Tokyo au printemps, les cerisiers sont en fleurs. Ombrelles de papier partout : les coiffures disparaissent dessous.',
+    tips: ['Harry se cache sous une ombrelle : cherche les chaussettes crème sous le short.', 'Les pétales de sakura brouillent la vue : zoome sur les parcs et les terrasses.'] },
+  { theme: 'rio', name: 'Rio · Carnaval', n: 290, cols: 4, rows: 4, umbrellas: 0, par: 46,
+    intro: 'Rio, nuit de carnaval. Les écoles de samba défilent, les confettis volent et seuls les néons éclairent la ville.',
+    tips: ['Ta souris (ou ton doigt) sert de lampe torche.', 'Lampadaires, néons et terrasses éclairent aussi : balaie la ville bloc par bloc.'] },
 ];
 const WRONG_PENALTY = 5, HINT_PENALTY = 15;
 const LEVEL_MAX = 100, LOSS_PER_SEC = .6;  // points par niveau : 100 au mieux, puis −0,6 pt par seconde (jusqu'à 0)
@@ -159,27 +159,31 @@ const $ = id => document.getElementById(id);
 
 // ══ Décors ═════════════════════════════════════════════════════════════════
 const THEMES = {
-  sunset: {
-    bg: '#2b2533', asphalt: '#4d4854', line: '#f2d06b', sidewalk: '#e4d2b0', curb: '#b9a487', tile: 'rgba(0,0,0,.06)',
-    roofs: ['#c9785b', '#d99a6c', '#b56a59', '#e0b48a', '#9f8fb0'], walls: ['#f3d9b1', '#eac39a', '#f6e3c8', '#e8b892', '#d9c4e0'],
-    window: '#8fd3ea', awn: ['#ff6f91', '#ffb347', '#4ecdc4', '#9b5de5'],
-    signs: ['DRIVE', 'LA LA LAND', 'HEY GIRL', 'THE NICE GUYS', 'DINER', 'SURF SHOP', 'TACOS', 'VINYL'],
-    grass: '#7cb45a', plaza: '#ecdcbf', street: 'palm', stars: true,
+  // fall : particules qui tombent devant la foule (leaves / petals / confetti) · umbrellaColors : couleurs des ombrelles
+  munich: {
+    bg: '#2a3340', asphalt: '#545a63', line: '#f4f4f4', sidewalk: '#d8d2c4', curb: '#a39d90', tile: 'rgba(0,0,0,.06)',
+    roofs: ['#b0453a', '#c25b3f', '#8e3b33', '#d07a4a'], walls: ['#f4ecd8', '#e9dcc0', '#f7f1e3', '#dfe8f0', '#f0d9b5'],
+    window: '#bfe3f5', awn: ['#0066b2', '#f4f4f4', '#dc052d', '#5aa7e0'],
+    signs: ['BIERGARTEN', 'FC BAYERN', 'BREZN', 'HOFBRÄU', 'LEDERHOSEN', 'HEY GIRL', 'WEISSWURST', 'KANE 9'],
+    grass: '#6fa84f', plaza: '#e2dccd', street: 'maypole', fall: 'leaves',
+    tint: ['rgba(255,190,110,.12)', 'rgba(255,140,60,.06)'],
   },
-  london: {
-    bg: '#22262c', asphalt: '#3a3e45', line: '#e8e8e8', sidewalk: '#a6aab0', curb: '#7e838a', tile: 'rgba(0,0,0,.08)',
-    roofs: ['#4a4f57', '#5b4b45', '#3e434a', '#574f4a'], walls: ['#8b4a3a', '#9c5a45', '#c9c2b0', '#7a3f33', '#b8ad95'],
-    window: '#cfe3f0', awn: ['#1d3557', '#2a6f4e', '#7b1e2b', '#3d3d3d'],
-    signs: ['THE THREE LIONS', 'TEA ROOM', 'FISH & CHIPS', 'PUB', 'BOOKS', 'HEY GIRL', 'FOOTBALL SHOP'],
-    grass: '#5d8a4a', plaza: '#bab6ac', street: 'tree', booths: true, buses: true, puddles: true,
+  tokyo: {
+    bg: '#2a2430', asphalt: '#4a4650', line: '#f5f5f5', sidewalk: '#e6dcd6', curb: '#b8aaa4', tile: 'rgba(0,0,0,.07)',
+    roofs: ['#3d4a5c', '#5a3d3d', '#2f3b4a', '#7a4b3a'], walls: ['#f2ebe3', '#e8dcd0', '#d9e2ea', '#f5e6e8', '#cfc6bd'],
+    window: '#a9d8f0', awn: ['#c8102e', '#1d2d50', '#f4a7b9', '#2b2b2b'],
+    signs: ['RAMEN', 'SUSHI', 'KARAOKE', 'HEY GIRL', 'PACHINKO', 'MATCHA', 'ARCADE', 'J-LEAGUE'],
+    grass: '#7aa860', plaza: '#e9e0d8', street: 'sakura', fall: 'petals',
+    umbrellaColors: ['#c8102e', '#f4a7b9', '#1d2d50', '#e9e3d5'],
+    tint: ['rgba(255,180,205,.12)', 'rgba(255,220,235,.06)'],
   },
-  drive: {
-    bg: '#0c0a14', asphalt: '#26232f', line: '#6b6680', sidewalk: '#4a4558', curb: '#35313f', tile: 'rgba(0,0,0,.12)',
-    roofs: ['#2f2b3b', '#2a2735', '#363143'], walls: ['#433d52', '#4b4560', '#3a3548'],
-    window: '#ffd98a', awn: ['#ff2e88', '#22d3ee', '#a855f7', '#facc15'],
-    signs: ['MOTEL', 'DINER 24/7', 'HEY GIRL', 'DRIVE', 'BAR', 'ARCADE', 'GARAGE'],
-    neon: ['#ff2e88', '#22d3ee', '#a855f7', '#facc15'],
-    grass: '#2e4030', plaza: '#3d3848', street: 'palm', night: true,
+  rio: {
+    bg: '#0b0a18', asphalt: '#24202f', line: '#5d5880', sidewalk: '#3f3a52', curb: '#2f2b3e', tile: 'rgba(0,0,0,.12)',
+    roofs: ['#2d2840', '#332a45', '#272338'], walls: ['#4a3f5e', '#3d4a5a', '#503d55'],
+    window: '#ffd27a', awn: ['#00c853', '#ffd600', '#ff1744', '#2979ff'],
+    signs: ['SAMBA', 'CAIPIRINHA', 'MARACANÃ', 'HEY GIRL', 'BOTECO', 'PRAIA', 'FUTEBOL'],
+    neon: ['#00e676', '#ffea00', '#ff1744', '#00b0ff'],
+    grass: '#24402c', plaza: '#3a3550', street: 'palm', night: true, fall: 'confetti',
   },
 };
 
@@ -353,6 +357,30 @@ const PROPS = {
     g.fillStyle = c[1]; g.beginPath(); g.arc(30, 34, 20, 0, 7); g.arc(48, 38, 18, 0, 7); g.fill();
     g.fillStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.arc(28, 26, 10, 0, 7); g.fill();
   } },
+  maypole: { w: 44, h: 190, draw(g) {           // Maibaum bavarois : mât à spirale bleu-blanc, couronne, blasons
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(22, 187, 10, 3, 0, 0, 7); g.fill();
+    g.fillStyle = '#f4f4f4'; rr(g, 19, 22, 6, 166, 2);
+    g.fillStyle = '#0066b2';
+    for (let y = 26; y < 184; y += 14) { g.beginPath(); g.moveTo(19, y); g.lineTo(25, y - 5); g.lineTo(25, y + 1); g.lineTo(19, y + 6); g.closePath(); g.fill(); }
+    g.fillStyle = '#5b3d25'; for (const y of [64, 104, 144]) rr(g, 6, y, 32, 2.5, 1);
+    for (const [y, c] of [[58, '#dc052d'], [98, '#0066b2'], [138, '#e9b949']]) {
+      g.fillStyle = c; rr(g, 5, y + 4, 8, 10, 2); rr(g, 31, y + 4, 8, 10, 2);
+    }
+    g.fillStyle = '#2f6b34'; g.beginPath(); g.ellipse(22, 22, 11, 5, 0, 0, 7); g.fill();
+    g.fillStyle = '#3c8040'; g.beginPath(); g.ellipse(22, 20, 8, 3.5, 0, 0, 7); g.fill();
+    g.fillStyle = '#f4f4f4'; g.beginPath(); g.moveTo(22, 2); g.lineTo(26, 16); g.lineTo(18, 16); g.closePath(); g.fill();
+  } },
+  sakura: { w: 84, h: 108, draw(g) {           // cerisier en fleurs
+    g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(42, 105, 20, 5, 0, 0, 7); g.fill();
+    g.strokeStyle = '#4a3328'; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(42, 104); g.quadraticCurveTo(40, 75, 44, 56); g.stroke();
+    g.lineWidth = 3.5; g.beginPath(); g.moveTo(43, 64); g.lineTo(24, 46); g.moveTo(44, 60); g.lineTo(62, 44); g.stroke();
+    const blobs = [[42, 38, 26], [22, 44, 17], [62, 44, 17], [32, 24, 15], [54, 26, 15]];
+    g.fillStyle = '#f4a7b9'; for (const [x, y, r] of blobs) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    g.fillStyle = '#ffd1dc'; for (const [x, y, r] of blobs) { g.beginPath(); g.arc(x - r * .25, y - r * .25, r * .55, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.7)';
+    for (let i = 0; i < 18; i++) { const a = i * 2.4, d = 6 + (i * 7) % 24; g.beginPath(); g.arc(42 + Math.cos(a) * d * 1.3, 36 + Math.sin(a) * d * .7, 1.6, 0, 7); g.fill(); }
+  } },
   booth: { w: 30, h: 78, draw(g) {
     g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(15, 76, 14, 3, 0, 0, 7); g.fill();
     g.fillStyle = '#c1121f'; rr(g, 2, 6, 26, 70, 3); rr(g, 0, 2, 30, 7, 3);
@@ -422,7 +450,7 @@ let lvl = 0, results = [];
 let playing = false, t0 = 0, penalty = 0, finishedAt = 0, hints = 0, misses = 0;
 let fx = [], hint = null;
 let torch = { x: 0, y: 0 };
-let rain = [];
+let rain = [], fall = [];
 let dark = document.createElement('canvas'), dg = dark.getContext('2d');
 let lastT = performance.now();
 
@@ -434,6 +462,27 @@ function resize() {
   torch.x = torch.x || vw / 2; torch.y = torch.y || vh / 2;
   if (world) { computeMinZoom(); clampCam(); }
   rain = Array.from({ length: Math.round(vw * vh / 5000) }, () => ({ x: Math.random() * vw, y: Math.random() * vh, l: mrnd(10, 22), s: mrnd(600, 900) }));
+  fall = Array.from({ length: Math.round(vw * vh / 11000) }, () => ({ x: Math.random() * vw, y: Math.random() * vh, s: mrnd(35, 85), sw: mrnd(.6, 1.8), ph: mrnd(0, 7), r: mrnd(2.5, 5.5), a: mrnd(0, 7), va: mrnd(-2.5, 2.5), c: (Math.random() * 5) | 0 }));
+}
+
+// ══ Particules qui tombent devant la foule (feuilles d'automne, pétales, confettis) ══
+const FALL_COLORS = {
+  leaves: ['#d97706', '#b45309', '#f59e0b', '#92400e', '#c2410c'],
+  petals: ['#ffc0d3', '#ffd6e2', '#ffb3c8', '#fff0f5', '#f9a8c0'],
+  confetti: ['#00e676', '#ffea00', '#ff1744', '#00b0ff', '#e040fb'],
+};
+function drawFall(kind, dt, now) {
+  const cols = FALL_COLORS[kind];
+  for (const p of fall) {
+    p.y += p.s * dt; p.x += Math.sin(now / 900 * p.sw + p.ph) * 22 * dt + (kind === 'confetti' ? 0 : 12 * dt); p.a += p.va * dt;
+    if (p.y > vh + 10) { p.y = -10; p.x = Math.random() * vw; }
+    if (p.x > vw + 10) p.x = -10;
+    ctx.save(); ctx.translate(p.x * dpr, p.y * dpr); ctx.rotate(p.a);
+    ctx.fillStyle = cols[p.c]; const r = p.r * dpr;
+    if (kind === 'confetti') ctx.fillRect(-r, -r * .45, 2 * r, r * .9);
+    else { ctx.beginPath(); ctx.ellipse(0, 0, r * (kind === 'leaves' ? 1.3 : 1.1), r * .6, 0, 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
 }
 function computeMinZoom() { minZ = Math.min(vw / world.w, (vh - HUD_H) / world.h); }
 function clampCam() {
@@ -524,7 +573,7 @@ function buildWorld(L, seed) {
     const p = {
       kane, s: rnd(.93, 1.05), flip: R() < .5,
       look: { kane, hair: kane ? KANE_HAIR : pick(RYAN_HAIR), skin: kane ? SKINS[0] : pick(SKINS), step: 0, wave: !kane && R() < .08,
-              umbrella: L.umbrellas && (kane || R() < L.umbrellas) ? pick(UMBRELLAS) : null },
+              umbrella: L.umbrellas && (kane || R() < L.umbrellas) ? pick(T.umbrellaColors || UMBRELLAS) : null },
       b, x: 0, y: 0, dist: 0,
     };
     if (b.kind !== 'building' && R() < .6) {
@@ -797,11 +846,14 @@ function draw(now) {
 
   // ambiance
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (w.L.theme === 'sunset') {
+  if (T.tint) {
     const grd = ctx.createLinearGradient(0, 0, 0, cv.height);
-    grd.addColorStop(0, 'rgba(255,140,60,.16)'); grd.addColorStop(1, 'rgba(255,70,140,.10)');
+    grd.addColorStop(0, T.tint[0]); grd.addColorStop(1, T.tint[1]);
     ctx.fillStyle = grd; ctx.fillRect(0, 0, cv.width, cv.height);
-  } else if (w.L.theme === 'london') {
+  }
+  if (T.night) drawNight(now);
+  if (T.fall) drawFall(T.fall, dt, now);
+  if (w.L.theme === 'london') {
     ctx.fillStyle = 'rgba(70,90,120,.16)'; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.strokeStyle = 'rgba(200,220,255,.35)'; ctx.lineWidth = dpr; ctx.beginPath();
     for (const d of rain) {
@@ -810,7 +862,7 @@ function draw(now) {
       ctx.moveTo(d.x * dpr, d.y * dpr); ctx.lineTo((d.x - d.l * .15) * dpr, (d.y + d.l) * dpr);
     }
     ctx.stroke();
-  } else if (T.night) drawNight(now);
+  }
 
   // halo du Harry trouvé (au-dessus de la nuit)
   const found = fx.find(f => f.type === 'found');
@@ -997,7 +1049,7 @@ function showIntro(i) {
   $('i-text').textContent = L.intro;
   $('i-ryan').textContent = `❌ Ryan (×${L.n - 1})`;
   $('i-tips').innerHTML = L.tips.map(t => `<li>• ${t}</li>`).join('');
-  const um = L.umbrellas ? UMBRELLAS[0] : null;
+  const um = L.umbrellas ? (THEMES[L.theme].umbrellaColors || UMBRELLAS)[0] : null;
   const kc = $('pv-kane').getContext('2d'), rc = $('pv-ryan').getContext('2d');
   kc.clearRect(0, 0, 160, 300); rc.clearRect(0, 0, 160, 300);
   kc.drawImage(personSprite({ kane: true, hair: KANE_HAIR, skin: SKINS[0], step: 0, wave: false, umbrella: um }), 11, 0, 138, 300);
