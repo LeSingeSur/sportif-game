@@ -165,7 +165,7 @@ const THEMES = {
     roofs: ['#b0453a', '#c25b3f', '#8e3b33', '#d07a4a'], walls: ['#f4ecd8', '#e9dcc0', '#f7f1e3', '#dfe8f0', '#f0d9b5'],
     window: '#bfe3f5', awn: ['#0066b2', '#f4f4f4', '#dc052d', '#5aa7e0'],
     signs: ['BIERGARTEN', 'FC BAYERN', 'BREZN', 'HOFBRÄU', 'LEDERHOSEN', 'HEY GIRL', 'WEISSWURST', 'KANE 9'],
-    grass: '#6fa84f', plaza: '#e2dccd', street: 'maypole', fall: 'leaves',
+    grass: '#6fa84f', plaza: '#e2dccd', street: 'tree', treeColors: ['#b4531a', '#d9822b'], landmark: 'maypole', style: 'bavarian', fall: 'leaves',
     tint: ['rgba(255,190,110,.12)', 'rgba(255,140,60,.06)'],
   },
   tokyo: {
@@ -173,17 +173,17 @@ const THEMES = {
     roofs: ['#3d4a5c', '#5a3d3d', '#2f3b4a', '#7a4b3a'], walls: ['#f2ebe3', '#e8dcd0', '#d9e2ea', '#f5e6e8', '#cfc6bd'],
     window: '#a9d8f0', awn: ['#c8102e', '#1d2d50', '#f4a7b9', '#2b2b2b'],
     signs: ['RAMEN', 'SUSHI', 'KARAOKE', 'HEY GIRL', 'PACHINKO', 'MATCHA', 'ARCADE', 'J-LEAGUE'],
-    grass: '#7aa860', plaza: '#e9e0d8', street: 'sakura', fall: 'petals',
+    grass: '#7aa860', plaza: '#e9e0d8', street: 'sakura', style: 'japan', fall: 'petals',
     umbrellaColors: ['#c8102e', '#f4a7b9', '#1d2d50', '#e9e3d5'],
     tint: ['rgba(255,180,205,.12)', 'rgba(255,220,235,.06)'],
   },
   rio: {
     bg: '#0b0a18', asphalt: '#24202f', line: '#5d5880', sidewalk: '#3f3a52', curb: '#2f2b3e', tile: 'rgba(0,0,0,.12)',
-    roofs: ['#2d2840', '#332a45', '#272338'], walls: ['#4a3f5e', '#3d4a5a', '#503d55'],
+    roofs: ['#4a4552', '#3f3b47', '#57505e'], walls: ['#8a3b5c', '#2f7a78', '#a0742a', '#3f5f9a', '#7a4a8a', '#3d8a4f'],
     window: '#ffd27a', awn: ['#00c853', '#ffd600', '#ff1744', '#2979ff'],
     signs: ['SAMBA', 'CAIPIRINHA', 'MARACANÃ', 'HEY GIRL', 'BOTECO', 'PRAIA', 'FUTEBOL'],
     neon: ['#00e676', '#ffea00', '#ff1744', '#00b0ff'],
-    grass: '#24402c', plaza: '#3a3550', street: 'palm', night: true, fall: 'confetti',
+    grass: '#24402c', plaza: '#3a3550', street: 'palm', style: 'rio', night: true, fall: 'confetti',
   },
 };
 
@@ -352,23 +352,27 @@ const PROPS = {
   tree: { w: 76, h: 104, draw(g, T) {
     g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(38, 101, 18, 5, 0, 0, 7); g.fill();
     g.fillStyle = '#5b3d25'; rr(g, 34, 55, 8, 47, 3);
-    const c = T.night ? ['#1f3523', '#26402a'] : ['#2f6b34', '#3c8040'];
+    const c = T.treeColors || (T.night ? ['#1f3523', '#26402a'] : ['#2f6b34', '#3c8040']);
     g.fillStyle = c[0]; g.beginPath(); g.arc(38, 42, 32, 0, 7); g.fill();
     g.fillStyle = c[1]; g.beginPath(); g.arc(30, 34, 20, 0, 7); g.arc(48, 38, 18, 0, 7); g.fill();
     g.fillStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.arc(28, 26, 10, 0, 7); g.fill();
   } },
-  maypole: { w: 44, h: 190, draw(g) {           // Maibaum bavarois : mât à spirale bleu-blanc, couronne, blasons
-    g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(22, 187, 10, 3, 0, 0, 7); g.fill();
-    g.fillStyle = '#f4f4f4'; rr(g, 19, 22, 6, 166, 2);
+  maypole: { w: 70, h: 270, draw(g) {           // Maibaum bavarois : mât bleu-blanc, plaques de corporations, couronne
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(35, 266, 14, 4, 0, 0, 7); g.fill();
+    g.fillStyle = '#f4f4f4'; rr(g, 31, 30, 8, 236, 2);
     g.fillStyle = '#0066b2';
-    for (let y = 26; y < 184; y += 14) { g.beginPath(); g.moveTo(19, y); g.lineTo(25, y - 5); g.lineTo(25, y + 1); g.lineTo(19, y + 6); g.closePath(); g.fill(); }
-    g.fillStyle = '#5b3d25'; for (const y of [64, 104, 144]) rr(g, 6, y, 32, 2.5, 1);
-    for (const [y, c] of [[58, '#dc052d'], [98, '#0066b2'], [138, '#e9b949']]) {
-      g.fillStyle = c; rr(g, 5, y + 4, 8, 10, 2); rr(g, 31, y + 4, 8, 10, 2);
+    for (let y = 34; y < 262; y += 18) { g.beginPath(); g.moveTo(31, y); g.lineTo(39, y - 7); g.lineTo(39, y + 1); g.lineTo(31, y + 8); g.closePath(); g.fill(); }
+    for (const [y, side] of [[80, -1], [120, 1], [160, -1], [200, 1]]) {
+      g.fillStyle = '#5b3d25'; rr(g, side < 0 ? 10 : 39, y + 6, 21, 3, 1);
+      const bx = side < 0 ? 2 : 46;
+      g.fillStyle = '#5b3d25'; rr(g, bx - 1, y - 1, 24, 22, 3);
+      g.fillStyle = '#fafafa'; rr(g, bx, y, 22, 20, 2);
+      g.fillStyle = '#1d3557'; g.beginPath(); g.arc(bx + 11, y + 6, 3, 0, 7); g.fill(); rr(g, bx + 8, y + 9, 6, 8, 2);
     }
-    g.fillStyle = '#2f6b34'; g.beginPath(); g.ellipse(22, 22, 11, 5, 0, 0, 7); g.fill();
-    g.fillStyle = '#3c8040'; g.beginPath(); g.ellipse(22, 20, 8, 3.5, 0, 0, 7); g.fill();
-    g.fillStyle = '#f4f4f4'; g.beginPath(); g.moveTo(22, 2); g.lineTo(26, 16); g.lineTo(18, 16); g.closePath(); g.fill();
+    g.fillStyle = '#2f6b34'; g.beginPath(); g.ellipse(35, 30, 16, 6, 0, 0, 7); g.fill();
+    g.fillStyle = '#3c8040'; g.beginPath(); g.ellipse(35, 27, 11, 4, 0, 0, 7); g.fill();
+    g.strokeStyle = '#0066b2'; g.lineWidth = 2; g.beginPath(); g.moveTo(24, 32); g.lineTo(20, 52); g.moveTo(46, 32); g.lineTo(50, 52); g.stroke();
+    g.fillStyle = '#f4f4f4'; g.beginPath(); g.moveTo(35, 4); g.lineTo(40, 22); g.lineTo(30, 22); g.closePath(); g.fill();
   } },
   sakura: { w: 84, h: 108, draw(g) {           // cerisier en fleurs
     g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(42, 105, 20, 5, 0, 0, 7); g.fill();
@@ -399,7 +403,7 @@ const PROPS = {
 };
 function propSprite(kind, T, v) {
   const P = PROPS[kind];
-  return cached(['prop', kind, T.night, v].join('|'), P.w, P.h, 2.4, g => P.draw(g, T, v));
+  return cached(['prop', kind, T.night, v, T.treeColors].join('|'), P.w, P.h, 2.4, g => P.draw(g, T, v));
 }
 
 const CAR_COLORS = ['#e63946', '#f1faee', '#457b9d', '#f4a261', '#2a9d8f', '#ffd166', '#6d597a', '#111'];
@@ -543,7 +547,10 @@ function buildWorld(L, seed) {
         if (T.night) w.lights.push({ x, y: y - 20, r: 70 });
       }
     }
-    if (b.kind === 'plaza') { b.fountain = { x: b.in.x + b.in.w / 2, y: b.in.y + b.in.h / 2, r: 46 }; w.lights.push({ x: b.fountain.x, y: b.fountain.y, r: 85 }); }
+    if (b.kind === 'plaza') {
+      b.fountain = { x: b.in.x + b.in.w / 2, y: b.in.y + b.in.h / 2, r: 46 }; w.lights.push({ x: b.fountain.x, y: b.fountain.y, r: 85 });
+      if (T.landmark) w.props.push({ kind: T.landmark, x: b.fountain.x + 95, y: b.fountain.y + 20 });
+    }
   }
 
   // voitures (et bus à Londres)
@@ -711,7 +718,8 @@ function drawBuildings(g, gl, w, I) {
     g.fillStyle = roof; g.fillRect(x, I.y, pw, roofH);
     g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(x, I.y, pw, 5);
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, fy - 6, pw, 6);
-    for (let i = 0; i < Math.floor(rnd(1, 4)); i++) {
+    if (T.style) styleRoof(g, gl, T, x, I.y, pw, roofH);
+    else for (let i = 0; i < Math.floor(rnd(1, 4)); i++) {
       const ax = x + rnd(10, pw - 34), ay = I.y + rnd(12, roofH - 30);
       if (T.booths) { g.fillStyle = '#6d4c41'; g.fillRect(ax, ay, 12, 20); g.fillStyle = '#3e2723'; g.fillRect(ax - 2, ay, 16, 4); }
       else { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(ax + 3, ay + 3, 24, 16); g.fillStyle = '#b8b8b8'; g.fillRect(ax, ay, 24, 16); g.fillStyle = '#8a8a8a'; g.beginPath(); g.arc(ax + 12, ay + 8, 5, 0, 7); g.fill(); }
@@ -719,6 +727,7 @@ function drawBuildings(g, gl, w, I) {
     // façade
     g.fillStyle = wall; g.fillRect(x, fy, pw, fh);
     const shopH = 34, upH = fh - shopH - 12;
+    if (T.style) styleFacade(g, T, x, fy, pw, fh, shopH, wall);
     const cols = Math.max(1, Math.floor((pw - 8) / 24)), rowsN = Math.max(0, Math.floor(upH / 22));
     const gap = (pw - cols * 13) / (cols + 1);
     for (let r = 0; r < rowsN; r++) for (let c = 0; c < cols; c++) {
@@ -728,6 +737,7 @@ function drawBuildings(g, gl, w, I) {
       g.fillRect(wx, wy, 13, 15);
       if (!T.night) { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(wx + 2, wy + 2, 3, 11); }
       g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(wx, wy + 15, 13, 2);
+      if (T.style) styleWindow(g, gl, T, wx, wy, lit);
       if (lit && gl) { gl.fillStyle = 'rgba(255,214,130,.9)'; gl.fillRect(wx, wy, 13, 15); glowDot(gl, wx + 6, wy + 8, 16, 'rgba(255,200,110,.35)'); }
     }
     // rez-de-chaussée : vitrine, porte, store, enseigne
@@ -749,8 +759,112 @@ function drawBuildings(g, gl, w, I) {
       gl.fillStyle = neon; gl.fillText(label, x + pw / 2, sy - 13, tw - 6);
       w.lights.push({ x: x + pw / 2, y: sy, r: 80 });
     }
+    if (T.style) styleShop(g, gl, w, T, x, sy, pw, shopH);
     g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + pw - 2, I.y, 2, I.h);
     x += pw;
+  }
+}
+// ══ Architecture propre à chaque ville (T.style) ═══════════════════════════
+function styleRoof(g, gl, T, x, y, pw, h) {
+  if (T.style === 'bavarian') {            // tuiles rouges, faîtage, lucarnes à fronton
+    g.strokeStyle = 'rgba(0,0,0,.16)'; g.lineWidth = 1;
+    for (let yy = y + 7; yy < y + h - 6; yy += 7) { g.beginPath(); g.moveTo(x, yy); g.lineTo(x + pw, yy); g.stroke(); }
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x, y + h * .45, pw, 3);
+    const n = Math.max(1, Math.floor(pw / 55));
+    for (let i = 0; i < n; i++) {
+      const dx = x + (i + .5) * pw / n - 11, dy = y + h * .55;
+      g.fillStyle = '#f4ecd8'; g.fillRect(dx, dy, 22, 16);
+      g.fillStyle = '#bfe3f5'; g.fillRect(dx + 6, dy + 4, 10, 10);
+      g.fillStyle = '#8e3b33'; g.beginPath(); g.moveTo(dx - 3, dy + 1); g.lineTo(dx + 11, dy - 10); g.lineTo(dx + 25, dy + 1); g.closePath(); g.fill();
+    }
+    if (R() < .5) { g.fillStyle = '#8a6a5a'; g.fillRect(x + pw * .78, y + 6, 9, 16); g.fillStyle = '#5a4a40'; g.fillRect(x + pw * .78 - 1, y + 4, 11, 3); }
+  } else if (T.style === 'japan') {        // tuiles kawara en rangées verticales, avant-toit relevé
+    g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 1.5;
+    for (let xx = x + 5; xx < x + pw; xx += 6) { g.beginPath(); g.moveTo(xx, y + 4); g.lineTo(xx, y + h - 8); g.stroke(); }
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x, y + h * .5 - 2, pw, 4);
+    g.fillStyle = '#1e2530'; g.fillRect(x - 2, y + h - 10, pw + 4, 6);
+    g.beginPath(); g.moveTo(x - 4, y + h - 4); g.lineTo(x - 8, y + h - 16); g.lineTo(x + 6, y + h - 10); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(x + pw + 4, y + h - 4); g.lineTo(x + pw + 8, y + h - 16); g.lineTo(x + pw - 6, y + h - 10); g.closePath(); g.fill();
+    g.fillStyle = '#c9a227'; g.beginPath(); g.arc(x + pw / 2, y + h * .5, 4, 0, 7); g.fill();
+  } else if (T.style === 'rio') {          // toit-terrasse en béton, réservoirs d'eau bleus, fers à béton
+    g.fillStyle = 'rgba(255,255,255,.05)';
+    for (let i = 0; i < 4; i++) g.fillRect(x + rnd(4, pw - 30), y + rnd(4, h - 20), rnd(16, 30), rnd(8, 16));
+    for (let i = 0; i < Math.max(1, Math.floor(pw / 60)); i++) {
+      const tx = x + rnd(16, pw - 16), ty = y + rnd(14, h - 18);
+      g.fillStyle = '#1565c0'; g.beginPath(); g.ellipse(tx, ty + 4, 11, 6, 0, 0, 7); g.fill();
+      g.fillStyle = '#1e88e5'; g.beginPath(); g.ellipse(tx, ty, 11, 6, 0, 0, 7); g.fill();
+      g.fillStyle = '#90caf9'; g.beginPath(); g.ellipse(tx - 3, ty - 2, 4, 2, 0, 0, 7); g.fill();
+    }
+    g.strokeStyle = '#8d6e63'; g.lineWidth = 1.5;
+    for (const cx of [x + 4, x + pw - 6]) for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(cx + k * 2, y + h - 6); g.lineTo(cx + k * 2, y + h - 14); g.stroke(); }
+    // guirlande lumineuse entre deux maisons
+    if (gl) for (let k = 0; k < Math.floor(pw / 12); k++) {
+      const lx = x + 6 + k * 12, ly = y + h - 3 + Math.sin(k / Math.max(1, Math.floor(pw / 12)) * Math.PI) * 6;
+      const c = ['#ffea00', '#ff1744', '#00e676', '#00b0ff'][k % 4];
+      g.fillStyle = c; g.beginPath(); g.arc(lx, ly, 1.8, 0, 7); g.fill();
+      glowDot(gl, lx, ly, 7, hexA(c, .5));
+    }
+  }
+}
+function styleFacade(g, T, x, fy, pw, fh, shopH, wall) {
+  if (T.style === 'bavarian') {            // colombages : poutres brunes horizontales, poteaux, croix de Saint-André
+    const beam = '#5b3a24', top = fy, bot = fy + fh - shopH - 6;
+    g.fillStyle = beam;
+    g.fillRect(x, top, pw, 4); g.fillRect(x, bot, pw, 4);
+    for (let yy = top + 26; yy < bot - 8; yy += 22) g.fillRect(x, yy - 4, pw, 3);
+    g.fillRect(x + 2, top, 4, bot - top); g.fillRect(x + pw - 6, top, 4, bot - top);
+    g.strokeStyle = beam; g.lineWidth = 3;
+    if (pw > 100) { const mx = x + pw / 2; g.beginPath(); g.moveTo(mx - 10, top + 4); g.lineTo(mx + 10, bot); g.moveTo(mx + 10, top + 4); g.lineTo(mx - 10, bot); g.stroke(); }
+  } else if (T.style === 'japan') {        // bardage bois horizontal sous les fenêtres
+    g.strokeStyle = 'rgba(60,40,25,.18)'; g.lineWidth = 1;
+    for (let yy = fy + 4; yy < fy + fh - shopH; yy += 4) { g.beginPath(); g.moveTo(x, yy); g.lineTo(x + pw, yy); g.stroke(); }
+  } else if (T.style === 'rio') {          // étages empilés de couleurs différentes, briques apparentes
+    const mid = fy + (fh - shopH) * rnd(.35, .6);
+    g.fillStyle = pick(T.walls); g.fillRect(x, fy, pw * rnd(.55, 1), mid - fy);
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, mid - 2, pw, 3);
+    const bx = x + rnd(6, pw - 40), by = fy + rnd(6, Math.max(8, fh - shopH - 26));
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      g.fillStyle = (r + c) % 2 ? '#a5502f' : '#b8603a';
+      g.fillRect(bx + c * 9 + (r % 2) * 4, by + r * 5, 8, 4);
+    }
+  }
+}
+function styleWindow(g, gl, T, wx, wy, lit) {
+  if (T.style === 'bavarian') {            // jardinière fleurie sous chaque fenêtre
+    g.fillStyle = '#6b4226'; g.fillRect(wx - 2, wy + 15, 17, 4);
+    for (let k = 0; k < 4; k++) { g.fillStyle = k % 2 ? '#e53935' : '#f06292'; g.beginPath(); g.arc(wx + 1 + k * 4, wy + 15, 2, 0, 7); g.fill(); }
+  } else if (T.style === 'japan') {        // shoji : papier crème quadrillé
+    g.fillStyle = '#f3ead2'; g.fillRect(wx, wy, 13, 15);
+    g.strokeStyle = '#6d4c33'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(wx + 6.5, wy); g.lineTo(wx + 6.5, wy + 15); g.moveTo(wx, wy + 5); g.lineTo(wx + 13, wy + 5); g.moveTo(wx, wy + 10); g.lineTo(wx + 13, wy + 10); g.stroke();
+    g.strokeRect(wx, wy, 13, 15);
+  } else if (T.style === 'rio' && lit) {   // fenêtres éclairées de couleurs variées
+    const c = pick(['#ffd27a', '#ffab91', '#b2ff59', '#80d8ff']);
+    g.fillStyle = c; g.fillRect(wx, wy, 13, 15);
+    if (gl) { gl.fillStyle = hexA(c, .85); gl.fillRect(wx, wy, 13, 15); }
+  }
+}
+function styleShop(g, gl, w, T, x, sy, pw, shopH) {
+  if (T.style === 'japan') {               // noren (rideau indigo) + lanternes rouges chōchin
+    const dx = x + pw * .62 - 6;
+    for (let k = 0; k < 3; k++) { g.fillStyle = '#1d2d50'; g.fillRect(dx + k * 9.5, sy + 8, 8.5, 14); }
+    g.fillStyle = '#f5f5f5'; g.beginPath(); g.arc(dx + 14, sy + 14, 3, 0, 7); g.fill();
+    for (const lx of [x + 8, x + pw - 8]) {
+      g.fillStyle = '#d32f2f'; g.beginPath(); g.ellipse(lx, sy + 4, 5, 7, 0, 0, 7); g.fill();
+      g.fillStyle = '#212121'; g.fillRect(lx - 4, sy - 3, 8, 2); g.fillRect(lx - 4, sy + 10, 8, 2);
+    }
+  } else if (T.style === 'bavarian') {     // fanions bleu-blanc au-dessus de la porte
+    for (let k = 0; k < Math.floor((pw - 10) / 9); k++) {
+      g.fillStyle = k % 2 ? '#f4f4f4' : '#0066b2';
+      g.beginPath(); g.moveTo(x + 5 + k * 9, sy - 26); g.lineTo(x + 14 + k * 9, sy - 26); g.lineTo(x + 9.5 + k * 9, sy - 19); g.closePath(); g.fill();
+    }
+  } else if (T.style === 'rio') {          // drapeau vert-jaune sur une maison sur trois
+    if (R() < .33) {
+      const fx = x + pw - 26, fy2 = sy - 40;
+      g.fillStyle = '#009c3b'; g.fillRect(fx, fy2, 20, 13);
+      g.fillStyle = '#ffdf00'; g.beginPath(); g.moveTo(fx + 10, fy2 + 1.5); g.lineTo(fx + 18.5, fy2 + 6.5); g.lineTo(fx + 10, fy2 + 11.5); g.lineTo(fx + 1.5, fy2 + 6.5); g.closePath(); g.fill();
+      g.fillStyle = '#002776'; g.beginPath(); g.arc(fx + 10, fy2 + 6.5, 3, 0, 7); g.fill();
+    }
   }
 }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
