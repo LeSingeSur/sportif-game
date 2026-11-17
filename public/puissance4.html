@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Puissance 4 dimensionnel</title>
+<style>
+:root{--bg:#0a0c0b;--card:#111513;--ink:#dcd9cf;--muted:#858c86;--line:#26302b;--board:#1d2b33;--board2:#121c22;--hole:#06090b;--red:#c9433b;--yel:#e8b93a;--acc:#7fb7bd;--fut:#9a86ff;--past:#d29a4a;--warn:#e3a24b;--serif:Georgia,"Times New Roman",serif;--mono:ui-monospace,Menlo,Consolas,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh;position:relative;transition:background-color 1.2s}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(120,150,140,.10),transparent 70%),radial-gradient(ellipse 70% 50% at 20% 90%,rgba(90,110,100,.08),transparent 70%),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.65));transition:background 1.2s}
+body::after{content:'';position:fixed;inset:-50%;pointer-events:none;z-index:0;opacity:.07;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");animation:grain 1.2s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+body[data-t=past]{background-color:#120d07}body[data-t=past]::before{background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(210,154,74,.16),transparent 70%),radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.7))}
+body[data-t=fut]{background-color:#0c0a16}body[data-t=fut]::before{background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(154,134,255,.17),transparent 70%),radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.7))}
+body[data-t=sup]::before{background:radial-gradient(ellipse 50% 60% at 30% 30%,rgba(154,134,255,.12),transparent 70%),radial-gradient(ellipse 50% 60% at 70% 30%,rgba(127,183,189,.12),transparent 70%),radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.7))}
+header,main,#uinfo{position:relative;z-index:1}
+header{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:rgba(10,12,11,.82);backdrop-filter:blur(6px)}
+#clock{font:600 13px var(--mono);letter-spacing:.18em;color:var(--acc);padding:5px 10px;border:1px solid var(--line);border-radius:6px;min-width:150px;text-align:center;text-shadow:0 0 8px rgba(127,183,189,.5)}
+#clock.past{color:var(--past);border-color:var(--past);text-shadow:0 0 8px rgba(210,154,74,.6)}#clock.fut{color:var(--fut);border-color:var(--fut);text-shadow:0 0 8px rgba(154,134,255,.6)}
+h1{font:400 19px var(--serif);margin:0;letter-spacing:.32em;text-transform:uppercase}h1 small{display:block;font:11px var(--mono);letter-spacing:.3em;color:var(--muted)}
+#turn{display:flex;align-items:center;gap:8px;font:600 15px var(--serif);letter-spacing:.06em;padding:6px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+#status{color:var(--muted)}
+#status.warn{color:var(--warn);font-weight:600}
+.spacer{flex:1}
+.dot{width:16px;height:16px;border-radius:50%;display:inline-block;flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.dot.R{background:var(--red)}.dot.J{background:var(--yel)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:20px;padding:20px;max-width:1300px;margin:0 auto}
+@media (max-width:960px){main{grid-template-columns:minmax(0,1fr)}}
+#boards{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.uni{width:auto;max-width:100%;background:linear-gradient(180deg,rgba(20,26,23,.92),rgba(13,16,15,.92));border:1px solid var(--line);border-radius:14px;padding:12px;transition:opacity .3s,filter .3s,border-color .6s,box-shadow .6s;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.uni.frozen{opacity:.55}
+.uni.linked{border-color:var(--fut);box-shadow:0 0 0 2px color-mix(in srgb,var(--fut) 30%,transparent)}
+.uhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.uhead b{font:400 17px var(--serif);letter-spacing:.12em;text-transform:uppercase}
+.tag{font:11px var(--mono);letter-spacing:.06em;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted)}
+.tag.fut{color:var(--fut)}.tag.past{color:var(--past)}.tag.acc{color:var(--acc)}
+.tl{display:flex;align-items:center;gap:3px;flex-wrap:wrap;min-height:22px;margin-bottom:6px;font-size:11px;color:var(--muted)}
+.tm{width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#000}
+.tm.R{background:var(--red)}.tm.J{background:var(--yel)}
+.tm.e{background:transparent;border:1px dashed var(--line)}
+.tm.f{border:2px dashed var(--fut);background:transparent;color:var(--fut)}
+.tm.f.R{border-color:var(--red);color:var(--red)}.tm.f.J{border-color:var(--yel);color:var(--yel)}
+.tm.q{background:transparent;border:2px dashed var(--past);color:var(--past)}
+.now{font-weight:700;color:var(--ink);padding:0 4px}
+.stage{position:relative}
+.persp{position:absolute;transition:transform .6s ease;transform-origin:50% 60%}
+.persp.flat{transform:perspective(900px) rotateX(48deg) scale(.92)}
+.bw{position:absolute;left:0;top:0;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.board{position:absolute;inset:0;background:linear-gradient(160deg,#24363f,var(--board) 45%,#152129);border-radius:12px;box-shadow:inset 0 0 0 4px var(--board2),inset 0 0 40px rgba(0,0,0,.5),0 0 0 1px #2e3f47;transition:background .8s,box-shadow .8s,filter .8s}
+.hole{position:absolute;width:40px;height:40px;border-radius:50%;background:var(--hole);border:none;padding:0;cursor:pointer;box-shadow:inset 0 4px 8px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.06);transition:background .8s}
+.pcs,.pvl{position:absolute;inset:0;pointer-events:none}
+.pc{position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;transition:transform .55s cubic-bezier(.55,0,.85,.4),opacity .35s;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18),inset 0 3px 0 rgba(255,255,255,.25)}
+.pc.R{background:radial-gradient(circle at 35% 30%,#e8695f,var(--red) 55%,#8e2a24)}.pc.J{background:radial-gradient(circle at 35% 30%,#ffd76a,var(--yel) 55%,#a87b16)}
+.pc{box-shadow:0 0 10px rgba(0,0,0,.6),inset 0 -4px 0 rgba(0,0,0,.25)}
+.pc.ha{clip-path:inset(0 50% 0 0)}.pc.hb{clip-path:inset(0 0 0 50%)}
+.pc.ha::before,.pc.hb::before{content:'';position:absolute;inset:3px;border-radius:50%;border:2px dashed rgba(255,255,255,.9)}
+.uni.superpo{border-color:#5f6fa8}.uni.superpo .board{box-shadow:inset 0 0 0 4px #7b86d6,0 0 28px rgba(127,140,255,.35)}
+.pc.ha,.pc.hb{animation:shimmer 2.4s ease-in-out infinite}
+@keyframes shimmer{50%{filter:brightness(1.35) drop-shadow(0 0 6px rgba(154,134,255,.9))}}
+.vd.bad{color:#d33}
+.pc.cp::after{content:'';position:absolute;inset:6px;border-radius:50%;border:2px dashed rgba(255,255,255,.85)}
+.pc.win{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px #fff,inset 0 -5px 0 rgba(0,0,0,.18)}}
+.pv{position:absolute;width:40px;height:40px;border-radius:50%;opacity:.45;border:3px dashed #fff;display:none}
+.pv.R{background:var(--red)}.pv.J{background:var(--yel)}
+.slot{position:absolute;width:40px;height:32px;border:none;border-radius:8px;background:transparent;color:var(--acc);font-size:20px;cursor:pointer;padding:0;line-height:32px}
+.slot:hover:not(:disabled){background:color-mix(in srgb,var(--acc) 14%,transparent)}
+.slot:disabled{opacity:.15;cursor:not-allowed}
+.slot.fm{color:var(--fut);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.4}}
+.gh{position:absolute;width:40px;height:34px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.gh span{width:30px;height:30px;border-radius:50%;opacity:.55;border:2px dashed #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000}
+.gh span.R{background:var(--red)}.gh span.J{background:var(--yel)}
+.floor{position:absolute;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font:11px var(--mono);color:var(--muted);letter-spacing:.3em;background:repeating-linear-gradient(45deg,#1c2622 0 6px,transparent 6px 12px);border-top:1px solid #34423c}
+.fx{position:absolute;left:0;right:0;top:45%;text-align:center;pointer-events:none;z-index:5}
+.fx div{display:inline-block;padding:8px 18px;border-radius:4px;background:rgba(5,7,6,.88);border:1px solid #34423c;color:#e9e5d8;font:400 15px var(--serif);letter-spacing:.08em;animation:fx 1.8s forwards;box-shadow:0 0 30px rgba(0,0,0,.7)}
+@keyframes fx{0%{opacity:0;transform:scale(.8)}15%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0}}
+.uni.pastview{border-color:var(--past);box-shadow:0 0 40px rgba(210,154,74,.25),0 20px 60px rgba(0,0,0,.5)}
+.uni.pastview .board{background:linear-gradient(160deg,#5a3d1c,#3d2a14 50%,#2a1c0d);box-shadow:inset 0 0 0 4px var(--past),inset 0 0 50px rgba(0,0,0,.6);filter:sepia(.5) contrast(1.05)}
+.uni.pastview .hole{background:#140d06}
+.uni.pastview .pcs{filter:sepia(.3) saturate(.95) brightness(.95)}
+.uni.pastview .stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,220,160,.05) 0 1px,transparent 1px 3px);animation:flick .15s infinite alternate;border-radius:12px}
+@keyframes flick{to{opacity:.6}}
+.uni.futview{border-color:var(--fut);box-shadow:0 0 40px rgba(154,134,255,.28),0 20px 60px rgba(0,0,0,.5)}
+.uni.futview .board{background:linear-gradient(160deg,#2c2366,#1d1747 50%,#120e2e);box-shadow:inset 0 0 0 4px var(--fut),0 0 30px rgba(154,134,255,.45)}
+.uni.futview .hole{background:#07051a}
+.uni.futview .persp::before,.uni.superpo .persp::before{content:'';position:absolute;inset:-14px;border-radius:50%;border:1px dashed rgba(154,134,255,.55);animation:spin 14s linear infinite;pointer-events:none}
+.uni.superpo .persp::before{border-color:rgba(127,183,189,.45);animation-duration:22s;animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loopmv{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pc.pick{animation:pick 1s infinite;cursor:pointer}
+@keyframes pick{50%{box-shadow:0 0 0 4px var(--fut),inset 0 -5px 0 rgba(0,0,0,.18)}}
+.slot.pm{color:var(--past)}
+.ribbon{position:absolute;right:12px;top:12px;background:rgba(5,7,6,.9);border:1px solid var(--past);color:var(--past);font:600 11px var(--mono);letter-spacing:.12em;padding:3px 10px;border-radius:4px}
+.uni.futview .ribbon{border-color:var(--fut);color:var(--fut)}
+.uhead .ribbon{position:static;flex-basis:100%;text-align:center;order:9}
+#status{flex:1 1 220px}.spacer{display:none}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+button.j{font:inherit;font-size:13px;padding:7px 11px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);cursor:pointer;transition:border-color .2s,box-shadow .2s,color .2s}
+button.j:hover:not(:disabled){border-color:var(--acc);box-shadow:0 0 12px rgba(127,183,189,.25)}
+button.j[data-a=past]:not(:disabled){color:var(--past)}button.j[data-a=loop]:not(:disabled){color:var(--fut)}button.j[data-a=dup]:not(:disabled){color:#9fb0ff}button.j[data-a=rot]:not(:disabled){color:var(--acc)}
+button.j:disabled{opacity:.4;cursor:not-allowed}
+button.j.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--card));font-weight:600}
+.panel{margin-top:8px;padding:10px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--line);font-size:13px;max-width:340px}
+.panel>b{font:400 15px var(--serif);letter-spacing:.04em}
+.panel p{margin:0 0 8px;color:var(--muted)}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:inherit;font-size:12px;width:96px}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+.opt.on{border-color:var(--fut);box-shadow:0 0 0 2px color-mix(in srgb,var(--fut) 30%,transparent)}
+.opt small{color:var(--muted);text-align:center;line-height:1.3}
+.big2{grid-template-columns:repeat(7,12px)!important;width:max-content}.big2 i{width:12px!important;height:12px!important}
+.mini i.dz{opacity:.35;box-shadow:0 0 0 2px #e04848}
+.mini i.nw{box-shadow:0 0 0 2px #ffcf00}.mini i.mv{box-shadow:0 0 0 2px #fff,0 0 0 3px #000}
+.pvw{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}.pvw small{display:block;color:var(--muted);margin-bottom:3px}.pvw .arrow{font-size:20px;color:var(--muted)}
+.prev{margin-top:8px;padding:8px;border-radius:8px;border:1px dashed var(--line);background:var(--card)}.prev p{margin:4px 0;color:var(--ink)}
+.vd{font-weight:700}.vd.ok{color:#2a9d4a}.vd.ko{color:#d64545}
+.steps{margin:0 0 8px;padding-left:18px;color:var(--muted)}.steps li{margin:2px 0}
+#tmodal{position:fixed;inset:0;background:rgba(3,4,4,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:12px}
+#tmodal .box{background:#0d121b;color:#e8e6df;border-radius:14px;padding:16px 18px;width:min(1100px,96vw);max-height:92vh;overflow:auto;border:1px solid #2a3344}
+#tmodal h2{margin:0 0 4px;font:400 21px var(--serif);letter-spacing:.14em;text-transform:uppercase}#tmodal .sub{color:#9aa4b5;font-size:13px;margin:0 0 10px}
+.trow{display:flex;gap:10px;align-items:flex-end;overflow-x:auto;padding:6px 2px 10px}
+.tcell{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:104px;padding:5px;border-radius:9px;transition:opacity .4s,background .4s}
+.tcell .lbl{font:11px ui-monospace,Menlo,monospace;color:#9aa4b5;letter-spacing:.06em}
+.tcell.now{background:#1b2333}.tcell.now .lbl{color:#ffcf00}
+.tcell.tgt{outline:2px solid #e0a040}.tcell.ins{outline:2px dashed #ffcf00}
+.tcell.pend{opacity:.18}.tcell.blank .mini{visibility:hidden}
+.tcell.fut{outline:1px dashed #8a5cf0}
+.rowlbl{font:12px ui-monospace,Menlo,monospace;color:#c9a46a;margin-top:6px}.rowlbl.new{color:#ffcf00}.rowlbl.b{color:#a685ff}
+#tmodal .sum{margin:10px 0 0;font-size:14px}#tmodal .sum b{color:#ffcf00}
+#tmodal button.j{background:#1b2333;color:#e8e6df;border-color:#3a4558}
+#uinfo{max-width:1300px;margin:12px auto 0;padding:0 20px;display:none}#uinfo>div{padding:10px 12px;border-radius:10px;border:1px solid var(--fut);color:var(--ink);font-size:13px;background:var(--card)}
+.mini{display:grid;grid-template-columns:repeat(7,8px);gap:1px;padding:3px;background:#22343d;border-radius:4px}
+.mini i{width:8px;height:8px;border-radius:50%;background:#0a1013}
+.mini i.R{background:var(--red)}.mini i.J{background:var(--yel)}
+.big{font-size:22px;line-height:1}
+aside .card{background:rgba(17,21,19,.9);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
+aside h3{font:400 13px var(--serif);letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.pl{display:flex;align-items:center;gap:8px;margin:6px 0}
+.pl .meta{color:var(--muted);font-size:12px}
+#log{max-height:280px;overflow:auto;font-size:12.5px}
+#log div{padding:4px 0;border-bottom:1px solid var(--line)}
+#log div:first-child{font-weight:600}
+details{font-size:13px;line-height:1.5}
+details summary{cursor:pointer;font-weight:600}
+details ul{padding-left:18px;margin:6px 0}
+#banner{display:none;max-width:1300px;margin:0 auto;padding:0 20px}
+#banner div{margin-top:14px;padding:12px 16px;border-radius:10px;background:var(--card);border:2px solid var(--acc);display:flex;align-items:center;gap:12px;font-weight:700;font-size:16px}
+#rmodal{position:fixed;inset:0;background:rgba(6,8,14,.75);display:none;align-items:center;justify-content:center;z-index:60;padding:12px}
+#rmodal.on{display:flex}
+#rmodal .box{background:var(--card);color:var(--ink);border-radius:14px;padding:18px 20px;width:min(760px,96vw);max-height:92vh;overflow:auto;border:1px solid var(--line);font-size:14px;line-height:1.5}
+#rmodal h2{margin:0 0 2px;font-size:20px}#rmodal h3{margin:16px 0 6px;font-size:15px}
+#rmodal .lead{color:var(--muted);margin:0 0 8px}
+#rmodal table{border-collapse:collapse;width:100%;font-size:13.5px}
+#rmodal td{border-top:1px solid var(--line);padding:7px 6px;vertical-align:top}
+#rmodal td:first-child{white-space:nowrap;font-weight:600}#rmodal td:last-child{white-space:nowrap;color:var(--muted);text-align:right}
+#rmodal .tip{background:rgba(124,92,255,.08);border-left:3px solid #7c5cff;padding:6px 10px;border-radius:6px;margin:6px 0}
+#rmodal .x{float:right}
+.rules-short li{margin:3px 0}
+#vfx{position:fixed;inset:0;pointer-events:none;z-index:80;display:none;align-items:center;justify-content:center;overflow:hidden}
+#vfx.on{display:flex;animation:vfxfade 1.7s forwards}
+@keyframes vfxfade{0%{opacity:0}12%{opacity:1}70%{opacity:1}100%{opacity:0}}
+#vfx .veil{position:absolute;inset:0}
+#vfx .ring{position:absolute;width:78vmin;height:78vmin;border-radius:50%;border:2px solid rgba(255,255,255,.18);box-shadow:0 0 60px rgba(255,255,255,.08),inset 0 0 60px rgba(255,255,255,.06)}
+#vfx .ring::before,#vfx .ring::after{content:'';position:absolute;inset:8%;border-radius:50%;border:1px dashed rgba(255,255,255,.35)}
+#vfx .ring::after{inset:22%;border-style:dotted}
+#vfx .hand{position:absolute;width:2px;height:36vmin;bottom:50%;left:calc(50% - 1px);transform-origin:50% 100%;background:linear-gradient(transparent,rgba(255,255,255,.8))}
+#vfx .cap{position:relative;font:400 clamp(22px,4.5vw,46px) var(--serif);letter-spacing:.28em;text-transform:uppercase;color:#f1ecdf;text-shadow:0 0 22px rgba(255,255,255,.35);text-align:center;padding:0 20px}
+#vfx .cap small{display:block;font:12px var(--mono);letter-spacing:.4em;opacity:.7;margin-top:10px}
+#vfx.rewind .veil{background:radial-gradient(circle,rgba(70,45,15,.55),rgba(10,6,2,.92));}
+#vfx.rewind .veil::after,#vfx.forward .veil::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 2px,transparent 2px 4px);animation:scan .25s linear infinite}
+@keyframes scan{to{transform:translateY(4px)}}
+#vfx.rewind .ring{border-color:rgba(210,154,74,.6);animation:spinb 1.7s cubic-bezier(.3,0,.2,1)}
+#vfx.rewind .hand{animation:spinb .5s linear infinite;background:linear-gradient(transparent,var(--past))}
+#vfx.rewind .cap{color:#f3d29a;animation:jit .12s steps(2) infinite}
+#vfx.forward .veil{background:radial-gradient(circle,rgba(70,50,160,.5),rgba(5,3,15,.92))}
+#vfx.forward .ring{border-color:rgba(154,134,255,.65);animation:spin 1.7s cubic-bezier(.3,0,.2,1)}
+#vfx.forward .hand{animation:spin .4s linear infinite;background:linear-gradient(transparent,var(--fut))}
+#vfx.forward .cap{color:#d7ceff}
+@keyframes spinb{to{transform:rotate(-720deg)}}
+@keyframes jit{0%{transform:translate(1px,0)}50%{transform:translate(-2px,1px)}100%{transform:translate(1px,-1px)}}
+#vfx.return .veil{background:radial-gradient(circle,rgba(255,255,255,.95),rgba(220,230,225,.5) 40%,rgba(0,0,0,.2));animation:flashout 1.7s forwards}
+#vfx.return .cap{color:#0b0d0c;text-shadow:none}#vfx.return .ring,#vfx.return .hand{display:none}
+@keyframes flashout{0%{opacity:1}100%{opacity:0}}
+#vfx.split .veil{background:linear-gradient(90deg,rgba(80,60,180,.55),rgba(5,5,10,.85) 49.6%,#fff 50%,rgba(5,5,10,.85) 50.4%,rgba(60,140,150,.55))}
+#vfx.split .cap{animation:splitx 1.7s}#vfx.split .ring,#vfx.split .hand{display:none}
+@keyframes splitx{0%{letter-spacing:.05em;filter:blur(4px)}40%{letter-spacing:.4em;filter:none}100%{letter-spacing:.3em}}
+#vfx.collapse .veil{background:radial-gradient(circle,rgba(255,255,255,.9),rgba(10,12,20,.9) 45%);animation:iris 1.7s forwards}
+#vfx.collapse .ring,#vfx.collapse .hand{display:none}#vfx.collapse .cap{color:#fff}
+@keyframes iris{0%{clip-path:circle(0% at 50% 50%)}35%{clip-path:circle(75% at 50% 50%)}100%{clip-path:circle(75% at 50% 50%)}}
+#vfx.rotate .veil,#vfx.flat .veil,#vfx.stand .veil,#vfx.alert .veil,#vfx.win .veil{background:radial-gradient(circle,rgba(0,0,0,.25),rgba(0,0,0,.75))}
+#vfx.rotate .ring,#vfx.flat .ring,#vfx.stand .ring,#vfx.alert .ring,#vfx.win .ring,#vfx.rotate .hand,#vfx.flat .hand,#vfx.stand .hand,#vfx.alert .hand,#vfx.win .hand{display:none}
+#vfx.rotate .cap{color:var(--acc)}#vfx.flat .cap{color:var(--acc);animation:float 1.7s ease-in-out}#vfx.stand .cap{color:var(--acc)}
+@keyframes float{0%{transform:translateY(20px)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+#vfx.alert .veil{background:radial-gradient(circle,rgba(160,20,20,.35),rgba(0,0,0,.8))}#vfx.alert .cap{color:#ff8a80;animation:jit .1s steps(2) infinite}
+#vfx.win .cap{color:#ffe7a8}
+.uni.shake{animation:shake .45s}
+@keyframes shake{20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
+.uni.glitch .bw{animation:glitch .6s steps(3)}
+@keyframes glitch{0%{filter:hue-rotate(0) blur(0)}30%{filter:hue-rotate(60deg) blur(1.5px);transform:translateX(3px)}60%{filter:hue-rotate(-40deg) blur(.5px)}100%{filter:none}}
+@media (prefers-reduced-motion:reduce){#vfx.on{animation-duration:.8s}#vfx .ring,#vfx .hand,body::after{animation:none!important}}
+#tut{display:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:45;width:min(720px,94vw);background:rgba(8,11,10,.96);border:1px solid var(--acc);border-radius:12px;padding:12px 16px;box-shadow:0 10px 50px rgba(0,0,0,.8),0 0 30px rgba(127,183,189,.15)}
+#tut.on{display:block}
+#tut .st{font:11px var(--mono);letter-spacing:.25em;color:var(--acc);text-transform:uppercase}
+#tut h4{margin:2px 0 6px;font:400 19px var(--serif);letter-spacing:.06em}
+#tut p{margin:4px 0;font-size:13.5px;line-height:1.45;color:#cfd3cc}
+#tut .goal{margin-top:6px;padding:6px 10px;border-left:3px solid var(--acc);background:rgba(127,183,189,.07);font-size:13.5px}
+#tut .res{margin-top:6px;font-weight:600}#tut .res.ok{color:#7ddc8f}#tut .res.ko{color:#ff8a80}
+#tut .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#tut .dots{display:flex;gap:4px;margin:4px 0}#tut .dots i{width:18px;height:4px;border-radius:2px;background:#2b3631}#tut .dots i.d{background:var(--acc)}#tut .dots i.c{background:#e9e5d8}
+button.hl{animation:hl 1.2s ease-in-out infinite;border-color:var(--acc)!important}
+@keyframes hl{50%{box-shadow:0 0 0 3px rgba(127,183,189,.55),0 0 18px rgba(127,183,189,.6)}}
+main{padding-bottom:200px}
+.opp{display:flex;gap:10px;align-items:center}.opp .av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;background:radial-gradient(circle,#1f2a26,#0b0f0d);border:1px solid var(--line);box-shadow:0 0 14px rgba(127,183,189,.2)}
+.opp b{font:400 17px var(--serif);letter-spacing:.06em}.opp .ttl{font-size:12px;color:var(--muted);font-style:italic}
+.lvl{white-space:nowrap;font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid}.lvl.l1{color:#7ddc8f}.lvl.l2{color:var(--fut)}.lvl.l3{color:#ff8a80}.lvl.l4{color:#ffd76a;box-shadow:0 0 10px rgba(255,215,106,.35)}
+.bio{font-size:12.5px;color:#b9bcb4;margin:8px 0 6px;line-height:1.4}.rec{font-size:12px;color:var(--muted)}.bdg{color:#ffd76a}.bdg.no{color:var(--muted)}
+#log b{font-weight:600}
+#boards{flex:1}
+.stage{zoom:var(--z,1)}
+body.wide .uni{display:grid;grid-template-columns:auto minmax(270px,360px);grid-template-areas:"h c" "t c" "s c";column-gap:20px;align-items:start}
+body.wide .uni .uhead{grid-area:h}body.wide .uni .tl{grid-area:t}body.wide .uni .stage{grid-area:s}body.wide .uni .ctrl{grid-area:c;padding-top:4px}
+body.wide .uni .ctrl .panel{max-width:none}
+#tut{position:static;transform:none;width:auto;margin-bottom:14px;left:auto;bottom:auto}
+main{padding-bottom:40px}
+.mod{position:fixed;inset:0;background:rgba(3,4,4,.82);display:none;align-items:center;justify-content:center;z-index:60;padding:12px}.mod.on{display:flex}
+.mod .box{background:#0f1311;color:var(--ink);border-radius:14px;padding:18px 20px;width:min(820px,96vw);max-height:92vh;overflow:auto;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.mod h2{margin:0 0 6px;font:400 22px var(--serif);letter-spacing:.14em;text-transform:uppercase}.mod h3{margin:16px 0 8px;font:400 13px var(--serif);letter-spacing:.25em;text-transform:uppercase;color:var(--muted)}
+.mod .x{float:right}.mod .lead{color:var(--muted);margin:0 0 8px;font-size:13px}
+.oppgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.oc{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--ink);cursor:pointer;font:inherit;text-align:center}
+.oc .i{font-size:28px}.oc b{font:400 15px var(--serif);letter-spacing:.05em}.oc small{color:var(--muted);font-size:11px}
+.oc.on{border-color:var(--acc);box-shadow:0 0 0 2px rgba(127,183,189,.35),0 0 20px rgba(127,183,189,.15)}
+.presets{display:flex;gap:8px;flex-wrap:wrap}.presets .oc{flex:1 1 150px;align-items:flex-start;text-align:left}
+.powl{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin-top:10px}
+.powl label{display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:13px}.powl label small{color:var(--muted)}
+.powl input{accent-color:#7fb7bd;width:16px;height:16px}
+button.j.big{font-size:15px;padding:10px 18px}
+.shwrap{display:flex;justify-content:center}#shcv{width:min(360px,80vw);height:auto;border-radius:10px;border:1px solid var(--line);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.mod .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.powtag{font:11px var(--mono);color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" title="Retour" style="color:var(--muted);text-decoration:none;font-size:22px;font-weight:900;padding:0 6px">‹</a>
+  <h1>Puissance 4<small>dimensionnel</small></h1>
+  <div id="clock"></div>
+  <div id="turn"></div>
+  <div id="status"></div>
+  <div class="spacer"></div>
+    <label style="font-size:13px;color:var(--muted)">Adversaire : <select id="opp" style="font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)"><option value="0">👥 Humain (même écran)</option><option value="1">🕊 Noé — facile</option><option value="2">🔮 Débora — moyen</option><option value="3">⏳ Mathusalem — difficile</option><option value="4">👁 Melchisédech — très difficile</option></select></label>
+  <button class="j" data-a="tut">🎓 Tutoriel</button>
+  <button class="j" data-a="rules">📖 Règles</button>
+  <button class="j" data-a="setup">▶ Nouvelle partie</button>
+</header>
+<div id="banner"><div><span id="bannerText"></span><button class="j" data-a="new">↺ Rejouer</button> <button class="j" data-a="setup">▶ Autre partie</button> <button class="j on" id="shbtn" data-a="share" style="display:none">📸 Partager ma victoire</button></div></div>
+<div id="vfx"><div class="veil"></div><div class="ring"><div class="hand"></div></div><div class="cap"></div></div>
+<div id="tmodal"><div class="box"></div></div>
+<div id="rmodal"><div class="box">
+<button class="j x" data-a="rclose">Fermer ✕</button>
+<h2>📖 Comment jouer</h2>
+<p class="lead">Un Puissance 4 où l'on peut tourner le plateau, voyager dans le temps et créer des réalités parallèles.</p>
+<p><button class="j on" data-a="tut">🎓 Tutoriel guidé (7 étapes courtes)</button> <button class="j" data-a="setup">▶ Jouer directement</button></p>
+<h3>🎯 Le but</h3>
+<p>Comme au Puissance 4 : aligner <b>4 jetons</b> de ta couleur (ligne, colonne ou diagonale).</p>
+<h3>🔁 À ton tour</h3>
+<p>Tu fais <b>une seule chose</b> : lâcher un jeton (flèche ▼) <b>ou</b> utiliser un <b>pouvoir</b>. Après un pouvoir, tu dois attendre quelques tours avant le suivant (la <b>recharge</b>). Rouge commence ; Jaune recharge <b>2 tours plus vite</b> pour compenser.</p>
+<div class="tip">💡 Survole une flèche ou une case (ou touche-la une fois sur mobile) : un <b>aperçu</b> montre le résultat avant de valider. Rien n'est joué tant que tu n'as pas cliqué.</div>
+<h3>🃏 Les 5 pouvoirs</h3>
+<table>
+<tr><td>↻ Rotation</td><td><b>Tourner le plateau</b> à gauche, à droite, ou le retourner. Les jetons retombent vers le nouveau bas, puis tu poses ton jeton.</td><td>4 tours</td></tr>
+<tr><td>◎ Apesanteur</td><td>(Dans le menu Rotation.) <b>Le plateau se couche : plus de gravité.</b> Chacun pose son jeton sur n'importe quelle case, et aucun alignement ne compte. Dès que chacun a posé un jeton, un joueur peut, à son tour, <b>▼ redresser</b> le plateau à la place de son jeton (gratuit) : il choisit de quel côté tout tombe, puis les alignements comptent. Sinon, redressement automatique après 3 manches, et c'est l'adversaire de celui qui a couché le plateau qui choisit.</td><td>4 tours</td></tr>
+<tr><td>⟲ Passé</td><td><b>Remonter 1 ou 2 manches</b> et y lâcher un jeton. Toute la suite se rejoue avec lui : les jetons posés ensuite dans cette colonne montent d'une case (effet papillon).</td><td>3–4 tours</td></tr>
+<tr><td>⏩ Futur</td><td><b>Voir l'avenir, puis le corriger.</b> La partie continue pour de vrai pendant 2 ou 3 manches (plateau violet). Puis tu reviens au départ et tu peux <b>déplacer ton premier coup</b> du voyage (ton coup d'essai). Tout le reste est rejoué tel quel.</td><td>5 tours</td></tr>
+<tr><td>⧉ Dédoubler</td><td><b>Ton jeton existe dans deux réalités parallèles</b> : il tombe dans une colonne dans la réalité A et dans une autre colonne dans la réalité B.</td><td>5 tours</td></tr>
+</table>
+<h3>⧉ Quand il y a deux réalités</h3>
+<ul>
+<li>Il n'y a toujours <b>qu'un plateau</b>. ◐ <b>demi-jeton gauche</b> : il n'existe que dans la réalité A. ◑ <b>demi-jeton droit</b> : que dans la réalité B. Jeton plein : dans les deux.</li>
+<li>Chacun joue <b>un seul coup par tour</b>, qui tombe dans les deux réalités à la fois.</li>
+<li>👁 <b>Observer</b> : à la place de ton jeton, tu <b>gardes une réalité</b>. L'autre disparaît.</li>
+<li><b>4 alignés dans les deux réalités : victoire.</b></li>
+<li><b>4 alignés dans une seule : fusion des réalités.</b> Cette réalité menace d'absorber l'autre. À son tour, l'adversaire doit 👁 observer en gardant l'autre réalité (ou casser l'alignement) ; sinon les réalités fusionnent dans celle du 4, et il perd.</li>
+</ul>
+<h3>📚 Petit lexique</h3>
+<ul>
+<li><b>Manche</b> : un coup de Rouge + un coup de Jaune.</li>
+<li><b>Recharge</b> : nombre de tours à attendre avant ton prochain pouvoir.</li>
+<li><b>Effet papillon</b> : quand le passé change, les coups suivants sont rejoués et peuvent tomber ailleurs (ou être effacés s'ils ne rentrent plus).</li>
+<li><b>Coup d'essai</b> : ton premier coup pendant un voyage dans le futur, le seul que tu pourras déplacer au retour.</li>
+<li><b>Réalité A / B</b> : les deux versions du plateau après un dédoublement.</li>
+<li><b>Observer</b> 👁 : garder une seule des deux réalités, à la place de ton jeton.</li>
+<li><b>Fusion des réalités</b> : un 4 aligné dans une seule réalité. Si l'adversaire n'observe pas pour garder l'autre, tout fusionne dans la réalité du 4.</li>
+<li><b>Apesanteur / redresser</b> : plateau couché sans gravité / le remettre debout en choisissant de quel côté tout tombe.</li>
+</ul>
+<h3>⚠️ Cas particuliers</h3>
+<ul>
+<li>🔒 On ne peut pas remonter le temps avant un dédoublement ou une observation.</li>
+<li>Pendant un voyage dans le futur : pas de Passé ni de Dédoublement. Un 4 aligné arrête le voyage ; il ne compte que s'il est toujours là après ta correction.</li>
+<li>En apesanteur ou avec deux réalités : seuls les pouvoirs qui ont du sens restent disponibles (les autres sont grisés, survole-les pour savoir pourquoi).</li>
+<li>🕰 <b>Frise du temps</b> (bouton au-dessus du plateau) : montre toute l'histoire du plateau, coup par coup.</li>
+</ul>
+</div></div>
+<div id="smodal" class="mod"><div class="box">
+<button class="j x" data-a="sclose">✕</button>
+<h2>▶ Nouvelle partie</h2>
+<h3>Ton adversaire</h3><div class="oppgrid" id="sopp"></div>
+<h3>Ta couleur</h3><div class="presets" id="scol"></div>
+<h3>Les pouvoirs</h3><p class="lead">Commence sans pouvoirs, ou avec un seul, pour te familiariser. Tu pourras tous les activer ensuite.</p>
+<div class="presets" id="spre"></div><div class="powl" id="spow"></div>
+<p style="margin-top:14px"><button class="j on big" data-a="sgo">▶ Commencer</button> <button class="j" data-a="tut">🎓 Faire le tutoriel d’abord</button></p>
+</div></div>
+<div id="shmodal" class="mod"><div class="box">
+<button class="j x" data-a="shclose">✕</button>
+<h2>🏆 Partage ta victoire</h2>
+<div class="shwrap"><canvas id="shcv" width="1080" height="1350"></canvas></div>
+<p class="btns"><button class="j on" data-a="shshare">📤 Partager</button> <button class="j" data-a="shdl">⬇ Télécharger l’image</button> <button class="j" data-a="shcopy">📋 Copier le texte</button></p>
+<p class="lead" id="shmsg"></p>
+</div></div>
+<div id="uinfo"></div>
+<main>
+  <section id="boards"></section>
+  <aside>
+    <div id="tut"></div>
+    <div class="card" id="oppcard" style="display:none"></div>
+    <div class="card"><h3>Joueurs</h3><div id="players"></div></div>
+    <div class="card"><h3>Journal</h3><div id="log"></div></div>
+    <div class="card">
+      <details open>
+        <summary>Règles en bref</summary>
+        <ul class="rules-short">
+          <li>🎯 Aligne 4 jetons.</li>
+          <li>🔁 À ton tour : 1 jeton <b>ou</b> 1 pouvoir (puis recharge).</li>
+          <li>↻ <b>Rotation</b> : tourner le plateau (◎ ou le coucher en apesanteur).</li>
+          <li>⟲ <b>Passé</b> : ajouter un jeton 1–2 manches en arrière.</li>
+          <li>⏩ <b>Futur</b> : jouer 2–3 manches, puis corriger ton 1er coup.</li>
+          <li>⧉ <b>Dédoubler</b> : ton jeton dans 2 réalités ; 👁 observer en garde une.</li>
+          <li>Jaune recharge 2 tours plus vite.</li>
+        </ul>
+        <p style="margin:6px 0 0"><button class="j" data-a="rules">📖 Règles complètes</button></p>
+      </details>
+    </div>
+  </aside>
+</main>
+<script>
+const N=7,PL=['R','J'],NAMES={R:'Rouge',J:'Jaune'};
+const C=40,G=5,P=10,ST=C+G,B=2*P+N*C+(N-1)*G,MX=14,MT=74,MB=36;
+const ROT={ccw:{d:-90,label:'Tourner à gauche',icon:'↺'},cw:{d:90,label:'Tourner à droite',icon:'↻'},half:{d:180,label:'Retourner',icon:'⇅'},flat:{label:'Apesanteur',icon:'◎'}};
+const PASTWIN=false,MAXPAST=2;let FLATCD=4,FLATMODE='opp';let BIFCD=5;let LOOPCD=[5,5],LOOPB=80;let INITCD=[0,0];const FLATN=6;let CDADJ=[0,-2];const rc=v=>Math.max(1,v+CDADJ[S.turn]);function setCd(t,v){S.cd[t]=Math.max(1,v+CDADJ[t])}
+let S,flashMsg=null,flashTimer=null,idc=0,gid=0,SIM=false,AI=0,aiTimer=null;
+const emptyGrid=()=>Array.from({length:N},()=>Array(N).fill(null));
+const cloneGrid=g=>g.map(r=>r.slice());
+const cur=()=>PL[S.turn];
+const actor=()=>S&&S.loopRet?PL[S.loopRet.owner]:PL[S.turn];
+const piece=(p,id)=>({id:id||++idc,p});
+const angleGrav=a=>({0:'down',90:'right',180:'up',270:'left'})[((a%360)+360)%360];
+const snapState=st=>({grid:cloneGrid(st.grid),gravity:st.gravity,prev:st.prev,flat:st.flat,angle:st.angle});
+function mkU(name,grid){return{name,grid:grid||emptyGrid(),gravity:'down',prev:null,flat:0,angle:0,history:[],anchor:0,lockUntil:0,noAnim:false}}
+function newGame(){gid++;clearTimeout(aiTimer);aiTimer=null;S={mood:{loop:.3+Math.random()*1.1,like:{rot:Math.random()*40-15,flatc:Math.random()*30-15,past:Math.random()*40-15,loopc:Math.random()*50-30,bif:Math.random()*40-15},patience:Math.floor(Math.random()*4)},ev:[],pu:[],turn:0,us:[mkU('A')],pend:[0],jt:false,awaitFloor:null,pendLinked:false,linkTarget:null,nextL:1,lay:0,linkLeft:0,mirrors:[],busy:false,anim:null,cd:INITCD.slice(),jFirst:false,swapDone:true,dup:[false,false],ent:[false,false],futs:[],over:null,log:[],mode:null,fx:[],wins:[]};log('Nouvelle partie. Rouge commence.');if(AI&&!TUT)say('start');render()}
+function vfx(kind,cap,sub,ui){if(SIM)return;const v=document.getElementById('vfx');if(!v)return;v.className='';void v.offsetWidth;v.querySelector('.cap').innerHTML=cap+(sub?`<small>${sub}</small>`:'');v.className='on '+kind;clearTimeout(v._t);v._t=setTimeout(()=>{v.className=''},1750);
+ const el=document.getElementById('uni-'+(ui||0));if(el){const c=(kind==='rotate'||kind==='stand'||kind==='alert')?'shake':'glitch';el.classList.remove('shake','glitch');void el.offsetWidth;el.classList.add(c);setTimeout(()=>el.classList.remove(c),700)}}
+const TUT_STEPS=[
+ {t:'Les bases',x:'C’est un Puissance 4 : lâche un jeton avec une flèche ▼, il tombe en bas de la colonne. Aligne 4 jetons de ta couleur pour gagner. Survole une flèche pour voir où il tombera. Les coups gagnants clignotent pour te guider.',g:'Gagne en un coup avec Rouge.',seq:[0,0,1,1,2,6],ai:0,puzzle:1,only:'drop'},
+ {t:'↻ Rotation',x:'Le pouvoir <b>Rotation</b> tourne tout le plateau : les jetons retombent vers le nouveau bas. Ensuite, tu poses quand même ton jeton. Ouvre Rotation et regarde les aperçus : une colonne peut devenir une ligne !',g:'Gagne ce tour-ci : une rotation, puis ton jeton.',seq:[2,3,3,2,2,3,4,1,3,5],ai:0,puzzle:1,only:'rot',hl:'rot'},
+ {t:'⟲ Passé',x:'Le pouvoir <b>Passé</b> te fait remonter 1 ou 2 manches. Le plateau devient sépia : c’est le passé. Lâches-y un jeton : toute la suite se rejoue, et les jetons posés ensuite dans cette colonne montent d’une case (effet papillon). Survole les flèches ⟲ pour voir le présent qui en résulte.',g:'Gagne en modifiant le passé.',seq:[6,1,6,6,2,0,3,1,5,4],ai:0,puzzle:1,only:'past',hl:'past'},
+ {t:'◎ Apesanteur',x:'Dans le menu Rotation, <b>Apesanteur</b> couche le plateau : plus de gravité. Chacun pose où il veut et <b>rien ne compte</b>. Le panneau montre ce que donnerait chaque côté de chute. Dès ton 2e tour, tu peux <b>redresser</b> le plateau à la place de ton jeton en choisissant le côté où tout tombe. L’IA joue Jaune.',g:'Couche le plateau, puis va jusqu’au redressement (par toi, l’IA ou automatiquement).',seq:[3,3,2,4],ai:1,ev:'stand',hl:'rot'},
+ {t:'⏩ Futur',x:'Le pouvoir <b>Futur</b> te fait vivre l’avenir pour de vrai pendant 2 ou 3 manches (plateau violet). Ton premier coup est un <b>coup d’essai</b>. Au retour, tu peux le déplacer : tout le reste est rejoué tel quel, et les coups de l’adversaire risquent de tomber à côté. L’IA joue Jaune.',g:'Fais un voyage dans le futur et reviens corriger (ou garder) ton coup d’essai.',seq:[3,3],ai:1,ev:'loopret',hl:'loop'},
+ {t:'⧉ Dédoubler',x:'Le pouvoir <b>Dédoubler</b> fait exister ton jeton dans <b>deux réalités</b> : choisis une colonne pour la réalité A (demi-jeton gauche ◐), une autre pour la réalité B (demi-jeton droit ◑). Ensuite chaque coup tombe dans les deux. Un 4 dans une seule réalité déclenche la <b>fusion des réalités</b> : l’adversaire doit 👁 observer pour garder l’autre réalité, sinon tout fusionne dans la réalité du 4 et il perd. Essaie colonnes 2 et 5 : une menace différente dans chaque réalité !',g:'Dédouble un jeton, puis va jusqu’à une observation (ou la victoire).',seq:[2,6,3,6],ai:1,ev:'obs',hl:'dup'},
+ {t:'À toi de jouer',x:'Tu connais tout. Les pouvoirs se rechargent : choisis bien ton moment. Astuce : avant chaque coup, regarde ce que l’adversaire pourrait faire avec ses pouvoirs.',g:'Bats Noé (puis défie Débora, Mathusalem… et Melchisédech, si tu l’oses).',seq:[],ai:1,win:1}];
+let TUT=null;
+const ALLPOW={rot:1,flat:1,past:1,loop:1,dup:1};
+const POWINFO=[['rot','↻','Rotation','tourner le plateau'],['flat','◎','Apesanteur','coucher le plateau sans gravité'],['past','⟲','Passé','lâcher un jeton dans le passé'],['loop','⏩','Futur','voir l’avenir, puis corriger'],['dup','⧉','Dédoubler','un jeton dans deux réalités']];
+const PRESETS=[['classic','Classique','Aucun pouvoir : un Puissance 4 normal',{}],['init','Initiation','↻ Rotation seulement',{rot:1}],['time','Le temps','↻ Rotation, ⟲ Passé, ⏩ Futur',{rot:1,past:1,loop:1}],['all','Complet','Les 5 pouvoirs',ALLPOW]];
+let POW={...ALLPOW},HC='R';try{const c=JSON.parse(localStorage.getItem('p4d_setup')||'null');if(c&&c.pow)POW=c.pow;if(c&&c.ai!=null)AI=c.ai;if(c&&c.hc)HC=c.hc}catch(e){}
+function setSides(h){HC=h;ME=h==='R'?'J':'R';OPP=h}
+const pw=k=>!!POW[k];
+function saveSetup(){try{localStorage.setItem('p4d_setup',JSON.stringify({pow:POW,ai:AI,hc:HC}))}catch(e){}}
+const PROFILES={
+ 1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,noise:70,jc:18,blunder:.22,like:{},
+  bio:"Il a traversé le déluge, mais les paradoxes temporels, c’est nouveau pour lui. Il appuie sur tous les boutons… méfie-toi quand même de la chance du débutant.",
+  q:{start:["Après le déluge, plus rien ne me fait peur. Sauf peut-être ce plateau.","On embarque ? Un jeton de chaque couleur, c’est bien ça ?"],pow:["Oups… j’ai touché à quelque chose.","Il pleut des jetons, comme au bon vieux temps !","J’ai lu le mode d’emploi. En diagonale."],win:["Ha ! Même un vieux marin peut avoir de la chance !"],lose:["Bien joué. Revanche ? Il me reste quarante jours."]}},
+ 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
+  bio:"Elle rendait la justice sous un palmier et prétend avoir déjà vu la fin de cette partie. Elle adore voyager dans le futur et jongler avec les réalités.",
+  q:{start:["J’ai déjà vu comment ça se termine. Tu veux quand même essayer ?","Assieds-toi. J’ai vu ton coup avant que tu le penses."],pow:["Le destin hésite… je l’aide un peu.","J’ai vu cette réalité. Elle me plaît.","Tout est écrit. Il suffit de lire."],win:["Je te l’avais dit. C’était écrit."],lose:["Impossible… cette réalité n’existait dans aucune de mes visions."]}},
+ 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,noise:2,jc:6,blunder:0,like:{past:10},
+  bio:"969 ans d’expérience. Il a vu passer plus de parties que tu n’as vu de jours, et il n’oublie jamais un coup.",
+  q:{start:["Neuf cent soixante-neuf ans… et toujours pas fatigué de gagner.","J’ai joué cette ouverture avant ta naissance. Et celle de tes ancêtres."],pow:["Le temps et moi, on se connaît bien.","J’ai déjà vécu ce moment. Plusieurs fois.","À mon âge, on prend des raccourcis… dans le temps."],win:["La patience est l’arme des anciens."],lose:["En 969 ans, je n’avais jamais vu ça. Respect."]}},
+ 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,noise:2,jc:5,blunder:0,like:{},
+  bio:"On dit qu’il n’a ni commencement ni fin. Il calcule plus loin que tous les autres et ne laisse rien au hasard. Personne ne sait s’il a déjà été battu.",
+  q:{start:["Je n’ai pas de commencement. Cette partie n’aura pas de fin pour toi.","Je suis là depuis toujours. Je serai là après toi."],pow:["Le temps n’est qu’un couloir. J’en ai toutes les clés.","Chaque réalité finit par me revenir.","Avant et après, pour moi, c’est la même chose."],win:["Tout était déjà accompli."],lose:["…Tu viens d’écrire quelque chose qui n’était nulle part. Je m’en souviendrai."]}}};
+const PR=()=>PROFILES[AI]||PROFILES[2];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function say(kind){if(!AI||SIM)return'';const p=PR();const t=pick(p.q[kind]);log(`${p.ico} <b>${p.name}</b> : « ${t} »`);return t}
+function getRec(){try{return JSON.parse(localStorage.getItem('p4d_rec')||'{}')}catch(e){return{}}}
+function setRec(r){try{localStorage.setItem('p4d_rec',JSON.stringify(r))}catch(e){}}
+function tutStart(i){POW={...ALLPOW};setSides('R');document.getElementById('rmodal').classList.remove('on');if(i>=TUT_STEPS.length){tutStop();return}const st=TUT_STEPS[i];TUT={i,done:false};AI=0;clearTimeout(aiTimer);aiTimer=null;newGame();for(const l of st.seq)playLine(0,l);S.cd=[0,0];S.log=[`🎓 Tutoriel — ${st.t}`];if(st.puzzle)TUT.sol=tutSolve().filter(x=>!st.only||x.k===st.only);AI=st.ai;document.getElementById('opp').value=String(AI);render()}
+function tutSolve(){const sim=fn=>{const saved=S;S=structuredClone(saved);SIM=true;let r;try{fn()}catch(e){S.bad=true}finally{r=S;S=saved;SIM=false}return r};const sol=[];const u=S.us[0];
+ for(let l=0;l<N;l++)if(landing(u,l)){const r=sim(()=>playLine(0,l));if(r.over&&r.over.winner==='R')sol.push({k:'drop',l})}
+ for(const rk of['ccw','cw','half'])for(let l=0;l<N;l++){const r=sim(()=>{doRotate(0,rk);if(!S.over)playLine(0,l)});if(r.over&&r.over.winner==='R')sol.push({k:'rot',rk,l})}
+ for(const m of[1,2]){const o=pastOption(0,m);if(o.k===undefined)continue;const sn=u.history[o.k];for(let l=0;l<N;l++){if(!landingG(sn.grid,sn.gravity,l))continue;const r=sim(()=>doTravel(0,o.k,m,l));if(r.over&&r.over.winner==='R')sol.push({k:'past',m,l})}}
+ return sol}
+function tutTargets(){const sol=TUT.sol||[];const t=[];const m=S.mode;const u=S.us[0];
+ if(S.afterRot===0){const h=u.history[u.history.length-1];for(const x of sol)if(x.k==='rot'&&h&&h.desc.kind===x.rk)t.push(`#uni-0 .slot[data-l="${x.l}"]`)}
+ else if(m&&m.kind==='rot'){for(const x of sol)if(x.k==='rot')t.push(`#uni-0 [data-a="rotk"][data-k="${x.rk}"]`)}
+ else if(m&&m.kind==='past'){if(m.k==null){for(const x of sol)if(x.k==='past')t.push(`#uni-0 [data-a="pastk"][data-m="${x.m}"]`)}else for(const x of sol)if(x.k==='past'&&x.m===m.m)t.push(`#uni-0 .slot[data-l="${x.l}"]`)}
+ else{for(const x of sol){if(x.k==='drop')t.push(`#uni-0 .slot[data-l="${x.l}"]`);if(x.k==='rot')t.push('#uni-0 [data-a="rot"]');if(x.k==='past')t.push('#uni-0 [data-a="past"]')}}
+ return t}
+function tutStop(){TUT=null;try{const c=JSON.parse(localStorage.getItem('p4d_setup')||'null');POW=c&&c.pow?c.pow:{...ALLPOW};setSides(c&&c.hc||'R')}catch(e){POW={...ALLPOW}}const e=document.getElementById('tut');e.className='';e.innerHTML='';document.querySelectorAll('button.hl').forEach(b=>b.classList.remove('hl'));render()}
+function tutRender(){const e=document.getElementById('tut');if(!e)return;if(!TUT){e.className='';return}const st=TUT_STEPS[TUT.i];
+ let ok=false,ko=false;if(st.puzzle){ok=!!(S.over&&S.over.winner==='R');ko=!ok&&(!!S.over||S.turn===1)}else if(st.ev){ok=S.ev.includes(st.ev)||(!!S.over&&S.over.winner==='R'&&S.ev.includes(st.ev==='obs'?'bif':st.ev==='stand'?'flat':'loopret'));ko=!ok&&!!S.over}else if(st.win){ok=!!(S.over&&S.over.winner==='R');ko=!!S.over&&!ok}
+ if(ok&&!TUT.done){TUT.done=true;setTimeout(()=>vfx('win','✓ Réussi',st.t),300)}
+ e.className='on';e.innerHTML=`<div class="st">Tutoriel · étape ${TUT.i+1} / ${TUT_STEPS.length}</div><div class="dots">${TUT_STEPS.map((_,k)=>`<i class="${k<TUT.i?'d':k===TUT.i?'c':''}"></i>`).join('')}</div><h4>${st.t}</h4><p>${st.x}</p><div class="goal">🎯 <b>Objectif :</b> ${st.g}</div>${TUT.done?'<div class="res ok">✓ Bravo ! Passe à l’étape suivante.</div>':ko?'<div class="res ko">✗ Pas cette fois. Recommence l’étape et regarde bien les aperçus.</div>':''}<div class="btns"><button class="j" data-a="tutre">↺ Recommencer l’étape</button><button class="j ${TUT.done?'on':''}" data-a="tutnext">${TUT.i+1<TUT_STEPS.length?(TUT.done?'Étape suivante ▸':'Passer cette étape ▸'):'Terminer'}</button><button class="j" data-a="tutstop">Quitter le tutoriel</button></div>`;
+ document.querySelectorAll('button.hl').forEach(b=>b.classList.remove('hl'));if(!TUT.done&&!ko){const sel=st.puzzle?tutTargets():(st.hl&&!S.mode&&S.afterRot==null?[`#uni-0 button[data-a="${st.hl}"]`]:[]);sel.forEach(q=>document.querySelectorAll(q).forEach(b=>{if(!b.disabled)b.classList.add('hl')}))}}
+function fitBoard(){const box=document.getElementById('boards');if(!box)return;const w=box.clientWidth||900;const wide=w>=720;const z=Math.max(.8,Math.min(1.9,wide?(w-400)/360:(w-24)/360,(window.innerHeight-130)/450));document.documentElement.style.setProperty('--z',z.toFixed(3));document.body.classList.toggle('wide',wide)}
+window.addEventListener('resize',fitBoard);
+let SEL={ai:AI,pow:{...POW},hc:HC};
+function setupOpen(){SEL={ai:AI,pow:{...POW},hc:HC};document.getElementById('rmodal').classList.remove('on');setupRender();document.getElementById('smodal').classList.add('on')}
+function setupRender(){const rec=getRec();
+ document.getElementById('sopp').innerHTML=[0,1,2,3,4].map(k=>{if(!k)return`<button class="oc ${SEL.ai===0?'on':''}" data-a="sopp" data-k="0"><span class="i">👥</span><b>Humain</b><small>à deux sur le même écran</small></button>`;const p=PROFILES[k],r=rec[p.id]||{l:0};return`<button class="oc ${SEL.ai===k?'on':''}" data-a="sopp" data-k="${k}"><span class="i">${p.ico}</span><b>${p.name}</b><span class="lvl l${k}">${p.lvl}</span><small>${r.l?'🏅 vaincu '+r.l+' fois':'jamais vaincu'}</small></button>`}).join('');
+ document.getElementById('scol').innerHTML=SEL.ai?[['R','🔴 Rouge','Tu commences.'],['J','🟡 Jaune','Tu joues en second, mais tes pouvoirs se rechargent 2 tours plus vite.']].map(([k,n,d])=>`<button class="oc ${SEL.hc===k?'on':''}" data-a="scol" data-k="${k}"><b>${n}</b><small>${d}</small></button>`).join(''):'<p class="lead">À deux sur le même écran : Rouge commence, Jaune joue en second (recharge 2 tours plus vite).</p>';
+ const same=(a,b)=>POWINFO.every(([k])=>!!a[k]===!!b[k]);
+ document.getElementById('spre').innerHTML=PRESETS.map(([id,n,d,pp])=>`<button class="oc ${same(SEL.pow,pp)?'on':''}" data-a="spre" data-k="${id}"><b>${n}</b><small>${d}</small></button>`).join('');
+ document.getElementById('spow').innerHTML=POWINFO.map(([k,ic,n,d])=>`<label><input type="checkbox" data-pow="${k}" ${SEL.pow[k]?'checked':''}> <span>${ic} <b>${n}</b> <small>— ${d}</small></span></label>`).join('')}
+function setupGo(){AI=SEL.ai;POW={...SEL.pow};setSides(AI?SEL.hc:'R');saveSetup();document.getElementById('opp').value=String(AI);document.getElementById('smodal').classList.remove('on');if(TUT){TUT=null;document.getElementById('tut').className=''}clearTimeout(aiTimer);aiTimer=null;newGame()}
+function powLabel(){const on=POWINFO.filter(([k])=>pw(k));return on.length===5?'tous les pouvoirs':on.length?on.map(x=>x[1]+' '+x[2]).join(' · '):'aucun pouvoir (classique)'}
+function shareCard(){const cv=document.getElementById('shcv');const x=cv.getContext('2d');const W=cv.width,H=cv.height;const p=PR();const u=S.us[0];const rec=(getRec()[p.id]||{l:1}).l;
+ const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#121a17');g.addColorStop(1,'#050706');x.fillStyle=g;x.fillRect(0,0,W,H);
+ const rg=x.createRadialGradient(W/2,420,40,W/2,420,620);rg.addColorStop(0,'rgba(127,183,189,.20)');rg.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);
+ for(let i=0;i<2500;i++){x.fillStyle=`rgba(255,255,255,${Math.random()*.04})`;x.fillRect(Math.random()*W,Math.random()*H,2,2)}
+ x.textAlign='center';x.fillStyle='#7fb7bd';x.font='28px Menlo,Consolas,monospace';x.fillText('P U I S S A N C E   4   ·   D I M E N S I O N N E L',W/2,90);
+ x.fillStyle='#f1ecdf';x.font='bold 96px Georgia,serif';x.fillText('VICTOIRE',W/2,205);
+ x.font='44px Georgia,serif';x.fillStyle='#dcd9cf';x.fillText(`avec ${HC==='R'?'les Rouges':'les Jaunes'} contre ${p.ico} ${p.name}`,W/2,275);
+ x.font='30px Menlo,Consolas,monospace';x.fillStyle=['','#7ddc8f','#9a86ff','#ff8a80','#ffd76a'][AI]||'#fff';x.fillText(`${p.lvl.toUpperCase()} · ${p.title}`,W/2,325);
+ const bx=190,by=380,cs=100,gv=visG(u);x.fillStyle='#1d2b33';x.beginPath();x.roundRect?x.roundRect(bx-20,by-20,cs*7+40,cs*7+40,26):x.rect(bx-20,by-20,cs*7+40,cs*7+40);x.fill();
+ const wins=new Set(S.wins||[]);
+ for(let vr=0;vr<N;vr++)for(let vc=0;vc<N;vc++){const[r,c]=visToBoard(gv,vr,vc);const pc=u.grid[r][c];const cx=bx+vc*cs+cs/2,cy=by+vr*cs+cs/2;x.beginPath();x.arc(cx,cy,40,0,7);x.fillStyle='#06090b';x.fill();
+  if(pc){const gg=x.createRadialGradient(cx-12,cy-14,4,cx,cy,42);if(pc.p==='R'){gg.addColorStop(0,'#e8695f');gg.addColorStop(1,'#8e2a24')}else{gg.addColorStop(0,'#ffd76a');gg.addColorStop(1,'#a87b16')}x.beginPath();x.arc(cx,cy,38,0,7);x.fillStyle=gg;x.fill();
+   if(wins.has(pc.id)){x.lineWidth=7;x.strokeStyle='#ffffff';x.shadowColor='#fff';x.shadowBlur=24;x.beginPath();x.arc(cx,cy,42,0,7);x.stroke();x.shadowBlur=0}}}
+ const mc=Math.floor((S.tn||0)/2)+1;const used=[...new Set((S.pu||[]).filter(z=>PL[z[1]]===HC).map(z=>z[0]))];
+ x.fillStyle='#dcd9cf';x.font='36px Georgia,serif';x.fillText(`en ${mc} manche${mc>1?'s':''} · ${used.length?'pouvoirs : '+used.join(' '):'sans aucun pouvoir'}`,W/2,1150);
+ if(S.endQ){x.fillStyle='#9aa39c';x.font='italic 30px Georgia,serif';const q=`${p.name} : « ${S.endQ} »`;const words=q.split(' ');let line='',y=1210;for(const w of words){if(x.measureText(line+w).width>940){x.fillText(line.trim(),W/2,y);line='';y+=40}line+=w+' '}x.fillText(line.trim(),W/2,y)}
+ x.fillStyle='#ffd76a';x.font='30px Menlo,Consolas,monospace';x.fillText(`🏅 ${p.name} vaincu ${rec} fois`,W/2,1315);
+ document.getElementById('shmsg').textContent='';document.getElementById('shmodal').classList.add('on')}
+function shareText(){const p=PR();const mc=Math.floor((S.tn||0)/2)+1;return`🏆 J’ai battu ${p.ico} ${p.name} (${p.lvl}) au Puissance 4 dimensionnel en ${mc} manches ! Rotation, voyages dans le temps et réalités parallèles… à ton tour ?`}
+function shareDo(kind){const cv=document.getElementById('shcv');const msg=document.getElementById('shmsg');
+ if(kind==='copy'){navigator.clipboard&&navigator.clipboard.writeText(shareText()).then(()=>msg.textContent='Texte copié ✓',()=>msg.textContent='Copie impossible ici : sélectionne le texte à la main.');return}
+ cv.toBlob(b=>{const f=new File([b],'victoire-puissance4.png',{type:'image/png'});
+  if(kind==='share'&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:'Victoire',text:shareText()}).catch(()=>{});return}
+  const note=kind==='share'?'Le partage direct n’est pas disponible ici : ':'';
+  const fallback=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='victoire-puissance4.png';document.body.appendChild(a);a.click();a.remove();msg.textContent=note+'image téléchargée ✓'};
+  const cl=window.claude&&window.claude.use?window.claude.use('downloads'):Promise.resolve(null);
+  cl.then(dl=>{if(!dl){fallback();return}dl.save({filename:'victoire-puissance4.png',data:b}).then(()=>msg.textContent=note+'image enregistrée ✓ Envoie-la où tu veux.',e=>{msg.textContent=e&&e.code==='declined'?'Enregistrement annulé.':'Enregistrement impossible ici.'})}).catch(fallback)},'image/png')}
+function log(t){S.log.unshift(t);if(S.log.length>60)S.log.pop()}
+function fx(u,t){S.fx.push({u,t})}
+function flash(t){if(SIM)return;flashMsg=t;clearTimeout(flashTimer);flashTimer=setTimeout(()=>{flashMsg=null;render()},2600);render()}
+function lock(i,ms){if(SIM)return;const u=S.us[i];u.lockUntil=Date.now()+ms;const g=gid;setTimeout(()=>{if(g===gid&&S.us[i]===u)syncPieces(i)},ms+10)}
+
+function lineCells(g,line){const a=[];for(let i=0;i<N;i++){if(g==='down')a.push([N-1-i,line]);else if(g==='up')a.push([i,line]);else if(g==='left')a.push([line,i]);else a.push([line,N-1-i])}return a}
+function landingG(grid,g,line){for(const[r,c]of lineCells(g,line))if(!grid[r][c])return[r,c];return null}
+const visG=st=>st.gravity==='flat'?st.prev:st.gravity;
+function landing(u,line,g){return landingG(u.grid,g||u.gravity,line)}
+const lineOf=(g,r,c)=>(g==='down'||g==='up')?c:r;
+const lineForVisual=(g,v)=>(g==='down'||g==='left')?v:N-1-v;
+const visualOfLine=lineForVisual;
+function visToBoard(g,vr,vc){if(g==='down')return[vr,vc];if(g==='left')return[vc,N-1-vr];if(g==='right')return[N-1-vc,vr];return[N-1-vr,N-1-vc]}
+function boardToVis(g,r,c){if(g==='down')return[r,c];if(g==='left')return[N-1-c,r];if(g==='right')return[c,N-1-r];return[N-1-r,N-1-c]}
+function settleGrid(grid,g){for(let l=0;l<N;l++){const cs=lineCells(g,l);const ps=cs.map(([r,c])=>grid[r][c]).filter(Boolean);cs.forEach(([r,c],i)=>grid[r][c]=ps[i]||null)}}
+function settle(u){if(u.gravity!=='flat')settleGrid(u.grid,u.gravity)}
+function forced(){const i=S.us.findIndex(u=>u.flat>0);return i<0?null:i}
+function jokerBlock(i){if(S.over)return'Partie terminée';if(S.loopRet)return'Retour du futur en cours';if(S.busy)return"L'histoire se réécrit…";if(S.awaitFloor!=null)return'Choisis d’abord le côté vers lequel tout tombe';if(S.jt)return'Un seul pouvoir par tour';if(i!==undefined&&!S.pend.includes(i))return'Tu as déjà joué ce tour-ci';if(S.cd[S.turn]>0)return`Recharge : encore ${S.cd[S.turn]} tour(s) avant ton prochain pouvoir`;return null}
+
+function fours(g){const res=[];const D=[[0,1],[1,0],[1,1],[1,-1]];for(let r=0;r<N;r++)for(let c=0;c<N;c++){const pc=g[r][c];if(!pc)continue;for(const[dr,dc]of D){const cells=[[r,c]];for(let k=1;k<4;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||rr>=N||cc<0||cc>=N||!g[rr][cc]||g[rr][cc].p!==pc.p)break;cells.push([rr,cc])}if(cells.length===4)res.push({p:pc.p,cells})}}return res}
+function checkEnd(){const w=new Set();S.wins=[];if(S.us.some(u=>u.flat>0)||S.awaitFloor!=null)return;S.us.forEach((u,i)=>fours(u.grid).forEach(f=>{w.add(f.p);f.cells.forEach(([r,c])=>S.wins.push(u.grid[r][c].id))}));
+ if(w.size&&S.loop&&!S.loop.ready){S.loop.ready=true;log(`⏩ Dans ce futur, ${[...w].map(x=>NAMES[x]).join(' et ')} aligne quatre jetons. Le voyage s’arrête : ${NAMES[PL[S.loop.owner]]} revient au départ et peut déplacer son coup d'essai.`);return}
+ if(S.us.length===2){const wa=new Set(fours(S.us[0].grid).map(f=>f.p)),wb=new Set(fours(S.us[1].grid).map(f=>f.p));const mover=PL[S.turn];S.wins=[];
+  const both=PL.filter(x=>wa.has(x)&&wb.has(x));
+  if(both.length){S.wins=S.us.flatMap(u=>fours(u.grid).filter(f=>both.includes(f.p)).flatMap(f=>f.cells.map(([r,c])=>u.grid[r][c].id)));if(both.length===2){S.over={draw:true};log('Double alignement dans les deux réalités : partie nulle.')}else{S.over={winner:both[0]};log(`${NAMES[both[0]]} aligne quatre jetons dans les deux réalités : victoire imparable !`)}return}
+  const single=PL.filter(x=>wa.has(x)||wb.has(x));const other=single.filter(x=>x!==mover);
+  if(other.length){const x=other[0];const k=wa.has(x)?0:1;S.wins=fours(S.us[k].grid).filter(f=>f.p===x).flatMap(f=>f.cells.map(([r,c])=>S.us[k].grid[r][c].id));S.over={winner:x};log(`Les réalités fusionnent dans la réalité ${k?'B':'A'} : l'alignement de ${NAMES[x]} devient réel. Victoire !`);return}
+  if(single.length){const k=wa.has(mover)?0:1;if(!S.qcheck||S.qcheck.p!==mover){S.qcheck={p:mover,r:k};vfx('alert','⚠ Fusion des réalités',`${NAMES[mover]} aligne 4 dans la réalité ${k?'B':'A'}`);log(`⚠ Fusion des réalités : ${NAMES[mover]} aligne 4 dans la réalité ${k?'B':'A'}. Si ${NAMES[PL[S.turn^1]]} ne garde pas la réalité ${k?'A':'B'} en observant (ou ne casse pas l'alignement), tout fusionnera dans la réalité ${k?'B':'A'} et il perdra.`)}}else S.qcheck=null;
+  if(S.us.every(u=>u.grid.every(r=>r.every(Boolean)))){S.over={draw:true};log('Plateaux pleins : partie nulle.')}
+  return}
+ if(w.size===2){S.over={draw:true};log('Double alignement simultané : partie nulle.')}
+ else if(w.size===1){const p=[...w][0];S.over={winner:p};log(`${NAMES[p]} aligne quatre jetons et gagne !`)}
+ else if(S.us.every(u=>u.grid.every(r=>r.every(Boolean)))){S.over={draw:true};log('Plateaux pleins : partie nulle.')}}
+
+function arrive(st,f){f.done=true;const g=visG(st);const line=lineForVisual(g,f.v);const cs=lineCells(g,line);const ps=cs.map(([r,c])=>st.grid[r][c]).filter(Boolean);
+ const pos=Math.min(N-1-(f.vr==null?0:f.vr),ps.length);ps.splice(pos,0,piece(f.p,f.pid));let ej=null;if(ps.length>N)ej=ps.pop();cs.forEach(([r,c],i)=>st.grid[r][c]=ps[i]||null);f.lost=false;return{ej}}
+function ply(ui,desc,apply){const u=S.us[ui];const snap={...snapState(u),mover:S.turn,desc};apply(u);u.history.push(snap);after(ui,desc)}
+function after(ui,desc){const u=S.us[ui];const L=u.history.length;
+ if(desc.type==='dup')u.anchor=L;
+ const forcedMirror=S.singleTurn===S.turn&&(desc.type==='drop'||desc.type==='place')&&S.us.length===2;if(forcedMirror)S.singleTurn=null;
+ const linked=forcedMirror||(S.linkLeft>0&&(desc.type==='drop'||desc.type==='place')&&S.us.length===2);
+ if(linked)mirror(ui,desc,L-1);
+ for(const f of S.futs){if(f.u===ui&&!f.removed&&!f.done&&f.a===L){const pre=snapState(u);const r=arrive(u,f);if(!SIM)(S.arrivals=S.arrivals||[]).push({ui,pre,post:snapState(u),p:f.p,ago:Math.round((f.a-f.s)/2),ej:r.ej});log(`Univers ${u.name} : le jeton ${NAMES[f.p]} revient du futur à sa place${r.ej?` et éjecte un jeton ${NAMES[r.ej.p]} hors du plateau`:''}.`);fx(ui,r.ej?'⏩ Retour du futur : un jeton est éjecté':'⏩ Un jeton revient du futur à sa place')}}
+ if(u.flat>0&&desc.type!=='rotate'&&u.grid.every(r=>r.every(Boolean)))u.flat=1;
+ if(u.flat>0&&desc.type!=='rotate'){u.flat--;if(desc.floor!==undefined)u.plan=desc.floor;if(FLATMODE==='launcher'&&u.flat===1&&desc.floor===undefined){S.awaitFloor=ui;S.pendLinked=linked;S.mode=null;render();return}if(u.flat===0){if(FLATMODE==='opp'&&u.plan==null){S.awaitFloor=ui;S.pendLinked=linked;S.mode=null;render();return}finishFloor(ui,u.plan||'none');u.plan=null}}
+ afterTail(ui,desc,linked)}
+function afterTail(ui,desc,linked){
+ if(desc.joker){setCd(S.turn,desc.cd||2);S.jt=true}
+ checkEnd();
+ if(!S.over&&!(desc.type==='rotate'&&!desc.auto)){if(linked){S.afterRot=null;S.pend=[];endTurn()}else markPlayed(ui)}
+ S.mode=null;render()}
+function finishFloor(ui,kind){const u=S.us[ui];S.ev.push('stand');vfx('stand','▼ La gravité revient',kind==='none'?'même bas qu’avant':'nouveau bas : '+ROT[kind].label,ui);u.gravity=u.prev;u.prev=null;if(kind!=='none'){u.angle+=ROT[kind].d;u.gravity=angleGrav(u.angle)}settle(u);lock(ui,650);log(`Le plateau se redresse${kind!=='none'?` (${ROT[kind].icon} ${ROT[kind].label})`:''}, les jetons tombent.`);fx(ui,kind==='none'?'Le plateau se redresse':`Le plateau se redresse ${ROT[kind].icon}`)}
+function chooseFloor(ui,kind){if(S.awaitFloor!==ui)return;const u=S.us[ui];const h=u.history[u.history.length-1];h.desc.floor=kind;u.plan=kind;S.awaitFloor=null;if(u.flat===0){finishFloor(ui,kind);u.plan=null}else log(`Quand le plateau se redressera, tout tombera ${kind==='none'?'comme avant':'côté '+ROT[kind].label+' '+ROT[kind].icon}.`);afterTail(ui,h.desc,S.pendLinked)}
+function markPlayed(ui){S.afterRot=null;if(S.singleTurn===S.turn)S.singleTurn=null;if(S.jFirst&&S.turn===1){S.jFirst=false;S.mode=null;return}S.pend=S.pend.filter(x=>x!==ui);if(!S.pend.length)endTurn()}
+function endTurn(){if(!S.jt&&S.cd[S.turn]>0)S.cd[S.turn]--;S.jt=false;if(S.linkLeft>0){S.linkLeft--;if(!S.linkLeft)log("Fin de l'intrication : les univers redeviennent indépendants.")}S.tn=(S.tn||0)+1;S.turn^=1;if(S.loop&&!S.loopRet){S.loop.left--;if(S.loop.left<=0||S.loop.ready)startLoopReturn()}if(S.bifGrace>0)S.bifGrace--;if(S.bifTurns>0){S.bifTurns--;if(!S.bifTurns)S.fusePending=true}if(S.fusePending&&S.us.length===2&&!S.us.some(u=>u.flat>0)&&S.awaitFloor==null){S.fusePending=false;fuse()}S.pend=[0]}
+function fusePreview(){const A=S.us[0],B=S.us[1];const g=emptyGrid();const kept={R:0,J:0},lost={R:0,J:0};for(let r=0;r<N;r++)for(let c=0;c<N;c++){const a=A.grid[r][c],b=B.grid[r][c];if(a&&b&&a.p===b.p){g[r][c]=a;kept[a.p]++}else{if(a)lost[a.p]++;if(b)lost[b.p]++}}if(A.gravity!=='flat')settleGrid(g,A.gravity);const w=fours(g);return{grid:g,gravity:A.gravity==='flat'?A.prev:A.gravity,kept,lost,wins:[...new Set(w.map(x=>x.p))]}}
+function canObserve(){return S&&S.us.length===2&&!S.over&&!S.busy&&!TM_OPEN&&S.awaitFloor==null&&!S.us.some(u=>u.flat>0)&&!(S.bifGrace>0)}
+function doObserve(p){if(!canObserve())return;const still=S.pend.includes(0);log(`👁 ${NAMES[p]} observe les réalités : l'interférence a lieu maintenant.`);S.bifTurns=0;S.fusePending=false;S.mode=null;fuse();if(!S.over){if(still)S.pend=[0];else{S.pend=[];endTurn()}}render()}
+function fuse(){const A=S.us[0],B=S.us[1];const pre={A:snapState(A),B:snapState(B),na:A.name,nb:B.name};const res=emptyGrid();let kept={R:0,J:0},lost={R:0,J:0};
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){const a=A.grid[r][c],b=B.grid[r][c];if(a&&b&&a.p===b.p){res[r][c]=a;kept[a.p]++}else{if(a)lost[a.p]++;if(b)lost[b.p]++}}
+ A.grid=res;settle(A);A.anchor=A.history.length;S.us=[A];S.futs.forEach(f=>{if(f.u===1)f.removed=true});S.mirrors=[];S.linkLeft=0;S.singleTurn=null;S.lay++;
+ log(`⧉ Interférence : les réalités ${pre.na} et ${pre.nb} fusionnent. Jetons identiques conservés (Rouge ${kept.R}, Jaune ${kept.J}), jetons différents détruits (Rouge −${lost.R}, Jaune −${lost.J}).`);fx(0,'⧉ Interférence : les réalités fusionnent');
+ if(!SIM)S.fuseView={pre,post:snapState(A),kept,lost};checkEnd()}
+function dropCopy(O,ev){if(O.gravity==='flat')return false;const t=landing(O,lineForVisual(O.gravity,ev.v));if(!t)return false;const pc=piece(ev.p);pc.cp=true;O.grid[t[0]][t[1]]=pc;ev.ids.push(pc.id);return true}
+function mirrorV(ui,v,p,ply){const oi=1-ui,O=S.us[oi];const ev={from:ui,to:oi,v,p,ply,ids:[],cancelled:false};S.mirrors.push(ev);
+ if(dropCopy(O,ev))fx(oi,'⛓ Copie intriquée');else{ev.cancelled=true;log(`⛓ Univers ${O.name} : pas de place, la copie est perdue.`)}}
+function mirror(ui,desc,ply){const u=S.us[ui];const v=desc.type==='drop'?visualOfLine(u.gravity,desc.line):boardToVis(visG(u),desc.r,desc.c)[1];mirrorV(ui,v,PL[S.turn],ply)}
+function reconcile(xi){if(S.us.length<2)return false;const X=S.us[xi];let ch=false;
+ const has=id=>X.grid.some(r=>r.some(pc=>pc&&pc.id===id));
+ const removeId=id=>{for(const r of X.grid)for(let c=0;c<N;c++)if(r[c]&&r[c].id===id){r[c]=null;ch=true}};
+ for(const ev of S.mirrors){if(ev.to!==xi)continue;
+  if(ev.cancelled){ev.ids.forEach(removeId);continue}
+  const present=ev.ids.filter(has);
+  if(present.length>1)present.slice(1).forEach(removeId);
+  if(!present.length){if(dropCopy(X,ev))ch=true;else ev.cancelled=true}}
+ if(ch)settle(X);return ch}
+
+function playLine(ui,line){if(S.over||S.busy)return;const u=S.us[ui];const p=cur();
+ if(S.loopRet){if(S.mode&&S.mode.kind==='loopret'&&S.mode.idx!=null)doLoopReturn(S.mode.idx,line);else flash('Choisis d’abord le coup à réécrire, ou garde ce futur.');return}
+ if(S.awaitFloor!=null){flash('Choisis d’abord le côté qui devient le sol.');return}
+ if(S.mode&&S.mode.kind==='bif'){if(S.mode.u!==ui){flash(`Choisis tes deux coups dans l'univers ${S.us[S.mode.u].name}, ou annule.`);return}if(S.mode.k!=null){doBifPast(ui,S.mode.k,S.mode.m,line);return}if(!landing(u,line)){flash('Cette colonne est pleine.');return}if(S.mode.first==null){S.mode.first=line;render();return}if(line===S.mode.first){flash("Choisis une colonne différente pour la réalité alternative.");return}doBif(ui,S.mode.first,line);return}
+ if(S.mode&&S.mode.kind==='past'&&S.mode.k!=null){if(S.mode.u!==ui){flash(`Choisis la colonne dans le passé de l'univers ${S.us[S.mode.u].name}, ou annule.`);return}doTravel(ui,S.mode.k,S.mode.m,line);return}
+ if(S.mode&&S.mode.kind==='future'){flash("Clique sur un de tes jetons pour l'envoyer dans le futur.");return}
+ S.mode=null;
+ if(S.us.length===2&&u.gravity!=='flat'){dropBoth(line);return}
+ if(!S.pend.includes(ui)){flash(`Tu as déjà joué dans l'univers ${u.name} ce tour-ci : joue dans l'autre.`);return}
+ if(u.gravity==='flat')return;
+ if(!landing(u,line)){flash('Cette colonne est pleine.');return}
+ const pc=piece(p);ply(ui,{type:'drop',line,pid:pc.id},u2=>{const t=landing(u2,line);u2.grid[t[0]][t[1]]=pc})}
+function clickHole(ui,r,c){if(S.over||S.busy)return;const u=S.us[ui];
+ if(S.loopRet){if(S.mode&&S.mode.idx!=null){const sn=u.history[S.mode.idx];doLoopReturn(S.mode.idx,lineOf(visG(sn),r,c))}return}
+ if(S.awaitFloor!=null){flash('Choisis d’abord le côté qui devient le sol.');return}
+ if(S.mode&&S.mode.kind==='future'){if(S.mode.u!==ui){flash(`Choisis un jeton dans l'univers ${S.us[S.mode.u].name}, ou annule.`);return}
+   const pc=u.grid[r][c];if(!pc||pc.p!==cur()){flash('Choisis un de tes propres jetons.');return}sendFuture(ui,r,c,S.mode.delay);return}
+ if(S.mode&&(S.mode.kind==='past'||S.mode.kind==='bif')&&S.mode.k!=null&&S.mode.u===ui){const sn=u.history[S.mode.k];playLine(ui,lineOf(sn.gravity,r,c));return}
+ if(u.gravity!=='flat'){playLine(ui,lineOf(u.gravity,r,c));return}
+ S.mode=null;if(!S.pend.includes(ui)){flash(`Tu as déjà joué dans l'univers ${u.name} ce tour-ci : joue dans l'autre.`);return}
+ if(u.grid[r][c]){flash('Case occupée.');return}
+ const pc=piece(cur());ply(ui,{type:'place',r,c,pid:pc.id},u2=>{u2.grid[r][c]=pc})}
+
+function rotApply(u2,ui,kind){
+ if(kind==='flat'){S.ev.push('flat');u2.flatBy=S.turn;u2.prev=u2.gravity;u2.gravity='flat';u2.flat=FLATN;fx(ui,'◎ Apesanteur : posez où vous voulez')}
+ else{const d=ROT[kind].d;u2.angle+=d;u2.gravity=angleGrav(u2.angle);settle(u2);lock(ui,650);fx(ui,`${ROT[kind].icon} ${ROT[kind].label}`)}}
+function doStand(ui,kind){const u=S.us[ui];if(u.gravity!=='flat'||S.over||S.busy||S.awaitFloor!=null||!S.pend.includes(ui)||u.flat>FLATN-2)return;S.ev.push('stand');const p=cur();vfx('stand','▼ La gravité revient',kind==='none'?'même bas qu’avant':'nouveau bas : '+ROT[kind].label,ui);
+ ply(ui,{type:'stand',kind},u2=>{u2.gravity=u2.prev;u2.prev=null;u2.flat=0;u2.plan=null;if(kind!=='none'){u2.angle+=ROT[kind].d;u2.gravity=angleGrav(u2.angle)}settle(u2);lock(ui,650);
+  log(`${NAMES[p]} redresse le plateau${kind!=='none'?` (${ROT[kind].icon} ${ROT[kind].label})`:''} à la place de son jeton : tout tombe, les alignements comptent.`);fx(ui,'▼ Le plateau se redresse')})}
+function floorPreviews(u){return['none','ccw','cw','half'].map(k=>{const ng=angleGrav(u.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(u.grid);settleGrid(gr,ng);const w=[...new Set(fours(gr).map(f=>f.p))];return{k,ng,gr,w}})}
+function doRotate(ui,kind){const p=cur();S.pu.push([kind==='flat'?'◎':'↻',S.turn]);vfx(kind==='flat'?'flat':'rotate',kind==='flat'?'◎ Gravité suspendue':`${ROT[kind].icon} ${ROT[kind].label}`,kind==='flat'?'pose ton jeton où tu veux':'les jetons tombent vers le nouveau bas',ui);ply(ui,{type:'rotate',kind,joker:true,cd:kind==='flat'?FLATCD:4},u2=>{rotApply(u2,ui,kind);
+ if(S.us.length===2){const oi=1-ui,o=S.us[oi];o.history.push({...snapState(o),mover:S.turn,desc:{type:'rotate',kind,auto:true,linked:true}});rotApply(o,oi,kind);log('⧉ Les deux réalités tournent ensemble.')}
+ S.afterRot=ui;log(kind==='flat'?`${NAMES[p]} couche le plateau : apesanteur. Chacun pose où il veut et aucun alignement ne compte, jusqu'à ce qu'un joueur ▼ redresse le plateau à la place de son jeton, ou au bout de 3 manches (${NAMES[PL[S.turn^1]]} choisira alors le côté de la chute).`:`${NAMES[p]} tourne le plateau (${ROT[kind].icon} ${ROT[kind].label}).`)})}
+
+function sendFuture(ui,r,c,d){const u=S.us[ui],p=cur(),pc=u.grid[r][c];const[vr,v]=boardToVis(u.gravity,r,c);
+ const f={id:S.futs.length,u:ui,p,pid:pc.id,v,vr,s:u.history.length,a:u.history.length+2*d,removed:false,done:false,lost:false};S.futs.push(f);
+ ply(ui,{type:'future',fid:f.id,pid:pc.id,joker:true,cd:3},u2=>{u2.grid[r][c]=null;settle(u2);
+  log(`${NAMES[p]} envoie un de ses jetons ${d} manche${d>1?'s':''} dans le futur (univers ${u2.name}). Il reviendra à sa case exacte, en s'insérant dans la pile.`);fx(ui,`⏩ Le jeton part ${d} manche${d>1?'s':''} dans le futur`)});
+ if(SIM||S.over)return;const U=S.us[ui];const before=U.history[U.history.length-1];const R=structuredClone(U);arrive(R,{...f});let mid='';for(let j=1;j<2*d;j++)mid+=`<div class="tcell fut"><span class="lbl">T+${j}</span><div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;color:#a685ff;font-size:22px">·</div></div>`;
+ tmShow(`<h2>⏩ Voyage vers le futur</h2><p class="sub">Le jeton ${NAMES[p]} quitte le présent : il n'existe plus nulle part pendant ${d} manche${d>1?'s':''} (${2*d} coups), puis réapparaît à sa case exacte et repousse la pile.</p><div class="rowlbl">LIGNE TEMPORELLE</div><div class="trow">${cell(before,'AVANT','')}${cell(U,'MAINTENANT : départ','now',before.grid)}${mid}${cell(R,`T+${2*d} : retour prévu*`,'fut',U.grid)}</div><p class="sub">* aperçu si personne ne joue dans cette colonne d'ici là. La frise 🕰 garde la trace du retour prévu.</p><p><button class="j" data-a="tmnext">Continuer ▸</button></p>`)}
+
+function pastOption(ui,m){const u=S.us[ui];const L=u.history.length;const k=L-2*m;
+ if(S.us.length===2)return{why:'Impossible pendant une superposition'};
+ if(S.loop)return{why:'Impossible pendant un voyage dans le futur'};
+ if(k<0)return{why:`Pas encore ${m} manche${m>1?'s':''} jouée${m>1?'s':''} ici`};
+ if(k<u.anchor)return{why:'Bloqué 🔒 : un dédoublement ou une observation a eu lieu depuis'};
+ if(u.history[k].gravity==='flat')return{why:'Le plateau était en apesanteur à ce moment-là'};
+ return{k}}
+function applyDesc(st,desc,mover){const p=PL[mover];
+ if(desc.type==='drop'){const t=landingG(st.grid,visG(st),desc.line);if(!t)return false;st.grid[t[0]][t[1]]=piece(p,desc.pid);return true}
+ if(desc.type==='place'){if(st.grid[desc.r][desc.c])return false;st.grid[desc.r][desc.c]=piece(p,desc.pid);return true}
+ if(desc.type==='rotate'){if(desc.kind==='flat'){st.prev=st.gravity;st.gravity='flat';st.flat=FLATN}else{st.angle+=ROT[desc.kind].d;st.gravity=angleGrav(st.angle);settleGrid(st.grid,st.gravity)}return true}
+ if(desc.type==='stand'){if(st.gravity!=='flat')return true;st.gravity=st.prev;st.prev=null;st.flat=0;st.plan=null;if(desc.kind!=='none'){st.angle+=ROT[desc.kind].d;st.gravity=angleGrav(st.angle)}settleGrid(st.grid,st.gravity);return true}
+ if(desc.type==='future'){const f=S.futs[desc.fid];let found=false;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(st.grid[r][c]&&st.grid[r][c].id===desc.pid){st.grid[r][c]=null;found=true}
+  if(found){if(st.gravity!=='flat')settleGrid(st.grid,st.gravity);f.removed=false;return true}f.removed=true;return false}
+ return true}
+function doTravel(ui,k,m,line,linked,owner,done){const turn=owner==null?S.turn:owner;const u=S.us[ui],p=PL[turn],sn=u.history[k];
+ if(!landingG(sn.grid,sn.gravity,line)){flash('Cette colonne était déjà pleine à ce moment-là.');return}
+ for(const f of S.futs)if(f.u===ui){if(f.s>=k){f.s++;f.a++}else if(f.a>k)f.a++}
+ for(const ev of S.mirrors)if(ev.from===ui&&ev.ply>=k)ev.ply++;
+ for(const f of S.futs)if(f.u===ui&&f.a>k){f.done=false;f.lost=false}
+ const trav=piece(p);
+ const plies=[{desc:{type:'drop',line,pid:trav.id,traveler:true},mover:turn}].concat(u.history.slice(k).map(h=>({desc:h.desc,mover:h.mover})));
+ const st=snapState(sn);const frames=[snapState(u),snapState(st)];const hist=u.history.slice(0,k);let erased=0,pastWin=null;
+ for(const pl of plies){const idx=hist.length;hist.push({...snapState(st),mover:pl.mover,desc:pl.desc});
+  if(!applyDesc(st,pl.desc,pl.mover)){erased++;for(const ev of S.mirrors)if(ev.from===ui&&ev.ply===idx)ev.cancelled=true}
+  if(pl.desc.floor!==undefined)st.plan=pl.desc.floor;if(pl.desc.type!=='rotate'&&st.flat>0){st.flat--;if(!st.flat){st.gravity=st.prev;st.prev=null;const fk=st.plan;st.plan=null;if(fk&&fk!=='none'){st.angle+=ROT[fk].d;st.gravity=angleGrav(st.angle)}settleGrid(st.grid,st.gravity)}}
+  for(const f of S.futs)if(f.u===ui&&!f.removed&&!f.done&&f.a===hist.length)arrive(st,f);
+  frames.push(snapState(st));
+  if(PASTWIN&&st.flat===0&&hist.length<k+plies.length){const fs=fours(st.grid);if(fs.length){pastWin={ps:[...new Set(fs.map(x=>x.p))],back:Math.round((k+plies.length-hist.length)/2)};break}}}
+ const g0=gid;S.busy=true;S.mode=null;S.anim={u:ui,frame:frames[0]};if(!linked)S.pu.push(['⟲',turn]);if(!linked)vfx('rewind',`⟲ − ${m} manche${m>1?'s':''}`,'retour dans le passé',ui);
+ log(linked==='bif'?`⧉ La réalité ${u.name} naît d'un passé modifié (${m} manche${m>1?'s':''} en arrière).`:linked?`⛓ Intrication : le voyage de ${m} manche${m>1?'s':''} se reproduit dans l'univers ${u.name}.`:`${NAMES[p]} lâche un jeton ${m} manche${m>1?'s':''} dans le passé.`);fx(ui,linked==='bif'?'⧉ Réalité alternative':linked?`⛓ ⟲ Le passé change ici aussi`:`⟲ Voyage de ${m} manche${m>1?'s':''} dans le passé`);
+ let i=0;render();
+ const finish=()=>{S.anim=null;if(!linked)vfx('return','Retour au présent','l’histoire a changé',ui);Object.assign(u,{grid:st.grid,gravity:st.gravity,prev:st.prev,flat:st.flat,angle:st.angle,history:hist});
+  if(!linked){setCd(turn,2+m);S.jt=true}
+  if(S.linkLeft>0&&S.us.length===2)mirrorV(ui,visualOfLine(sn.gravity,line),p,k);
+  if(S.us.length===2){const oi=1-ui;if(reconcile(oi)){log(`⛓ Intrication : l'univers ${S.us[oi].name} change aussi.`);fx(oi,'⛓ Le passé change ici aussi')}reconcile(ui)}
+  if(erased)log(`Effet papillon : ${erased} coup(s) effacé(s) de l'histoire.`);else log("Effet papillon : l'histoire se rejoue jusqu'au présent.");
+  if(pastWin){S.wins=fours(u.grid).flatMap(f=>f.cells.map(([r,c])=>u.grid[r][c].id));
+   if(pastWin.ps.length===2){S.over={draw:true};log('Double alignement dans le passé : partie nulle.')}
+   else{S.over={winner:pastWin.ps[0],past:true};log(`Paradoxe : ${NAMES[pastWin.ps[0]]} avait aligné quatre jetons il y a ${pastWin.back} manche(s). Victoire dans le passé !`)}}
+  else checkEnd();
+  if(!S.over&&!linked)markPlayed(ui);S.busy=false;fx(ui,erased?`Effet papillon : ${erased} coup(s) effacé(s)`:'Retour au présent');
+  if(!linked&&!S.over&&S.us.length===2&&chainTravel(1-ui,m,visualOfLine(sn.gravity,line),turn))return;
+  if(done&&!S.over)done();
+  render()};
+ if(SIM){finish();return}
+ const oldS=u.history.slice(k).map(h=>snapState(h)).concat([snapState(u)]);const newS=frames.slice(1);
+ const st0=diffStats(u.grid,st.grid);const sumH=`<b>${st0.mv}</b> jeton${st0.mv>1?'s':''} décalé${st0.mv>1?'s':''} au présent${erased?` · <b>${erased}</b> coup${erased>1?'s':''} effacé${erased>1?'s':''} de l'histoire (plus de place)`:''}${(()=>{const w=fours(st.grid);return w.length?` · <b>${w.map(x=>NAMES[x.p]).filter((v,i,a)=>a.indexOf(v)===i).join(' et ')} aligne quatre jetons !</b>`:''})()}`;
+ const O={u,m,oldS,newS,shown:1,done:false,summary:sumH,linked};
+ tmShow(travelHTML(O));
+ const step=()=>{if(g0!==gid)return;i++;if(i>=frames.length){O.done=true;O.shown=newS.length;tmShow(travelHTML(O));TM_NEXT=finish;return}S.anim.frame=frames[i];O.shown=i;render();tmShow(travelHTML(O));setTimeout(step,i===1?1100:800)};
+ setTimeout(step,1300)}
+
+function chainTravel(oi,m,v,owner){const o=pastOption(oi,m);const U=S.us[oi];if(o.k===undefined){log(`⛓ Intrication : impossible de remonter de ${m} manche${m>1?'s':''} dans l'univers ${U.name} (${o.why}).`);return false}
+ const sn=U.history[o.k];const line=lineForVisual(sn.gravity,v);if(!landingG(sn.grid,sn.gravity,line)){log(`⛓ Intrication : la colonne était pleine dans l'univers ${U.name}, le voyage ne s'y reproduit pas.`);return false}
+ doTravel(oi,o.k,m,line,true,owner);return true}
+function canLoop(i){const u=S.us[i];return pw('loop')&&S.us.length===1&&!S.loop&&u.gravity!=='flat'&&!jokerBlock(i)}
+function doLoop(ui,d){if(!canLoop(ui))return;const u=S.us[ui];const p=cur();S.loop={owner:S.turn,k:u.history.length,d,left:2*d};S.pu.push(['⏩',S.turn]);setCd(S.turn,LOOPCD[S.turn]);S.jt=true;S.mode=null;
+ log(`⏩ ${NAMES[p]} part ${d} manches dans le futur : la partie se joue réellement, puis il reviendra au point de départ et pourra déplacer son premier coup (coup d'essai). Les coups de ${NAMES[PL[S.turn^1]]} seront rejoués tels quels (le destin).`);fx(ui,`⏩ Voyage de ${d} manches dans le futur`);vfx('forward',`⏩ + ${d} manches`,'le futur se joue pour de vrai',ui);render()}
+function startLoopReturn(){S.loopRet={owner:S.loop.owner};S.mode={kind:'loopret',u:0,idx:null};log(`⏩ Fin du voyage dans le futur : ${NAMES[PL[S.loop.owner]]} revient au point de départ.`);fx(0,'⏩ Retour au point de départ');vfx('rewind','⟲ Retour au départ','déplace ton coup d’essai')}
+function loopMoves(){const u=S.us[0],L=S.loop;const out=[];for(let j=L.k;j<u.history.length;j++){const h=u.history[j];if(h.mover===L.owner&&h.desc.type==='drop'&&!h.desc.auto){out.push(j);break}}return out}
+function loopReplay(idx,line){const u=S.us[0];const k=S.loop.k;const st=snapState(u.history[k]);const hist=u.history.slice(0,k);let erased=0,changed=false;
+ for(let j=k;j<u.history.length;j++){const h=u.history[j];let desc=h.desc;if(j===idx&&line!=null&&line!==desc.line){desc={...desc,line,pid:++idc};changed=true}
+  hist.push({...snapState(st),mover:h.mover,desc});if(!applyDesc(st,desc,h.mover))erased++;
+  if(desc.floor!==undefined)st.plan=desc.floor;if(desc.type!=='rotate'&&st.flat>0){st.flat--;if(!st.flat){st.gravity=st.prev;st.prev=null;const fk=st.plan;st.plan=null;if(fk&&fk!=='none'){st.angle+=ROT[fk].d;st.gravity=angleGrav(st.angle)}settleGrid(st.grid,st.gravity)}}}
+ return{st,hist,erased,changed}}
+function doLoopReturn(idx,line){if(!S.loopRet)return;S.ev.push('loopret');const u=S.us[0];if(idx!=null){const sn=u.history[idx];if(line!==u.history[idx].desc.line&&!landingG(sn.grid,visG(sn),line)){flash('Cette colonne était pleine à ce moment-là.');return}}
+ const before=snapState(u);const owner=S.loop.owner;const r=loopReplay(idx,line);
+ Object.assign(u,{grid:r.st.grid,gravity:r.st.gravity,prev:r.st.prev,flat:r.st.flat,angle:r.st.angle,history:r.hist});
+ S.loop=null;S.loopRet=null;S.mode=null;
+ log(r.changed?`⏩ ${NAMES[PL[owner]]} réécrit son coup et le destin se rejoue${r.erased?` : ${r.erased} coup(s) adverse(s) devenu(s) impossible(s), effacé(s) (paradoxe)`:''}.`:`⏩ ${NAMES[PL[owner]]} garde ce futur tel quel.`);
+ fx(0,r.changed?'⏩ Le futur est réécrit':'⏩ Futur conservé');vfx('return',r.changed?'Le destin se rejoue':'Futur conservé',r.changed?'un seul coup a changé':'');
+ checkEnd();
+ if(!SIM){const st0=diffStats(before.grid,u.grid);tmShow(`<h2>⏩ Retour du futur</h2><p class="sub">${NAMES[PL[owner]]} a vu le futur, puis ${r.changed?'a changé un de ses coups. Les coups adverses ont été rejoués à l’identique':'n’a rien changé'}.${r.erased?` <b>${r.erased}</b> coup(s) adverse(s) ne rentraient plus : effacés (paradoxe).`:''}</p><div class="trow">${cell(before,'FUTUR VU','')}<div class="tcell"><span class="lbl">&nbsp;</span><div style="font-size:26px;color:#a685ff;height:96px;display:flex;align-items:center">→</div></div>${cell(snapState(u),'NOUVEAU PRÉSENT','now',before.grid)}</div><div class="sum">${st0.mv} jeton(s) déplacé(s) · ${st0.nw} nouveau(x) · ${st0.gone} disparu(s)${S.over&&!S.over.draw?` · <b>${NAMES[S.over.winner]} aligne quatre jetons !</b>`:''}</div><p style="margin-top:12px"><button class="j" data-a="tmnext">Continuer ▸</button></p>`)}
+ render()}
+function aiLoopReturn(){let best={idx:null,line:null},bv=-Infinity;const opts=[{idx:null,line:null}];const u=S.us[0];
+ for(const j of loopMoves()){const sn=u.history[j];for(let l=0;l<N;l++)if(l!==sn.desc.line&&landingG(sn.grid,visG(sn),l))opts.push({idx:j,line:l})}
+ for(const o of opts){const res=simulate({t:'loopret',idx:o.idx,line:o.line});let v;if(res.bad)continue;if(res.over)v=res.over.draw?0:res.over.winner===ME?1e7:-1e7;else{const U=res.us[0];v=U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,PL[res.turn]===ME?ME:OPP,PR().D,-Infinity,Infinity)}v+=Math.random();if(v>bv){bv=v;best=o}}
+ return best}
+function doBif(ui,l1,l2){const p=cur();const A=S.us[0];if(S.us.length!==1||l1===l2||!landing(A,l1)||!landing(A,l2))return;const pc=piece(p);
+ const Bn=mkU('B',cloneGrid(A.grid));Bn.gravity=A.gravity;Bn.angle=A.angle;Bn.history=A.history.map(h=>({...h,grid:cloneGrid(h.grid)}));Bn.noAnim=true;
+ A.history.push({...snapState(A),mover:S.turn,desc:{type:'drop',line:l1,pid:pc.id,split:true}});Bn.history.push({...snapState(Bn),mover:S.turn,desc:{type:'drop',line:l2,pid:pc.id,split:true}});
+ const ta=landing(A,l1);A.grid[ta[0]][ta[1]]=piece(p,pc.id);const tb=landing(Bn,l2);Bn.grid[tb[0]][tb[1]]=piece(p,pc.id);
+ A.name='A';A.anchor=A.history.length;Bn.anchor=Bn.history.length;S.us.push(Bn);S.ev.push('bif');S.pu.push(['⧉',S.turn]);S.qcheck=null;
+ setCd(S.turn,BIFCD);S.jt=true;S.mode=null;S.afterRot=null;
+ log(`⧉ ${NAMES[p]} dédouble son jeton : il tombe en colonne ${visualOfLine(A.gravity,l1)+1} dans la réalité A (◐) et en colonne ${visualOfLine(A.gravity,l2)+1} dans la réalité B (◑). Chaque coup se joue désormais dans les deux réalités, jusqu'à ce qu'un joueur 👁 observe.`);fx(0,'⧉ Deux réalités superposées');vfx('split','La réalité se dédouble','◐ A  ·  ◑ B');
+ checkEnd();if(!S.over)markPlayed(0);render()}
+function dropBoth(line){const p=cur();if(!S.us.some(U=>landing(U,line))){flash('Cette colonne est pleine dans les deux réalités.');return}const pc=piece(p);
+ S.us.forEach(U=>{const t=landing(U,line);U.history.push({...snapState(U),mover:S.turn,desc:t?{type:'drop',line,pid:pc.id}:{type:'pass'}});if(t)U.grid[t[0]][t[1]]=piece(p,pc.id)});
+ S.afterRot=null;S.mode=null;checkEnd();if(!S.over)markPlayed(0);render()}
+function canObserve(){return S&&S.us.length===2&&!S.over&&!S.busy&&S.awaitFloor==null}
+function doObserve(keep){if(!canObserve())return;S.ev.push('obs');const p=cur();const pre=[snapState(S.us[0]),snapState(S.us[1])];const K=S.us[keep];K.name='A';K.anchor=K.history.length;K.noAnim=true;S.us=[K];S.lay++;S.qcheck=null;S.afterRot=null;S.mode=null;
+ log(`👁 ${NAMES[p]} observe et garde la réalité ${keep?'B':'A'} : l'autre réalité disparaît.`);fx(0,`👁 Réalité ${keep?'B':'A'} conservée`);vfx('collapse',`👁 Réalité ${keep?'B':'A'}`,'l’autre réalité s’efface');
+ checkEnd();if(!S.over){S.pend=[];endTurn()}
+ if(!SIM)tmShow(`<h2>👁 Observation</h2><p class="sub">${NAMES[p]} observe les deux réalités et choisit celle qui devient vraie. L'autre disparaît.</p><div class="trow">${cell(pre[0],keep?'RÉALITÉ A ✕':'RÉALITÉ A ✓',keep?'':'now')}${cell(pre[1],keep?'RÉALITÉ B ✓':'RÉALITÉ B ✕',keep?'now':'')}</div><p style="margin-top:12px"><button class="j" data-a="tmnext">Continuer ▸</button></p>`);
+ render()}
+function doBifPast(ui,k,m,line){const A=S.us[ui];const sn=A.history[k];if(!landingG(sn.grid,sn.gravity,line)){flash('Cette colonne était déjà pleine à ce moment-là.');return}
+ const name=String.fromCharCode(65+S.nextL++);const n=structuredClone(A);n.name=name;n.lockUntil=0;n.noAnim=true;
+ S.us.push(n);const ni=S.us.length-1;const map={};for(const f of[...S.futs])if(f.u===ui){const c={...f,id:S.futs.length,u:ni};S.futs.push(c);map[f.id]=c.id}
+ for(const h of n.history)if(h.desc.type==='future'&&map[h.desc.fid]!=null)h.desc.fid=map[h.desc.fid];
+ A.anchor=A.history.length;const turn=S.turn;setCd(turn,BIFCD);S.jt=true;S.mode=null;
+ log(`${NAMES[PL[turn]]} bifurque dans le passé : la réalité ${A.name} continue, la réalité ${name} part d'il y a ${m} manche${m>1?'s':''}.`);fx(ui,'⧉ Bifurcation');
+ doTravel(ni,k,m,line,'bif',turn,()=>{S.us[ni].anchor=k+1;markPlayed(ui)})}
+function canSwap(){return S&&!S.over&&!S.swapDone&&S.turn===1&&S.us.length===1&&S.us[0].history.length===1}
+function doSwap(){const u=S.us[0];for(const r of u.grid)for(const x of r)if(x)x.p='J';u.history[0].mover=1;S.swapDone=true;S.turn=0;S.pend=[0];log('⇄ Jaune prend le premier jeton : il devient jaune, et Rouge rejoue.');fx(0,'⇄ Échange : Rouge rejoue');S.mode=null;render()}
+function doCollapse(keep){const p=cur();const rm=1-keep;const K=S.us[keep],R=S.us[rm];
+ S.us=[K];S.futs.forEach(f=>{if(f.u===rm)f.removed=true;else if(f.u===keep)f.u=0});S.mirrors=[];S.linkLeft=0;S.lay++;
+ setCd(S.turn,4);S.jt=true;log(`${NAMES[p]} provoque l'effondrement : seule la réalité ${K.name} subsiste, l'univers ${R.name} disparaît.`);fx(0,`⚡ Effondrement : seul l'univers ${K.name} subsiste`);
+ S.mode=null;S.pend=[];endTurn();checkEnd();render()}
+function doLink(ui){const p=cur();setCd(S.turn,4);S.jt=true;S.linkLeft=5;log(`${NAMES[p]} intrique les univers : pendant 2 tours, chaque jeton posé tombe dans les deux univers, même colonne.`);S.us.forEach((_,j)=>fx(j,'⛓ Univers intriqués'));S.mode=null;S.afterRot=null;S.pend=[];endTurn();render()}
+function mini(grid,g){let h='<div class="mini">';for(let vr=0;vr<N;vr++)for(let vc=0;vc<N;vc++){const[r,c]=visToBoard(g,vr,vc);const pc=grid[r][c];h+=`<i class="${pc?pc.p:''}"></i>`}return h+'</div>'}
+function viewOf(i){const u=S.us[i];if(S.anim&&S.anim.u===i)return S.anim.frame;if(S.mode&&S.mode.kind==='loopret'&&S.mode.idx!=null&&i===0)return u.history[S.mode.idx];if(S.mode&&(S.mode.kind==='past'||S.mode.kind==='bif')&&S.mode.u===i&&S.mode.k!=null)return u.history[S.mode.k];return u}
+
+let PREV={};
+function threatCols(U,p){const g=U.gravity;if(g==='flat')return[];const out=[];for(let v=0;v<N;v++){const l=lineForVisual(g,v);const t=landingG(U.grid,g,l);if(!t)continue;const ng=cloneGrid(U.grid);ng[t[0]][t[1]]={id:0,p};if(fours(ng).some(f=>f.p===p))out.push(v+1)}return out}
+function posMap(grid){const m={};for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=grid[r][c];if(x)m[x.id]=r*N+c}return m}
+function miniD(grid,g,before){const bm=before?posMap(before):null;let h='<div class="mini big2">';for(let vr=0;vr<N;vr++)for(let vc=0;vc<N;vc++){const[r,c]=visToBoard(g,vr,vc);const x=grid[r][c];let cls=x?x.p:'';if(x&&bm){if(bm[x.id]==null)cls+=' nw';else if(bm[x.id]!==r*N+c)cls+=' mv'}h+=`<i class="${cls}"></i>`}return h+'</div>'}
+function diffStats(b,a){const bm=posMap(b),am=posMap(a);let mv=0,nw=0,gone=0;for(const id in am){if(bm[id]==null)nw++;else if(bm[id]!==am[id])mv++}for(const id in bm)if(am[id]==null)gone++;return{mv,nw,gone}}
+function verdict(res,p){if(res.over){if(res.over.draw)return'<p class="vd">= Partie nulle</p>';return res.over.winner===p?'<p class="vd ok">✓ Tu gagnes immédiatement</p>':'<p class="vd ko">✗ L’adversaire gagnerait</p>'}return''}
+function threatLine(U,p,label){const t=threatCols(U,p),o=threatCols(U,p==='R'?'J':'R');let h='';if(t.length)h+=`<p>${label}✓ Tes menaces : colonne${t.length>1?'s':''} ${t.join(', ')}</p>`;if(o.length)h+=`<p class="vd ko">${label}⚠ Menaces adverses : colonne${o.length>1?'s':''} ${o.join(', ')}</p>`;return h}
+const legend='<p style="color:var(--muted);font-size:12px">Cerclé jaune : nouveau jeton · cerclé blanc : jeton déplacé</p>';
+function previewFor(t,dry){if(!S||!S.mode||S.over||S.busy||+t.dataset.u!==S.mode.u)return null;const i=S.mode.u,m=S.mode,p=actor();
+ if(m.kind==='past'&&m.k!=null){const sn=S.us[i].history[m.k];const line=t.classList.contains('slot')?+t.dataset.l:lineOf(sn.gravity,+t.dataset.r,+t.dataset.c);if(!landingG(sn.grid,sn.gravity,line))return null;const key=`p${i}-${m.k}-${line}`;if(dry||PREV.key===key)return key;PREV.key=key;
+  const res=simulate({t:'past',u:i,k:m.k,m:m.m,line});const B=S.us[i],A=res.us[i];const st=diffStats(B.grid,A.grid);const er=res.log.find(l=>l.startsWith('Effet papillon'))||'';const erased=+((er.match(/(\d+) coup/)||[])[1]||0);
+  let h=`<b>Aperçu : jeton lâché en colonne ${visualOfLine(sn.gravity,line)+1}, il y a ${m.m} manche${m.m>1?'s':''}</b><div class="pvw"><div><small>Présent actuel</small>${miniD(B.grid,visG(B))}</div><span class="arrow">→</span><div><small>Présent après le voyage</small>${miniD(A.grid,visG(A),B.grid)}</div></div>`;
+  h+=`<p>✦ ton jeton s'ajoute · ${st.mv} jeton${st.mv>1?'s':''} décalé${st.mv>1?'s':''}${erased?` · ${erased} coup${erased>1?'s':''} effacé${erased>1?'s':''} de l'histoire`:''}</p>`;
+  if(S.us.length===2&&res.us.length===2){const o=1-i;const so=diffStats(S.us[o].grid,res.us[o].grid);h+=`<p>⛓ Univers ${S.us[o].name} : ${so.nw?'ton jeton y voyage aussi, ':'le voyage n’a pas pu s’y reproduire, '}${so.mv} jeton(s) décalé(s)</p>`}
+  h+=verdict(res,p)||threatLine(A,p,'');setPrev(i,h+legend+'<p style="font-size:12px;color:var(--muted)">Clique pour valider.</p>');return key}
+ if(m.kind==='loopret'&&m.idx!=null){const sn=S.us[0].history[m.idx];const line=t.classList.contains('slot')?+t.dataset.l:lineOf(visG(sn),+t.dataset.r,+t.dataset.c);if(line!==sn.desc.line&&!landingG(sn.grid,visG(sn),line))return null;const key=`l${m.idx}-${line}`;if(dry||PREV.key===key)return key;PREV.key=key;
+  const res=simulate({t:'loopret',idx:m.idx,line});const B=S.us[0],A=res.us[0];const er=(res.log.find(l=>l.includes('paradoxe'))||'').match(/(\d+) coup/);
+  let h=`<b>Aperçu : ton coup rejoué en colonne ${visualOfLine(visG(sn),line)+1}</b><div class="pvw"><div><small>Futur vu</small>${miniD(B.grid,visG(B))}</div><span class="arrow">→</span><div><small>Nouveau présent</small>${miniD(A.grid,visG(A),B.grid)}</div></div>${er?`<p>${er[1]} coup(s) adverse(s) effacé(s) (paradoxe)</p>`:''}`;
+  h+=verdict(res,p)||threatLine(A,p,'');setPrev(0,h+legend+'<p style="font-size:12px;color:var(--muted)">Clique pour valider.</p>');return key}
+ if(m.kind==='future'&&t.classList.contains('hole')){const r=+t.dataset.r,c=+t.dataset.c;const x=S.us[i].grid[r][c];if(!x||x.p!==p)return null;const key=`f${i}-${r}-${c}-${m.delay}`;if(dry||PREV.key===key)return key;PREV.key=key;
+  const res=simulate({t:'fut',u:i,r,c,d:m.delay});const B=S.us[i],A=res.us[i];const R=structuredClone(A);const f=res.futs[res.futs.length-1];arrive(R,{...f});const st=diffStats(B.grid,A.grid);
+  let h=`<b>Aperçu : ce jeton part ${m.delay} manche${m.delay>1?'s':''} dans le futur</b><div class="pvw"><div><small>Maintenant</small>${miniD(B.grid,visG(B))}</div><span class="arrow">→</span><div><small>Pendant son absence</small>${miniD(A.grid,visG(A),B.grid)}</div><span class="arrow">→</span><div><small>À son retour*</small>${miniD(R.grid,visG(R),A.grid)}</div></div>`;
+  h+=`<p>${st.mv} jeton${st.mv>1?'s':''} tombe${st.mv>1?'nt':''} tout de suite. Au retour, il se réinsère à sa case et repousse la pile.</p>`+(verdict(res,p)||threatLine(A,p,'Maintenant : '))+'<p style="font-size:12px;color:var(--muted)">* si personne ne rejoue dans cette colonne d’ici là.</p>';
+  setPrev(i,h+legend);return key}
+ if(m.kind==='bif'&&m.first!=null){const u=S.us[i];const line=t.classList.contains('slot')?+t.dataset.l:lineOf(u.gravity,+t.dataset.r,+t.dataset.c);if(line===m.first||!landing(u,line))return null;const key=`b${i}-${m.first}-${line}`;if(dry||PREV.key===key)return key;PREV.key=key;
+  const res=simulate({t:'bif',u:i,l1:m.first,l2:line});const A=res.us[0],Bn=res.us[1];const ta=threatCols(A,p),tb=threatCols(Bn,p);
+  let h=`<b>Aperçu des deux réalités</b><div class="pvw"><div><small>Réalité ${A.name} (1er coup)</small>${miniD(A.grid,visG(A),u.grid)}</div><div><small>Réalité ${Bn.name} (2e coup)</small>${miniD(Bn.grid,visG(Bn),u.grid)}</div></div>`;
+  h+=`<p>Menaces ${A.name} : ${ta.length?'colonne(s) '+ta.join(', '):'aucune'} · Menaces ${Bn.name} : ${tb.length?'colonne(s) '+tb.join(', '):'aucune'}</p>`;
+  if(ta.length&&tb.length&&!(ta.length===1&&tb.length===1&&ta[0]===tb[0]))h+='<p class="vd ok">✓ Une menace dans chaque réalité : un seul jeton adverse ne bloquera pas les deux</p>';
+  else if(ta.length||tb.length)h+='<p>Une seule menace (ou la même colonne des deux côtés) : il pourra la bloquer.</p>';else h+='<p>Pas encore de menace : le dédoublement servira surtout à préparer la suite.</p>';
+  setPrev(i,h+legend);return key}
+ return null}
+function setPrev(i,h){PREV[i]=h;const el=document.getElementById('pv-'+i);if(el)el.innerHTML=h}
+const NOHOVER=window.matchMedia&&matchMedia('(hover: none)').matches;
+const prevBox=i=>`<div class="prev" id="pv-${i}">${PREV[i]||`<small style="color:var(--muted)">${NOHOVER?'Touche une fois pour voir l’aperçu, une 2e fois pour valider.':'Survole pour voir l’effet avant de valider.'}</small>`}</div>`;
+let TM_OPEN=false,TM_NEXT=null;
+function tmShow(h){const m=document.getElementById('tmodal');m.querySelector('.box').innerHTML=h;m.style.display='flex';TM_OPEN=true;m.querySelectorAll('.trow').forEach(r=>r.scrollLeft=r.scrollWidth)}
+function tmHide(){document.getElementById('tmodal').style.display='none';TM_OPEN=false;const f=TM_NEXT;TM_NEXT=null;if(f)f();else{render()}}
+const tl=d=>d===0?'MAINTENANT':(d<0?`T${d}`:`T+${d}`);
+const cell=(st,lbl,cls,before)=>`<div class="tcell ${cls||''}"><span class="lbl">${lbl}</span>${st?miniD(st.grid,visG(st),before):'<div class="mini big2"></div>'}</div>`;
+function travelHTML(o){const{u,m,oldS,newS,shown,done,summary,linked}=o;const P=oldS.length-1;
+ let top='',bot='';
+ for(let c=0;c<P+2;c++){const oi=c===0?0:c-1;const t=(c===0?0:c-1)-P;
+  if(c===1)top+=`<div class="tcell blank"><span class="lbl">&nbsp;</span><div class="mini big2"></div></div>`;else top+=cell(oldS[oi],tl(t),(c===0?'tgt':'')+(oi===P?' now':''));
+  const st=newS[c];const vis=c<shown;const lbl=c===1?'✦ TON JETON':tl(t);
+  bot+=vis&&st?cell(st,lbl,(c===1?'ins':'')+(c===P+1?' now':''),c>=1?(c===1?oldS[0].grid:oldS[oi].grid):null):cell(null,lbl,'pend');}
+ return `<h2>⟲ Voyage dans le passé</h2><p class="sub">${linked&&linked!=='bif'?'⛓ Intrication : le même voyage se reproduit ici. ':''}Le jeton remonte de ${m} manche${m>1?'s':''} (T = un coup). Ligne du haut : l'histoire d'origine. Ligne du bas : la nouvelle histoire, rejouée coup par coup avec ton jeton. Cerclé jaune : nouveau jeton, cerclé blanc : jeton déplacé par rapport au même instant d'origine.</p>
+ <div class="rowlbl">LIGNE TEMPORELLE D'ORIGINE</div><div class="trow">${top}</div><div class="rowlbl new">NOUVELLE LIGNE TEMPORELLE</div><div class="trow">${bot}</div>${done?`<div class="sum">${summary}</div><p style="margin-top:12px"><button class="j" data-a="tmnext">Continuer ▸</button></p>`:'<p class="sub" style="margin-top:8px">⏳ L’histoire se réécrit…</p>'}`}
+function frontHTML(){let h='<h2>🕰 Frise du temps</h2><p class="sub">Chaque case montre le plateau juste avant un coup (T−1 = le coup précédent, T−2 = il y a une manche), puis le présent. ⟲ jeton lâché dans le passé · ↻ rotation · ◎ apesanteur · ▼ redressement · ⧉ dédoublement · ⏩ futur en cours de visite · 🔒 on ne peut pas remonter le temps avant ce point.</p>';
+ S.us.forEach((u,i)=>{const L=u.history.length;let row='';const start=Math.max(0,L-14);
+  for(let k=start;k<L;k++){const h0=u.history[k];const d=h0.desc;const tag=(d.traveler?' ⟲':d.type==='rotate'?(d.kind==='flat'?' ◎':' ↻'):d.type==='stand'?' ▼':d.split?' ⧉':'')+(S.loop&&k>=S.loop.k?' ⏩':'');row+=cell(h0,`${tl(k-L)}${k<u.anchor?' 🔒':''}${tag}`,'')}
+  row+=cell(u,'MAINTENANT','now');
+  const fs=S.futs.filter(f=>f.u===i&&!f.removed&&!f.done).sort((a,b)=>a.a-b.a);
+  for(const f of fs){row+=`<div class="tcell fut"><span class="lbl">${tl(f.a-L)} ⏩</span><div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:#a685ff">retour d’un jeton ${NAMES[f.p]}<br>colonne ${f.v+1}</div></div>`}
+  h+=`<div class="rowlbl ${i?'b':''}">${S.us.length===2?'RÉALITÉ '+(i?'B ◑':'A ◐'):'PLATEAU'}</div><div class="trow">${row}</div>`});
+ return h+'<p style="margin-top:10px"><button class="j" data-a="tmnext">Fermer</button></p>'}
+function fuseCell(st,lbl,other){const g=visG(st);let h='<div class="mini big2">';for(let vr=0;vr<N;vr++)for(let vc=0;vc<N;vc++){const[r,c]=visToBoard(g,vr,vc);const x=st.grid[r][c],y=other.grid[r][c];let cls=x?x.p:'';if(x&&!(y&&y.p===x.p))cls+=' dz';h+=`<i class="${cls}"></i>`}return`<div class="tcell"><span class="lbl">${lbl}</span>${h}</div></div>`}
+function ensure(i){let el=document.getElementById('uni-'+i);if(el)return el;
+ el=document.createElement('div');el.id='uni-'+i;el.className='uni';
+ let holes='';for(let r=0;r<N;r++)for(let c=0;c<N;c++)holes+=`<button class="hole" data-a="hole" data-u="${i}" data-r="${r}" data-c="${c}" style="left:${P+c*ST}px;top:${P+r*ST}px" aria-label="case"></button>`;
+ el.innerHTML=`<div class="uhead"></div><div class="tl"></div><div class="stage" style="width:${B+2*MX}px;height:${MT+B+MB}px"><div class="ghosts"></div><div class="slots"></div><div class="persp" style="left:${MX}px;top:${MT}px;width:${B}px;height:${B}px"><div class="bw" style="width:${B}px;height:${B}px"><div class="board">${holes}</div><div class="pcs"></div><div class="pvl"><div class="pv"></div></div></div></div><div class="floor" style="left:${MX}px;top:${MT+B+8}px;width:${B}px">▼ BAS ▼</div><div class="fx"></div></div><div class="ctrl"></div>`;
+ document.getElementById('boards').appendChild(el);return el}
+
+function syncPieces(i){const u=S.us[i];const el=document.getElementById('uni-'+i);if(!el)return;const V=viewOf(i);const layer=el.querySelector('.pcs');const seen=new Set();const wins=new Set(S.wins);
+ const g=visG(V);const pick=S.mode&&S.mode.kind==='future'&&S.mode.u===i;
+ const items=[];const sup=S.us.length===2&&i===0&&V===u;
+ if(sup){const A=S.us[0].grid,Bg=S.us[1].grid;for(let r=0;r<N;r++)for(let c=0;c<N;c++){const a=A[r][c],b=Bg[r][c];if(a&&b&&a.id===b.id)items.push({pc:a,r,c,key:String(a.id),h:''});else{if(a)items.push({pc:a,r,c,key:a.id+'a',h:'ha'});if(b)items.push({pc:b,r,c,key:b.id+'b',h:'hb'})}}}
+ else for(let r=0;r<N;r++)for(let c=0;c<N;c++){const pc=V.grid[r][c];if(pc)items.push({pc,r,c,key:String(pc.id),h:''})}
+ for(const it of items){const pc=it.pc;seen.add(it.key);const x=P+it.c*ST,y=P+it.r*ST;let e=layer.querySelector(`[data-id="${it.key}"]`);
+  if(e&&e._t){clearTimeout(e._t);e._t=null;e.classList.remove('gone')}
+  if(!e){e=document.createElement('div');e.className='pc '+pc.p;e.dataset.id=it.key;let sx=x,sy=y,sc=1;
+   if(u.noAnim||V.gravity==='flat')sc=.2;else if(g==='down')sy=-60;else if(g==='up')sy=B+20;else if(g==='left')sx=B+20;else sx=-60;
+   e.style.transition='none';e.style.transform=`translate(${sx}px,${sy}px) scale(${sc})`;if(sc<1)e.style.opacity=0;layer.appendChild(e);e.getBoundingClientRect();e.style.transition=''}
+  e.style.transform=`translate(${x}px,${y}px)`;e.style.opacity=1;e.classList.toggle('ha',it.h==='ha');e.classList.toggle('hb',it.h==='hb');e.classList.toggle('cp',!!pc.cp);e.classList.toggle('win',wins.has(pc.id));e.classList.toggle('pick',!!(pick&&pc.p===cur()))}
+ u.noAnim=false;
+ layer.querySelectorAll('.pc').forEach(e=>{if(!seen.has(e.dataset.id)&&!e._t){e.classList.add('gone');e.style.opacity=0;e._t=setTimeout(()=>e.remove(),400)}})}
+
+function timeline(i){const u=S.us[i];const L=u.history.length;const it=[];const start=Math.max(0,L-10);
+ it.push('<span>passé</span>');if(start>0)it.push('<span>…</span>');
+ for(let k=start;k<L;k++){if(k===u.anchor&&k>0)it.push('<span title="On ne remonte pas avant ce point">🔒</span>');const h=u.history[k];const d=h.desc;const sym=d.traveler?'⟲':d.type==='rotate'?(d.kind==='flat'?'◎':'↻'):d.type==='stand'?'▼':d.split?'⧉':'';it.push(`<span class="tm ${PL[h.mover]}" title="Coup ${k+1} : ${NAMES[PL[h.mover]]}${d.traveler?' (jeton lâché dans le passé)':d.type==='rotate'?(d.kind==='flat'?' (apesanteur)':' (rotation)'):d.type==='stand'?' (redressement)':d.split?' (dédoublement)':''}">${sym}</span>`)}
+ if(u.anchor===L&&L>0)it.push('<span title="On ne remonte pas avant ce point">🔒</span>');
+ it.push('<span class="now">● maintenant</span>');
+ const fs=S.futs.filter(f=>f.u===i&&!f.removed&&!f.done);
+ if(fs.length){const mx=Math.max(...fs.map(f=>f.a-L));for(let j=1;j<=mx;j++){const f=fs.find(x=>x.a===L+j);it.push(f?`<span class="tm f ${f.p}" title="Retour d'un jeton ${NAMES[f.p]}">⏩</span>`:'<span class="tm e"></span>')}it.push('<span>futur</span>')}
+ return it.join('')}
+
+function renderUni(i){const u=S.us[i],el=ensure(i),f=forced(),jb=jokerBlock(i),m=S.mode&&S.mode.u===i?S.mode:null,V=viewOf(i);
+ const frozen=!S.over&&S.us.length>1&&!S.pend.includes(i),inPast=V!==u;
+ el.className=`uni ${frozen?'frozen':''} ${inPast?'pastview':''} ${S.loop&&!inPast?'futview':''} ${S.us.length===2?'superpo':''} ${S.us.length===2?'linked':''}`;
+ const orient={0:'Plateau droit',90:'Tourné ↻',180:'Retourné',270:'Tourné ↺'}[((V.angle%360)+360)%360];
+ const rib=S.anim&&S.anim.u===i?"⟲ L'histoire se réécrit…":(inPast?(m&&m.kind==='loopret'?'⏩ RETOUR AU DÉPART — réécris ce coup':`⟲ PASSÉ — il y a ${m.m} manche${m.m>1?'s':''}`):(S.loop?`⏩ FUTUR VISITÉ par ${NAMES[PL[S.loop.owner]]} — retour dans ${S.loop.left} coup${S.loop.left>1?'s':''}`:''));
+ el.querySelector(".uhead").innerHTML=`<b>${S.us.length===2?"Deux réalités":"Plateau"}</b><button class="j" data-a="frise" style="padding:2px 8px;font-size:12px">🕰 Frise du temps</button><span class="tag acc">${V.gravity==='flat'?(V.flat?`◎ Apesanteur — ${V.flat} pose${V.flat>1?'s':''}`:'◎ Où tout va tomber ?'):orient}</span>${S.us.length===2?`<span class="tag fut">⧉ ◐ réalité A · ◑ réalité B</span>`:''}${frozen?'<span class="tag">✓ Joué ce tour</span>':''}${rib?`<span class="ribbon">${rib}</span>`:''}`;
+ el.querySelector('.tl').innerHTML=timeline(i);
+ el.querySelector('.persp').classList.toggle('flat',V.gravity==='flat');
+ el.querySelector('.bw').style.transform=`rotate(${V.angle}deg)`;
+ el.querySelector('.floor').style.visibility=V.gravity==='flat'?'hidden':'visible';
+ const g=V.gravity;const pm=inPast&&!S.anim;
+ el.querySelector('.slots').innerHTML=(g==='flat'||S.over||S.anim)?'':Array.from({length:N},(_,v)=>{const line=lineForVisual(g,v);const full=!landingG(V.grid,g,line);return`<button class="slot ${pm?'pm':''}" data-a="slot" data-u="${i}" data-l="${line}" style="left:${MX+P+v*ST}px;top:${MT-36}px" ${full?'disabled':''} title="${pm?'Lâcher ton jeton dans ce passé':'Lâcher un jeton ici'}">${pm?'⟲':'▼'}</button>`}).join('');
+ const L=u.history.length;
+ el.querySelector('.ghosts').innerHTML=(m&&m.kind==='bif'&&m.first!=null&&g!=='flat'?`<div class="gh" style="left:${MX+P+visualOfLine(g,m.first)*ST}px;top:2px" title="Ton 1er coup"><span class="${cur()}">1</span></div>`:'')+((inPast||u.gravity==='flat')?'':S.futs.filter(x=>x.u===i&&!x.removed&&!x.done).map(x=>`<div class="gh" style="left:${MX+P+x.v*ST}px;top:2px" title="Jeton ${NAMES[x.p]} en voyage vers le futur"><span class="${x.p}">${Math.ceil((x.a-L)/2)}</span></div>`).join(''));
+ if(Date.now()>=u.lockUntil)syncPieces(i);
+ const bt=(a,label,dis,why,on)=>`<button class="j ${on?'on':''}" data-a="${a}" data-u="${i}" ${dis?'disabled':''} title="${dis?why:''}">${label}</button>`;
+ let h=`${i===0&&canSwap()&&!(AI&&cur()===ME)?'<div class="bar"><button class="j on" data-a="swap" title="Règle d’équilibre : le premier jeton de Rouge devient le tien, et Rouge rejoue">⇄ Prendre le jeton de Rouge</button></div>':''}<div class="bar">${!(pw('rot')||pw('flat'))?'':bt('rot',pw('rot')?'↻ Rotation':'◎ Apesanteur',!!(jb||u.gravity==='flat'),u.gravity==='flat'?'En apesanteur : redresse d’abord (panneau ci-dessous)':jb,m&&m.kind==='rot')}${!pw('past')?'':bt('past','⟲ Passé',!!(jb||S.us.length>1||u.gravity==='flat'),jb||(u.gravity==='flat'?'Impossible en apesanteur':'Impossible pendant une superposition'),m&&m.kind==='past')}${!pw('loop')?'':bt('loop','⏩ Futur',!!(jb||u.gravity==='flat'||S.us.length>1||S.loop),jb||(S.loop?'Un voyage dans le futur est déjà en cours':S.us.length>1?'Impossible avec deux réalités':'Indisponible en apesanteur'),m&&m.kind==='loop')}${!pw('dup')?'':bt('dup','⧉ Dédoubler',!!(jb||S.us.length>=2||u.gravity==='flat'||S.loop),jb||(S.us.length>=2?'Déjà deux réalités : observe d’abord':S.loop?'Pas pendant un voyage dans le futur':'Indisponible en apesanteur'),m&&m.kind==='bif')}</div>`;
+ if(S.awaitFloor===i){h+=`<div class="panel"><p><b>Le plateau se redresse : choisis le côté vers lequel tout tombe.</b> Tous les jetons tomberont de ce côté :</p><div class="opts">${['none','ccw','cw','half'].map(k=>{const ng=angleGrav(u.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(u.grid);settleGrid(gr,ng);return`<button class="opt" data-a="floor" data-u="${i}" data-k="${k}"><span class="big">${k==='none'?'▼':ROT[k].icon}</span>${mini(gr,ng)}<small>${k==='none'?'Comme avant':ROT[k].label}</small></button>`}).join('')}</div></div>`}
+ if(m&&m.kind==='bif'){h+=`<div class="panel"><b>⧉ Dédoubler : un jeton dans deux réalités parallèles</b><ol class="steps"><li>Clique la colonne de ton jeton dans la <b>réalité A</b> ◐${m.first!=null?` ✓ (colonne ${visualOfLine(u.gravity,m.first)+1})`:''}.</li><li>${NOHOVER?'Touche':'Survole'} une <b>autre colonne</b> : aperçu des deux réalités.</li><li>Clique : ton jeton existe en colonne 1 dans A et en colonne 2 dans B.</li></ol><p>Ensuite, chaque coup se joue dans les deux réalités à la fois (un seul coup par tour). Un 4 dans <b>les deux</b> réalités gagne. Un 4 dans <b>une seule</b> déclenche la <b>fusion des réalités</b> : l'adversaire doit 👁 observer en gardant l'autre réalité (ce qui lui coûte son tour), sinon tout fusionne dans la réalité du 4 et il perd. Recharge : ${rc(BIFCD)} tours.</p>${m.first!=null?prevBox(i):''}<button class="j" data-a="cancel">Annuler</button></div>`}
+ if(u.gravity==='flat'&&S.awaitFloor!==i){const fp=floorPreviews(u);const can=!(AI&&cur()===ME)&&S.pend.includes(i)&&S.afterRot!==i&&u.flat<=FLATN-2;
+  h+=`<div class="panel"><b>◎ Apesanteur</b><p>Pose ton jeton sur n'importe quelle case : rien ne tombe et <b>aucun alignement ne compte</b> tant que le plateau est couché. Redressement automatique dans <b>${u.flat}</b> pose${u.flat>1?'s':''} (${NAMES[PL[u.flatBy==null?S.turn:u.flatBy^1]]} choisira le côté de la chute), ou avant : à ton tour (une fois que chacun a posé un jeton en apesanteur), au lieu de poser un jeton, tu peux <b>▼ redresser</b> le plateau en choisissant le côté vers lequel tout tombe (gratuit). Tout tombe et les alignements comptent aussitôt. Attention : ne laisse jamais à l'adversaire une direction de chute qui le fait gagner !</p><p>Si le plateau se redressait maintenant, selon le côté où tout tombe :</p><div class="opts">${fp.map(o=>`<button class="opt" ${can?`data-a="stand" data-u="${i}" data-k="${o.k}"`:'disabled'}><span class="big">${o.k==='none'?'▼':ROT[o.k].icon}</span>${mini(o.gr,o.ng)}<small>${o.k==='none'?'Bas d’origine':ROT[o.k].label}<br>${o.w.length?'<b>'+o.w.map(x=>NAMES[x]).join(' et ')+' aligne 4</b>':'aucun alignement'}</small></button>`).join('')}</div><p style="margin-top:6px;font-size:12px">${can?'Clique une direction pour redresser le plateau maintenant, à la place de ton jeton.':u.flat>FLATN-2?'▼ Redresser : possible à partir du prochain tour du lanceur (chacun pose d’abord un jeton).':'▼ Redresser : pas ton tour'}</p></div>`}
+ if(m&&m.kind==='rot'&&u.gravity!=='flat'){h+=`<div class="panel"><p>Tu tournes le plateau : les jetons tombent vers le nouveau bas. Aperçu du résultat :</p><div class="opts">${['ccw','cw','half','flat'].filter(k=>k==='flat'?pw('flat'):pw('rot')).map(k=>{let prev;if(k==='flat')prev=mini(u.grid,u.gravity);else{const ng=angleGrav(u.angle+ROT[k].d);const gr=cloneGrid(u.grid);settleGrid(gr,ng);prev=mini(gr,ng)}return`<button class="opt" data-a="rotk" data-u="${i}" data-k="${k}" ${k==='flat'&&S.us.length===2?'disabled title="Indisponible en superposition"':''}><span class="big">${ROT[k].icon}</span>${prev}<small>${ROT[k].label}${k==='flat'?'<br>tu poses où tu veux':''}</small></button>`}).join('')}</div><p style="margin-top:8px">Après la rotation, tu poses ton jeton. Recharge : ${rc(4)} tours.${S.us.length===2?' ⧉ Les deux réalités tournent ensemble.':''}</p></div>`}
+ if(m&&m.kind==='past'){h+=`<div class="panel"><b>⟲ Voyage dans le passé</b><ol class="steps"><li>Choisis jusqu'où remonter.</li><li>Le plateau affiche ce passé (sépia). ${NOHOVER?'Touche':'Survole'} une flèche ⟲ pour voir l'effet sur le présent.</li><li>Clique : ton jeton tombe dans le passé, puis toute la suite se rejoue. Les jetons posés ensuite dans cette colonne sont décalés d'une case.</li></ol>${S.us.length===2?'<p>⛓ Le même voyage se reproduit dans l’autre univers, même colonne.</p>':''}<div class="opts">${[1,2].map(n=>{const o=pastOption(i,n);if(o.k===undefined)return`<button class="opt" disabled><span class="big">⟲</span><b>${n} manche${n>1?'s':''}</b><small>${o.why}</small></button>`;const sn=u.history[o.k];return`<button class="opt ${m.k===o.k?'on':''}" data-a="pastk" data-u="${i}" data-k="${o.k}" data-m="${n}"><span class="big">⟲</span>${mini(sn.grid,visG(sn))}<b>${n} manche${n>1?'s':''}</b><small>recharge ${rc(2+n)} tours</small></button>`}).join('')}</div>${m.k!=null?prevBox(i):''}<p style="margin-top:8px"><button class="j" data-a="cancel">Annuler</button></p></div>`}
+ if(S.us.length===2&&i===0){const ob=!canObserve()||(AI&&cur()===ME);const lab=k=>{const w=new Set(fours(S.us[k].grid).map(f=>f.p));return w.size?[...w].map(x=>`${NAMES[x]} aligne 4`).join(', '):'aucun alignement'};
+  h+=`<div class="panel"><b>⧉ Deux réalités</b><p>◐ moitié gauche : réalité A · ◑ moitié droite : réalité B · jeton plein : présent dans les deux. Ton coup se joue dans les deux réalités.</p>${S.qcheck&&S.qcheck.p!==cur()?`<p class="vd bad">⚠️ Fusion des réalités : ${NAMES[S.qcheck.p]} aligne 4 dans la réalité ${S.qcheck.r?'B':'A'}. Observe en gardant l'autre réalité, ou casse l'alignement, sinon tu perds.</p>`:''}<p><b>👁 Observer</b> (à la place de ton jeton) : tu gardes une réalité, l'autre disparaît.</p><div class="opts">${[0,1].map(k=>`<button class="opt" data-a="observe" data-u="0" data-k="${k}" ${ob?'disabled':''}>${mini(S.us[k].grid,visG(S.us[k]))}<b>Garder ${k?'B ◑':'A ◐'}</b><small>${lab(k)}</small></button>`).join('')}</div></div>`}
+ if(m&&m.kind==='loop'){h+=`<div class="panel"><b>⏩ Futur : voir l'avenir, puis le corriger</b><ol class="steps"><li>Choisis la durée du voyage.</li><li>La partie continue <b>pour de vrai</b> pendant ce temps (plateau violet). Tu poses ton jeton juste après.</li><li>Ton <b>premier coup</b> après le départ est un coup d'essai. À la fin (ou dès qu'un 4 apparaît), tu reviens au départ et tu peux <b>déplacer ce premier coup</b>, et seulement lui. Tout le reste est rejoué tel quel, tes coups suivants compris : c'est le destin. Les jetons qui suivent se décalent, et un coup qui ne rentre plus est effacé.</li></ol><div class="opts">${[2,3].map(d=>`<button class="opt" data-a="loopd" data-u="${i}" data-d="${d}"><span class="big">⏩</span><b>${d} manches</b><small>tu joueras ${d} coups</small></button>`).join('')}</div><p style="margin-top:6px">Recharge : ${rc(LOOPCD[S.turn])} tours. Pas de Passé ni de Dédoublement pendant le voyage.</p><p style="margin-top:8px"><button class="j" data-a="cancel">Annuler</button></p></div>`}
+ if(S.loopRet&&i===0&&!(AI&&actor()===ME)){const mv=loopMoves();h+=`<div class="panel"><b>⏩ Retour au point de départ</b><p>Tu as vu ce futur. Tu peux déplacer <b>ton premier coup</b> du voyage (le plateau montre cet instant) : tout le reste sera rejoué tel quel, et les jetons suivants se décaleront. ${NOHOVER?'Touche':'Survole'} une flèche pour voir le nouveau présent.</p><div class="loopmv">${mv.map((j,n)=>{const h0=u.history[j];return`<button class="opt ${m&&m.idx===j?'on':''}" data-a="loopi" data-u="0" data-k="${j}">${mini(h0.grid,visG(h0))}<b>Ton coup d'essai</b><small>colonne ${visualOfLine(visG(h0),h0.desc.line)+1}</small></button>`}).join('')}</div>${m&&m.idx!=null?prevBox(i):''}<p><button class="j" data-a="loopkeep">Garder ce futur tel quel</button></p></div>`}
+ if(m&&m.kind==='future'){h+=`<div class="panel"><b>⏩ Envoyer un jeton dans le futur</b><ol class="steps"><li>Choisis dans combien de manches il revient.</li><li>${NOHOVER?'Touche':'Survole'} un de tes jetons (ils clignotent) pour voir l'effet.</li><li>Clique : il disparaît tout de suite (les jetons au-dessus tombent), puis revient à sa case exacte en repoussant la pile. Colonne pleine : le jeton du haut est éjecté.</li></ol><div class="opts" style="gap:5px">${Array.from({length:10},(_,x)=>x+1).map(d=>`<button class="j ${m.delay===d?'on':''}" data-a="futd" data-u="${i}" data-d="${d}" style="min-width:38px">${d}</button>`).join('')}</div><p style="margin-top:6px">Retour dans <b>${m.delay} manche${m.delay>1?'s':''}</b>. Recharge : ${rc(3)} tours.</p>${prevBox(i)}<p style="margin-top:8px"><button class="j" data-a="cancel">Annuler</button></p></div>`}
+ el.querySelector('.ctrl').innerHTML=h}
+
+function render(){if(SIM)return;fitBoard();{const inPast=S.mode&&((S.mode.kind==='past'||S.mode.kind==='bif')&&S.mode.k!=null||S.mode.kind==='loopret'&&S.mode.idx!=null)||S.anim;document.body.dataset.t=inPast?'past':S.loop?'fut':S.us.length===2?'sup':'';const ck=document.getElementById('clock');if(ck){const mc=Math.floor((S.tn||0)/2)+1;const pad=n=>String(n).padStart(2,'0');ck.className=inPast?'past':S.loop?'fut':'';ck.textContent=inPast?(S.mode&&S.mode.m?`MANCHE ${pad(Math.max(1,mc-S.mode.m))} · PASSÉ`:`MANCHE ${pad(mc)} · RÉÉCRITURE`):S.loop?`MANCHE ${pad(mc)} · FUTUR +${Math.ceil(S.loop.left/2)}`:S.us.length===2?`MANCHE ${pad(mc)} · ◐◑`:`MANCHE ${pad(mc)}`}
+ if(S.over&&!S.overFx){S.overFx=1;const o=S.over;if(AI&&!TUT&&!o.draw){const p=PR(),r=getRec();r[p.id]=r[p.id]||{w:0,l:0};if(o.winner===HC)r[p.id].l++;else r[p.id].w++;setRec(r);S.endQ=say(o.winner===HC?'lose':'win');if(o.winner===HC)setTimeout(()=>{if(S.over===o)shareCard()},2300)}setTimeout(()=>vfx('win',o.draw?'Partie nulle':`${NAMES[o.winner]} gagne`,o.draw?'':'quatre jetons alignés'),250)}}if(S.loopRet&&!(S.mode&&S.mode.kind==='loopret'))S.mode={kind:'loopret',u:0,idx:null};if(S.fuseView&&!TM_OPEN&&!S.busy){const v=S.fuseView;S.fuseView=null;tmShow(`<h2>⧉ Interférence — les deux réalités fusionnent</h2><p class="sub">Chaque case est comparée entre les deux réalités. Même jeton des deux côtés : il est <b>conservé</b>. Case différente (couleurs différentes, ou jeton d'un seul côté) : <b>détruite</b>. Ensuite, tout retombe. Pâle et cerclé de rouge : détruit.</p><div class="trow">${fuseCell(v.pre.A,'RÉALITÉ '+v.pre.na,v.pre.B)}<div class="tcell"><span class="lbl">&nbsp;</span><div style="font-size:26px;color:#a685ff;height:96px;display:flex;align-items:center">+</div></div>${fuseCell(v.pre.B,'RÉALITÉ '+v.pre.nb,v.pre.A)}<div class="tcell"><span class="lbl">&nbsp;</span><div style="font-size:26px;color:#a685ff;height:96px;display:flex;align-items:center">=</div></div>${cell(v.post,'FUSION','now',v.pre.A.grid)}</div><div class="sum">Conservés : Rouge <b>${v.kept.R}</b>, Jaune <b>${v.kept.J}</b> · Détruits : Rouge <b>${v.lost.R}</b>, Jaune <b>${v.lost.J}</b></div><p style="margin-top:12px"><button class="j" data-a="tmnext">Continuer ▸</button></p>`)}if(S.arrivals&&S.arrivals.length&&!TM_OPEN&&!S.busy){const a=S.arrivals.shift();const U=S.us[a.ui];tmShow(`<h2>⏩ Retour du futur</h2><p class="sub">Le jeton ${NAMES[a.p]} parti il y a ${a.ago} manche${a.ago>1?'s':''} réapparaît à sa case et repousse la pile${a.ej?`, ce qui éjecte un jeton ${NAMES[a.ej.p]} hors du plateau`:''}.</p><div class="trow">${cell(a.pre,'JUSTE AVANT','')}${cell(a.post,'RETOUR','now',a.pre.grid)}</div><p><button class="j" data-a="tmnext">Continuer ▸</button></p>`)}{const mk=JSON.stringify(S.mode)+S.turn+S.us.map(u=>u.history.length).join();if(PREV.mk!==mk)PREV={mk}}const p=cur(),jb=jokerBlock(),f=forced();
+ const box=document.getElementById('boards');const key=gid+'-'+S.lay;if(box.dataset.g!==key){box.innerHTML='';box.dataset.g=key}
+ document.getElementById('turn').innerHTML=S.over?(S.over.draw?'Partie nulle':`<span class="dot ${S.over.winner}"></span>${NAMES[S.over.winner]} gagne`):`<span class="dot ${p}"></span>Au tour de ${NAMES[p]}`;
+ const st=document.getElementById('status');let msg;
+ if(flashMsg)msg=flashMsg;else if(S.over)msg='';else if(S.loopRet)msg=AI&&actor()===ME?`${PR().ico} ${PR().name} revient du futur et corrige son coup d'essai…`:`⏩ ${NAMES[actor()]} : déplace ton coup d'essai, ou garde ce futur`;else if(S.jFirst&&S.turn===1&&!(AI&&cur()===ME))msg=`Premier tour de Jaune : tu poses ${S.us[0].history.length<=1?'2 jetons':'encore 1 jeton'} (compensation du 2e joueur)`;else if(S.singleTurn===S.turn&&S.us.length===2&&!(AI&&cur()===ME))msg='⧉ Ton jeton tombe dans la même colonne des deux réalités';else if(S.awaitFloor!=null)msg='◎ Le plateau se redresse : choisis le côté vers lequel tout tombe';else if(AI&&cur()===ME&&!S.anim)msg=S.mode&&S.mode.kind==='past'?`${PR().ico} ${PR().name} remonte de ${S.mode.m} manche(s) dans le passé…`:`${PR().ico} ${PR().name} réfléchit…`;else if(S.afterRot!=null&&S.afterRot!==undefined&&S.pend.includes(S.afterRot))msg=S.us[S.afterRot].gravity==='flat'?'◎ Apesanteur : pose ton jeton sur la case de ton choix':(S.us.length===2?'↻ Plateau tourné : pose maintenant ton jeton':'↻ Plateau tourné : pose maintenant ton jeton');else if(S.anim)msg="⟲ L'histoire se réécrit avec ton jeton…";else if(S.mode&&S.mode.kind==='past')msg=S.mode.k!=null?`⟲ Tu es ${S.mode.m} manche(s) dans le passé : choisis la colonne`:'⟲ Choisis jusqu\'où remonter';else if(S.mode&&S.mode.kind==='future')msg='⏩ Choisis la durée, puis clique sur un de tes jetons';else if(f!==null)msg=`◎ Apesanteur : pose ton jeton où tu veux (redressement auto dans ${S.us[f].flat} pose${S.us[f].flat>1?'s':''})`;else if(S.us.length>1)msg=S.qcheck&&S.qcheck.p!==cur()?`⚠️ Fusion des réalités ! Observe en gardant la réalité ${S.qcheck.r?'A':'B'}, ou casse l'alignement`:'⧉ Deux réalités : ton jeton tombe dans les deux, ou 👁 observe pour en garder une';else msg=jb||'Lâche un jeton avec une flèche ▼, ou utilise un pouvoir';
+ st.textContent=msg;st.className=(flashMsg||S.anim||S.mode||f!==null)?'warn':'';
+ renderUni(0);
+ {const oc=document.getElementById('oppcard');if(AI){const p=PR(),r=getRec()[p.id]||{w:0,l:0};oc.style.display='block';oc.innerHTML=`<h3>Ton adversaire</h3><div class="opp"><div class="av">${p.ico}</div><div><b>${p.name}</b> <span class="lvl l${AI}">${p.lvl}</span><div class="ttl">${p.title}</div></div></div><p class="bio">${p.bio}</p><div class="rec">${r.l?`<span class="bdg">🏅 Vaincu ${r.l} fois</span>`:'<span class="bdg no">Jamais vaincu</span>'} · ${r.w} défaite${r.w>1?'s':''} pour toi</div>`}else oc.style.display='none'}
+ document.getElementById('players').innerHTML=`<div class="powtag">Partie : ${powLabel()}</div>`+[0,1].map(i=>`<div class="pl"><span class="dot ${PL[i]}"></span><div><b>${AI&&PL[i]===ME?PR().ico+' '+PR().name:AI?'Toi ('+NAMES[PL[i]]+')':NAMES[PL[i]]}</b><div class="meta">${S.cd[i]>0?`Recharge : ${S.cd[i]} tour(s)`:'⚡ Pouvoir prêt'}</div></div></div>`).join('');
+ document.getElementById('log').innerHTML=S.log.map(t=>`<div>${t}</div>`).join('');
+ const ui=document.getElementById('uinfo');ui.style.display='none';
+ if(false){const fp=fusePreview();const ok=canObserve();const who=AI?['R']:['R','J'];
+  ui.innerHTML=`<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:260px">⛓ <b>Univers intriqués</b> : rotations, passages à plat et voyages dans le passé se reproduisent dans l'autre univers, les jetons restent indépendants. Tu joues un coup dans chaque univers, un alignement ne compte que s'il survit à l'interférence.<br>⧉ <b>Interférence</b> ${S.bifTurns>0?`automatique dans ${Math.ceil(S.bifTurns/2)} tour${Math.ceil(S.bifTurns/2)>1?'s':''}`:'imminente'} : cases identiques conservées, cases différentes détruites. ${S.bifGrace>0?'<b>👁 Observer</b> sera possible après un tour de grâce.':'<b>N’importe quel joueur peut 👁 Observer à tout moment</b> pour la déclencher tout de suite.'}</div>
+  <div style="text-align:center"><small style="display:block;color:var(--muted);margin-bottom:3px">Si l'interférence avait lieu maintenant</small>${miniD(fp.grid,fp.gravity)}<small style="display:block;margin-top:3px;color:var(--ink)">Conservés R ${fp.kept.R} · J ${fp.kept.J} — Détruits R ${fp.lost.R} · J ${fp.lost.J}${fp.wins.length?` — <b>${fp.wins.map(x=>NAMES[x]).join(' et ')} aligne 4 !</b>`:''}</small></div>
+  <div style="display:flex;flex-direction:column;gap:6px">${who.map(x=>`<button class="j" data-a="observe" data-p="${x}" ${ok?'':'disabled'}><span class="dot ${x}" style="width:10px;height:10px;vertical-align:middle"></span> 👁 ${NAMES[x]} observe</button>`).join('')}</div></div>`}
+ document.getElementById('banner').style.display=S.over?'block':'none';{const b=document.getElementById('shbtn');if(b)b.style.display=S.over&&AI&&!TUT&&S.over.winner===HC?'inline-block':'none'}
+ document.getElementById('bannerText').textContent=S.over?(S.over.draw?'Partie nulle.':(AI&&S.over.winner===ME?`${PR().ico} ${PR().name} gagne !`:AI?`Tu as battu ${PR().name} !`:`${NAMES[S.over.winner]} gagne !`)+(S.endQ?`  « ${S.endQ} »`:'')):'';
+ scheduleAI();
+ tutRender();
+ for(const e of S.fx){const el=document.getElementById('uni-'+e.u);if(el){const fx=el.querySelector('.fx');fx.innerHTML='';const d=document.createElement('div');d.textContent=e.t;fx.appendChild(d)}}S.fx=[];
+}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const a=t.dataset.a;if(a==='rules'){document.getElementById('rmodal').classList.add('on');return}if(a==='rclose'){document.getElementById('rmodal').classList.remove('on');return}if(a==='tut'){document.getElementById('smodal').classList.remove('on');tutStart(0);return}if(a==='setup'){setupOpen();return}if(a==='sclose'){document.getElementById('smodal').classList.remove('on');return}if(a==='sopp'){SEL.ai=+t.dataset.k;setupRender();return}if(a==='scol'){SEL.hc=t.dataset.k;setupRender();return}if(a==='spre'){const pp=PRESETS.find(x=>x[0]===t.dataset.k);SEL.pow={};for(const[k]of POWINFO)SEL.pow[k]=pp[3][k]?1:0;setupRender();return}if(a==='sgo'){setupGo();return}if(a==='share'){shareCard();return}if(a==='shclose'){document.getElementById('shmodal').classList.remove('on');return}if(a==='shshare'){shareDo('share');return}if(a==='shdl'){shareDo('dl');return}if(a==='shcopy'){shareDo('copy');return}if(a==='tutstop'){tutStop();return}if(a==='tutre'&&TUT){tutStart(TUT.i);return}if(a==='tutnext'&&TUT){tutStart(TUT.i+1);return}if(a==='tmnext'){tmHide();return}if(TM_OPEN||(S&&S.busy))return;if(a==='frise'){tmShow(frontHTML());return}const u=+t.dataset.u;if(NOHOVER&&(a==='slot'||a==='hole')){const k=previewFor(t,true);if(k&&PREV.key!==k){previewFor(t);return}}if(a!=='new'&&AI&&S&&!S.over&&actor()===ME)return;
+ const tog=(k,extra)=>{S.mode=S.mode&&S.mode.kind===k&&S.mode.u===u?null:Object.assign({kind:k,u},extra);render()};
+ switch(a){
+  case'slot':playLine(u,+t.dataset.l);break;
+  case'hole':clickHole(u,+t.dataset.r,+t.dataset.c);break;
+  case'rot':tog('rot',{});break;
+  case'stand':doStand(u,t.dataset.k);break;
+  case'rotk':doRotate(u,t.dataset.k);break;
+  case'past':tog('past',{k:null});break;
+  case'pastk':S.mode={kind:'past',u,k:+t.dataset.k,m:+t.dataset.m};vfx('rewind',`⟲ Il y a ${t.dataset.m} manche${+t.dataset.m>1?'s':''}`,'choisis ta colonne dans le passé',u);render();break;
+  case'loop':tog('loop',{});break;
+  case'loopd':doLoop(u,+t.dataset.d);break;
+  case'loopi':S.mode={kind:'loopret',u:0,idx:+t.dataset.k};render();break;
+  case'loopkeep':doLoopReturn(null,null);break;
+  case'observe':doObserve(+t.dataset.k);break;
+  case'futd':S.mode.delay=+t.dataset.d;render();break;
+  case'dup':tog('bif',{first:null,k:null,m:0});break;
+  case'bifm':S.mode={kind:'bif',u,first:null,m:+t.dataset.m,k:t.dataset.k!=null?+t.dataset.k:null};render();break;
+  case'swap':doSwap();break;
+  case'col':doCollapse(u);break;
+  case'floor':chooseFloor(u,t.dataset.k);break;
+  case'link':doLink(u);break;
+  case'cancel':S.mode=null;render();break;
+  case'new':if(TUT){TUT=null;document.getElementById('tut').className=''}newGame();break}});
+document.addEventListener('mouseover',e=>{if(AI&&S&&actor()===ME)return;document.querySelectorAll('.pv').forEach(x=>x.style.display='none');if(!S||S.over||S.busy)return;
+ const t=e.target.closest('.slot,.hole');if(!t)return;previewFor(t);const i=+t.dataset.u,V=viewOf(i);if(S.mode&&S.mode.kind==='future')return;let tg;const g=V.gravity;
+ if(t.classList.contains('slot'))tg=landingG(V.grid,g,+t.dataset.l);else if(g==='flat')tg=V.grid[+t.dataset.r][+t.dataset.c]?null:[+t.dataset.r,+t.dataset.c];else tg=landingG(V.grid,g,lineOf(g,+t.dataset.r,+t.dataset.c));
+ if(!tg)return;const pv=document.querySelector(`#uni-${i} .pv`);pv.className='pv '+cur();pv.style.left=(P+tg[1]*ST)+'px';pv.style.top=(P+tg[0]*ST)+'px';pv.style.display='block'});
+let ME='J',OPP='R';
+function winnerOf(grid){let r=null;for(const f of fours(grid)){if(r&&r!==f.p)return'D';r=f.p}return r}
+function evalGrid(grid,g){let sc=0;const D=[[0,1],[1,0],[1,1],[1,-1]];
+ const playable=(r,c)=>{const l=lineOf(g,r,c);const t=landingG(grid,g,l);return t&&t[0]===r&&t[1]===c};
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++)for(const[dr,dc]of D){const er=r+dr*3,ec=c+dc*3;if(er<0||er>=N||ec<0||ec>=N)continue;
+  let me=0,op=0,em=null;for(let k=0;k<4;k++){const x=grid[r+dr*k][c+dc*k];if(!x)em=[r+dr*k,c+dc*k];else if(x.p===ME)me++;else op++}
+  if(me&&op)continue;
+  if(me===3&&em)sc+=playable(em[0],em[1])?70:25;else if(me===2)sc+=6;else if(me===1)sc+=1;
+  if(op===3&&em)sc-=playable(em[0],em[1])?90:32;else if(op===2)sc-=7;else if(op===1)sc-=1}
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=grid[r][c];if(x){const w=(3-Math.abs(3-r))+(3-Math.abs(3-c));sc+=x.p===ME?w:-w}}
+ return sc}
+const ORDER=[3,2,4,1,5,0,6];
+function searchG(grid,g,pl,depth,a,b){const w=winnerOf(grid);if(w==='D')return 0;if(w)return w===ME?1e6+depth:-1e6-depth;
+ if(depth===0)return evalGrid(grid,g);
+ let best=pl===ME?-Infinity:Infinity,any=false;
+ for(const l of ORDER){const t=landingG(grid,g,l);if(!t)continue;any=true;const ng=cloneGrid(grid);ng[t[0]][t[1]]={id:0,p:pl};
+  const v=searchG(ng,g,pl===ME?OPP:ME,depth-1,a,b);
+  if(pl===ME){if(v>best)best=v;if(best>a)a=best}else{if(v<best)best=v;if(best<b)b=best}
+  if(a>=b)break}
+ return any?best:evalGrid(grid,g)}
+function simulate(act){const saved=S;S=structuredClone(saved);SIM=true;let res;try{execAct(act)}catch(e){S.bad=true}finally{res=S;S=saved;SIM=false}return res}
+function execAct(a){const i=a.u;
+ if(a.t==='drop')playLine(i,a.line);else if(a.t==='place'){clickHole(i,a.r,a.c);if(a.floor&&S.awaitFloor===i)chooseFloor(i,a.floor)}else if(a.t==='rot')doRotate(i,a.kind);else if(a.t==='flatc'){doRotate(i,'flat');clickHole(i,a.r,a.c);if(S.awaitFloor===i)chooseFloor(i,a.floor)}
+ else if(a.t==='past')doTravel(i,a.k,a.m,a.line);else if(a.t==='fut')sendFuture(i,a.r,a.c,a.d);else if(a.t==='loopc'){doLoop(i,a.d);playLine(i,a.line)}else if(a.t==='standc')doStand(i,a.kind);else if(a.t==='loopret')doLoopReturn(a.idx,a.line);else if(a.t==='obs')doObserve(a.keep);else if(a.t==='bif')doBif(i,a.l1,a.l2);else if(a.t==='bifp')doBifPast(i,a.k,a.m,a.line);else if(a.t==='swap')doSwap();else if(a.t==='col')doCollapse(i);else if(a.t==='link')doLink(i)}
+function aiCandidates(){const acts=[];
+ if(S.us.length===2&&!S.over){const A=S.us[0],Bu=S.us[1];if(A.gravity!=='flat'){for(let l=0;l<N;l++)if(landing(A,l)||landing(Bu,l))acts.push({t:'drop',u:0,line:l});acts.push({t:'obs',u:0,keep:0},{t:'obs',u:0,keep:1});if(!jokerBlock(0)&&pw('rot'))for(const kind of['ccw','cw','half'])acts.push({t:'rot',u:0,kind,j:4})}return acts}
+ for(const i of S.pend){const u=S.us[i];
+  if(u.gravity==='flat'){for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!u.grid[r][c]){if((FLATMODE==='launcher'&&u.flat===2)||(FLATMODE==='opp'&&u.flat===1))for(const floor of['none','ccw','cw','half'])acts.push({t:'place',u:i,r,c,floor});else acts.push({t:'place',u:i,r,c})}}
+  else for(let l=0;l<N;l++)if(landing(u,l))acts.push({t:'drop',u:i,line:l});
+  if(u.gravity==='flat'&&S.awaitFloor==null&&S.afterRot!==i&&u.flat<=FLATN-2)for(const k of['none','ccw','cw','half'])acts.push({t:'standc',u:i,kind:k});
+  if(jokerBlock(i))continue;
+  if(S.mood&&(S.tn||0)<2*S.mood.patience)continue;
+  if(u.gravity==='flat')continue;
+  if(pw('rot'))for(const kind of['ccw','cw','half'])acts.push({t:'rot',u:i,kind,j:4});
+  if(pw('flat')&&u.gravity!=='flat'&&S.us.length<2)for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!u.grid[r][c])for(const floor of(FLATMODE==='launcher'?['none','ccw','cw','half']:[undefined]))acts.push({t:'flatc',u:i,r,c,floor,j:FLATCD});
+  if(u.gravity!=='flat'){
+   if(pw('past'))for(const m of[1,2]){const o=pastOption(i,m);if(o.k===undefined)continue;const sn=u.history[o.k];for(let l=0;l<N;l++)if(landingG(sn.grid,sn.gravity,l))acts.push({t:'past',u:i,k:o.k,m,line:l,j:2+m})}
+   if(canLoop(i))for(const d of[2,3])for(let l=0;l<N;l++)if(landing(u,l))acts.push({t:'loopc',u:i,d,line:l,j:LOOPCD[S.turn]})
+   if(pw('dup')&&S.us.length<2)for(let l1=0;l1<N;l1++)for(let l2=0;l2<N;l2++)if(l1!==l2&&landing(u,l1)&&landing(u,l2))acts.push({t:'bif',u:i,l1,l2,j:BIFCD})}
+}
+ return acts}
+function aiValue(res,a,D){if(res.bad)return-Infinity;
+ if(res.loop&&res.loop.ready){const w=winnerOf(res.us[0].grid);const own=PL[res.loop.owner];if(w===own)return own===ME?9e6:-9e6}
+ if(res.over){if(res.over.draw)return 0;return res.over.winner===ME?1e7:-1e7}
+ const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():searchG(U.grid,U.gravity,(res.turn===S.turn&&res.pend.includes(i))?ME:OPP,D,-Infinity,Infinity);
+ let v;
+ if(res.us.length===2){v=0.5*sv(res.us[0],0)+0.5*sv(res.us[1],1);if(PL[res.turn]===OPP)v+=linkBonus(res)}
+ else v=sv(res.us[0],0);
+ if(a.t==='loopc')v+=LOOPB*((S.mood&&S.mood.loop)||1);
+ if(S.mood&&S.mood.like[a.t])v+=S.mood.like[a.t];
+ {const Pq=PR();if(Pq.like[a.t])v+=Pq.like[a.t];if(a.j)v-=Pq.jc*a.j}
+ return v}
+function winCols(U){const g=U.gravity;if(g==='flat')return[];const out=[];for(let v=0;v<N;v++){const l=lineForVisual(g,v);const t=landingG(U.grid,g,l);if(!t)continue;const ng=cloneGrid(U.grid);ng[t[0]][t[1]]={id:0,p:ME};if(winnerOf(ng)===ME)out.push(v)}return out}
+function linkBonus(res){if(res.us.length<2)return 0;const a=winCols(res.us[0]),b=winCols(res.us[1]);if(!a.length||!b.length)return 0;if(a.length===1&&b.length===1&&a[0]===b[0])return 0;return 5e5}
+function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){const ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(ds.length)return pick(ds)}const D=Pp.D;S._base=S.us.map((U,i)=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,S.pend.includes(i)?ME:OPP,D,-Infinity,Infinity));const acts=aiCandidates();let best=null,bv=-Infinity,bestDrop=-Infinity;
+ const scored=[];for(const a of acts){const v=aiValue(simulate(a),a,D)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push([v,a]);
+  if(a.t==='drop'||a.t==='place'){if(v>bestDrop)bestDrop=v}
+  if(v>bv){bv=v;best=a}}
+ if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(([v])=>v>=bv-Pp.vr);if(near.length>1){const pk=near[Math.floor(Math.random()*near.length)];best=pk[1];bv=pk[0]}}
+ if(best&&best.j&&bv<1e6&&bv<bestDrop+25){let bd=null,bdv=-Infinity;for(const a of acts)if(a.t==='drop'||a.t==='place'){const v=aiValue(simulate(a),a,D);if(v>bdv){bdv=v;bd=a}}if(bd)best=bd}
+ return best}
+function aiTurn(){aiTimer=null;if(!AI||S.over||S.busy||actor()!==ME)return;if(S.loopRet){const o=aiLoopReturn();log(o.idx==null?`${PR().ico} ${PR().name} garde ce futur.`:`${PR().ico} ${PR().name} déplace son coup d'essai.`);doLoopReturn(o.idx,o.line);return}S.mode=null;const a=aiChoose();if(!a)return;
+ const lbl={flatc:'met le plateau en apesanteur',rot:'tourne le plateau',standc:'redresse le plateau',past:'voyage dans le passé',fut:'envoie un jeton dans le futur',loopc:'voyage dans le futur',bif:'dédouble un jeton entre deux réalités',obs:'observe et choisit une réalité',bifp:'bifurque dans le passé',swap:'prend ton premier jeton (échange)',col:'provoque un effondrement',link:'intrique les univers'}[a.t];if(lbl){log(`${PR().ico} ${PR().name} ${lbl}.`);if(Math.random()<.6)say('pow')}
+ if(a.t==='past'||a.t==='bifp'){aiTimer=1;S.mode={kind:a.t==='past'?'past':'bif',u:a.u,k:a.k,m:a.m};fx(a.u,`${PR().ico} ${PR().name} remonte de ${a.m} manche${a.m>1?'s':''}`);render();
+  const sn=S.us[a.u].history[a.k];const tg=landingG(sn.grid,sn.gravity,a.line);const pv=document.querySelector(`#uni-${a.u} .pv`);if(tg&&pv){pv.className='pv '+ME;pv.style.left=(P+tg[1]*ST)+'px';pv.style.top=(P+tg[0]*ST)+'px';pv.style.display='block'}
+  const g=gid;aiTimer=setTimeout(()=>{aiTimer=null;if(g!==gid)return;if(pv)pv.style.display='none';execAct(a)},2200);return}
+ execAct(a)}
+function aiShouldObserve(){if(!canObserve())return false;const fp=fusePreview();if(fp.wins.includes(ME))return true;if(fp.wins.length)return false;const cur=S.us.reduce((t,U)=>t+evalGrid(U.grid,U.gravity),0)/2;return evalGrid(fp.grid,fp.gravity)>cur+40}
+function scheduleAI(){if(SIM||!AI||!S||S.over||S.busy||TM_OPEN||actor()!==ME||aiTimer)return;aiTimer=setTimeout(aiTurn,700)}
+
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.pow){SEL.pow[t.dataset.pow]=t.checked?1:0;setupRender()}});
+document.getElementById('opp').addEventListener('change',e=>{AI=+e.target.value;if(!AI)setSides('R');saveSetup();clearTimeout(aiTimer);aiTimer=null;if(TUT){TUT=null;document.getElementById('tut').className=''}newGame()});
+document.getElementById('rmodal').addEventListener('click',e=>{if(e.target.id==='rmodal')e.currentTarget.classList.remove('on')});
+setSides(AI?HC:'R');document.getElementById('opp').value=String(AI);newGame();
+for(const id of['smodal','shmodal'])document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)e.currentTarget.classList.remove('on')});
+try{if(!localStorage.getItem('p4d_rules')){document.getElementById('rmodal').classList.add('on');localStorage.setItem('p4d_rules','1')}else setupOpen()}catch(e){setupOpen()}
+</script>
+</body>
+</html>
