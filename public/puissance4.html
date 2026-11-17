@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Puissance 4 dimensionnel</title>
+<meta name="description" content="Un Puissance 4 où l'on peut tourner le plateau, voyager dans le temps et créer des réalités parallèles.">
+<meta property="og:title" content="Puissance 4 dimensionnel">
+<meta property="og:description" content="Un Puissance 4 où l'on peut tourner le plateau, voyager dans le temps et créer des réalités parallèles.">
+<meta property="og:type" content="website">
 <style>
 :root{--bg:#0a0c0b;--card:#111513;--ink:#dcd9cf;--muted:#858c86;--line:#26302b;--board:#1d2b33;--board2:#121c22;--hole:#06090b;--red:#c9433b;--yel:#e8b93a;--acc:#7fb7bd;--fut:#9a86ff;--past:#d29a4a;--warn:#e3a24b;--serif:Georgia,"Times New Roman",serif;--mono:ui-monospace,Menlo,Consolas,monospace;color-scheme:dark}
 *{box-sizing:border-box}
@@ -255,7 +259,16 @@ button.j.big{font-size:15px;padding:10px 18px}
   <button class="j" data-a="tut">🎓 Tutoriel</button>
   <button class="j" data-a="rules">📖 Règles</button>
   <button class="j" data-a="setup">▶ Nouvelle partie</button>
+  <button class="j" id="p4link" title="Partager le lien du jeu">🔗 Partager le jeu</button>
 </header>
+<script>
+document.getElementById('p4link').addEventListener('click',async e=>{
+  const b=e.currentTarget,url=location.origin+'/puissance4',txt='Viens jouer au Puissance 4 dimensionnel : on peut tourner le plateau et voyager dans le temps !';
+  if(navigator.share){try{await navigator.share({title:'Puissance 4 dimensionnel',text:txt,url});return}catch(err){if(err&&err.name==='AbortError')return}}
+  try{await navigator.clipboard.writeText(url);b.textContent='✓ Lien copié'}catch(_){prompt('Copie ce lien :',url)}
+  setTimeout(()=>b.textContent='🔗 Partager le jeu',2000);
+});
+</script>
 <div id="banner"><div><span id="bannerText"></span><button class="j" data-a="new">↺ Rejouer</button> <button class="j" data-a="setup">▶ Autre partie</button> <button class="j on" id="shbtn" data-a="share" style="display:none">📸 Partager ma victoire</button></div></div>
 <div id="vfx"><div class="veil"></div><div class="ring"><div class="hand"></div></div><div class="cap"></div></div>
 <div id="tmodal"><div class="box"></div></div>

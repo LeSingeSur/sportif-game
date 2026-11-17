@@ -11,6 +11,8 @@ app.set('trust proxy', true); // Récupère la vraie IP derrière Koyeb
 
 // Helper IP
 function getIP(req){ return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '?'; }
+// Lien direct à partager : /puissance4 (ou /p4) → le jeu
+app.get(['/puissance4', '/p4'], (req, res) => res.redirect('/puissance4.html'));
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
