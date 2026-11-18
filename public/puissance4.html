@@ -269,6 +269,35 @@ button.j.big{font-size:15px;padding:10px 18px}
  .uni .tl,.uni .uhead .tag{display:none}.uni .uhead{margin-bottom:0}
  #drawer.on{max-height:36vh}
 }
+/* ── Écran d'accueil du jeu ── */
+#home{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 20px calc(24px + env(safe-area-inset-bottom));background:radial-gradient(ellipse 90% 60% at 50% 25%,rgba(127,183,189,.14),transparent 70%),radial-gradient(ellipse 70% 50% at 50% 100%,rgba(154,134,255,.12),transparent 70%),#0a0c0b;text-align:center;overflow:auto}
+#home.on{display:flex}
+#home .hback{position:absolute;top:14px;left:16px;color:var(--muted);text-decoration:none;font-size:14px}
+#home .ht{font:400 clamp(30px,9vw,46px) var(--serif);letter-spacing:.22em;text-transform:uppercase;margin:0;line-height:1.05}
+#home .hs{font:12px var(--mono);letter-spacing:.4em;color:var(--acc);text-transform:uppercase;margin-top:6px}
+#home .hdots{display:flex;gap:8px;justify-content:center;margin:4px 0 2px}#home .hdots i{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+#home .hdots i:nth-child(odd){background:var(--red)}#home .hdots i:nth-child(even){background:var(--yel)}#home .hdots i:nth-child(3){transform:translateY(-8px)}
+#home .hp{color:var(--muted);max-width:330px;margin:0;font-size:15px;line-height:1.45}
+#home .hbtns{display:flex;flex-direction:column;gap:12px;width:min(320px,100%);margin-top:6px}
+#home .hb{font:600 18px system-ui,sans-serif;padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+#home .hb small{font-size:12px;font-weight:400;color:var(--muted)}
+#home .hb.main{background:linear-gradient(135deg,#7fb7bd,#9a86ff);color:#0a0c0b;border:0;font-size:20px;box-shadow:0 10px 34px rgba(127,183,189,.25)}#home .hb.main small{color:rgba(10,12,11,.7)}
+#home .hl2{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+#home .hl2 button{background:none;border:0;color:var(--muted);font:14px system-ui,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px}
+/* ── Nouvelle partie simplifiée ── */
+#smodal .adv{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:4px 12px 10px}
+#smodal .adv>summary{cursor:pointer;padding:8px 0;color:var(--muted);font-size:14px;list-style:none}#smodal .adv>summary::before{content:'⚙ '}#smodal .adv[open]>summary{color:var(--ink)}
+#smodal .sgo-bar{position:sticky;bottom:-18px;margin:16px -20px -18px;padding:12px 20px;background:linear-gradient(transparent,#0f1311 30%);display:flex;gap:10px;justify-content:center}
+#smodal .sgo-bar .j.big{flex:1;max-width:360px;font-size:17px;padding:13px 18px;border-radius:12px}
+@media (max-width:719px){
+ .mod .box{max-height:none;height:100%;width:100%;border-radius:0;padding:16px 16px 18px}.mod{padding:0}
+ #smodal .oppgrid{grid-template-columns:1fr;gap:6px}
+ #smodal .oc{flex-direction:row;justify-content:flex-start;text-align:left;padding:10px 12px;gap:10px}#smodal .oc .i{font-size:24px}#smodal .oc small{margin-left:auto}
+ #smodal h2{font-size:19px}
+ #smodal .sgo-bar{margin:16px -16px -18px;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+ #oppcard .bio,#oppcard .rec{display:none}#oppcard .opp{margin:0}
+ #log{max-height:120px;overflow:auto}
+}
 </style>
 </head>
 <body>
@@ -286,6 +315,7 @@ button.j.big{font-size:15px;padding:10px 18px}
   <button class="j" data-a="tut">🎓 Tutoriel</button>
   <button class="j" data-a="rules">📖 Règles</button>
   <button class="j" data-a="setup">▶ Nouvelle partie</button>
+  <button class="j" id="p4home">🏠 Menu du jeu</button>
   <button class="j" id="p4link" title="Partager le lien du jeu">🔗 Partager le jeu</button>
   </div>
 </header>
@@ -297,6 +327,20 @@ document.getElementById('p4link').addEventListener('click',async e=>{
   setTimeout(()=>b.textContent='🔗 Partager le jeu',2000);
 });
 </script>
+<div id="home" class="on">
+  <a class="hback" href="index.html">‹ Grand Chelem</a>
+  <div>
+    <div class="hdots"><i></i><i></i><i></i><i></i></div>
+    <h1 class="ht">Puissance 4</h1>
+    <div class="hs">dimensionnel</div>
+  </div>
+  <p class="hp">Aligne 4 jetons… en tournant le plateau et en voyageant dans le temps.</p>
+  <div class="hbtns">
+    <button class="hb main" id="h-play">▶ Jouer<small>contre l'ordinateur ou à deux</small></button>
+    <button class="hb" id="h-tut">🎓 Tutoriel<small>7 étapes courtes pour apprendre</small></button>
+  </div>
+  <div class="hl2"><button id="h-rules">📖 Règles</button><button id="h-share">🔗 Partager</button></div>
+</div>
 <div id="banner"><div><span id="bannerText"></span><button class="j" data-a="new">↺ Rejouer</button> <button class="j" data-a="setup">▶ Autre partie</button> <button class="j on" id="shbtn" data-a="share" style="display:none">📸 Partager ma victoire</button></div></div>
 <div id="vfx"><div class="veil"></div><div class="ring"><div class="hand"></div></div><div class="cap"></div></div>
 <div id="drawer"><button class="j dh" data-a="drawer">▾ Réduire</button><div class="dc"></div></div>
@@ -305,7 +349,7 @@ document.getElementById('p4link').addEventListener('click',async e=>{
 <button class="j x" data-a="rclose">Fermer ✕</button>
 <h2>📖 Comment jouer</h2>
 <p class="lead">Un Puissance 4 où l'on peut tourner le plateau, voyager dans le temps et créer des réalités parallèles.</p>
-<p><button class="j on" data-a="tut">🎓 Tutoriel guidé (7 étapes courtes)</button> <button class="j" data-a="setup">▶ Jouer directement</button></p>
+<p><button class="j on" data-a="tut">🎓 Tutoriel guidé (7 étapes courtes)</button> <button class="j" data-a="setup">▶ Jouer</button></p>
 <h3>🎯 Le but</h3>
 <p>Comme au Puissance 4 : aligner <b>4 jetons</b> de ta couleur (ligne, colonne ou diagonale).</p>
 <h3>🔁 À ton tour</h3>
@@ -350,12 +394,14 @@ document.getElementById('p4link').addEventListener('click',async e=>{
 <div id="smodal" class="mod"><div class="box">
 <button class="j x" data-a="sclose">✕</button>
 <h2>▶ Nouvelle partie</h2>
-<h3>Ton adversaire</h3><div class="oppgrid" id="sopp"></div>
-<h3>Ta couleur</h3><div class="presets" id="scol"></div>
+<h3>Touche ton adversaire pour commencer</h3><div class="oppgrid" id="sopp"></div>
+<details class="adv"><summary>Réglages : couleur, pouvoirs, options</summary>
+<h3>Ta couleur (contre l'ordinateur)</h3><div class="presets" id="scol"></div>
 <h3>Les pouvoirs</h3><p class="lead">Commence sans pouvoirs, ou avec un seul, pour te familiariser. Tu pourras tous les activer ensuite.</p>
 <div class="presets" id="spre"></div><div class="powl" id="spow"></div>
 <h3>Options</h3><div class="powl"><label><input type="checkbox" data-opt="pastWarn"> <span>⚠ <b>Alerte Passé</b> <small>— prévenir quand l’adversaire peut gagner en remontant dans le passé</small></span></label></div>
-<p style="margin-top:14px"><button class="j on big" data-a="sgo">▶ Commencer</button> <button class="j" data-a="tut">🎓 Faire le tutoriel d’abord</button></p>
+</details>
+
 </div></div>
 <div id="shmodal" class="mod"><div class="box">
 <button class="j x" data-a="shclose">✕</button>
@@ -472,7 +518,7 @@ let SEL={ai:AI,pow:{...POW},hc:HC,opt:{...OPT}};
 function setupOpen(){SEL={ai:AI,pow:{...POW},hc:HC,opt:{...OPT}};document.getElementById('rmodal').classList.remove('on');setupRender();document.getElementById('smodal').classList.add('on')}
 function setupRender(){const rec=getRec();
  document.getElementById('sopp').innerHTML=[0,1,2,3,4].map(k=>{if(!k)return`<button class="oc ${SEL.ai===0?'on':''}" data-a="sopp" data-k="0"><span class="i">👥</span><b>Humain</b><small>à deux sur le même écran</small></button>`;const p=PROFILES[k],r=rec[p.id]||{l:0};return`<button class="oc ${SEL.ai===k?'on':''}" data-a="sopp" data-k="${k}"><span class="i">${p.ico}</span><b>${p.name}</b><span class="lvl l${k}">${p.lvl}</span><small>${r.l?'🏅 vaincu '+r.l+' fois':'jamais vaincu'}</small></button>`}).join('');
- document.getElementById('scol').innerHTML=SEL.ai?[['R','🔴 Rouge','Tu commences.'],['J','🟡 Jaune','Tu joues en second, mais tu commences avec ⚡5 d’énergie (Rouge : ⚡1).']].map(([k,n,d])=>`<button class="oc ${SEL.hc===k?'on':''}" data-a="scol" data-k="${k}"><b>${n}</b><small>${d}</small></button>`).join(''):'<p class="lead">À deux sur le même écran : Rouge commence (⚡1), Jaune joue en second mais commence avec ⚡5.</p>';
+ document.getElementById('scol').innerHTML=1?[['R','🔴 Rouge','Tu commences.'],['J','🟡 Jaune','Tu joues en second, mais tu commences avec ⚡5 d’énergie (Rouge : ⚡1).']].map(([k,n,d])=>`<button class="oc ${SEL.hc===k?'on':''}" data-a="scol" data-k="${k}"><b>${n}</b><small>${d}</small></button>`).join(''):'<p class="lead">À deux sur le même écran : Rouge commence (⚡1), Jaune joue en second mais commence avec ⚡5.</p>';
  {const cb=document.querySelector('[data-opt="pastWarn"]');if(cb)cb.checked=!!SEL.opt.pastWarn}
  const same=(a,b)=>POWINFO.every(([k])=>!!a[k]===!!b[k]);
  document.getElementById('spre').innerHTML=PRESETS.map(([id,n,d,pp])=>`<button class="oc ${same(SEL.pow,pp)?'on':''}" data-a="spre" data-k="${id}"><b>${n}</b><small>${d}</small></button>`).join('');
@@ -890,7 +936,7 @@ function render(){if(SIM)return;fitBoard();{const inPast=S.mode&&((S.mode.kind==
  for(const e of S.fx){const el=document.getElementById('uni-'+e.u);if(el){const fx=el.querySelector('.fx');fx.innerHTML='';const d=document.createElement('div');d.textContent=e.t;fx.appendChild(d)}}S.fx=[];
 }
 
-document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const a=t.dataset.a;if(a==='rules'){document.getElementById('rmodal').classList.add('on');return}if(a==='rclose'){document.getElementById('rmodal').classList.remove('on');return}if(a==='menu'){document.querySelector('header').classList.toggle('open');return}if(a==='drawer'){DRMIN=!DRMIN;render();return}if(a==='tutmin'&&TUT){TUT.min=!TUT.min;tutRender();return}if(a==='tut'){document.getElementById('smodal').classList.remove('on');tutStart(0);return}if(a==='setup'){setupOpen();return}if(a==='sclose'){document.getElementById('smodal').classList.remove('on');return}if(a==='sopp'){SEL.ai=+t.dataset.k;setupRender();return}if(a==='scol'){SEL.hc=t.dataset.k;setupRender();return}if(a==='spre'){const pp=PRESETS.find(x=>x[0]===t.dataset.k);SEL.pow={};for(const[k]of POWINFO)SEL.pow[k]=pp[3][k]?1:0;setupRender();return}if(a==='sgo'){setupGo();return}if(a==='share'){shareCard();return}if(a==='shclose'){document.getElementById('shmodal').classList.remove('on');return}if(a==='shshare'){shareDo('share');return}if(a==='shdl'){shareDo('dl');return}if(a==='shcopy'){shareDo('copy');return}if(a==='tutstop'){tutStop();return}if(a==='tutre'&&TUT){tutStart(TUT.i);return}if(a==='tutnext'&&TUT){tutStart(TUT.i+1);return}if(a==='tmnext'){tmHide();return}if(TM_OPEN||(S&&S.busy))return;if(a==='frise'){tmShow(frontHTML());return}const u=+t.dataset.u;if(NOHOVER&&(a==='slot'||a==='hole')){const k=previewFor(t,true);if(k&&PREV.key!==k){previewFor(t);return}}if(a!=='new'&&AI&&S&&!S.over&&actor()===ME)return;
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const a=t.dataset.a;if(a==='rules'){document.getElementById('rmodal').classList.add('on');return}if(a==='rclose'){document.getElementById('rmodal').classList.remove('on');return}if(a==='menu'){document.querySelector('header').classList.toggle('open');return}if(a==='drawer'){DRMIN=!DRMIN;render();return}if(a==='tutmin'&&TUT){TUT.min=!TUT.min;tutRender();return}if(a==='tut'){document.getElementById('smodal').classList.remove('on');tutStart(0);return}if(a==='setup'){setupOpen();return}if(a==='sclose'){document.getElementById('smodal').classList.remove('on');return}if(a==='sopp'){SEL.ai=+t.dataset.k;setupGo();return}if(a==='scol'){SEL.hc=t.dataset.k;setupRender();return}if(a==='spre'){const pp=PRESETS.find(x=>x[0]===t.dataset.k);SEL.pow={};for(const[k]of POWINFO)SEL.pow[k]=pp[3][k]?1:0;setupRender();return}if(a==='sgo'){setupGo();return}if(a==='share'){shareCard();return}if(a==='shclose'){document.getElementById('shmodal').classList.remove('on');return}if(a==='shshare'){shareDo('share');return}if(a==='shdl'){shareDo('dl');return}if(a==='shcopy'){shareDo('copy');return}if(a==='tutstop'){tutStop();return}if(a==='tutre'&&TUT){tutStart(TUT.i);return}if(a==='tutnext'&&TUT){tutStart(TUT.i+1);return}if(a==='tmnext'){tmHide();return}if(TM_OPEN||(S&&S.busy))return;if(a==='frise'){tmShow(frontHTML());return}const u=+t.dataset.u;if(NOHOVER&&(a==='slot'||a==='hole')){const k=previewFor(t,true);if(k&&PREV.key!==k){previewFor(t);return}}if(a!=='new'&&AI&&S&&!S.over&&actor()===ME)return;
  const tog=(k,extra)=>{S.mode=S.mode&&S.mode.kind===k&&S.mode.u===u?null:Object.assign({kind:k,u},extra);render()};
  switch(a){
   case'slot':playLine(u,+t.dataset.l);break;
@@ -1001,7 +1047,16 @@ document.getElementById('opp').addEventListener('change',e=>{AI=+e.target.value;
 document.getElementById('rmodal').addEventListener('click',e=>{if(e.target.id==='rmodal')e.currentTarget.classList.remove('on')});
 setSides(AI?HC:'R');document.getElementById('opp').value=String(AI);newGame();
 for(const id of['smodal','shmodal'])document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)e.currentTarget.classList.remove('on')});
-try{if(!localStorage.getItem('p4d_rules')){document.getElementById('rmodal').classList.add('on');localStorage.setItem('p4d_rules','1')}else setupOpen()}catch(e){setupOpen()}
+const HOME=document.getElementById('home');
+function homeShow(){document.querySelector('header').classList.remove('open');HOME.classList.add('on')}
+function homeHide(){HOME.classList.remove('on')}
+{const _go=setupGo,_tut=tutStart;setupGo=function(){homeHide();return _go.apply(this,arguments)};tutStart=function(){homeHide();return _tut.apply(this,arguments)}}
+document.getElementById('h-play').onclick=()=>setupOpen();
+document.getElementById('h-tut').onclick=()=>tutStart(0);
+document.getElementById('h-rules').onclick=()=>document.getElementById('rmodal').classList.add('on');
+document.getElementById('h-share').onclick=()=>document.getElementById('p4link').click();
+document.getElementById('p4home').onclick=homeShow;
+if(window.innerWidth<720){const d=document.querySelector('aside details[open]');if(d)d.removeAttribute('open')}
 </script>
 </body>
 </html>
