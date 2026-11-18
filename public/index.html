@@ -2989,13 +2989,13 @@ function setupSlalom(data){
     if(e.source!==fr.contentWindow||!e.data||e.data.type!=='slalom-done') return;
     window.removeEventListener('message',onMsg);
     fr.remove();
-    const finalScore=Math.max(0,Math.min(100,Math.round(e.data.score||0)));
-    GAME.score=finalScore;setScore(finalScore,true);
-    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent=finalScore;
+    const rawScore=Math.max(0,Math.round(e.data.dist||e.data.score||0));
+    GAME.score=0;setScore(0,true);
+    const vSc=document.getElementById('v-sc');if(vSc)vSc.textContent='…';
     const vName=document.getElementById('v-name');if(vName)vName.textContent='Le Slalom';
     const vSub=document.getElementById('v-sub');if(vSub)vSub.textContent='🏃 Meilleur essai : '+(e.data.dist||0)+' m · palier '+(e.data.palier||1);
     ['v-stat1-val','v-stat2-val','v-stat1-lbl','v-stat2-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-    setVictoryIcon('slalom');submitScore(finalScore);
+    setVictoryIcon('slalom');submitScore(rawScore);
     show('sv');
   }
   window.addEventListener('message',onMsg);
@@ -8252,6 +8252,7 @@ async function submitScore(score){
     const data=await res.json();
     if(data.answer && !GAME.athleteName) GAME.athleteName=data.answer;
     if(data.success){
+      if(Number.isFinite(data.score) && GAME.type==='slalom'){ GAME.score=data.score; setScore(data.score,true); const vSc=document.getElementById('v-sc'); if(vSc)vSc.textContent=data.score; }
       const medals=['🥇','🥈','🥉']; const m=data.rank<=3?medals[data.rank-1]:'🏅';
       document.getElementById('rank-badge').textContent=m+'  '+data.rank+'e sur '+data.total+' joueur'+(data.total>1?'s':'');
     } else document.getElementById('rank-badge').textContent='✅ Score enregistré !';

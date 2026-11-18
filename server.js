@@ -86,12 +86,12 @@ async function saveData() {
   } catch(e) { console.error('Erreur saveData MongoDB:', e.message); }
 }
 
-async function saveScore(athleteId, pseudo, score) {
+async function saveScore(athleteId, pseudo, score, rawScore) {
   if (!db) { saveToFile(); return; }
   try {
     await colScores.updateOne(
       { athleteId },
-      { $push: { scores: { pseudo, score, date: new Date() } } },
+      { $push: { scores: { pseudo, score, ...(Number.isFinite(rawScore)?{rawScore}:{}), date: new Date() } } },
       { upsert: true }
     );
   } catch(e) { console.error('Erreur saveScore:', e.message); }
@@ -270,15 +270,23 @@ function hasFinishedAll(pseudo) {
   const pub = publishedAthletes();
   return pub.length > 0 && pub.every(a => hasPlayed(pseudo, a.id));
 }
+function rankedScoresFor(athlete, list) {
+  if (athlete?.type !== 'slalom') return [...list].sort((a,b) => b.score-a.score);
+  const raw=e=>Number.isFinite(Number(e.rawScore))?Number(e.rawScore):(Number(e.score)||0);
+  const best=Math.max(1,...list.map(raw));
+  return list.map(e=>({...e,rawScore:raw(e),score:Math.round(raw(e)/best*100)})).sort((a,b)=>b.rawScore-a.rawScore);
+}
 function rebuildGlobalScores() {
   const map = {};
   for (const [athleteId, list] of Object.entries(scores)) {
     const athlete = athletes.find(a => String(a.id) === String(athleteId));
     const coeff   = athlete?.coefficient ?? 1;
+    const rankedList=rankedScoresFor(athlete,list);
 
+    // Le Slalom stocke la distance brute puis recalcule : meilleur = 100, autres proportionnels.
     // Dédupliquer : garder uniquement le MEILLEUR score par pseudo pour ce jeu
     const bestPerPseudo = {};
-    for (const entry of list) {
+    for (const entry of rankedList) {
       const key = norm(entry.pseudo);
       if (!bestPerPseudo[key] || entry.score > bestPerPseudo[key].score) {
         bestPerPseudo[key] = entry;
@@ -1192,15 +1200,18 @@ app.post('/api/score', (req, res) => {
   if (!athlete) return res.status(404).json({ error: 'Sportif introuvable' });
   if (hasPlayed(pseudo, athleteId)) return res.status(409).json({ error: 'already_played' });
 
-  const entry = { pseudo: pseudo.trim().slice(0, 20), score: Math.max(0, score), athleteId, athleteName: athlete.answer, date: new Date().toISOString() };
+  const rawScore=athlete.type==='slalom'?Math.max(0,Number(score)||0):undefined;
+  const entry = { pseudo: pseudo.trim().slice(0, 20), score: Math.max(0, score), ...(rawScore!==undefined?{rawScore}:{}), athleteId, athleteName: athlete.answer, date: new Date().toISOString() };
   console.log(`[SCORE] ${entry.pseudo} | ${entry.score}pts | ${athlete.answer} | IP: ${getIP(req)}`);
   if (!scores[athleteId]) scores[athleteId] = [];
   scores[athleteId].push(entry);
-  scores[athleteId].sort((a, b) => b.score - a.score);
+  scores[athleteId].sort((a,b)=>athlete.type==='slalom'?(Number(b.rawScore??b.score)-Number(a.rawScore??a.score)):(b.score-a.score));
   rebuildGlobalScores();
   saveData();
-  saveScore(athleteId, pseudo.trim().slice(0, 20), Math.max(0, score)); // MongoDB async
-  res.json({ success: true, rank: scores[athleteId].indexOf(entry) + 1, total: scores[athleteId].length, answer: athlete.answer });
+  saveScore(athleteId, pseudo.trim().slice(0, 20), Math.max(0, score), rawScore); // MongoDB async
+  const ranked=rankedScoresFor(athlete,scores[athleteId]);
+  const rankedEntry=ranked.find(e=>norm(e.pseudo)===norm(entry.pseudo));
+  res.json({ success:true, rank:ranked.findIndex(e=>norm(e.pseudo)===norm(entry.pseudo))+1, total:ranked.length, score:rankedEntry?.score??entry.score, answer:athlete.answer });
 });
 
 // Scores are only visible if pseudo has finished all games
@@ -1234,7 +1245,7 @@ app.get('/api/scores/:athleteId', (req, res) => {
   if (!isAdmin && pseudo && !hasFinishedAll(pseudo)) {
     return res.json({ locked: true, athlete: a ? { emoji: a.emoji, answer: '???', type: a.type || 'text' } : null, scores: [] });
   }
-  res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: (scores[id] || []).slice(0, 50) });
+  res.json({ athlete: a ? { emoji: a.emoji, answer: a.answer, type: a.type || 'text' } : null, scores: rankedScoresFor(a, scores[id] || []).slice(0, 50) });
 });
 
 // -- SPORTUS (Motus) ------------------------------------------------------
