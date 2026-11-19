@@ -431,7 +431,7 @@ document.getElementById('p4link').addEventListener('click',async e=>{
     </div>
   </aside>
 </main>
-<script>
+<script id="p4main">
 const N=7,PL=['R','J'],NAMES={R:'Rouge',J:'Jaune'};
 const C=40,G=5,P=10,ST=C+G,B=2*P+N*C+(N-1)*G,MX=14,MT=74,MB=36;
 const ROT={ccw:{d:-90,label:'Tourner à gauche',icon:'↺'},cw:{d:90,label:'Tourner à droite',icon:'↻'},half:{d:180,label:'Retourner',icon:'⇅'},flat:{label:'Apesanteur',icon:'◎'}};
@@ -1154,7 +1154,31 @@ function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++
  if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(s=>s.adj!=null&&s.adj>=bv-Pp.vr);if(near.length>1){best=pick(near);bv=best.adj}}
  if(best.a.j&&bv<1e6){let bd=null;for(const s of scored)if((s.a.t==='drop'||s.a.t==='place')&&(!bd||val(s)>val(bd)))bd=s;if(bd&&bv<val(bd)+25)best=bd}
  AIDL=Infinity;return best.a}
-function aiTurn(){aiTimer=null;if(!AI||S.over||S.busy||actor()!==ME)return;if(S.awaitFloor!=null){chooseFloor(S.awaitFloor,aiFloor());return}if(S.loopRet){const o=aiLoopReturn();log(o.idx==null?`${PR().ico} ${PR().name} garde ce futur.`:`${PR().ico} ${PR().name} déplace son coup d'essai.`);doLoopReturn(o.idx,o.line);return}S.mode=null;const a=aiChoose();if(!a)return;
+// ===== Réflexion du bot dans un Web Worker (la page ne se fige plus) =====
+// Le worker charge ce même script avec une fausse page, reçoit l'état de la partie et renvoie le coup choisi.
+const AIW_PRE=`const __st=new Proxy(function(){},{get(t,k){if(k===Symbol.toPrimitive)return()=>'';if(k===Symbol.iterator)return function*(){};if(k==='length')return 0;if(k==='then')return undefined;return __st},apply(){return __st},construct(){return __st},set(){return true}});
+self.window=self;self.document=__st;self.localStorage={getItem(){return null},setItem(){},removeItem(){}};self.innerWidth=1000;self.innerHeight=800;self.matchMedia=()=>__st;self.alert=()=>{};self.confirm=()=>false;self.requestAnimationFrame=()=>0;self.getComputedStyle=()=>__st;self.history=__st;self.location=__st;
+`;
+const AIW_POST=`
+;self.onmessage=e=>{const m=e.data;try{const g=m.g;FLATCD=g.FLATCD;FLATMODE=g.FLATMODE;BIFCD=g.BIFCD;LOOPCD=g.LOOPCD;LOOPB=g.LOOPB;INITCD=g.INITCD;FLATN=g.FLATN;EN=g.EN;CDADJ=g.CDADJ;AI=g.AI;ME=g.ME;OPP=g.OPP;POW=g.POW;HC=g.HC;OPT=g.OPT;idc=g.idc;gid=g.gid;TUT=null;S=m.S;SIM=false;if(m.kind==='choose')S.mode=null;
+ const out=m.kind==='floor'?aiFloor():m.kind==='loopret'?aiLoopReturn():aiChoose();postMessage({id:m.id,out})}catch(err){postMessage({id:m.id,err:String(err&&err.stack||err)})}};`;
+let AIW=null,AIWid=0,AIWcb=null;
+function aiWorker(){if(AIW!==null)return AIW||null;
+ try{if(typeof Worker==='undefined')throw 0;const src=document.getElementById('p4main').textContent;const url=URL.createObjectURL(new Blob([AIW_PRE,src,AIW_POST],{type:'text/javascript'}));AIW=new Worker(url);
+  AIW.onmessage=e=>{const m=e.data;if(AIWcb&&m.id===AIWid){const cb=AIWcb;AIWcb=null;cb(m)}};
+  AIW.onerror=e=>{e.preventDefault&&e.preventDefault();const w=AIW;AIW=false;try{w.terminate()}catch(_){}if(AIWcb){const cb=AIWcb;AIWcb=null;cb({err:'worker'})}}}
+ catch(e){AIW=false}return AIW||null}
+const aiLocal=kind=>kind==='floor'?aiFloor():kind==='loopret'?aiLoopReturn():aiChoose();
+function aiAsk(kind,cb){const w=SIM?null:aiWorker();if(!w){cb(aiLocal(kind));return}
+ AIWid++;AIWcb=m=>{if(m.err){console.warn('IA worker :',m.err);AIW=false;cb(aiLocal(kind))}else cb(m.out)};
+ w.postMessage({id:AIWid,kind,S,g:{FLATCD,FLATMODE,BIFCD,LOOPCD,LOOPB,INITCD,FLATN,EN,CDADJ,AI,ME,OPP,POW,HC,OPT,idc,gid}})}
+const aiKey=()=>`${gid}|${S.tn}|${S.turn}|${S.us.map(u=>u.history.length).join(',')}|${S.loopRet?1:0}|${S.awaitFloor}|${S.afterRot}|${S.us.length}`;
+function aiTurn(){aiTimer=null;if(!AI||S.over||S.busy||actor()!==ME)return;const key=aiKey();const kind=S.awaitFloor!=null?'floor':S.loopRet?'loopret':'choose';
+ aiTimer=1;aiAsk(kind,out=>{aiTimer=null;if(!AI||!S||S.over||S.busy||actor()!==ME||aiKey()!==key)return;aiApply(kind,out)})}
+function aiApply(kind,out){
+ if(kind==='floor'){chooseFloor(S.awaitFloor,out);return}
+ if(kind==='loopret'){const o=out||{idx:null,line:null};log(o.idx==null?`${PR().ico} ${PR().name} garde ce futur.`:`${PR().ico} ${PR().name} déplace son coup d'essai.`);doLoopReturn(o.idx,o.line);return}
+ S.mode=null;const a=out;if(!a)return;
  const lbl={flatc:'met le plateau en apesanteur',rot:'tourne le plateau',standc:'redresse le plateau',past:'voyage dans le passé',fut:'envoie un jeton dans le futur',loopc:'voyage dans le futur',bif:'dédouble un jeton entre deux réalités',obs:'observe et choisit une réalité',bifp:'bifurque dans le passé',swap:'prend ton premier jeton (échange)',col:'provoque un effondrement',link:'intrique les univers'}[a.t];if(lbl){log(`${PR().ico} ${PR().name} ${lbl}.`);if(Math.random()<.6)say('pow')}
  if(a.t==='past'||a.t==='bifp'){aiTimer=1;S.mode={kind:a.t==='past'?'past':'bif',u:a.u,k:a.k,m:a.m};fx(a.u,`${PR().ico} ${PR().name} remonte de ${a.m} manche${a.m>1?'s':''}`);render();
   const sn=S.us[a.u].history[a.k];const tg=landingG(sn.grid,sn.gravity,a.line);const pv=document.querySelector(`#uni-${a.u} .pv`);if(tg&&pv){pv.className='pv '+ME;pv.style.left=(P+tg[1]*ST)+'px';pv.style.top=(P+tg[0]*ST)+'px';pv.style.display='block'}
