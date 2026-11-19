@@ -473,13 +473,13 @@ const PROFILES={
  1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,E:2,EJ:1,RP:1,T:20,TJ:8,TB:300,D2:1,noise:70,jc:18,blunder:.22,like:{},
   bio:"Il a traversé le déluge, mais les paradoxes temporels, c’est nouveau pour lui. Il appuie sur tous les boutons… méfie-toi quand même de la chance du débutant.",
   q:{start:["Après le déluge, plus rien ne me fait peur. Sauf peut-être ce plateau.","On embarque ? Un jeton de chaque couleur, c’est bien ça ?"],pow:["Oups… j’ai touché à quelque chose.","Il pleut des jetons, comme au bon vieux temps !","J’ai lu le mode d’emploi. En diagonale."],win:["Ha ! Même un vieux marin peut avoir de la chance !"],lose:["Bien joué. Revanche ? Il me reste quarante jours."]}},
- 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,E:5,EJ:2,RP:3,RM:1,T:40,TJ:10,TB:500,D2:2,JK:2,VK:2,VJ:['past'],EV:2,TVm:5,TV:80,VN:4,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
+ 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,E:5,EJ:2,RP:3,RM:1,T:40,TJ:10,TB:500,D2:2,TMAX:600,JK:2,VK:2,VJ:['past'],EV:2,TVm:5,TV:80,VN:4,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
   bio:"Elle rendait la justice sous un palmier et prétend avoir déjà vu la fin de cette partie. Elle adore voyager dans le futur et jongler avec les réalités.",
   q:{start:["J’ai déjà vu comment ça se termine. Tu veux quand même essayer ?","Assieds-toi. J’ai vu ton coup avant que tu le penses."],pow:["Le destin hésite… je l’aide un peu.","J’ai vu cette réalité. Elle me plaît.","Tout est écrit. Il suffit de lire."],win:["Je te l’avais dit. C’était écrit."],lose:["Impossible… cette réalité n’existait dans aucune de mes visions."]}},
- 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,E:10,EJ:4,RP:5,RM:1,T:80,TJ:12,TB:600,D2:4,JK:3,VK:3,VJ:['past','bif','flatc'],EV:3,TVm:6,TV:150,VN:6,noise:2,jc:6,blunder:0,like:{past:10},
+ 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,E:10,EJ:4,RP:5,RM:1,T:80,TJ:12,TB:600,D2:4,TMAX:1100,JK:3,VK:3,VJ:['past','bif','flatc'],EV:3,TVm:6,TV:150,VN:6,noise:2,jc:6,blunder:0,like:{past:10},
   bio:"969 ans d’expérience. Il a vu passer plus de parties que tu n’as vu de jours, et il n’oublie jamais un coup.",
   q:{start:["Neuf cent soixante-neuf ans… et toujours pas fatigué de gagner.","J’ai joué cette ouverture avant ta naissance. Et celle de tes ancêtres."],pow:["Le temps et moi, on se connaît bien.","J’ai déjà vécu ce moment. Plusieurs fois.","À mon âge, on prend des raccourcis… dans le temps."],win:["La patience est l’arme des anciens."],lose:["En 969 ans, je n’avais jamais vu ça. Respect."]}},
- 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,E:16,EJ:6,RP:5,RM:1,T:140,TJ:15,TB:700,D2:5,JK:4,VK:3,VJ:['past','bif','flatc'],EV:4,TVm:10,TV:200,VN:8,noise:2,jc:5,blunder:0,like:{},
+ 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,E:16,EJ:6,RP:5,RM:1,T:110,TJ:15,TB:700,D2:5,TMAX:1400,JK:4,VK:3,VJ:['past','bif','flatc'],EV:3,TVm:6,TV:150,VN:6,noise:2,jc:5,blunder:0,like:{},
   bio:"On dit qu’il n’a ni commencement ni fin. Il calcule plus loin que tous les autres et ne laisse rien au hasard. Personne ne sait s’il a déjà été battu.",
   q:{start:["Je n’ai pas de commencement. Cette partie n’aura pas de fin pour toi.","Je suis là depuis toujours. Je serai là après toi."],pow:["Le temps n’est qu’un couloir. J’en ai toutes les clés.","Chaque réalité finit par me revenir.","Avant et après, pour moi, c’est la même chose."],win:["Tout était déjà accompli."],lose:["…Tu viens d’écrire quelque chose qui n’était nulle part. Je m’en souviendrai."]}}};
 const PR=()=>PROFILES[AI]||PROFILES[2];
@@ -750,9 +750,7 @@ function doLoopReturn(idx,line){if(!S.loopRet)return;S.ev.push('loopret');const 
  if(!SIM){const st0=diffStats(before.grid,u.grid);tmShow(`<h2>⏩ Retour du futur</h2><p class="sub">${NAMES[PL[owner]]} a vu le futur, puis ${r.changed?'a changé un de ses coups. Les coups adverses ont été rejoués à l’identique':'n’a rien changé'}.${r.erased?` <b>${r.erased}</b> coup(s) adverse(s) ne rentraient plus : effacés (paradoxe).`:''}</p><div class="trow">${cell(before,'FUTUR VU','')}<div class="tcell"><span class="lbl">&nbsp;</span><div style="font-size:26px;color:#a685ff;height:96px;display:flex;align-items:center">→</div></div>${cell(snapState(u),'NOUVEAU PRÉSENT','now',before.grid)}</div><div class="sum">${st0.mv} jeton(s) déplacé(s) · ${st0.nw} nouveau(x) · ${st0.gone} disparu(s)${S.over&&!S.over.draw?` · <b>${NAMES[S.over.winner]} aligne quatre jetons !</b>`:''}</div><p style="margin-top:12px"><button class="j" data-a="tmnext">Continuer ▸</button></p>`)}
  render()}
 function aiFloor(){const ui=S.awaitFloor;let best='none',bv=-Infinity;for(const k of['none','ccw','cw','half']){const saved=S,ps=SIM;S=structuredClone(saved);SIM=true;let res;try{chooseFloor(ui,k)}catch(e){S.bad=true}finally{res=S;S=saved;SIM=ps}let v;if(res.bad)continue;if(res.over)v=res.over.draw?0:res.over.winner===ME?1e7:-1e7;else{const U=res.us[ui];v=U.gravity==='flat'?0:searchG(U.grid,U.gravity,PL[res.turn]===ME?ME:OPP,Math.min(PR().D,3),-Infinity,Infinity)}if(v>bv){bv=v;best=k}}return best}
-function aiLoopReturn(){let best={idx:null,line:null},bv=-Infinity;const opts=[{idx:null,line:null}];const u=S.us[0];
- for(const j of loopMoves()){const sn=u.history[j];for(let l=0;l<N;l++)if(l!==sn.desc.line&&landingG(sn.grid,visG(sn),l))opts.push({idx:j,line:l})}
- for(const o of opts){const res=simulate({t:'loopret',idx:o.idx,line:o.line});let v;if(res.bad)continue;if(res.over)v=res.over.draw?0:res.over.winner===ME?1e7:-1e7;else{const U=res.us[0];v=U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,PL[res.turn]===ME?ME:OPP,PR().D,-Infinity,Infinity)}v+=Math.random();if(v>bv){bv=v;best=o}}
+function aiLoopReturn(){let best={idx:null,line:null},bv=-Infinity;for(const o of loopOpts()){const res=simulate({t:'loopret',idx:o.idx,line:o.line});if(res.bad)continue;const v=(res.over?overVal(res):resValue(res,PR().D,true))+Math.random();if(v>bv){bv=v;best=o}}
  return best}
 function doBif(ui,l1,l2){const p=cur();const A=S.us[0];if(S.us.length!==1||l1===l2||!landing(A,l1)||!landing(A,l2))return;const pc=piece(p);
  const Bn=mkU('B',cloneGrid(A.grid));Bn.gravity=A.gravity;Bn.angle=A.angle;Bn.history=A.history.map(h=>({...h,grid:cloneGrid(h.grid)}));Bn.noAnim=true;
@@ -1066,14 +1064,32 @@ const EG=(()=>{
 function engOpt(res,ms){const Pq=PR(),mi=PL.indexOf(ME),oi=PL.indexOf(OPP);const en=res.en||[0,0];return{rot:pw('rot')&&(Pq.RP||0)>0,rotMe:!!Pq.RM,jt0:PL[res.turn]===ME&&!!res.jt,rp:Pq.RP||0,en:[en[mi],en[oi]],cost:[costOf(mi,'rot'),costOf(oi,'rot')],gain:[EN.gain[mi],EN.gain[oi]],max:EN.max,ms}}
 function searchG(grid,g,pl,depth){return EG.value(grid,g,pl,depth,{rot:false,rp:0,ms:40})}
 // valeur brute d'un état (point de vue de l'IA). deep : true = aussi loin qu'un jeton normal, false = survol rapide, 'v' = vérification
-let QUICK=false;
+let QUICK=false,LOOPAI=true,ROTV=true;
+// ⏩ Futur : options du voyageur au retour (garder, ou déplacer son coup d'essai)
+function loopOpts(){const opts=[{idx:null,line:null}];const u=S.us[0];for(const j of loopMoves()){const sn=u.history[j];for(let l=0;l<N;l++)if(l!==sn.desc.line&&landingG(sn.grid,visG(sn),l))opts.push({idx:j,line:l})}return opts}
+const overVal=r=>r.over.draw?0:r.over.winner===ME?1e7:-1e7;
+// valeur exacte du retour : le voyageur choisit l'option qui l'arrange
+function loopRetValue(res,D){const saved=S,own=PL[res.loop.owner];let best=own===ME?-Infinity:Infinity,opts=[];try{S=res;opts=loopOpts()}finally{S=saved}
+ for(const o of opts){let r;S=res;try{r=simulate({t:'loopret',idx:o.idx,line:o.line})}finally{S=saved}if(r.bad)continue;const v=r.over?overVal(r):resValue(r,D,'v');if(own===ME?v>best:v<best)best=v;if(own===OPP&&best<=-1e6)break}
+ return isFinite(best)?best:0}
+// pendant le voyage : si le voyageur revenait maintenant, un déplacement de son coup d'essai le ferait-il gagner ?
+function loopPeek(res){const saved=S,own=PL[res.loop.owner],tmp={...res,loopRet:{owner:res.loop.owner}};let hit=false,opts=[];try{S=tmp;opts=loopOpts()}finally{S=saved}
+ for(const o of opts){if(o.idx==null)continue;let r;S=tmp;try{r=simulate({t:'loopret',idx:o.idx,line:o.line})}finally{S=saved}if(!r.bad&&r.over&&r.over.winner===own){hit=true;break}}
+ return hit}
+// pendant le voyage : valeur si le voyageur revenait maintenant avec la meilleure option (survol rapide)
+function loopPeekValue(res,D){const saved=S,own=PL[res.loop.owner],tmp={...res,loopRet:{owner:res.loop.owner}};let best=own===ME?-Infinity:Infinity,opts=[];try{S=tmp;opts=loopOpts()}finally{S=saved}
+ for(const o of opts){if(o.idx==null)continue;let r;S=tmp;try{r=simulate({t:'loopret',idx:o.idx,line:o.line})}finally{S=saved}if(r.bad)continue;let v;if(r.over)v=overVal(r);else{QUICK=true;try{v=resValue(r,D,'q')}finally{QUICK=false}}if(own===ME?v>best:v<best)best=v}
+ return best}
 function resValue(res,D,deep){if(res.bad)return-Infinity;
  if(res.loop&&res.loop.ready){const w=winnerOf(res.us[0].grid);const own=PL[res.loop.owner];if(w===own)return own===ME?9e6:-9e6}
  if(res.over){if(res.over.draw)return 0;return res.over.winner===ME?1e7:-1e7}
+ if(LOOPAI&&res.loopRet&&res.loop)return loopRetValue(res,D);
  const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});const mover=PL[res.turn],mt=res.turn;const stc=U.flatBy!=null&&U.flatBy!==mt?EN.stand:0;const canSt=U.flat<=FLATN-2&&res.en&&res.en[mt]>=stc;if(canSt)return mover===ME?Math.max(...vs):Math.min(...vs);return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():(()=>{const Pq=PR();const dp=deep==='q'?2:deep==='v'?(Pq.EV||2):deep?(Pq.E||D+1):(Pq.EJ||D),ms=deep==='q'?3:deep==='v'?(Pq.TVm||6):deep?(Pq.T||60):(Pq.TJ||15);const o=engOpt(res,ms);if(deep==='q')o.rot=false;return EG.value(U.grid,U.gravity,PL[res.turn]===ME&&res.pend.includes(i)?ME:OPP,dp,o)})();
  let v;
  if(res.us.length===2){if(PL[res.turn]===OPP&&!res.afterRot)v=supLook(res,D);else v=supLeaf(res,D)}
  else v=sv(res.us[0],0);
+ if(LOOPAI&&res.loop&&!res.loopRet&&deep===true){const pv=loopPeekValue(res,D);if(isFinite(pv)){const own=PL[res.loop.owner]===ME;const m=own?Math.max(v,pv):Math.min(v,pv);v=res.loop.left<=2?m:(v+m)/2}}
+ else if(LOOPAI&&res.loop&&!res.loopRet&&deep!=='q'&&loopPeek(res)){const w=res.loop.left<=2?8e5:1.5e5;v=PL[res.loop.owner]===ME?Math.max(v,w):Math.min(v,-w)}
  return v}
 // préférences de l'IA pour un type d'action (humeur, goûts du personnage, coût en énergie)
 function aiBonus(a){let v=0;
@@ -1083,6 +1099,11 @@ function aiBonus(a){let v=0;
  return v}
 function aiValue(res,a,D,deep){const v=resValue(res,D,deep||a.t==='drop'||a.t==='place'||a.t==='rot');return v===-Infinity?v:v+aiBonus(a)}
 // meilleure réponse adverse par joker (Passé, Dédoubler, Apesanteur…) après notre coup : valeur pour l'IA (Infinity = rien à craindre)
+// après notre rotation : nos 2 meilleurs jetons possibles, chacun vérifié contre les jokers adverses
+function rotFollowValue(res,D){const saved=S;let fs=[];try{S=res;fs=aiCandidates().filter(a=>a.t==='drop').map(a=>({a,r:simulate(a)}))}finally{S=saved}
+ fs=fs.filter(f=>!f.r.bad);for(const f of fs){if(f.r.over)f.q=overVal(f.r);else{QUICK=true;try{f.q=resValue(f.r,D,'q')}finally{QUICK=false}}}
+ fs.sort((x,y)=>y.q-x.q);let best=-Infinity;for(const f of fs.slice(0,2)){const w=f.r.over?f.q:Math.min(f.q,oppJokerValue(f.r,D));if(w>best)best=w}
+ return isFinite(best)?best:Infinity}
 function oppJokerValue(res,D){const Pq=PR(),types=Pq.VJ;if(!types||!types.length||res.bad||res.over||PL[res.turn]!==OPP||res.us.length>1||res.loop||res.loopRet||res.awaitFloor!=null)return Infinity;
  const saved=S;let worst=Infinity,acts=[];try{S=res;acts=aiCandidates(true).filter(a=>types.includes(a.t))}finally{S=saved}
  // a) tout simuler : victoire immédiate de l'adversaire ? sinon tri rapide (2 coups)
@@ -1110,10 +1131,10 @@ function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++
  if(!scored.length)return acts.find(a=>a.t==='drop'||a.t==='place')||acts[0]||null;
  // 2) les jokers les plus prometteurs sont recalculés aussi loin qu'un jeton normal
  {const bd=Math.max(-Infinity,...scored.filter(s=>!s.a.j).map(s=>s.v));const js=scored.filter(s=>s.a.j&&s.a.t!=='rot'&&s.raw>-5e5&&s.v>bd-150).sort((x,y)=>y.v-x.v).slice(0,Pp.JK||0);
-  for(const s of js){s.raw=resValue(s.res,D,true);s.v=s.raw+s.bonus}}
+  for(const s of js){if(performance.now()-t0>(Pp.TMAX||1500)*0.6)break;s.raw=resValue(s.res,D,true);s.v=s.raw+s.bonus}}
  // 3) vérification des meilleurs coups contre les jokers adverses (le coup réfuté est déclassé)
  scored.sort((x,y)=>y.v-x.v);let best=null,bv=-Infinity,chk=0;
- for(const s of scored){if(s.v<=bv)break;s.adj=s.v;if(chk<(Pp.VK||0)&&!s.res.over){chk++;const w=oppJokerValue(s.res,D);if(w<s.raw)s.adj=w+s.bonus}if(s.adj>bv){bv=s.adj;best=s}}
+ for(const s of scored){if(s.v<=bv)break;s.adj=s.v;if(chk<(Pp.VK||0)&&!s.res.over&&performance.now()-t0<(Pp.TMAX||1500)){chk++;const w=s.a.t==='rot'&&ROTV&&PL[s.res.turn]===ME?rotFollowValue(s.res,D):oppJokerValue(s.res,D);if(w<s.raw)s.adj=w+s.bonus}if(s.adj>bv){bv=s.adj;best=s}}
  const val=s=>s.adj??s.v;
  if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(s=>s.adj!=null&&s.adj>=bv-Pp.vr);if(near.length>1){best=pick(near);bv=best.adj}}
  if(best.a.j&&bv<1e6){let bd=null;for(const s of scored)if((s.a.t==='drop'||s.a.t==='place')&&(!bd||val(s)>val(bd)))bd=s;if(bd&&bv<val(bd)+25)best=bd}
