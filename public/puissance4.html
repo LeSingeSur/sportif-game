@@ -470,16 +470,16 @@ function setSides(h){HC=h;ME=h==='R'?'J':'R';OPP=h}
 const pw=k=>!!POW[k];
 function saveSetup(){try{localStorage.setItem('p4d_setup',JSON.stringify({pow:POW,ai:AI,hc:HC,opt:OPT}))}catch(e){}}
 const PROFILES={
- 1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,noise:70,jc:18,blunder:.22,like:{},
+ 1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,E:2,EJ:1,RP:1,T:20,TJ:8,TB:300,noise:70,jc:18,blunder:.22,like:{},
   bio:"Il a traversé le déluge, mais les paradoxes temporels, c’est nouveau pour lui. Il appuie sur tous les boutons… méfie-toi quand même de la chance du débutant.",
   q:{start:["Après le déluge, plus rien ne me fait peur. Sauf peut-être ce plateau.","On embarque ? Un jeton de chaque couleur, c’est bien ça ?"],pow:["Oups… j’ai touché à quelque chose.","Il pleut des jetons, comme au bon vieux temps !","J’ai lu le mode d’emploi. En diagonale."],win:["Ha ! Même un vieux marin peut avoir de la chance !"],lose:["Bien joué. Revanche ? Il me reste quarante jours."]}},
- 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
+ 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,E:5,EJ:2,RP:3,RM:1,T:40,TJ:10,TB:500,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
   bio:"Elle rendait la justice sous un palmier et prétend avoir déjà vu la fin de cette partie. Elle adore voyager dans le futur et jongler avec les réalités.",
   q:{start:["J’ai déjà vu comment ça se termine. Tu veux quand même essayer ?","Assieds-toi. J’ai vu ton coup avant que tu le penses."],pow:["Le destin hésite… je l’aide un peu.","J’ai vu cette réalité. Elle me plaît.","Tout est écrit. Il suffit de lire."],win:["Je te l’avais dit. C’était écrit."],lose:["Impossible… cette réalité n’existait dans aucune de mes visions."]}},
- 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,noise:2,jc:6,blunder:0,like:{past:10},
+ 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,E:10,EJ:4,RP:5,RM:1,T:90,TJ:15,TB:1000,noise:2,jc:6,blunder:0,like:{past:10},
   bio:"969 ans d’expérience. Il a vu passer plus de parties que tu n’as vu de jours, et il n’oublie jamais un coup.",
   q:{start:["Neuf cent soixante-neuf ans… et toujours pas fatigué de gagner.","J’ai joué cette ouverture avant ta naissance. Et celle de tes ancêtres."],pow:["Le temps et moi, on se connaît bien.","J’ai déjà vécu ce moment. Plusieurs fois.","À mon âge, on prend des raccourcis… dans le temps."],win:["La patience est l’arme des anciens."],lose:["En 969 ans, je n’avais jamais vu ça. Respect."]}},
- 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,noise:2,jc:5,blunder:0,like:{},
+ 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,E:16,EJ:6,RP:5,RM:1,T:140,TJ:20,TB:1300,noise:2,jc:5,blunder:0,like:{},
   bio:"On dit qu’il n’a ni commencement ni fin. Il calcule plus loin que tous les autres et ne laisse rien au hasard. Personne ne sait s’il a déjà été battu.",
   q:{start:["Je n’ai pas de commencement. Cette partie n’aura pas de fin pour toi.","Je suis là depuis toujours. Je serai là après toi."],pow:["Le temps n’est qu’un couloir. J’en ai toutes les clés.","Chaque réalité finit par me revenir.","Avant et après, pour moi, c’est la même chose."],win:["Tout était déjà accompli."],lose:["…Tu viens d’écrire quelque chose qui n’était nulle part. Je m’en souviendrai."]}}};
 const PR=()=>PROFILES[AI]||PROFILES[2];
@@ -972,14 +972,6 @@ function evalGrid(grid,g){let sc=0;const D=[[0,1],[1,0],[1,1],[1,-1]];
  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=grid[r][c];if(x){const w=(3-Math.abs(3-r))+(3-Math.abs(3-c));sc+=x.p===ME?w:-w}}
  return sc}
 const ORDER=[3,2,4,1,5,0,6];
-function searchG(grid,g,pl,depth,a,b){const w=winnerOf(grid);if(w==='D')return 0;if(w)return w===ME?1e6+depth:-1e6-depth;
- if(depth===0)return evalGrid(grid,g);
- let best=pl===ME?-Infinity:Infinity,any=false;
- for(const l of ORDER){const t=landingG(grid,g,l);if(!t)continue;any=true;const ng=cloneGrid(grid);ng[t[0]][t[1]]={id:0,p:pl};
-  const v=searchG(ng,g,pl===ME?OPP:ME,depth-1,a,b);
-  if(pl===ME){if(v>best)best=v;if(best>a)a=best}else{if(v<best)best=v;if(best<b)b=best}
-  if(a>=b)break}
- return any?best:evalGrid(grid,g)}
 function simulate(act){const saved=S;S=structuredClone(saved);SIM=true;let res;try{execAct(act)}catch(e){S.bad=true}finally{res=S;S=saved;SIM=false}return res}
 function execAct(a){const i=a.u;
  if(a.t==='drop')playLine(i,a.line);else if(a.t==='place'){clickHole(i,a.r,a.c);if(a.floor&&S.awaitFloor===i)chooseFloor(i,a.floor)}else if(a.t==='rot')doRotate(i,a.kind);else if(a.t==='flatc'){doRotate(i,'flat');clickHole(i,a.r,a.c);if(S.awaitFloor===i)chooseFloor(i,a.floor)}
@@ -1001,10 +993,82 @@ function aiCandidates(){const acts=[];
    if(pw('dup')&&ET>=costOf(S.turn,'dup')&&S.us.length<2)for(let l1=0;l1<N;l1++)for(let l2=0;l2<N;l2++)if(l1!==l2&&landing(u,l1)&&landing(u,l2))acts.push({t:'bif',u:i,l1,l2,j:costOf(S.turn,'dup')})}
 }
  return acts}
+// ===== Moteur IA rapide : Puissance 4 sous gravité, rotations adverses comprises =====
+// Le plateau est ramené à une orientation standard (gravité vers le bas, x = ligne de chute, y = hauteur) :
+// les alignements sont invariants par rotation/symétrie, donc la recherche marche quelle que soit la gravité.
+// Joueur 1 = l'IA (ME), joueur 2 = l'adversaire (OPP).
+const EG=(()=>{
+ const NN=N*N,WIN=1000200,INF=1e9;
+ const WL=[];for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){const ex=x+3*dx,ey=y+3*dy;if(ex<0||ex>=N||ey<0||ey>=N)continue;WL.push([0,1,2,3].map(k=>(x+k*dx)*N+(y+k*dy)))}
+ const NW=WL.length;const CW=Array.from({length:NN},()=>[]);WL.forEach((w,i)=>w.forEach(c=>CW[c].push(i)));const CWT=CW.map(a=>Int16Array.from(a));
+ const CTR=new Int8Array(NN);for(let x=0;x<N;x++)for(let y=0;y<N;y++)CTR[x*N+y]=(3-Math.abs(3-x))+(3-Math.abs(3-y));
+ const r32=()=>(Math.random()*4294967296)|0;const Z1=new Int32Array(3*NN).map(r32),Z2=new Int32Array(3*NN).map(r32);const ZS=r32();
+ const TS=1<<19,TMK=TS-1,TK1=new Int32Array(TS),TK2=new Int32Array(TS),TV=new Int32Array(TS),TD=new Int8Array(TS),TF=new Int8Array(TS),TB=new Int8Array(TS);
+ const B=new Int8Array(NN),H=new Int8Array(N),C=new Int8Array(2*NW),HI=new Int32Array(3*N),MV=Array.from({length:NN+8},()=>new Int8Array(N)),MS=new Float64Array(N);
+ let h1=0,h2=0,cnt=0,ctr=0,cfg=null,deadline=Infinity,nodes=0,abort=false,canAbort=false,ttGid=-1;const en=[0,0];
+ function put(i,p){B[i]=p;h1^=Z1[p*NN+i];h2^=Z2[p*NN+i];cnt++;ctr+=p===1?CTR[i]:-CTR[i];const o=(p-1)*NW,ws=CWT[i];for(let k=0;k<ws.length;k++)C[o+ws[k]]++}
+ function unput(i,p){B[i]=0;h1^=Z1[p*NN+i];h2^=Z2[p*NN+i];cnt--;ctr-=p===1?CTR[i]:-CTR[i];const o=(p-1)*NW,ws=CWT[i];for(let k=0;k<ws.length;k++)C[o+ws[k]]--}
+ // la case vide i complète-t-elle un alignement de p ?
+ function winsAt(i,p){const o=(p-1)*NW,ws=CWT[i];for(let k=0;k<ws.length;k++)if(C[o+ws[k]]===3)return true;return false}
+ function has4(p){const o=(p-1)*NW;for(let w=0;w<NW;w++)if(C[o+w]===4)return true;return false}
+ function fixH(x){let y=0;while(y<N&&B[x*N+y])y++;H[x]=y}
+ function clear(){B.fill(0);C.fill(0);h1=h2=cnt=ctr=0}
+ function load(grid,g){clear();for(let x=0;x<N;x++){const cs=lineCells(g,x);for(let y=0;y<N;y++){const[r,c]=cs[y];const pc=grid[r][c];if(pc)put(x*N+y,pc.p===ME?1:2)}fixH(x)}}
+ // rotation du plateau standard (k quarts de tour) puis chute vers le bas
+ function rotate(k){const src=B.slice(),cols=Array.from({length:N},()=>[]);
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++){const v=src[x*N+y];if(!v)continue;let nx,ny;if(k===1){nx=N-1-y;ny=x}else if(k===2){nx=N-1-x;ny=N-1-y}else{nx=y;ny=N-1-x}cols[nx].push([ny,v])}
+  clear();for(let x=0;x<N;x++){cols[x].sort((a,b)=>a[0]-b[0]);cols[x].forEach(([,v],y)=>put(x*N+y,v));fixH(x)}}
+ function save(){return{B:B.slice(),C:C.slice(),H:H.slice(),h1,h2,cnt,ctr}}
+ function restore(s){B.set(s.B);C.set(s.C);H.set(s.H);h1=s.h1;h2=s.h2;cnt=s.cnt;ctr=s.ctr}
+ // évaluation statique, point de vue du joueur 1
+ function evalP(){let s=ctr;
+  for(let w=0;w<NW;w++){const a=C[w],b=C[NW+w];if(a&&b)continue;if(a===2)s+=8;else if(a===1)s+=1;if(b===2)s-=8;else if(b===1)s-=1}
+  // menaces (case qui complète un 4) : la plus basse de chaque colonne compte le plus
+  for(let x=0;x<N;x++){let first=0;for(let y=H[x];y<N;y++){const i=x*N+y;if(B[i])continue;const t1=winsAt(i,1),t2=winsAt(i,2);if(!t1&&!t2)continue;
+   if(t1&&t2){if(!first)first=3;continue}const sg=t1?1:-1;if(first)s+=sg*12;else{s+=sg*(y-H[x]===1?70:45);first=t1?1:2}}}
+  return s}
+ function tick(){if((++nodes&1023)===0&&canAbort&&performance.now()>deadline)abort=true;return abort}
+ function nm(d,a,b,p,ply){
+  if(tick())return 0;
+  const o=3-p;if(cnt>=NN)return 0;
+  for(let x=0;x<N;x++){const y=H[x];if(y<N&&winsAt(x*N+y,p))return WIN-ply}
+  const rotP=cfg.rot&&ply<cfg.rp&&en[p-1]>=cfg.cost[p-1]&&!(ply===0&&cfg.jt0)&&(p===2||cfg.rotMe);
+  let fx=-1,nf=0;for(let x=0;x<N;x++){const y=H[x];if(y<N&&winsAt(x*N+y,o)){nf++;fx=x}}
+  if(nf>=2&&!rotP)return-(WIN-ply-1);
+  if(d<=0)return p===1?evalP():-evalP();
+  const useTT=!cfg.rot||ply>=cfg.rp;let bm=-1,k1=0,ix=0;
+  if(useTT){k1=h1^(p===2?ZS:0);ix=k1&TMK;if(TK1[ix]===k1&&TK2[ix]===h2){bm=TB[ix];if(TD[ix]>=d){const v=TV[ix],f=TF[ix];if(f===0||(f===1&&v>=b)||(f===2&&v<=a))return v}}}
+  const a0=a;let best=-INF,bx=-1;const mv=MV[ply];let n=0;
+  if(nf===1&&!rotP){mv[n++]=fx}
+  else{for(const x of ORDER){const y=H[x];if(y>=N)continue;let sc=HI[p*N+x]+(x===bm?1e9:0);if(y+1<N&&winsAt(x*N+y+1,o))sc-=1e8;if(nf===1&&x===fx)sc+=5e8;let j=n++;while(j>0&&MS[j-1]<sc){mv[j]=mv[j-1];MS[j]=MS[j-1];j--}mv[j]=x;MS[j]=sc}}
+  const dn=nf===1?d:d-1;
+  for(let m=0;m<n;m++){const x=mv[m],y=H[x],i=x*N+y;put(i,p);fixH(x);const oe=en[p-1];en[p-1]=Math.min(cfg.max,oe+cfg.gain[p-1]);
+   const v=-nm(dn,-b,-a,o,ply+1);en[p-1]=oe;unput(i,p);H[x]=y;if(abort)return 0;
+   if(v>best){best=v;bx=x}if(v>a)a=v;if(a>=b){HI[p*N+x]+=d*d;break}}
+  // rotation (↺ ↻ ⇅) puis jeton du même joueur
+  if(rotP&&a<b){const sv=save(),oe=en[p-1],e=p-1;
+   for(let k=1;k<=3&&a<b;k++){rotate(k);let v;const wp=has4(p),wo=has4(o);
+    if(wp&&wo)v=0;else if(wp)v=WIN-ply;else if(wo)v=-(WIN-ply);
+    else{en[e]=oe-cfg.cost[e];let bv=-INF;for(const x of ORDER){const y=H[x];if(y>=N)continue;let r;if(winsAt(x*N+y,p))r=WIN-ply;else{put(x*N+y,p);fixH(x);const e2=en[e];en[e]=Math.min(cfg.max,e2+cfg.gain[e]);r=-nm(d-1,-b,-Math.max(a,bv),o,ply+1);en[e]=e2;unput(x*N+y,p);H[x]=y}if(r>bv)bv=r;if(abort||bv>=b)break}en[e]=oe;v=bv===-INF?0:bv}
+    restore(sv);if(abort)return 0;if(v>best)best=v;if(v>a)a=v}}
+  if(best===-INF)return 0;
+  if(useTT){TK1[ix]=k1;TK2[ix]=h2;TV[ix]=best;TD[ix]=d;TF[ix]=best<=a0?2:best>=b?1:0;TB[ix]=bx}
+  return best}
+ // valeur (point de vue de l'IA) d'une position où `toMove` doit poser
+ function value(grid,g,toMove,depth,opt){
+  if(ttGid!==gid){TK1.fill(0);TK2.fill(0);HI.fill(0);ttGid=gid}
+  cfg={rot:false,rotMe:false,jt0:false,rp:0,cost:[99,99],gain:[0,0],max:10,...opt};load(grid,g);en[0]=opt.en?opt.en[0]:0;en[1]=opt.en?opt.en[1]:0;
+  const p=toMove===ME?1:2;abort=false;canAbort=false;deadline=performance.now()+(opt.ms||50);let res=0;
+  for(let d=1;d<=depth;d++){const v=nm(d,-INF,INF,p,0);if(abort)break;res=v;EG.lastD=d;canAbort=true;if(Math.abs(v)>=WIN-100||performance.now()>deadline)break}
+  return p===1?res:-res}
+ return{value,WIN}})();
+// options du moteur après le coup testé `res` (énergie réelle de chacun, rotations adverses si permises)
+function engOpt(res,ms){const Pq=PR(),mi=PL.indexOf(ME),oi=PL.indexOf(OPP);const en=res.en||[0,0];return{rot:pw('rot')&&(Pq.RP||0)>0,rotMe:!!Pq.RM,jt0:PL[res.turn]===ME&&!!res.jt,rp:Pq.RP||0,en:[en[mi],en[oi]],cost:[costOf(mi,'rot'),costOf(oi,'rot')],gain:[EN.gain[mi],EN.gain[oi]],max:EN.max,ms}}
+function searchG(grid,g,pl,depth){return EG.value(grid,g,pl,depth,{rot:false,rp:0,ms:40})}
 function aiValue(res,a,D){if(res.bad)return-Infinity;
  if(res.loop&&res.loop.ready){const w=winnerOf(res.us[0].grid);const own=PL[res.loop.owner];if(w===own)return own===ME?9e6:-9e6}
  if(res.over){if(res.over.draw)return 0;return res.over.winner===ME?1e7:-1e7}
- const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});const mover=PL[res.turn],mt=res.turn;const stc=U.flatBy!=null&&U.flatBy!==mt?EN.stand:0;const canSt=U.flat<=FLATN-2&&res.en&&res.en[mt]>=stc;if(canSt)return mover===ME?Math.max(...vs):Math.min(...vs);return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():searchG(U.grid,U.gravity,(res.turn===S.turn&&res.pend.includes(i))?ME:OPP,D,-Infinity,Infinity);
+ const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});const mover=PL[res.turn],mt=res.turn;const stc=U.flatBy!=null&&U.flatBy!==mt?EN.stand:0;const canSt=U.flat<=FLATN-2&&res.en&&res.en[mt]>=stc;if(canSt)return mover===ME?Math.max(...vs):Math.min(...vs);return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():(()=>{const Pq=PR(),isD=a.t==='drop'||a.t==='place'||a.t==='rot';return EG.value(U.grid,U.gravity,(res.turn===S.turn&&res.pend.includes(i))?ME:OPP,isD?(Pq.E||D+1):(Pq.EJ||D),engOpt(res,isD?(Pq.T||60):(Pq.TJ||15)))})();
  let v;
  if(res.us.length===2){if(PL[res.turn]===OPP&&!res.afterRot)v=supLook(res,D);else v=supLeaf(res,D)}
  else v=sv(res.us[0],0);
@@ -1012,7 +1076,7 @@ function aiValue(res,a,D){if(res.bad)return-Infinity;
  if(S.mood&&S.mood.like[a.t])v+=S.mood.like[a.t];
  {const Pq=PR();if(Pq.like[a.t])v+=Pq.like[a.t];if(a.j)v-=Pq.jc*a.j}
  return v}
-function supLeaf(r,D){const mv=PL[r.turn];const dd=Math.max(0,Math.min(D-1,2));const f=U=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,mv,dd,-Infinity,Infinity);
+function supLeaf(r,D){const mv=PL[r.turn];const dd=Math.max(0,Math.min(D-1,2));const f=U=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,mv,dd);
  if(r.us.length===1)return f(r.us[0]);
  const A=f(r.us[0]),B=f(r.us[1]);
  // menaces de fusion : un 4 dans une seule réalité
@@ -1022,12 +1086,12 @@ function supLeaf(r,D){const mv=PL[r.turn];const dd=Math.max(0,Math.min(D-1,2));c
 function supLook(res,D){const saved=S;let worst=Infinity;S=res;try{const acts=aiCandidates().filter(a=>a.t==='drop'||a.t==='obs'||a.t==='rot');for(const a of acts){const r=simulate(a);if(r.bad)continue;let v;if(r.over)v=r.over.draw?0:r.over.winner===ME?1e7:-1e7;else if(r.afterRot!=null){v=supLeaf(r,D)}else v=supLeaf(r,D);if(v<worst)worst=v}}finally{S=saved}return worst===Infinity?supLeaf(res,D):worst}
 function winCols(U){const g=U.gravity;if(g==='flat')return[];const out=[];for(let v=0;v<N;v++){const l=lineForVisual(g,v);const t=landingG(U.grid,g,l);if(!t)continue;const ng=cloneGrid(U.grid);ng[t[0]][t[1]]={id:0,p:ME};if(winnerOf(ng)===ME)out.push(v)}return out}
 function linkBonus(res){if(res.us.length<2)return 0;const a=winCols(res.us[0]),b=winCols(res.us[1]);if(!a.length||!b.length)return 0;if(a.length===1&&b.length===1&&a[0]===b[0])return 0;return 5e5}
-function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){const ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(ds.length)return pick(ds)}const D=Pp.D;S._base=S.us.map((U,i)=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,S.pend.includes(i)?ME:OPP,D,-Infinity,Infinity));const acts=aiCandidates();let best=null,bv=-Infinity,bestDrop=-Infinity;
- const scored=[];for(const a of acts){const v=aiValue(simulate(a),a,D)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push([v,a]);
+function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){let ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(AI>=2)ds=ds.filter(a=>{const r=simulate(a);if(r.bad)return false;if(r.over)return!r.over.winner||r.over.winner===ME;if(r.us.length>1||r.us[0].gravity==='flat')return true;return EG.value(r.us[0].grid,r.us[0].gravity,OPP,3,engOpt(r,20))>-5e5});if(ds.length)return pick(ds)}const D=Pp.D;const acts=aiCandidates();let best=null,bv=-Infinity,bestDrop=-Infinity;
+ const scored=[],t0=performance.now();for(const a of acts){if(a.j&&a.t!=='rot'&&performance.now()-t0>(Pp.TB||900))continue;const v=aiValue(simulate(a),a,D)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push([v,a]);
   if(a.t==='drop'||a.t==='place'){if(v>bestDrop)bestDrop=v}
   if(v>bv){bv=v;best=a}}
  if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(([v])=>v>=bv-Pp.vr);if(near.length>1){const pk=near[Math.floor(Math.random()*near.length)];best=pk[1];bv=pk[0]}}
- if(best&&best.j&&bv<1e6&&bv<bestDrop+25){let bd=null,bdv=-Infinity;for(const a of acts)if(a.t==='drop'||a.t==='place'){const v=aiValue(simulate(a),a,D);if(v>bdv){bdv=v;bd=a}}if(bd)best=bd}
+ if(best&&best.j&&bv<1e6&&bv<bestDrop+25){let bd=null,bdv=-Infinity;for(const[v,a]of scored)if((a.t==='drop'||a.t==='place')&&v>bdv){bdv=v;bd=a}if(bd)best=bd}
  return best}
 function aiTurn(){aiTimer=null;if(!AI||S.over||S.busy||actor()!==ME)return;if(S.awaitFloor!=null){chooseFloor(S.awaitFloor,aiFloor());return}if(S.loopRet){const o=aiLoopReturn();log(o.idx==null?`${PR().ico} ${PR().name} garde ce futur.`:`${PR().ico} ${PR().name} déplace son coup d'essai.`);doLoopReturn(o.idx,o.line);return}S.mode=null;const a=aiChoose();if(!a)return;
  const lbl={flatc:'met le plateau en apesanteur',rot:'tourne le plateau',standc:'redresse le plateau',past:'voyage dans le passé',fut:'envoie un jeton dans le futur',loopc:'voyage dans le futur',bif:'dédouble un jeton entre deux réalités',obs:'observe et choisit une réalité',bifp:'bifurque dans le passé',swap:'prend ton premier jeton (échange)',col:'provoque un effondrement',link:'intrique les univers'}[a.t];if(lbl){log(`${PR().ico} ${PR().name} ${lbl}.`);if(Math.random()<.6)say('pow')}
