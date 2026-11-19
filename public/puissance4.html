@@ -1108,7 +1108,7 @@ function oppJokerValue(res,D){const Pq=PR(),types=Pq.VJ;if(!types||!types.length
  const saved=S;let worst=Infinity,acts=[];try{S=res;acts=aiCandidates(true).filter(a=>types.includes(a.t))}finally{S=saved}
  // a) tout simuler : victoire immédiate de l'adversaire ? sinon tri rapide (2 coups)
  const rs=[];for(const a of acts){let r;S=res;try{r=simulate(a)}finally{S=saved}if(r.bad)continue;
-  if(r.over){const v=r.over.draw?0:r.over.winner===ME?1e7:-1e7;if(v<worst)worst=v;if(worst<=-1e6)return worst;continue}
+  if(r.over){const v=r.over.draw?0:r.over.winner===ME?1e7:-(EG.WIN-1);if(v<worst)worst=v;if(worst<=-1e6)return worst;continue}
   QUICK=true;try{r._q=resValue(r,D,'q')}finally{QUICK=false}if(r._q<worst&&r._q<=-5e5)worst=r._q;rs.push(r)}
  // b) les réponses les plus dangereuses sont approfondies
  rs.sort((x,y)=>x._q-y._q);const t0=performance.now();
@@ -1128,13 +1128,15 @@ function linkBonus(res){if(res.us.length<2)return 0;const a=winCols(res.us[0]),b
 function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){let ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(AI>=2)ds=ds.filter(a=>{const r=simulate(a);if(r.bad)return false;if(r.over)return!r.over.winner||r.over.winner===ME;if(r.us.length>1||r.us[0].gravity==='flat')return true;return EG.value(r.us[0].grid,r.us[0].gravity,OPP,3,engOpt(r,20))>-5e5});if(ds.length)return pick(ds)}const D=Pp.D;const acts=aiCandidates();
  // 1) tous les coups ; les jokers (sauf rotation) en survol rapide, dans un budget de temps
  const scored=[],t0=performance.now();for(const a of acts){if(a.j&&a.t!=='rot'&&performance.now()-t0>(Pp.TB||900))continue;const res=simulate(a);const raw=resValue(res,D,a.t==='drop'||a.t==='place'||a.t==='rot');if(raw===-Infinity)continue;const bonus=aiBonus(a)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push({a,res,raw,bonus,v:raw+bonus})}
+ // coups perdants contre un jeu parfait : départage par un calcul sans jokers (l'adversaire devra trouver l'astuce)
+ for(const s of scored){const U=s.res.us[0];if(s.raw>-5e5||s.res.over||s.res.us.length>1||U.gravity==='flat')continue;const tb=EG.value(U.grid,U.gravity,PL[s.res.turn]===ME?ME:OPP,4,{ms:8});const d=Math.max(-2e4,Math.min(2e4,tb*1e-3));s.bonus+=d;s.v+=d}
  if(!scored.length)return acts.find(a=>a.t==='drop'||a.t==='place')||acts[0]||null;
  // 2) les jokers les plus prometteurs sont recalculés aussi loin qu'un jeton normal
  {const bd=Math.max(-Infinity,...scored.filter(s=>!s.a.j).map(s=>s.v));const js=scored.filter(s=>s.a.j&&s.a.t!=='rot'&&s.raw>-5e5&&s.v>bd-150).sort((x,y)=>y.v-x.v).slice(0,Pp.JK||0);
   for(const s of js){if(performance.now()-t0>(Pp.TMAX||1500)*0.6)break;s.raw=resValue(s.res,D,true);s.v=s.raw+s.bonus}}
  // 3) vérification des meilleurs coups contre les jokers adverses (le coup réfuté est déclassé)
  scored.sort((x,y)=>y.v-x.v);let best=null,bv=-Infinity,chk=0;
- for(const s of scored){if(s.v<=bv)break;s.adj=s.v;if(chk<(Pp.VK||0)&&!s.res.over&&performance.now()-t0<(Pp.TMAX||1500)){chk++;const w=s.a.t==='rot'&&ROTV&&PL[s.res.turn]===ME?rotFollowValue(s.res,D):oppJokerValue(s.res,D);if(w<s.raw)s.adj=w+s.bonus}if(s.adj>bv){bv=s.adj;best=s}}
+ for(const s of scored){if(s.v<=bv)break;s.adj=s.v;if(chk<(Pp.VK||0)&&!s.res.over&&performance.now()-t0<(Pp.TMAX||1500)){chk++;const w=s.a.t==='rot'&&ROTV&&PL[s.res.turn]===ME?rotFollowValue(s.res,D):oppJokerValue(s.res,D);if(w<s.raw)s.adj=w+s.bonus+Math.max(-2e4,Math.min(2e4,s.raw*1e-3))}if(s.adj>bv){bv=s.adj;best=s}}
  const val=s=>s.adj??s.v;
  if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(s=>s.adj!=null&&s.adj>=bv-Pp.vr);if(near.length>1){best=pick(near);bv=best.adj}}
  if(best.a.j&&bv<1e6){let bd=null;for(const s of scored)if((s.a.t==='drop'||s.a.t==='place')&&(!bd||val(s)>val(bd)))bd=s;if(bd&&bv<val(bd)+25)best=bd}
