@@ -470,16 +470,16 @@ function setSides(h){HC=h;ME=h==='R'?'J':'R';OPP=h}
 const pw=k=>!!POW[k];
 function saveSetup(){try{localStorage.setItem('p4d_setup',JSON.stringify({pow:POW,ai:AI,hc:HC,opt:OPT}))}catch(e){}}
 const PROFILES={
- 1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,E:2,EJ:1,RP:1,T:20,TJ:8,TB:300,noise:70,jc:18,blunder:.22,like:{},
+ 1:{id:'noe',ico:'🕊',name:'Noé',title:"le gardien de l'arche",lvl:'Facile',vr:0,D:1,E:2,EJ:1,RP:1,T:20,TJ:8,TB:300,D2:1,noise:70,jc:18,blunder:.22,like:{},
   bio:"Il a traversé le déluge, mais les paradoxes temporels, c’est nouveau pour lui. Il appuie sur tous les boutons… méfie-toi quand même de la chance du débutant.",
   q:{start:["Après le déluge, plus rien ne me fait peur. Sauf peut-être ce plateau.","On embarque ? Un jeton de chaque couleur, c’est bien ça ?"],pow:["Oups… j’ai touché à quelque chose.","Il pleut des jetons, comme au bon vieux temps !","J’ai lu le mode d’emploi. En diagonale."],win:["Ha ! Même un vieux marin peut avoir de la chance !"],lose:["Bien joué. Revanche ? Il me reste quarante jours."]}},
- 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,E:5,EJ:2,RP:3,RM:1,T:40,TJ:10,TB:500,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
+ 2:{id:'debora',ico:'🔮',name:'Débora',title:'la prophétesse',lvl:'Moyen',vr:12,D:1,E:5,EJ:2,RP:3,RM:1,T:40,TJ:10,TB:500,D2:2,JK:2,VK:2,VJ:['past'],EV:2,TVm:5,TV:80,VN:4,noise:20,jc:9,blunder:.04,like:{loopc:70,bif:50,past:25},
   bio:"Elle rendait la justice sous un palmier et prétend avoir déjà vu la fin de cette partie. Elle adore voyager dans le futur et jongler avec les réalités.",
   q:{start:["J’ai déjà vu comment ça se termine. Tu veux quand même essayer ?","Assieds-toi. J’ai vu ton coup avant que tu le penses."],pow:["Le destin hésite… je l’aide un peu.","J’ai vu cette réalité. Elle me plaît.","Tout est écrit. Il suffit de lire."],win:["Je te l’avais dit. C’était écrit."],lose:["Impossible… cette réalité n’existait dans aucune de mes visions."]}},
- 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,E:10,EJ:4,RP:5,RM:1,T:90,TJ:15,TB:1000,noise:2,jc:6,blunder:0,like:{past:10},
+ 3:{id:'mathusalem',ico:'⏳',name:'Mathusalem',title:'le doyen du temps',lvl:'Difficile',vr:4,D:3,E:10,EJ:4,RP:5,RM:1,T:80,TJ:12,TB:600,D2:4,JK:3,VK:3,VJ:['past','bif','flatc'],EV:3,TVm:6,TV:150,VN:6,noise:2,jc:6,blunder:0,like:{past:10},
   bio:"969 ans d’expérience. Il a vu passer plus de parties que tu n’as vu de jours, et il n’oublie jamais un coup.",
   q:{start:["Neuf cent soixante-neuf ans… et toujours pas fatigué de gagner.","J’ai joué cette ouverture avant ta naissance. Et celle de tes ancêtres."],pow:["Le temps et moi, on se connaît bien.","J’ai déjà vécu ce moment. Plusieurs fois.","À mon âge, on prend des raccourcis… dans le temps."],win:["La patience est l’arme des anciens."],lose:["En 969 ans, je n’avais jamais vu ça. Respect."]}},
- 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,E:16,EJ:6,RP:5,RM:1,T:140,TJ:20,TB:1300,noise:2,jc:5,blunder:0,like:{},
+ 4:{id:'melchisedech',ico:'👁',name:'Melchisédech',title:'sans commencement ni fin',lvl:'Très difficile',vr:4,D:5,E:16,EJ:6,RP:5,RM:1,T:140,TJ:15,TB:700,D2:5,JK:4,VK:3,VJ:['past','bif','flatc'],EV:4,TVm:10,TV:200,VN:8,noise:2,jc:5,blunder:0,like:{},
   bio:"On dit qu’il n’a ni commencement ni fin. Il calcule plus loin que tous les autres et ne laisse rien au hasard. Personne ne sait s’il a déjà été battu.",
   q:{start:["Je n’ai pas de commencement. Cette partie n’aura pas de fin pour toi.","Je suis là depuis toujours. Je serai là après toi."],pow:["Le temps n’est qu’un couloir. J’en ai toutes les clés.","Chaque réalité finit par me revenir.","Avant et après, pour moi, c’est la même chose."],win:["Tout était déjà accompli."],lose:["…Tu viens d’écrire quelque chose qui n’était nulle part. Je m’en souviendrai."]}}};
 const PR=()=>PROFILES[AI]||PROFILES[2];
@@ -976,14 +976,14 @@ function simulate(act){const saved=S;S=structuredClone(saved);SIM=true;let res;t
 function execAct(a){const i=a.u;
  if(a.t==='drop')playLine(i,a.line);else if(a.t==='place'){clickHole(i,a.r,a.c);if(a.floor&&S.awaitFloor===i)chooseFloor(i,a.floor)}else if(a.t==='rot')doRotate(i,a.kind);else if(a.t==='flatc'){doRotate(i,'flat');clickHole(i,a.r,a.c);if(S.awaitFloor===i)chooseFloor(i,a.floor)}
  else if(a.t==='past')doTravel(i,a.k,a.m,a.line);else if(a.t==='fut')sendFuture(i,a.r,a.c,a.d);else if(a.t==='loopc'){doLoop(i,a.d);playLine(i,a.line)}else if(a.t==='standc')doStand(i,a.kind);else if(a.t==='loopret')doLoopReturn(a.idx,a.line);else if(a.t==='obs')doObserve();else if(a.t==='bif')doBif(i,a.l1,a.l2);else if(a.t==='bifp')doBifPast(i,a.k,a.m,a.line);else if(a.t==='swap')doSwap();else if(a.t==='col')doCollapse(i);else if(a.t==='link')doLink(i)}
-function aiCandidates(){const acts=[];
+function aiCandidates(forOpp){const acts=[];
  if(S.us.length===2&&!S.over){const A=S.us[0],Bu=S.us[1];if(A.gravity!=='flat'){for(let l=0;l<N;l++)if(landing(A,l)||landing(Bu,l))acts.push({t:'drop',u:0,line:l});if(canObserve())acts.push({t:'obs',u:0});if(!jokerBlock(0)&&pw('rot')&&S.en[S.turn]>=costOf(S.turn,'rot'))for(const kind of['ccw','cw','half'])acts.push({t:'rot',u:0,kind,j:costOf(S.turn,'rot')})}return acts}
  for(const i of S.pend){const u=S.us[i];
   if(u.gravity==='flat'){for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!u.grid[r][c]){acts.push({t:'place',u:i,r,c})}}
   else for(let l=0;l<N;l++)if(landing(u,l))acts.push({t:'drop',u:i,line:l});
   if(u.gravity==='flat'&&S.awaitFloor==null&&S.afterRot!==i&&u.flat<=FLATN-2&&S.en[S.turn]>=standCost(i))for(const k of['none','ccw','cw','half'])acts.push({t:'standc',u:i,kind:k});
   if(jokerBlock(i))continue;
-  if(S.mood&&(S.tn||0)<2*S.mood.patience)continue;
+  if(!forOpp&&S.mood&&(S.tn||0)<2*S.mood.patience)continue;
   if(u.gravity==='flat')continue;
   const ET=S.en[S.turn];if(pw('rot')&&ET>=costOf(S.turn,'rot'))for(const kind of['ccw','cw','half'])acts.push({t:'rot',u:i,kind,j:costOf(S.turn,'rot')});
   if(pw('flat')&&ET>=costOf(S.turn,'flat')&&u.gravity!=='flat'&&S.us.length<2)for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!u.grid[r][c])for(const floor of(FLATMODE==='launcher'?['none','ccw','cw','half']:[undefined]))acts.push({t:'flatc',u:i,r,c,floor,j:costOf(S.turn,'flat')});
@@ -1065,34 +1065,59 @@ const EG=(()=>{
 // options du moteur après le coup testé `res` (énergie réelle de chacun, rotations adverses si permises)
 function engOpt(res,ms){const Pq=PR(),mi=PL.indexOf(ME),oi=PL.indexOf(OPP);const en=res.en||[0,0];return{rot:pw('rot')&&(Pq.RP||0)>0,rotMe:!!Pq.RM,jt0:PL[res.turn]===ME&&!!res.jt,rp:Pq.RP||0,en:[en[mi],en[oi]],cost:[costOf(mi,'rot'),costOf(oi,'rot')],gain:[EN.gain[mi],EN.gain[oi]],max:EN.max,ms}}
 function searchG(grid,g,pl,depth){return EG.value(grid,g,pl,depth,{rot:false,rp:0,ms:40})}
-function aiValue(res,a,D){if(res.bad)return-Infinity;
+// valeur brute d'un état (point de vue de l'IA). deep : true = aussi loin qu'un jeton normal, false = survol rapide, 'v' = vérification
+let QUICK=false;
+function resValue(res,D,deep){if(res.bad)return-Infinity;
  if(res.loop&&res.loop.ready){const w=winnerOf(res.us[0].grid);const own=PL[res.loop.owner];if(w===own)return own===ME?9e6:-9e6}
  if(res.over){if(res.over.draw)return 0;return res.over.winner===ME?1e7:-1e7}
- const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});const mover=PL[res.turn],mt=res.turn;const stc=U.flatBy!=null&&U.flatBy!==mt?EN.stand:0;const canSt=U.flat<=FLATN-2&&res.en&&res.en[mt]>=stc;if(canSt)return mover===ME?Math.max(...vs):Math.min(...vs);return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():(()=>{const Pq=PR(),isD=a.t==='drop'||a.t==='place'||a.t==='rot';return EG.value(U.grid,U.gravity,(res.turn===S.turn&&res.pend.includes(i))?ME:OPP,isD?(Pq.E||D+1):(Pq.EJ||D),engOpt(res,isD?(Pq.T||60):(Pq.TJ||15)))})();
+ const sv=(U,i)=>U.gravity==='flat'?(()=>{if(!U.plan){const vs=['none','ccw','cw','half'].map(k=>{const ng=angleGrav(U.angle+(k==='none'?0:ROT[k].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)});const mover=PL[res.turn],mt=res.turn;const stc=U.flatBy!=null&&U.flatBy!==mt?EN.stand:0;const canSt=U.flat<=FLATN-2&&res.en&&res.en[mt]>=stc;if(canSt)return mover===ME?Math.max(...vs):Math.min(...vs);return 0.5*Math.min(...vs)+0.5*vs.reduce((a,b)=>a+b,0)/4}const ng=angleGrav(U.angle+(U.plan==='none'?0:ROT[U.plan].d));const gr=cloneGrid(U.grid);settleGrid(gr,ng);const w=winnerOf(gr);return evalGrid(gr,ng)+(w===ME?3e5:w&&w!=='D'?-3e5:0)})():(()=>{const Pq=PR();const dp=deep==='q'?2:deep==='v'?(Pq.EV||2):deep?(Pq.E||D+1):(Pq.EJ||D),ms=deep==='q'?3:deep==='v'?(Pq.TVm||6):deep?(Pq.T||60):(Pq.TJ||15);const o=engOpt(res,ms);if(deep==='q')o.rot=false;return EG.value(U.grid,U.gravity,PL[res.turn]===ME&&res.pend.includes(i)?ME:OPP,dp,o)})();
  let v;
  if(res.us.length===2){if(PL[res.turn]===OPP&&!res.afterRot)v=supLook(res,D);else v=supLeaf(res,D)}
  else v=sv(res.us[0],0);
+ return v}
+// préférences de l'IA pour un type d'action (humeur, goûts du personnage, coût en énergie)
+function aiBonus(a){let v=0;
  if(a.t==='loopc')v+=LOOPB*((S.mood&&S.mood.loop)||1);
  if(S.mood&&S.mood.like[a.t])v+=S.mood.like[a.t];
  {const Pq=PR();if(Pq.like[a.t])v+=Pq.like[a.t];if(a.j)v-=Pq.jc*a.j}
  return v}
-function supLeaf(r,D){const mv=PL[r.turn];const dd=Math.max(0,Math.min(D-1,2));const f=U=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,mv,dd);
+function aiValue(res,a,D,deep){const v=resValue(res,D,deep||a.t==='drop'||a.t==='place'||a.t==='rot');return v===-Infinity?v:v+aiBonus(a)}
+// meilleure réponse adverse par joker (Passé, Dédoubler, Apesanteur…) après notre coup : valeur pour l'IA (Infinity = rien à craindre)
+function oppJokerValue(res,D){const Pq=PR(),types=Pq.VJ;if(!types||!types.length||res.bad||res.over||PL[res.turn]!==OPP||res.us.length>1||res.loop||res.loopRet||res.awaitFloor!=null)return Infinity;
+ const saved=S;let worst=Infinity,acts=[];try{S=res;acts=aiCandidates(true).filter(a=>types.includes(a.t))}finally{S=saved}
+ // a) tout simuler : victoire immédiate de l'adversaire ? sinon tri rapide (2 coups)
+ const rs=[];for(const a of acts){let r;S=res;try{r=simulate(a)}finally{S=saved}if(r.bad)continue;
+  if(r.over){const v=r.over.draw?0:r.over.winner===ME?1e7:-1e7;if(v<worst)worst=v;if(worst<=-1e6)return worst;continue}
+  QUICK=true;try{r._q=resValue(r,D,'q')}finally{QUICK=false}if(r._q<worst&&r._q<=-5e5)worst=r._q;rs.push(r)}
+ // b) les réponses les plus dangereuses sont approfondies
+ rs.sort((x,y)=>x._q-y._q);const t0=performance.now();
+ for(const r of rs.slice(0,Pq.VN||6)){if(performance.now()-t0>(Pq.TV||300))break;const v=resValue(r,D,'v');if(v<worst)worst=v;if(worst<=-1e6)break}
+ return worst}
+
+function supLeaf(r,D){const mv=PL[r.turn];const dd=QUICK?1:PR().D2??Math.max(0,Math.min(D-1,2));const f=U=>U.gravity==='flat'?evalGrid(U.grid,U.prev||'down'):searchG(U.grid,U.gravity,mv,dd);
  if(r.us.length===1)return f(r.us[0]);
  const A=f(r.us[0]),B=f(r.us[1]);
  // menaces de fusion : un 4 dans une seule réalité
  let bonus=0;const wa=new Set(fours(r.us[0].grid).map(x=>x.p)),wb=new Set(fours(r.us[1].grid).map(x=>x.p));
  for(const x of PL){if(wa.has(x)!==wb.has(x)){bonus+=(x===ME?1:-1)*2e5}}
  return 0.5*A+0.5*B+bonus}
-function supLook(res,D){const saved=S;let worst=Infinity;S=res;try{const acts=aiCandidates().filter(a=>a.t==='drop'||a.t==='obs'||a.t==='rot');for(const a of acts){const r=simulate(a);if(r.bad)continue;let v;if(r.over)v=r.over.draw?0:r.over.winner===ME?1e7:-1e7;else if(r.afterRot!=null){v=supLeaf(r,D)}else v=supLeaf(r,D);if(v<worst)worst=v}}finally{S=saved}return worst===Infinity?supLeaf(res,D):worst}
+function supLook(res,D){const saved=S;let worst=Infinity;S=res;try{const acts=aiCandidates(PL[res.turn]===OPP).filter(a=>a.t==='drop'||a.t==='obs'||a.t==='rot');for(const a of acts){const r=simulate(a);if(r.bad)continue;let v;if(r.over)v=r.over.draw?0:r.over.winner===ME?1e7:-1e7;else if(r.afterRot!=null){v=supLeaf(r,D)}else v=supLeaf(r,D);if(v<worst)worst=v}}finally{S=saved}return worst===Infinity?supLeaf(res,D):worst}
 function winCols(U){const g=U.gravity;if(g==='flat')return[];const out=[];for(let v=0;v<N;v++){const l=lineForVisual(g,v);const t=landingG(U.grid,g,l);if(!t)continue;const ng=cloneGrid(U.grid);ng[t[0]][t[1]]={id:0,p:ME};if(winnerOf(ng)===ME)out.push(v)}return out}
 function linkBonus(res){if(res.us.length<2)return 0;const a=winCols(res.us[0]),b=winCols(res.us[1]);if(!a.length||!b.length)return 0;if(a.length===1&&b.length===1&&a[0]===b[0])return 0;return 5e5}
-function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){let ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(AI>=2)ds=ds.filter(a=>{const r=simulate(a);if(r.bad)return false;if(r.over)return!r.over.winner||r.over.winner===ME;if(r.us.length>1||r.us[0].gravity==='flat')return true;return EG.value(r.us[0].grid,r.us[0].gravity,OPP,3,engOpt(r,20))>-5e5});if(ds.length)return pick(ds)}const D=Pp.D;const acts=aiCandidates();let best=null,bv=-Infinity,bestDrop=-Infinity;
- const scored=[],t0=performance.now();for(const a of acts){if(a.j&&a.t!=='rot'&&performance.now()-t0>(Pp.TB||900))continue;const v=aiValue(simulate(a),a,D)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push([v,a]);
-  if(a.t==='drop'||a.t==='place'){if(v>bestDrop)bestDrop=v}
-  if(v>bv){bv=v;best=a}}
- if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(([v])=>v>=bv-Pp.vr);if(near.length>1){const pk=near[Math.floor(Math.random()*near.length)];best=pk[1];bv=pk[0]}}
- if(best&&best.j&&bv<1e6&&bv<bestDrop+25){let bd=null,bdv=-Infinity;for(const[v,a]of scored)if((a.t==='drop'||a.t==='place')&&v>bdv){bdv=v;bd=a}if(bd)best=bd}
- return best}
+function aiChoose(){if(canSwap()){const u=S.us[0];let col=-1;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(u.grid[r][c])col=boardToVis(u.gravity,r,c)[1];if(col>=2&&col<=4)return{t:'swap',u:0}}const Pp=PR();if(Pp.blunder&&Math.random()<Pp.blunder){let ds=aiCandidates().filter(a=>a.t==='drop'||a.t==='place');if(AI>=2)ds=ds.filter(a=>{const r=simulate(a);if(r.bad)return false;if(r.over)return!r.over.winner||r.over.winner===ME;if(r.us.length>1||r.us[0].gravity==='flat')return true;return EG.value(r.us[0].grid,r.us[0].gravity,OPP,3,engOpt(r,20))>-5e5});if(ds.length)return pick(ds)}const D=Pp.D;const acts=aiCandidates();
+ // 1) tous les coups ; les jokers (sauf rotation) en survol rapide, dans un budget de temps
+ const scored=[],t0=performance.now();for(const a of acts){if(a.j&&a.t!=='rot'&&performance.now()-t0>(Pp.TB||900))continue;const res=simulate(a);const raw=resValue(res,D,a.t==='drop'||a.t==='place'||a.t==='rot');if(raw===-Infinity)continue;const bonus=aiBonus(a)+(a.t==='drop'?(3-Math.abs(3-a.line))*0.5:0)+Math.random()*Pp.noise;scored.push({a,res,raw,bonus,v:raw+bonus})}
+ if(!scored.length)return acts.find(a=>a.t==='drop'||a.t==='place')||acts[0]||null;
+ // 2) les jokers les plus prometteurs sont recalculés aussi loin qu'un jeton normal
+ {const bd=Math.max(-Infinity,...scored.filter(s=>!s.a.j).map(s=>s.v));const js=scored.filter(s=>s.a.j&&s.a.t!=='rot'&&s.raw>-5e5&&s.v>bd-150).sort((x,y)=>y.v-x.v).slice(0,Pp.JK||0);
+  for(const s of js){s.raw=resValue(s.res,D,true);s.v=s.raw+s.bonus}}
+ // 3) vérification des meilleurs coups contre les jokers adverses (le coup réfuté est déclassé)
+ scored.sort((x,y)=>y.v-x.v);let best=null,bv=-Infinity,chk=0;
+ for(const s of scored){if(s.v<=bv)break;s.adj=s.v;if(chk<(Pp.VK||0)&&!s.res.over){chk++;const w=oppJokerValue(s.res,D);if(w<s.raw)s.adj=w+s.bonus}if(s.adj>bv){bv=s.adj;best=s}}
+ const val=s=>s.adj??s.v;
+ if(Pp.vr&&Math.abs(bv)<1e5){const near=scored.filter(s=>s.adj!=null&&s.adj>=bv-Pp.vr);if(near.length>1){best=pick(near);bv=best.adj}}
+ if(best.a.j&&bv<1e6){let bd=null;for(const s of scored)if((s.a.t==='drop'||s.a.t==='place')&&(!bd||val(s)>val(bd)))bd=s;if(bd&&bv<val(bd)+25)best=bd}
+ return best.a}
 function aiTurn(){aiTimer=null;if(!AI||S.over||S.busy||actor()!==ME)return;if(S.awaitFloor!=null){chooseFloor(S.awaitFloor,aiFloor());return}if(S.loopRet){const o=aiLoopReturn();log(o.idx==null?`${PR().ico} ${PR().name} garde ce futur.`:`${PR().ico} ${PR().name} déplace son coup d'essai.`);doLoopReturn(o.idx,o.line);return}S.mode=null;const a=aiChoose();if(!a)return;
  const lbl={flatc:'met le plateau en apesanteur',rot:'tourne le plateau',standc:'redresse le plateau',past:'voyage dans le passé',fut:'envoie un jeton dans le futur',loopc:'voyage dans le futur',bif:'dédouble un jeton entre deux réalités',obs:'observe et choisit une réalité',bifp:'bifurque dans le passé',swap:'prend ton premier jeton (échange)',col:'provoque un effondrement',link:'intrique les univers'}[a.t];if(lbl){log(`${PR().ico} ${PR().name} ${lbl}.`);if(Math.random()<.6)say('pow')}
  if(a.t==='past'||a.t==='bifp'){aiTimer=1;S.mode={kind:a.t==='past'?'past':'bif',u:a.u,k:a.k,m:a.m};fx(a.u,`${PR().ico} ${PR().name} remonte de ${a.m} manche${a.m>1?'s':''}`);render();
